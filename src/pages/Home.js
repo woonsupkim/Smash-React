@@ -4,7 +4,7 @@
 // }
 
 import React from "react";
-import { matchMatrix } from "../data/matchMatrix";
+import { matchMatrix } from "../components/matchMatrix";
 
 export default function Home() {
   return (

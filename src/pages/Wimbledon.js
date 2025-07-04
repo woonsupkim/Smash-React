@@ -1,165 +1,270 @@
-// src/pages/Wimbledon.js
-import React, { useState, useEffect } from "react";
-import Papa from "papaparse";
-import { simulateBatch, simulateMatchStepwise } from "../utils/simulator";
-import PlayerCard from "../components/PlayerCard";
-import "./Wimbledon.css";
+import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
+import { simulateBatch, simulateMatchStepwise } from '../simulator';
+import {
+  Table,
+  Button,
+  Dropdown,
+  ProgressBar,
+  Form
+} from 'react-bootstrap';
+import Swal from 'sweetalert2';
+import './Wimbledon.css';
+import placeholdera from '../assets/players/0a.png';
+import placeholderb from '../assets/players/0b.png';
+
+const playerImgs = require.context('../assets/players', false, /\.png$/);
 
 export default function Wimbledon() {
   const [players, setPlayers] = useState([]);
   const [playerA, setPlayerA] = useState(null);
   const [playerB, setPlayerB] = useState(null);
   const [batchResult, setBatchResult] = useState(null);
-  const [slowGen, setSlowGen] = useState(null);
-  const [currentPoint, setCurrentPoint] = useState(null);
+  const [pointGen, setPointGen] = useState(null);
   const [pointLog, setPointLog] = useState([]);
+  const [simCount, setSimCount] = useState(1000);
 
-  // Load player data
   useEffect(() => {
-    Papa.parse("/data/smash_us.csv", {
-      download: true,
+    Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
       header: true,
-      complete: (res) => {
-        const final16 = res.data.filter(p => p.us_rd === "2");
-        setPlayers(final16);
+      download: true,
+      complete: ({ data }) => {
+        setPlayers(data.filter(r => Number(r.us_rd) === 2));
       }
     });
   }, []);
 
-  // Stepwise simulation effect
   useEffect(() => {
-    if (!slowGen) return;
-    const interval = setInterval(() => {
-      const step = slowGen.next();
-      if (step.done) {
-        setSlowGen(null);
-        return;
-      }
-      setCurrentPoint(step.value);
-      if (step.value.type === "point") {
-        setPointLog(prev => [...prev, step.value]);
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, [slowGen]);
+    if (!pointGen) return;
+    const timer = setInterval(() => {
+      const { value, done } = pointGen.next();
+      if (done) clearInterval(timer);
+      else setPointLog(prev => [...prev, value]);
+    }, 20);
+    return () => clearInterval(timer);
+  }, [pointGen]);
 
-  // Fast batch simulate
-  const handleFastSimulate = () => {
-    if (!playerA || !playerB) return;
-    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
-    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
-    const result = simulateBatch(pA, pB, 1000);
+  const showPlayerError = () => {
+    Swal.fire({
+      icon: 'error',
+      title: 'No Players',
+      text: 'Select the players before simulating match results.',
+      confirmButtonColor: '#3085d6'
+    });
+  };
+
+  const handleFast = () => {
+    if (!playerA || !playerB) return showPlayerError();
+    const pA = [playerA.p1, playerA.p2, playerA.p3, playerA.p4, playerA.p5].map(Number);
+    const pB = [playerB.p1, playerB.p2, playerB.p3, playerB.p4, playerB.p5].map(Number);
+    const result = simulateBatch(pA, pB, simCount);
     setBatchResult(result);
-  };
-
-  // Start slow simulation
-  const startSlowMatch = () => {
-    if (!playerA || !playerB) return;
-    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
-    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
-    const gen = simulateMatchStepwise(pA, pB, { A: playerA, B: playerB });
     setPointLog([]);
-    setCurrentPoint(null);
-    setSlowGen(gen);
+    setPointGen(null);
   };
 
-  // Replay recorded slow match
-  const replaySlowMatch = () => {
-    if (!pointLog.length) return;
-    let idx = 0;
-    setCurrentPoint(pointLog[0]);
-    const iv = setInterval(() => {
-      idx++;
-      if (idx >= pointLog.length) {
-        clearInterval(iv);
-        return;
-      }
-      setCurrentPoint(pointLog[idx]);
-    }, 200);
+  const handleSlow = () => {
+    if (!playerA || !playerB) return showPlayerError();
+    const pA = [playerA.p1, playerA.p2, playerA.p3, playerA.p4, playerA.p5].map(Number);
+    const pB = [playerB.p1, playerB.p2, playerB.p3, playerB.p4, playerB.p5].map(Number);
+    setBatchResult(null);
+    setPointLog([]);
+    setPointGen(simulateMatchStepwise(pA, pB));
+  };
+
+  const handleReset = () => {
+    setPlayerA(null);
+    setPlayerB(null);
+    setBatchResult(null);
+    setPointGen(null);
+    setPointLog([]);
+  };
+
+  const renderProgressBar = (label, value) => (
+    <div className="text-start text-white mb-2">
+      <strong>{label}</strong>
+      <ProgressBar
+        now={value}
+        label={`${Math.round(value)}%`}
+        variant="success"
+        className="bg-dark"
+      />
+    </div>
+  );
+
+  const renderPlayerCard = (player) => (
+    <div className="text-center mt-3 border border-success rounded p-3" style={{ backgroundColor: '#222', width: '230px' }}>
+      <img
+        src={playerImgs(`./${player.id}.png`)}
+        alt={player.name}
+        className="img-fluid rounded shadow"
+        style={{ maxHeight: '200px' }}
+      />
+      <h5 className="text-white mt-3">{player.name}</h5>
+      {renderProgressBar('1st Serve In', player.p1 * 100)}
+      {renderProgressBar('2nd Serve In', player.p2 * 100)}
+      {renderProgressBar('1st Return In', player.p3 * 100)}
+      {renderProgressBar('2nd Return In', player.p4 * 100)}
+      {renderProgressBar('Volley Win', player.p5 * 100)}
+    </div>
+  );
+
+  const renderPlaceholdera = (label) => (
+    <div className="text-center mt-3 border rounded p-3" style={{ backgroundColor: '#222', width: '230px' }}>
+      <img
+        src={placeholdera}
+        alt="placeholder"
+        className="img-fluid rounded shadow"
+        style={{ maxHeight: '200px', opacity: 0.3 }}
+      />
+      <h5 className="text-muted mt-3">{label}</h5>
+    </div>
+  );
+
+  const renderPlaceholderb = (label) => (
+    <div className="text-center mt-3 border rounded p-3" style={{ backgroundColor: '#222', width: '230px' }}>
+      <img
+        src={placeholderb}
+        alt="placeholder"
+        className="img-fluid rounded shadow"
+        style={{ maxHeight: '200px', opacity: 0.3 }}
+      />
+      <h5 className="text-muted mt-3">{label}</h5>
+    </div>
+  );
+
+  const renderSummaryStats = () => {
+    const { matchWins, lostInWins, setsWon } = batchResult;
+    const lostLabels = ['3–0', '3–1', '3–2'];
+
+    return (
+      <>
+        <h5 className="text-white">Simulation Summary ({simCount} Matches)</h5>
+
+        <Table bordered variant="dark" size="sm" className="mt-2">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{playerA?.name || 'Player A'}</th>
+              <th>{playerB?.name || 'Player B'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Matches Won</td>
+              <td>{matchWins[0]}</td>
+              <td>{matchWins[1]}</td>
+            </tr>
+            <tr>
+              <td>Avg Sets Won</td>
+              <td>{(setsWon[0] / simCount).toFixed(2)}</td>
+              <td>{(setsWon[1] / simCount).toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </Table>
+
+        <h6 className="text-white mt-3">Wins by Set Scoreline</h6>
+        <Table bordered variant="dark" size="sm">
+          <thead>
+            <tr>
+              <th></th>
+              {lostLabels.map((lbl, i) => <th key={i}>{lbl}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{playerA?.name || 'Player A'}</td>
+              {lostInWins[0].map((n, i) => <td key={i}>{n}</td>)}
+            </tr>
+            <tr>
+              <td>{playerB?.name || 'Player B'}</td>
+              {lostInWins[1].map((n, i) => <td key={i}>{n}</td>)}
+            </tr>
+          </tbody>
+        </Table>
+      </>
+    );
   };
 
   return (
-    <div className="wimbledon-page">
-      <h1>Wimbledon Match Simulator</h1>
+    <div className="page-background wimbledon-bg">
+      <div className="overlay text-center">
+        <h3 className="text-white mb-4">Men's Singles</h3>
+        <div className="d-flex justify-content-center align-items-start mb-4">
+          <div>
+            <Dropdown onSelect={id => setPlayerA(players.find(p => p.id === id))}>
+              <Dropdown.Toggle variant="light">
+                {playerA ? playerA.name : 'Select Player A'}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {players.map(p => (
+                  <Dropdown.Item eventKey={p.id} key={p.id}>{p.name}</Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+            {playerA ? renderPlayerCard(playerA) : renderPlaceholdera('Select Player A')}
+          </div>
 
-      <div className="selectors">
-        <select onChange={e => setPlayerA(players.find(p => p.name === e.target.value))}>
-          <option value="">Select Player A</option>
-          {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-        </select>
-
-        <select onChange={e => setPlayerB(players.find(p => p.name === e.target.value))}>
-          <option value="">Select Player B</option>
-          {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-        </select>
-      </div>
-
-      <div className="buttons">
-        <button onClick={handleFastSimulate}>1000× Fast Simulate</button>
-        <button onClick={startSlowMatch}>Slow Simulate</button>
-        {pointLog.length > 0 && <button onClick={replaySlowMatch}>Replay</button>}
-      </div>
-
-      {playerA && playerB && (
-        <div className="cards">
-          <PlayerCard player={playerA} side="A" />
-          <PlayerCard player={playerB} side="B" />
-        </div>
-      )}
-
-      {/* Batch Results */}
-      {batchResult && (
-        <div className="batch-results">
-          <div className="match-summary">
-            <div className="won-box">
-              <h3>Matches Won</h3>
-              <p className="count green">{batchResult.setsWon[0]}</p>
-              <p className="pct green">{Math.round(100*batchResult.setsWon[0]/1000)}%</p>
+          <div className="mx-4">
+            <div className="controls mb-3">
+              <Form.Group controlId="simCount" className="text-white mb-2">
+                <Form.Label>Simulation Count</Form.Label>
+                <Form.Select value={simCount} onChange={(e) => setSimCount(Number(e.target.value))}>
+                  <option value={100}>100</option>
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                  <option value={2000}>2000</option>
+                </Form.Select>
+              </Form.Group>
+              <Button variant="warning" onClick={handleSlow} className="mx-2">Slow</Button>
+              <Button variant="warning" onClick={handleFast} className="mx-2">Fast</Button>
+              <Button variant="secondary" onClick={handleReset} className="mx-2">Reset</Button>
             </div>
+            {batchResult && renderSummaryStats()}
+            {pointGen && (
+              <div className="point-log mb-3">
+                <h5 className="text-white">Point-by-Point Flow</h5>
+                <Table striped bordered size="sm" variant="dark">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Set</th><th>Games A</th><th>Games B</th><th>Point A</th><th>Point B</th><th>Winner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pointLog.map((pt, i) => (
+                      <tr key={i}>
+                        <td>{i + 1}</td>
+                        <td>{pt.set}</td>
+                        <td>{pt.games[0]}</td>
+                        <td>{pt.games[1]}</td>
+                        <td>{pt.points[0]}</td>
+                        <td>{pt.points[1]}</td>
+                        <td className={pt.winner === 0 ? 'text-lime' : 'text-magenta'}>
+                          {pt.winner === 0 ? playerA.name : playerB.name}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </div>
 
-            <div className="sets-lost">
-              <h3>Sets Lost in Wins</h3>
-              {batchResult.lostInWins[0].map((cnt,i) => (
-                <div key={i} className="row">
-                  <span className="label">{i}</span>
-                  <div className="bar green" style={{ width: `${cnt/batchResult.maxLost*100}%` }}>{cnt}</div>
-                  <div className="bar magenta" style={{ width: `${batchResult.lostInWins[1][i]/batchResult.maxLost*100}%` }}>{batchResult.lostInWins[1][i]}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="won-box">
-              <h3>Matches Won</h3>
-              <p className="count magenta">{batchResult.setsWon[1]}</p>
-              <p className="pct magenta">{Math.round(100*batchResult.setsWon[1]/1000)}%</p>
-            </div>
+          <div>
+            <Dropdown onSelect={id => setPlayerB(players.find(p => p.id === id))}>
+              <Dropdown.Toggle variant="light">
+                {playerB ? playerB.name : 'Select Player B'}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {players.map(p => (
+                  <Dropdown.Item eventKey={p.id} key={p.id}>{p.name}</Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+            {playerB ? renderPlayerCard(playerB) : renderPlaceholderb('Select Player B')}
           </div>
         </div>
-      )}
-
-      {/* Live / Recorded Points */}
-      {currentPoint?.type === "point" && (
-        <div className="live-point">
-          <h3>Live Point</h3>
-          <p>Set {currentPoint.set}</p>
-          <p>Games {currentPoint.games[0]}–{currentPoint.games[1]}</p>
-          <p>Points {currentPoint.points[0]}–{currentPoint.points[1]}</p>
-          <p>Won by {currentPoint.winner === 0 ? currentPoint.playerA.name : currentPoint.playerB.name}</p>
-        </div>
-      )}
-
-      {pointLog.length > 0 && (
-        <div className="point-log">
-          <h3>Point-by-Point Flow</h3>
-          <ul>
-            {pointLog.map((pt,i) => (
-              <li key={i}>
-                Set {pt.set}, {pt.games[0]}–{pt.games[1]}, {pt.points[0]}–{pt.points[1]} by {pt.winner===0?pt.playerA.name:pt.playerB.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

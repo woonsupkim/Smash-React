@@ -1,47 +1,72 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import Home from './pages/Home';
+import FrenchOpen from './pages/FrenchOpen';
+import Wimbledon from './pages/Wimbledon';
+import USOpen from './pages/USOpen';
+import About from './pages/About';
+import './App.css';
+import ball from './assets/ball.png';
 
-// these paths MUST match the files you created
-import Home       from "./pages/Home";
-import FrenchOpen from "./pages/FrenchOpen";
-import Wimbledon  from "./pages/Wimbledon";
-import USOpen     from "./pages/USOpen";
-import AboutUs    from "./pages/AboutUs";
-
-import "./index.css";    // this should be your cleaned-up CSS (above)
 
 function App() {
   return (
     <Router>
-      <nav className="navbar">
-        <div className="nav-links">
-          <NavItem to="/"        label="Home"       icon="ball.png" />
-          <NavItem to="/french"  label="French Open" icon="logo_rg.png" />
-          <NavItem to="/wimbledon" label="Wimbledon" icon="logo_wb.png" />
-          <NavItem to="/usopen"    label="US Open"   icon="logo_us.png" />
-          <NavItem to="/about"     label="About Us"  icon="lion.png" />
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div className="container">
+          <NavLink to="/" className="navbar-brand d-flex align-items-center">
+            <img
+              src={ball}
+              height="40"
+              alt="SMASH! logo"
+              className="me-2"
+            />
+            SMASH!
+          </NavLink>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon" />
+          </button>
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav ms-auto">
+              {[
+                ['/', 'Home'],
+                ['/french-open', 'French Open'],
+                ['/wimbledon', 'Wimbledon'],
+                ['/us-open', 'US Open'],
+                ['/about', 'About Us']
+              ].map(([to, label]) => (
+                <li className="nav-item" key={to}>
+                  <NavLink
+                    to={to}
+                    className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                  >
+                    {label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </nav>
 
-      <main className="main-content">
+      <main className="page-content">
         <Routes>
-          <Route path="/"          element={<Home />} />
-          <Route path="/french"    element={<FrenchOpen />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/french-open" element={<FrenchOpen />} />
           <Route path="/wimbledon" element={<Wimbledon />} />
-          <Route path="/usopen"    element={<USOpen />} />
-          <Route path="/about"     element={<AboutUs />} />
+          <Route path="/us-open" element={<USOpen />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </main>
     </Router>
-  );
-}
-
-function NavItem({ to, label, icon }) {
-  return (
-    <NavLink to={to} className="nav-item">
-      <img src={`/assets/${icon}`} alt={label} className="nav-icon" />
-      <span>{label}</span>
-    </NavLink>
   );
 }
 

@@ -130,6 +130,7 @@ export function simulateMatch(probA, probB) {
  */
 export function simulateBatch(probA, probB, n = 1000) {
   const setsWonAgg = [0, 0];
+  const matchWins = [0, 0];
   const lostInWins = [[0, 0, 0], [0, 0, 0]];
   let lastSetScores = [];
 
@@ -137,15 +138,25 @@ export function simulateBatch(probA, probB, n = 1000) {
     const { setsWon, setScores } = simulateMatch(probA, probB);
     setsWonAgg[0] += setsWon[0];
     setsWonAgg[1] += setsWon[1];
+    const winner = setsWon[0] > setsWon[1] ? 0 : 1;
+    matchWins[winner]++;
     lastSetScores = setScores;
-    const winnerIdx = setsWon[0] > setsWon[1] ? 0 : 1;
-    const lost = winnerIdx === 0 ? setsWon[1] : setsWon[0];
-    if (lost <= 2) lostInWins[winnerIdx][lost]++;
+    const lost = Math.min(setsWon[1 - winner], 2);
+    lostInWins[winner][lost]++;
   }
 
   const maxLost = Math.max(...lostInWins[0], ...lostInWins[1]);
-  return { simCount: n, setsWon: setsWonAgg, lostInWins, maxLost, setScores: lastSetScores };
+
+  return {
+    simCount: n,
+    matchWins,
+    setsWon: setsWonAgg,
+    lostInWins,
+    maxLost,
+    setScores: lastSetScores
+  };
 }
+
 
 /**
  * Generator for stepwise (slow) match simulation.
