@@ -34,7 +34,8 @@ const playerImgs = require.context(
 
 // Color palettes
 const VS_COLORS     = ['#1E88E5', '#FDD835'];
-const SETBAR_COLORS = ['#1E88E5', '#FDD835'];
+const SETBAR_COLORS = ['#FDD835', '#1E88E5'];
+
 
 // Keys for the five rates
 const STAT_KEYS = [
@@ -392,7 +393,15 @@ export default function Wimbledon() {
                         <Cell key={i} fill={VS_COLORS[i]} />
                       ))}
                     </Pie>
-                    <Legend verticalAlign="bottom" wrapperStyle={{color:'#fff'}}/>
+                    <Legend 
+                      verticalAlign="bottom" 
+                      wrapperStyle={{color:'#fff'}}
+                      // force A then B, using the same colors as in the Pie
+                      payload={[
+                        { value: playerB.name, type: 'square', color: VS_COLORS[1] },
+                        { value: playerA.name, type: 'square', color: VS_COLORS[0] },
+                      ]}
+                    />
                     <Tooltip formatter={(v,n)=>[`${v} wins`,n]}/>
                     <text
                       x="50%" y="50%"
