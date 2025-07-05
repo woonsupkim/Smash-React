@@ -1,23 +1,27 @@
+// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import Home from './pages/Home';
-import FrenchOpen from './pages/FrenchOpen';
-import Wimbledon from './pages/Wimbledon';
-import USOpen from './pages/USOpen';
-import About from './pages/About';
-import './App.css';
 
+import Home          from './pages/Home';
+import FrenchOpen    from './pages/FrenchOpen';
+import Wimbledon     from './pages/Wimbledon';
+import USOpen        from './pages/USOpen';
+import DreamBrackets from './pages/DreamBrackets';
+import About         from './pages/About';
+
+import './App.css';
 import logoRG from './assets/logo_rg.png';
 import logoWB from './assets/logo_wb.png';
 import logoUS from './assets/logo_us.png';
 
 function App() {
   const navItems = [
-    { to: '/', label: 'Home', logo: null },
-    { to: '/french-open', label: 'French Open', logo: logoRG },
-    { to: '/wimbledon', label: 'Wimbledon', logo: logoWB },
-    { to: '/us-open', label: 'US Open', logo: logoUS },
-    { to: '/about', label: 'About Us', logo: null }
+    { to: '/',              label: 'Home',       logo: null          },
+    { to: '/french-open',   label: 'French Open',logo: logoRG       },
+    { to: '/wimbledon',     label: 'Wimbledon',  logo: logoWB       },
+    { to: '/us-open',       label: 'US Open',    logo: logoUS       },
+    { to: '/dream-brackets',label: 'Brackets',   logo: null          },
+    { to: '/about',         label: 'About Us',   logo: null          }
   ];
 
   return (
@@ -50,7 +54,9 @@ function App() {
                 <li className="nav-item" key={to}>
                   <NavLink
                     to={to}
-                    className={({ isActive }) => `nav-link d-flex align-items-center${isActive ? ' active' : ''}`}
+                    className={({ isActive }) =>
+                      `nav-link d-flex align-items-center${isActive ? ' active' : ''}`
+                    }
                   >
                     {logo && (
                       <img
@@ -74,6 +80,7 @@ function App() {
           <Route path="/french-open" element={<FrenchOpen />} />
           <Route path="/wimbledon" element={<Wimbledon />} />
           <Route path="/us-open" element={<USOpen />} />
+          <Route path="/dream-brackets" element={<DreamBrackets />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </main>

@@ -1,0 +1,49 @@
+.dream-brackets-page {
+  padding: 2rem;
+}
+
+.bracket-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Column headings */
+.bracket-grid .col h5 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+/* Each "match slot" */
+.match-slot {
+  background: rgba(255,255,255,0.9);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Quarterfinal <Select> → fill to width of card */
+.col.quarter .match-slot {
+  padding: 0;            /* override padding so Select touches edges */
+}
+.col.quarter .match-slot .react-select__control {
+  border: none;
+  box-shadow: none;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Buttons area */
+.dream-brackets-page > .btn {
+  min-width: 140px;
+}
