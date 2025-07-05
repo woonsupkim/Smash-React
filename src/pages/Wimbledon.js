@@ -33,8 +33,8 @@ const playerImgs = require.context(
 );
 
 // Color palettes
-const VS_COLORS     = ['#50276E', '#009B5D'];
-const SETBAR_COLORS = ['#009B5D', '#50276E'];
+const VS_COLORS     = ['#3A1C71', '#009B5D'];
+const SETBAR_COLORS = ['#009B5D', '#3A1C71'];
 
 
 // Keys for the five rates
