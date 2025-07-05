@@ -21,7 +21,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { simulateBatch } from '../simulator';      // removed simulateMatchStepwise
+import { simulateBatch } from '../simulator';
 import './Wimbledon.css';
 import placeholderA from '../assets/players/0a.png';
 import placeholderB from '../assets/players/0b.png';
@@ -32,10 +32,21 @@ const playerImgs = require.context('../assets/players', false, /\.png$/);
 const VS_COLORS     = ['#1E88E5', '#FDD835'];
 const SETBAR_COLORS = ['#1E88E5', '#FDD835'];
 
+// Keys for the five rates
+const STAT_KEYS = [
+  ['p1', '1st Serve Win'],
+  ['p2', '2nd Serve Win'],
+  ['p3', '1st Return Win'],
+  ['p4', '2nd Return Win'],
+  ['p5', 'Volley Win']
+];
+
 export default function Wimbledon() {
   const [players, setPlayers]         = useState([]);
   const [playerA, setPlayerA]         = useState(null);
   const [playerB, setPlayerB]         = useState(null);
+  const [statsA, setStatsA]           = useState({});
+  const [statsB, setStatsB]           = useState({});
   const [simCount, setSimCount]       = useState(1000);
 
   const [isRunning, setIsRunning]     = useState(false);
@@ -44,7 +55,7 @@ export default function Wimbledon() {
 
   const batchRef = useRef({ completed: 0, total: 0 });
 
-  // load players once
+  // 1) load players once
   useEffect(() => {
     Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
       header: true,
@@ -55,6 +66,26 @@ export default function Wimbledon() {
     });
   }, []);
 
+  // whenever playerA changes, seed statsA from their csv values
+  useEffect(() => {
+    if (!playerA) return;
+    const obj = {};
+    STAT_KEYS.forEach(([key]) => {
+      obj[key] = Number(playerA[key]) * 100;
+    });
+    setStatsA(obj);
+  }, [playerA]);
+
+  // whenever playerB changes, seed statsB
+  useEffect(() => {
+    if (!playerB) return;
+    const obj = {};
+    STAT_KEYS.forEach(([key]) => {
+      obj[key] = Number(playerB[key]) * 100;
+    });
+    setStatsB(obj);
+  }, [playerB]);
+
   // fast batch with progress
   const runBatch = (pA, pB, n) => {
     batchRef.current = { completed: 0, total: n };
@@ -62,9 +93,9 @@ export default function Wimbledon() {
     setProgress(0);
 
     let acc = {
-      matchWins: [0, 0],
-      setsWon:   [0, 0],
-      lostInWins:[ [0,0,0], [0,0,0] ]
+      matchWins: [0,0],
+      setsWon:   [0,0],
+      lostInWins:[ [0,0,0],[0,0,0] ]
     };
 
     const chunkSize = 50;
@@ -77,15 +108,13 @@ export default function Wimbledon() {
       acc.matchWins[1] += res.matchWins[1];
       acc.setsWon[0]   += res.setsWon[0];
       acc.setsWon[1]   += res.setsWon[1];
-      for (let i = 0; i < 3; i++) {
-        acc.lostInWins[0][i] += res.lostInWins[0][i] || 0;
-        acc.lostInWins[1][i] += res.lostInWins[1][i] || 0;
+      for (let i=0; i<3; i++){
+        acc.lostInWins[0][i] += res.lostInWins[0][i]||0;
+        acc.lostInWins[1][i] += res.lostInWins[1][i]||0;
       }
 
       batchRef.current.completed += run;
-      setProgress(
-        Math.round(100 * batchRef.current.completed / batchRef.current.total)
-      );
+      setProgress(Math.round(100 * batchRef.current.completed / batchRef.current.total));
 
       if (batchRef.current.completed < batchRef.current.total) {
         setTimeout(step, 10);
@@ -94,7 +123,6 @@ export default function Wimbledon() {
         setIsRunning(false);
       }
     };
-
     step();
   };
 
@@ -107,11 +135,12 @@ export default function Wimbledon() {
     });
   };
 
-  // renamed to "Simulate Matches"
+  // “Simulate Matches” button
   const handleSimulate = () => {
     if (!playerA || !playerB) return showPlayerError();
-    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
-    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
+    // read slider stats as probabilities
+    const pA = STAT_KEYS.map(([key]) => statsA[key] / 100);
+    const pB = STAT_KEYS.map(([key]) => statsB[key] / 100);
     runBatch(pA, pB, simCount);
   };
 
@@ -119,18 +148,24 @@ export default function Wimbledon() {
     setPlayerA(null);
     setPlayerB(null);
     setBatchResult(null);
+    setStatsA({});
+    setStatsB({});
     setProgress(0);
     setIsRunning(false);
   };
 
   const randomPick = who => {
     const idx = Math.floor(Math.random() * players.length);
-    who === 'A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
+    who==='A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
   };
 
-  const opts = players.map(p => ({ value: p.id, label: p.name, data: p }));
+  const opts = players.map(p => ({
+    value: p.id,
+    label: p.name,
+    data: p
+  }));
 
-  // doughnut data (B first so its slice starts at 12 o'clock)
+  // charts data
   const pieData = batchResult
     ? [
         { name: playerB.name, value: batchResult.matchWins[1] },
@@ -138,28 +173,16 @@ export default function Wimbledon() {
       ]
     : [];
 
-  // bar-chart data
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i) => ({
         name: lbl,
-        [playerA.name]: batchResult.lostInWins[0][i] || 0,
-        [playerB.name]: batchResult.lostInWins[1][i] || 0
+        [playerA.name]: batchResult.lostInWins[0][i]||0,
+        [playerB.name]: batchResult.lostInWins[1][i]||0
       }))
     : [];
 
-  // stat‐bars
-  const renderProgress = (label, pct) => (
-    <div className="text-start text-white mb-2">
-      <strong>{label}</strong>
-      <ProgressBar
-        now={pct}
-        label={`${Math.round(pct)}%`}
-        variant="success"
-        style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
-      />
-    </div>
-  );
-  const renderPlayerCard = player => (
+  // player card + sliders
+  const renderPlayerCard = (player, stats, setStats) => (
     <div className="player-card grass-hover mt-2 p-3">
       <img
         src={playerImgs(`./${player.id}.png`)}
@@ -167,11 +190,24 @@ export default function Wimbledon() {
         className="img-fluid rounded"
       />
       <h5 className="text-white mt-2">{player.name}</h5>
-      {renderProgress('1st Serve In',  player.p1 * 100)}
-      {renderProgress('2nd Serve In',  player.p2 * 100)}
-      {renderProgress('1st Return In', player.p3 * 100)}
-      {renderProgress('2nd Return In', player.p4 * 100)}
-      {renderProgress('Volley Win',     player.p5 * 100)}
+      {STAT_KEYS.map(([key,label]) => (
+        <Form.Group key={key} className="mb-2">
+          <Form.Label className="text-white">
+            {label}: {Math.round(stats[key]||0)}%
+          </Form.Label>
+          <Form.Range
+            min={0}
+            max={100}
+            step={1}
+            value={stats[key]||0}
+            onChange={e => setStats({
+              ...stats,
+              [key]: +e.target.value
+            })}
+            disabled={isRunning}
+          />
+        </Form.Group>
+      ))}
     </div>
   );
 
@@ -182,9 +218,9 @@ export default function Wimbledon() {
         <div className="d-flex flex-wrap justify-content-center">
 
           {/* Player A */}
-          <div className="mx-3 text-start">
+          <div className="mx-3 text-start" style={{ minWidth: 260 }}>
             <Form.Label className="text-white">Player A</Form.Label>
-            <div className="d-flex">
+            <div className="d-flex mb-2">
               <Select
                 className="react-select w-75"
                 options={opts}
@@ -195,39 +231,32 @@ export default function Wimbledon() {
                 styles={{
                   option: (base, state) => ({
                     ...base,
-                    color: '#000',          // always black text
-                    opacity: 1,             // never greyed out
+                    color: '#000',
                     backgroundColor: state.isFocused ? '#eee' : 'white',
                   }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: '#000',          // keep selected item black
-                    opacity: 1,
-                  }),
-                  control: (base, state) => ({
-                    ...base,
-                    opacity: state.isDisabled ? 1 : 1, // override default disabled opacity
-                  }),
-                }}                
-
+                  singleValue: base => ({ ...base, color: '#000' }),
+                  control: base => ({ ...base, opacity: 1 })
+                }}
               />
               <Button
                 variant="light"
                 className="ms-1"
-                onClick={() => randomPick('A')}
+                onClick={()=>randomPick('A')}
                 disabled={isRunning}
               >🎲</Button>
             </div>
-            {playerA ? renderPlayerCard(playerA) : (
-              <div className="player-card placeholder mt-2 p-3">
-                <img src={placeholderA} className="img-fluid opacity-25" alt="A"/>
-                <h5 className="text-muted mt-2">Select Player A</h5>
-              </div>
-            )}
+            {playerA
+              ? renderPlayerCard(playerA, statsA, setStatsA)
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderA} className="img-fluid opacity-25" alt="A"/>
+                  <h5 className="text-muted mt-2">Select Player A</h5>
+                </div>
+              )}
           </div>
 
           {/* Controls & Charts */}
-          <div className="mx-4 text-center">
+          <div className="mx-4 text-center" style={{ minWidth: 360 }}>
             <Form.Group controlId="simCount" className="mb-2">
               <Form.Label className="text-white">Simulations</Form.Label>
               <Form.Select
@@ -235,9 +264,9 @@ export default function Wimbledon() {
                 onChange={e => setSimCount(+e.target.value)}
                 disabled={isRunning}
               >
-                {[100,500,1000,2000].map(n => (
+                {[100,500,1000,2000].map(n =>
                   <option key={n} value={n}>{n}</option>
-                ))}
+                )}
               </Form.Select>
             </Form.Group>
 
@@ -253,9 +282,9 @@ export default function Wimbledon() {
               </Button>
               <Button
                 variant="secondary"
+                className="ms-2"
                 onClick={handleReset}
                 disabled={isRunning}
-                className="ms-2"
               >Reset</Button>
             </div>
 
@@ -283,50 +312,37 @@ export default function Wimbledon() {
                       paddingAngle={4}
                       isAnimationActive={false}
                     >
-                      {pieData.map((_, i) => (
+                      {pieData.map((_,i)=>
                         <Cell key={i} fill={VS_COLORS[i]} />
-                      ))}
+                      )}
                     </Pie>
-
-                    <Legend
-                      verticalAlign="bottom"
-                      wrapperStyle={{ color:'#fff' }}
-                    />
-
-                    {/* two-line centered “Vs Wins” */}
+                    <Legend verticalAlign="bottom" wrapperStyle={{ color:'#fff' }}/>
+                    <Tooltip formatter={(v,name)=>[`${v} wins`, name]} />
+                    {/* center label */}
                     <text
-                      x="50%"
-                      y="50%"
+                      x="50%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#ccc"
-                      fontSize={18}
-                      fontWeight="bold"
+                      fontSize={18} fontWeight="bold"
                     >
                       <tspan x="50%" dy="-0.5em">Vs</tspan>
                       <tspan x="50%" dy="1.2em">Wins</tspan>
                     </text>
-
-                    {/* playerA total outside */}
+                    {/* outside totals */}
                     <text
                       x="10%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="#fff"
-                      fontSize={24}
-                      fontWeight="bold"
+                      fill="#fff" fontSize={24} fontWeight="bold"
                     >
                       {batchResult.matchWins[0]}
                     </text>
-
-                    {/* playerB total outside */}
                     <text
                       x="90%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="#fff"
-                      fontSize={24}
-                      fontWeight="bold"
+                      fill="#fff" fontSize={24} fontWeight="bold"
                     >
                       {batchResult.matchWins[1]}
                     </text>
@@ -355,7 +371,7 @@ export default function Wimbledon() {
                       width={60}
                     />
                     <Tooltip />
-                    <Legend wrapperStyle={{ color:'#fff' }} />
+                    <Legend wrapperStyle={{ color:'#fff' }}/>
                     <Bar dataKey={playerA.name} fill={SETBAR_COLORS[0]} barSize={10}/>
                     <Bar dataKey={playerB.name} fill={SETBAR_COLORS[1]} barSize={10}/>
                   </BarChart>
@@ -365,9 +381,9 @@ export default function Wimbledon() {
           </div>
 
           {/* Player B */}
-          <div className="mx-3 text-start">
+          <div className="mx-3 text-start" style={{ minWidth: 260 }}>
             <Form.Label className="text-white">Player B</Form.Label>
-            <div className="d-flex">
+            <div className="d-flex mb-2">
               <Select
                 className="react-select w-75"
                 options={opts}
@@ -379,35 +395,27 @@ export default function Wimbledon() {
                   option: (base, state) => ({
                     ...base,
                     color: '#000',
-                    opacity: 1,
                     backgroundColor: state.isFocused ? '#eee' : 'white',
                   }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: '#000',
-                    opacity: 1,
-                  }),
-                  control: (base, state) => ({
-                    ...base,
-                    opacity: state.isDisabled ? 1 : 1,
-                  }),
+                  singleValue: base => ({ ...base, color: '#000' }),
+                  control: base => ({ ...base, opacity: 1 })
                 }}
-
-
               />
               <Button
                 variant="light"
                 className="ms-1"
-                onClick={() => randomPick('B')}
+                onClick={()=>randomPick('B')}
                 disabled={isRunning}
               >🎲</Button>
             </div>
-            {playerB ? renderPlayerCard(playerB) : (
-              <div className="player-card placeholder mt-2 p-3">
-                <img src={placeholderB} className="img-fluid opacity-25" alt="B"/>
-                <h5 className="text-muted mt-2">Select Player B</h5>
-              </div>
-            )}
+            {playerB
+              ? renderPlayerCard(playerB, statsB, setStatsB)
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderB} className="img-fluid opacity-25" alt="B"/>
+                  <h5 className="text-muted mt-2">Select Player B</h5>
+                </div>
+              )}
           </div>
 
         </div>
