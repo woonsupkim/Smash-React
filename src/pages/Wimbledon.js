@@ -293,7 +293,7 @@ export default function Wimbledon() {
                     <Pie
                       data={pieData}
                       dataKey="value"
-                      innerRadius={80}      // thinner ring
+                      innerRadius={90}      // thinner ring
                       outerRadius={100}
                       startAngle={90}
                       endAngle={-270}
@@ -306,10 +306,10 @@ export default function Wimbledon() {
                     </Pie>
 
                     {/* tooltip on hover */}
-                    <Tooltip
+                    {/* <Tooltip
                       formatter={(value,name) => [`${value} wins`, name]}
                       wrapperStyle={{ color:'#fff' }}
-                    />
+                    /> */}
 
                     {/* legend */}
                     <Legend
@@ -333,7 +333,7 @@ export default function Wimbledon() {
 
                     {/* playerA total outside */}
                     <text
-                      x="16%" y="50%"
+                      x="10%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#fff"
@@ -345,7 +345,7 @@ export default function Wimbledon() {
 
                     {/* playerB total outside */}
                     <text
-                      x="84%" y="50%"
+                      x="90%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#fff"
