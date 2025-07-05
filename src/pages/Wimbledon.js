@@ -39,10 +39,10 @@ const SETBAR_COLORS = ['#FDD835', '#1E88E5'];
 
 // Keys for the five rates
 const STAT_KEYS = [
-  ['p1', '1st Serve Win'],
-  ['p2', '2nd Serve Win'],
-  ['p3', '1st Return Win'],
-  ['p4', '2nd Return Win'],
+  ['p1', '1st Serve In'],
+  ['p2', '2nd Serve In'],
+  ['p3', '1st Serve Return'],
+  ['p4', '2nd Serve Return'],
   ['p5', 'Volley Win']
 ];
 
