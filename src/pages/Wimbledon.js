@@ -1,246 +1,423 @@
 // src/pages/Wimbledon.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
 import Select from 'react-select';
-import { simulateBatch, simulateMatchStepwise } from '../simulator';
-import {
-  Table,
-  Button,
-  Spinner,
-  ProgressBar,
-  Form
-} from 'react-bootstrap';
 import Swal from 'sweetalert2';
 import {
+  Button,
+  Form,
+  Spinner,
+  ProgressBar
+} from 'react-bootstrap';
+import {
+  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  Legend,
+  LabelList,
+  Tooltip,
   BarChart,
   Bar,
   XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
+  YAxis
 } from 'recharts';
+import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import './Wimbledon.css';
 import placeholderA from '../assets/players/0a.png';
 import placeholderB from '../assets/players/0b.png';
 
-const COLORS = ['#8BC34A', '#E91E63'];  // grass-green & magenta
+const playerImgs = require.context('../assets/players', false, /\.png$/);
+
+// Color palettes
+const VS_COLORS     = ['#1E88E5', '#FDD835'];
+const SETBAR_COLORS = ['#1E88E5', '#FDD835'];
 
 export default function Wimbledon() {
-  const [players, setPlayers] = useState([]);
-  const [opts, setOpts] = useState([]);
-  const [playerA, setPlayerA] = useState(null);
-  const [playerB, setPlayerB] = useState(null);
-  const [simCount, setSimCount] = useState(1000);
+  const [players, setPlayers]         = useState([]);
+  const [playerA, setPlayerA]         = useState(null);
+  const [playerB, setPlayerB]         = useState(null);
+  const [simCount, setSimCount]       = useState(1000);
 
+  const [isRunning, setIsRunning]     = useState(false);
+  const [progress, setProgress]       = useState(0);
   const [batchResult, setBatchResult] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [progress, setProgress] = useState(0);
 
-  // load players once
+  const [pointGen, setPointGen]       = useState(null);
+  const [pointLog, setPointLog]       = useState([]);
+
+  const batchRef = useRef({ completed: 0, total: 0 });
+
+  // 1) load players once
   useEffect(() => {
     Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
-        const roster = data.filter(r => +r.us_rd === 2);
-        setPlayers(roster);
-        setOpts(roster.map(p => ({ value: p.id, label: p.name, data: p })));
+        setPlayers(data.filter(r => Number(r.us_rd) === 2));
       }
     });
   }, []);
 
-  const showError = () => Swal.fire({
-    icon: 'error',
-    title: 'Missing player',
-    text: 'Please select both Player A and Player B before simulating.',
-    confirmButtonColor: '#3085d6'
-  });
+  // 2) stepwise slow sim
+  useEffect(() => {
+    if (!pointGen) return;
+    const timer = setInterval(() => {
+      const { value, done } = pointGen.next();
+      if (done) {
+        clearInterval(timer);
+        setIsRunning(false);
+      } else {
+        setPointLog(log => [...log, value]);
+      }
+    }, 20);
+    return () => clearInterval(timer);
+  }, [pointGen]);
 
-  // run a fast batch with spinner & fake progress
-  const handleFast = () => {
-    if (!playerA || !playerB) return showError();
-
+  // 3) fast batch with progress
+  const runBatch = (pA, pB, n) => {
+    batchRef.current = { completed: 0, total: n };
     setIsRunning(true);
     setProgress(0);
 
-    // fake progress bar for UX
-    const tick = setInterval(() => setProgress(p => Math.min(100, p + 5)), 100);
+    let acc = {
+      matchWins: [0, 0],
+      setsWon:   [0, 0],
+      lostInWins:[ [0,0,0], [0,0,0] ]
+    };
 
-    setTimeout(() => {
-      const pA = [playerA.p1, playerA.p2, playerA.p3, playerA.p4, playerA.p5].map(Number);
-      const pB = [playerB.p1, playerB.p2, playerB.p3, playerB.p4, playerB.p5].map(Number);
-      const result = simulateBatch(pA, pB, simCount);
-      clearInterval(tick);
-      setProgress(100);
-      setBatchResult(result);
-      setIsRunning(false);
-    }, 200 + simCount * 0.5); // adjust as needed
+    const chunkSize = 50;
+    const step = () => {
+      const left = batchRef.current.total - batchRef.current.completed;
+      const run  = Math.min(chunkSize, left);
+      const res  = simulateBatch(pA, pB, run);
+
+      for (let i = 0; i < 2; i++) {
+        acc.matchWins[i] += res.matchWins[i];
+        acc.setsWon[i]   += res.setsWon[i];
+      }
+      for (let i = 0; i < 3; i++) {
+        acc.lostInWins[0][i] += res.lostInWins[0][i] || 0;
+        acc.lostInWins[1][i] += res.lostInWins[1][i] || 0;
+      }
+
+      batchRef.current.completed += run;
+      setProgress(
+        Math.round(100 * batchRef.current.completed / batchRef.current.total)
+      );
+
+      if (batchRef.current.completed < batchRef.current.total) {
+        setTimeout(step, 10);
+      } else {
+        setBatchResult(acc);
+        setIsRunning(false);
+      }
+    };
+
+    step();
   };
 
-  // slow sim generator (unchanged)
+  const showPlayerError = () => {
+    Swal.fire({
+      icon: 'error',
+      title: 'No Players Selected',
+      text: 'Please pick both Player A and Player B!',
+      confirmButtonColor: '#3085d6'
+    });
+  };
+
+  const handleFast = () => {
+    if (!playerA || !playerB) return showPlayerError();
+    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
+    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
+    runBatch(pA, pB, simCount);
+    setPointLog([]); 
+    setPointGen(null);
+  };
+
   const handleSlow = () => {
-    if (!playerA || !playerB) return showError();
-    // ... your existing slow-sim code goes here ...
+    if (!playerA || !playerB) return showPlayerError();
+    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
+    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
+    setBatchResult(null);
+    setPointLog([]);
+    setPointGen(simulateMatchStepwise(pA, pB));
   };
 
   const handleReset = () => {
     setPlayerA(null);
     setPlayerB(null);
     setBatchResult(null);
+    setPointGen(null);
+    setPointLog([]);
     setProgress(0);
+    setIsRunning(false);
   };
 
-  // Random pick helper
-  const randomPick = side => {
-    const pool = players.filter(p => (side === 'A' ? p.id !== playerB?.id : p.id !== playerA?.id));
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    side === 'A' ? setPlayerA(pick) : setPlayerB(pick);
+  const randomPick = who => {
+    const pick = players[Math.floor(Math.random() * players.length)];
+    who === 'A' ? setPlayerA(pick) : setPlayerB(pick);
   };
 
-  // prepare pie data
-  const pieData = batchResult ? [
-    { name: playerA.name, value: batchResult.matchWins[0] },
-    { name: playerB.name, value: batchResult.matchWins[1] }
-  ] : [];
+  const opts = players.map(p => ({ value: p.id, label: p.name, data: p }));
 
-  // prepare bar data
-  const lostLabels = ['3–0', '3–1', '3–2'];
-  const barData = batchResult ? lostLabels.map((lbl,i) => ({
-    name: lbl,
-    [playerA.name]: batchResult.lostInWins[0][i] || 0,
-    [playerB.name]: batchResult.lostInWins[1][i] || 0
-  })) : [];
+  // chart data
+  const pieData = batchResult
+    ? [
+        { name: playerB.name, value: batchResult.matchWins[1] },
+        { name: playerA.name, value: batchResult.matchWins[0] }
+      ]
+    : [];
+
+  const barData = batchResult
+    ? ['3–0','3–1','3–2'].map((lbl,i) => ({
+        name: lbl,
+        [playerA.name]: batchResult.lostInWins[0][i] || 0,
+        [playerB.name]: batchResult.lostInWins[1][i] || 0
+      }))
+    : [];
+
+  // old style stat bars
+  const renderProgress = (label, pct) => (
+    <div className="text-start text-white mb-2">
+      <strong>{label}</strong>
+      <ProgressBar
+        now={pct}
+        label={`${Math.round(pct)}%`}
+        variant="success"
+        style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
+      />
+    </div>
+  );
+  const renderPlayerCard = player => (
+    <div className="player-card grass-hover mt-2 p-3">
+      <img
+        src={playerImgs(`./${player.id}.png`)}
+        alt={player.name}
+        className="img-fluid rounded"
+      />
+      <h5 className="text-white mt-2">{player.name}</h5>
+      {renderProgress('1st Serve In',  player.p1 * 100)}
+      {renderProgress('2nd Serve In',  player.p2 * 100)}
+      {renderProgress('1st Return In', player.p3 * 100)}
+      {renderProgress('2nd Return In', player.p4 * 100)}
+      {renderProgress('Volley Win',     player.p5 * 100)}
+    </div>
+  );
 
   return (
     <div className="page-background wimbledon-bg">
       <div className="overlay text-center">
         <h3 className="text-white mb-4">Men's Singles Simulator</h3>
+        <div className="d-flex flex-wrap justify-content-center">
 
-        <div className="d-flex justify-content-center mb-3 flex-wrap">
-
-          {/* Player A select */}
-          <div className="mx-2">
-            <label className="text-white">Player A</label>
+          {/* Player A */}
+          <div className="mx-3 text-start">
+            <Form.Label className="text-white">Player A</Form.Label>
             <div className="d-flex">
               <Select
-                className="w-75"
+                className="react-select w-75"
                 options={opts}
                 value={playerA && { value: playerA.id, label: playerA.name }}
                 onChange={opt => setPlayerA(opt.data)}
+                placeholder="Type to search…"
                 isDisabled={isRunning}
-                placeholder="Type to search..."
               />
               <Button
-                className="ms-1"
                 variant="light"
-                disabled={isRunning}
+                className="ms-1"
                 onClick={() => randomPick('A')}
-                title="Random"
+                disabled={isRunning}
               >🎲</Button>
             </div>
             {playerA
-              ? <img src={require(`../assets/players/${playerA.id}.png`)} alt="" className="player-card"/>
-              : <img src={placeholderA} alt="" className="player-card placeholder"/>}
+              ? renderPlayerCard(playerA)
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderA} className="img-fluid opacity-25" alt="A"/>
+                  <h5 className="text-muted mt-2">Select Player A</h5>
+                </div>
+              )}
           </div>
 
-          {/* Controls */}
-          <div className="mx-4 text-start">
-            <Form.Group className="mb-2 text-white">
-              <Form.Label>Simulations</Form.Label>
+          {/* Controls & Charts */}
+          <div className="mx-4 text-center">
+            <Form.Group controlId="simCount" className="mb-2">
+              <Form.Label className="text-white">Simulations</Form.Label>
               <Form.Select
                 value={simCount}
                 onChange={e => setSimCount(+e.target.value)}
                 disabled={isRunning}
               >
-                {[100,500,1000,2000].map(n =>
+                {[100,500,1000,2000].map(n => (
                   <option key={n} value={n}>{n}</option>
-                )}
+                ))}
               </Form.Select>
             </Form.Group>
-
-            <div className="mb-2">
+            <div className="mb-3">
               <Button
                 className="me-2 btn-grass"
                 onClick={handleFast}
                 disabled={isRunning}
-              >
-                {isRunning ? <><Spinner animation="border" size="sm"/> Fast</> : 'Fast'}
+              >{isRunning
+                ? <><Spinner animation="border" size="sm"/> Running…</>
+                : 'Fast'}
               </Button>
               <Button
                 variant="outline-light"
+                onClick={handleSlow}
+                disabled={isRunning}
+              >Slow</Button>
+              <Button
+                variant="secondary"
+                className="ms-2"
                 onClick={handleReset}
                 disabled={isRunning}
               >Reset</Button>
             </div>
 
             {isRunning && (
-              <ProgressBar now={progress} label={`${progress}%`} className="mb-3"/>
+              <ProgressBar
+                now={progress}
+                label={`${progress}%`}
+                variant="success"
+                className="mb-3"
+              />
             )}
 
-            {/* Pie chart */}
+            {/* 1) Doughnut with counts outside & centered text */}
             {batchResult && (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={50}
-                    outerRadius={80}
-                    label
+              <div style={{ marginBottom: '2rem' }}>
+                <ResponsiveContainer width={350} height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      innerRadius={60}
+                      outerRadius={100}
+                      startAngle={90}
+                      endAngle={-270}
+                      paddingAngle={4}
+                    >
+                      {pieData.map((_, i) => (
+                        <Cell key={i} fill={VS_COLORS[i]} />
+                      ))}
+                      {/* show raw counts outside each slice */}
+                      <LabelList
+                        dataKey="value"
+                        position="outside"
+                        formatter={v => v}
+                        fill="#fff"
+                        fontSize={14}
+                      />
+                    </Pie>
+                    <Tooltip
+                      formatter={(value,name) => [`${value} wins`, name]}
+                      wrapperStyle={{ color:'#fff' }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      wrapperStyle={{ color:'#fff' }}
+                    />
+
+                    {/* center text “Vs Wins” */}
+                    <text
+                      x="50%"
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#ccc"
+                      fontSize={18}
+                      fontWeight="bold"
+                    >
+                      Vs Wins
+                    </text>
+
+                    {/* Player A’s total on left */}
+                    <text
+                      x="25%"
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#fff"
+                      fontSize={20}
+                      fontWeight="bold"
+                    >
+                      {batchResult.matchWins[0]}
+                    </text>
+
+                    {/* Player B’s total on right */}
+                    <text
+                      x="75%"
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="#fff"
+                      fontSize={20}
+                      fontWeight="bold"
+                    >
+                      {batchResult.matchWins[1]}
+                    </text>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* 2) Horizontal bar chart */}
+            {batchResult && (
+              <div style={{ marginLeft: '3rem' }}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart
+                    layout="vertical"
+                    data={barData}
+                    margin={{ top:5, right:30, left:30, bottom:5 }}
                   >
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={COLORS[i]} />
-                    ))}
-                  </Pie>
-                  <Legend verticalAlign="bottom" />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-
-            {/* Bar chart */}
-            {batchResult && (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={barData} margin={{ top: 20, bottom: 20 }}>
-                  <XAxis dataKey="name" stroke="#fff"/>
-                  <YAxis stroke="#fff"/>
-                  <Tooltip/>
-                  <Legend wrapperStyle={{ color: '#fff' }}/>
-                  <Bar dataKey={playerA?.name} fill={COLORS[0]} />
-                  <Bar dataKey={playerB?.name} fill={COLORS[1]} />
-                </BarChart>
-              </ResponsiveContainer>
+                    <XAxis type="number" stroke="#fff" />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      stroke="#fff"
+                      width={60}
+                    />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ color:'#fff' }} />
+                    <Bar dataKey={playerA.name} fill={SETBAR_COLORS[0]} barSize={10}/>
+                    <Bar dataKey={playerB.name} fill={SETBAR_COLORS[1]} barSize={10}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
 
-          {/* Player B select */}
-          <div className="mx-2">
-            <label className="text-white">Player B</label>
+          {/* Player B */}
+          <div className="mx-3 text-start">
+            <Form.Label className="text-white">Player B</Form.Label>
             <div className="d-flex">
               <Select
-                className="w-75"
+                className="react-select w-75"
                 options={opts}
                 value={playerB && { value: playerB.id, label: playerB.name }}
                 onChange={opt => setPlayerB(opt.data)}
+                placeholder="Type to search…"
                 isDisabled={isRunning}
-                placeholder="Type to search..."
               />
               <Button
-                className="ms-1"
                 variant="light"
-                disabled={isRunning}
+                className="ms-1"
                 onClick={() => randomPick('B')}
-                title="Random"
+                disabled={isRunning}
               >🎲</Button>
             </div>
             {playerB
-              ? <img src={require(`../assets/players/${playerB.id}.png`)} alt="" className="player-card"/>
-              : <img src={placeholderB} alt="" className="player-card placeholder"/>}
+              ? renderPlayerCard(playerB)
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderB} className="img-fluid opacity-25" alt="B"/>
+                  <h5 className="text-muted mt-2">Select Player B</h5>
+                </div>
+              )}
           </div>
+
         </div>
       </div>
     </div>
