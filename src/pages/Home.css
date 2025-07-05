@@ -1,0 +1,22 @@
+/* src/pages/Home.css */
+
+/* Dark translucent overlay over the tournament background */
+.overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+  min-height: calc(100vh - 70px); /* account for fixed navbar */
+  padding: 80px 20px 40px;
+}
+
+/* Card sizing for each tournament link */
+.home-card {
+  width: 12rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+/* Logo sizing inside the cards */
+.home-logo {
+  max-width: 6rem;
+  max-height: 6rem;
+  object-fit: contain;
+}
