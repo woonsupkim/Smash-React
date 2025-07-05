@@ -9,42 +9,38 @@ import {
   Spinner,
   ProgressBar
 } from 'react-bootstrap';
-import './DreamBrackets.css'; // create this or remove if not needed
+import './DreamBrackets.css';
 
 export default function DreamBrackets() {
-  const [playersPool, setPlayersPool]       = useState([]);
+  const [playersPool, setPlayersPool]     = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
-  const [qfWinners, setQfWinners]           = useState([]);
-  const [sfWinners, setSfWinners]           = useState([]);
-  const [finalists, setFinalists]           = useState([]);
-  const [champion, setChampion]             = useState(null);
-
   const [isRunning, setIsRunning]         = useState(false);
   const [progress, setProgress]           = useState(0);
 
-  // load players once
+  // bracket stages
+  const [qfWinners, setQfWinners]   = useState([]);
+  const [sfWinners, setSfWinners]   = useState([]);
+  const [finalists, setFinalists]   = useState([]);
+  const [champion, setChampion]     = useState(null);
+
+  // --- Load initial players ---
   useEffect(() => {
     Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
-        const pool = data.filter(r => Number(r.us_rd) === 2);
-        setPlayersPool(pool);
+        setPlayersPool(data.filter(r => Number(r.us_rd) === 2));
       }
     });
   }, []);
 
-  // random pick helper
-  const pickWinner = (p1, p2) => {
-    return Math.random() < 0.5 ? p1 : p2;
-  };
-
+  // --- Simulate bracket ---
   const runDreamBracket = () => {
     if (selectedPlayers.length !== 8) {
       Swal.fire({
         icon: 'error',
-        title: 'Wrong number of players',
-        text: 'Please select exactly 8 players.'
+        title: 'Select Exactly 8 Players',
+        text: 'Your bracket must contain exactly eight players.'
       });
       return;
     }
@@ -56,52 +52,54 @@ export default function DreamBrackets() {
     setFinalists([]);
     setChampion(null);
 
-    // Quarter finals
-    const qf = [];
-    selectedPlayers.forEach((p, idx) => {
-      if (idx % 2 === 1) {
-        const winner = pickWinner(selectedPlayers[idx-1], p);
-        qf.push(winner);
+    // helper to pick half winners
+    const pickWinners = (arr) => {
+      const winners = [];
+      for (let i = 0; i < arr.length; i += 2) {
+        const a = arr[i], b = arr[i+1];
+        winners.push(Math.random() < 0.5 ? a : b);
       }
-    });
-    setTimeout(() => {
-      setQfWinners(qf);
-      setProgress(25);
+      return winners;
+    };
 
-      // Semi finals
-      const sf = [];
-      qf.forEach((p, idx) => {
-        if (idx % 2 === 1) {
-          const winner = pickWinner(qf[idx-1], p);
-          sf.push(winner);
-        }
-      });
-      setTimeout(() => {
-        setSfWinners(sf);
-        setProgress(50);
+    // simulate with small delays to update progress
+    let stage = 0;
+    const totalStages = 4; // QF → SF → Final → Champion
+    let tempQF = [], tempSF = [], tempFinal = [], tempChamp = null;
 
-        // Final
-        const final = [];
-        sf.forEach((p, idx) => {
-          if (idx % 2 === 1) {
-            const winner = pickWinner(sf[idx-1], p);
-            final.push(winner);
-          }
-        });
-        setTimeout(() => {
-          setFinalists(final);
-          setProgress(75);
+    const step = () => {
+      stage += 1;
+      // Quarter → Semi
+      if (stage === 1) {
+        tempQF = pickWinners(selectedPlayers);
+        setQfWinners(tempQF);
+      }
+      // Semi → Final
+      else if (stage === 2) {
+        tempSF = pickWinners(tempQF);
+        setSfWinners(tempSF);
+      }
+      // Final → Champion
+      else if (stage === 3) {
+        tempFinal = pickWinners(tempSF);
+        setFinalists(tempFinal);
+      }
+      // Champion
+      else if (stage === 4) {
+        tempChamp = pickWinners(tempFinal)[0];
+        setChampion(tempChamp);
+      }
 
-          // Champion
-          const champ = pickWinner(final[0], final[1]);
-          setTimeout(() => {
-            setChampion(champ);
-            setProgress(100);
-            setIsRunning(false);
-          }, 300);
-        }, 300);
-      }, 300);
-    }, 300);
+      setProgress(Math.round((stage / totalStages) * 100));
+
+      if (stage < totalStages) {
+        setTimeout(step, 300);
+      } else {
+        setIsRunning(false);
+      }
+    };
+
+    step();
   };
 
   const handleReset = () => {
@@ -114,23 +112,26 @@ export default function DreamBrackets() {
     setIsRunning(false);
   };
 
+  // keep dropdown text fully opaque
   const selectStyles = {
     option: (base, state) => ({
       ...base,
       color: '#000',
+      opacity: 1,
       backgroundColor: state.isFocused ? '#eee' : '#fff'
     }),
-    multiValue: base => ({ ...base, backgroundColor: '#ddd' }),
-    singleValue: base => ({ ...base, color: '#000' }),
-    control: base => ({ ...base, opacity: 1 })
+    control: (base) => ({ ...base, opacity: 1 }),
+    singleValue: (base) => ({ ...base, color: '#000' }),
+    multiValue: (base) => ({ ...base, backgroundColor: '#555' }),
+    multiValueLabel: (base) => ({ ...base, color: '#fff' })
   };
 
   return (
-    <div className="dream-brackets-page p-4">
-      <h3 className="text-white mb-4">Dream Bracket Simulator</h3>
+    <div className="dream-brackets-page">
+      <h3>Dream Bracket Simulator</h3>
 
-      <Form.Group controlId="dreamPlayers" className="mb-3 text-start">
-        <Form.Label className="text-white">Select Exactly 8 Players</Form.Label>
+      <Form.Group controlId="dreamPlayers" className="text-start bracket-controls">
+        <Form.Label>Select Exactly 8 Players</Form.Label>
         <Select
           isMulti
           options={playersPool.map(p => ({
@@ -139,13 +140,12 @@ export default function DreamBrackets() {
             data: p
           }))}
           value={selectedPlayers.map(p => ({
-            value: p.id,
-            label: p.name,
-            data: p
+            value: p.id, label: p.name, data: p
           }))}
           onChange={opts => setSelectedPlayers(opts.map(o => o.data))}
           isDisabled={isRunning}
           styles={selectStyles}
+          placeholder="Pick 8 players…"
         />
       </Form.Group>
 
@@ -156,7 +156,7 @@ export default function DreamBrackets() {
           disabled={isRunning}
         >
           {isRunning
-            ? <><Spinner animation="border" size="sm" /> Running…</>
+            ? <><Spinner animation="border" size="sm"/> Running…</>
             : 'Simulate Tournament'}
         </Button>
         <Button
@@ -176,59 +176,32 @@ export default function DreamBrackets() {
         />
       )}
 
-      {/* Bracket Layout */}
-      <div className="d-flex flex-wrap text-white">
-        {/* QF */}
-        <div className="me-5">
-          <h5 className="text-center">QUARTER-FINALS</h5>
-          {selectedPlayers.map((p, i) => (
-            <div key={i} className="mb-2">
-              <Form.Control
-                readOnly
-                value={p.name}
-                className="bg-light"
-              />
-            </div>
+      <div className="bracket-row">
+        <div className="bracket-col">
+          <h6>QUARTER-FINALS</h6>
+          {selectedPlayers.map((p,i) => (
+            <div className="bracket-card" key={i}>{p.name}</div>
           ))}
         </div>
 
-        {/* SF */}
-        <div className="me-5">
-          <h5 className="text-center">SEMI-FINALS</h5>
-          {qfWinners.map((p, i) => (
-            <div key={i} className="mb-2">
-              <Form.Control
-                readOnly
-                value={p.name}
-                className="bg-light"
-              />
-            </div>
+        <div className="bracket-col">
+          <h6>SEMI-FINALS</h6>
+          {qfWinners.map((p,i) => (
+            <div className="bracket-card" key={i}>{p.name}</div>
           ))}
         </div>
 
-        {/* Final */}
-        <div className="me-5">
-          <h5 className="text-center">FINAL</h5>
-          {sfWinners.map((p, i) => (
-            <div key={i} className="mb-2">
-              <Form.Control
-                readOnly
-                value={p.name}
-                className="bg-light"
-              />
-            </div>
+        <div className="bracket-col">
+          <h6>FINAL</h6>
+          {sfWinners.map((p,i) => (
+            <div className="bracket-card" key={i}>{p.name}</div>
           ))}
         </div>
 
-        {/* Champion */}
-        <div>
-          <h5 className="text-center">CHAMPION</h5>
+        <div className="bracket-col champion">
+          <h6>CHAMPION</h6>
           {champion && (
-            <Form.Control
-              readOnly
-              value={champion.name}
-              className="bg-light"
-            />
+            <div className="bracket-card">{champion.name}</div>
           )}
         </div>
       </div>
