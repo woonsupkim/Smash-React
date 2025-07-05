@@ -33,8 +33,8 @@ const playerImgs = require.context(
 );
 
 // Color palettes
-const VS_COLORS     = ['#1E88E5', '#FDD835'];
-const SETBAR_COLORS = ['#FDD835', '#1E88E5'];
+const VS_COLORS     = ['#50276E', '#009B5D'];
+const SETBAR_COLORS = ['#009B5D', '#50276E'];
 
 
 // Keys for the five rates
@@ -439,7 +439,7 @@ export default function Wimbledon() {
               </div>
             )}
 
-            {/* Bar Chart */}
+            {/* Bar Chart
             {batchResult && <h6 className="text-white mb-2">Sets-Won Distribution</h6>}
             {batchResult && (
               <div style={{ marginLeft:'3rem' }}>
@@ -458,7 +458,44 @@ export default function Wimbledon() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            )} */}
+
+            {/* Bar Chart */}
+            {batchResult && <h6 className="text-white mb-2">Sets-Won Distribution</h6>}
+            {batchResult && (
+              <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginBottom: '2rem'    // give space for legend
+                }}
+              >
+                {/* match the Pie’s width so legends align */}
+                <ResponsiveContainer width={350} height={200}>
+                  <BarChart
+                    layout="vertical"
+                    data={barData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
+                  >
+                    <XAxis type="number" stroke="#fff" />
+                    <YAxis dataKey="name" type="category" stroke="#fff" width={60} />
+                    <Tooltip/>
+
+                    {/* center the legend beneath the bars */}
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      wrapperStyle={{ color: '#fff' }}
+                    />
+
+                    <Bar dataKey={playerA.name} fill={SETBAR_COLORS[0]} barSize={10} />
+                    <Bar dataKey={playerB.name} fill={SETBAR_COLORS[1]} barSize={10} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
+
+
+
           </div>
 
           {/* Player B selector + card */}
