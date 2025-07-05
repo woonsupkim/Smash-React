@@ -21,7 +21,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { simulateBatch, simulateMatchStepwise } from '../simulator';
+import { simulateBatch } from '../simulator';      // removed simulateMatchStepwise
 import './Wimbledon.css';
 import placeholderA from '../assets/players/0a.png';
 import placeholderB from '../assets/players/0b.png';
@@ -42,12 +42,9 @@ export default function Wimbledon() {
   const [progress, setProgress]       = useState(0);
   const [batchResult, setBatchResult] = useState(null);
 
-  const [pointGen, setPointGen]       = useState(null);
-  const [pointLog, setPointLog]       = useState([]);
-
   const batchRef = useRef({ completed: 0, total: 0 });
 
-  // 1) load players once
+  // load players once
   useEffect(() => {
     Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
       header: true,
@@ -58,22 +55,7 @@ export default function Wimbledon() {
     });
   }, []);
 
-  // 2) stepwise slow sim
-  useEffect(() => {
-    if (!pointGen) return;
-    const timer = setInterval(() => {
-      const { value, done } = pointGen.next();
-      if (done) {
-        clearInterval(timer);
-        setIsRunning(false);
-      } else {
-        setPointLog(log => [...log, value]);
-      }
-    }, 20);
-    return () => clearInterval(timer);
-  }, [pointGen]);
-
-  // 3) fast batch with progress
+  // fast batch with progress
   const runBatch = (pA, pB, n) => {
     batchRef.current = { completed: 0, total: n };
     setIsRunning(true);
@@ -125,42 +107,30 @@ export default function Wimbledon() {
     });
   };
 
-  const handleFast = () => {
+  // renamed to "Simulate Matches"
+  const handleSimulate = () => {
     if (!playerA || !playerB) return showPlayerError();
     const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
     const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
     runBatch(pA, pB, simCount);
-    setPointLog([]); 
-    setPointGen(null);
-  };
-
-  const handleSlow = () => {
-    if (!playerA || !playerB) return showPlayerError();
-    const pA = [playerA.p1,playerA.p2,playerA.p3,playerA.p4,playerA.p5].map(Number);
-    const pB = [playerB.p1,playerB.p2,playerB.p3,playerB.p4,playerB.p5].map(Number);
-    setBatchResult(null);
-    setPointLog([]);
-    setPointGen(simulateMatchStepwise(pA, pB));
   };
 
   const handleReset = () => {
     setPlayerA(null);
     setPlayerB(null);
     setBatchResult(null);
-    setPointGen(null);
-    setPointLog([]);
     setProgress(0);
     setIsRunning(false);
   };
 
   const randomPick = who => {
-    const pick = players[Math.floor(Math.random() * players.length)];
-    who === 'A' ? setPlayerA(pick) : setPlayerB(pick);
+    const idx = Math.floor(Math.random() * players.length);
+    who === 'A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
   };
 
   const opts = players.map(p => ({ value: p.id, label: p.name, data: p }));
 
-  // doughnut data (B first to start at top)
+  // doughnut data (B first so its slice starts at 12 o'clock)
   const pieData = batchResult
     ? [
         { name: playerB.name, value: batchResult.matchWins[1] },
@@ -168,7 +138,7 @@ export default function Wimbledon() {
       ]
     : [];
 
-  // bar‐chart data
+  // bar-chart data
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i) => ({
         name: lbl,
@@ -222,6 +192,24 @@ export default function Wimbledon() {
                 onChange={opt => setPlayerA(opt.data)}
                 placeholder="Type to search…"
                 isDisabled={isRunning}
+                styles={{
+                  option: (base, state) => ({
+                    ...base,
+                    color: '#000',          // always black text
+                    opacity: 1,             // never greyed out
+                    backgroundColor: state.isFocused ? '#eee' : 'white',
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: '#000',          // keep selected item black
+                    opacity: 1,
+                  }),
+                  control: (base, state) => ({
+                    ...base,
+                    opacity: state.isDisabled ? 1 : 1, // override default disabled opacity
+                  }),
+                }}                
+
               />
               <Button
                 variant="light"
@@ -230,14 +218,12 @@ export default function Wimbledon() {
                 disabled={isRunning}
               >🎲</Button>
             </div>
-            {playerA
-              ? renderPlayerCard(playerA)
-              : (
-                <div className="player-card placeholder mt-2 p-3">
-                  <img src={placeholderA} className="img-fluid opacity-25" alt="A"/>
-                  <h5 className="text-muted mt-2">Select Player A</h5>
-                </div>
-              )}
+            {playerA ? renderPlayerCard(playerA) : (
+              <div className="player-card placeholder mt-2 p-3">
+                <img src={placeholderA} className="img-fluid opacity-25" alt="A"/>
+                <h5 className="text-muted mt-2">Select Player A</h5>
+              </div>
+            )}
           </div>
 
           {/* Controls & Charts */}
@@ -254,25 +240,22 @@ export default function Wimbledon() {
                 ))}
               </Form.Select>
             </Form.Group>
+
             <div className="mb-3">
               <Button
                 className="me-2 btn-grass"
-                onClick={handleFast}
+                onClick={handleSimulate}
                 disabled={isRunning}
-              >{isRunning
-                ? <><Spinner animation="border" size="sm"/> Running…</>
-                : 'Fast'}
+              >
+                {isRunning
+                  ? <><Spinner animation="border" size="sm"/> Running…</>
+                  : 'Simulate Matches'}
               </Button>
               <Button
-                variant="outline-light"
-                onClick={handleSlow}
-                disabled={isRunning}
-              >Slow</Button>
-              <Button
                 variant="secondary"
-                className="ms-2"
                 onClick={handleReset}
                 disabled={isRunning}
+                className="ms-2"
               >Reset</Button>
             </div>
 
@@ -285,7 +268,7 @@ export default function Wimbledon() {
               />
             )}
 
-            {/* —— Thinner Doughnut —— */}
+            {/* Doughnut */}
             {batchResult && (
               <div style={{ marginBottom: '2rem' }}>
                 <ResponsiveContainer width={350} height={300}>
@@ -293,7 +276,7 @@ export default function Wimbledon() {
                     <Pie
                       data={pieData}
                       dataKey="value"
-                      innerRadius={90}      // thinner ring
+                      innerRadius={90}
                       outerRadius={100}
                       startAngle={90}
                       endAngle={-270}
@@ -305,13 +288,6 @@ export default function Wimbledon() {
                       ))}
                     </Pie>
 
-                    {/* tooltip on hover */}
-                    {/* <Tooltip
-                      formatter={(value,name) => [`${value} wins`, name]}
-                      wrapperStyle={{ color:'#fff' }}
-                    /> */}
-
-                    {/* legend */}
                     <Legend
                       verticalAlign="bottom"
                       wrapperStyle={{ color:'#fff' }}
@@ -359,10 +335,10 @@ export default function Wimbledon() {
               </div>
             )}
 
-            {/* —— Bar Chart Title —— */}
+            {/* Bar Chart Title */}
             {batchResult && <h6 className="text-white mb-2">Sets-Won Distribution</h6>}
 
-            {/* —— Horizontal Bar Chart —— */}
+            {/* Horizontal Bar Chart */}
             {batchResult && (
               <div style={{ marginLeft: '3rem' }}>
                 <ResponsiveContainer width="100%" height={180}>
@@ -399,6 +375,25 @@ export default function Wimbledon() {
                 onChange={opt => setPlayerB(opt.data)}
                 placeholder="Type to search…"
                 isDisabled={isRunning}
+                styles={{
+                  option: (base, state) => ({
+                    ...base,
+                    color: '#000',
+                    opacity: 1,
+                    backgroundColor: state.isFocused ? '#eee' : 'white',
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: '#000',
+                    opacity: 1,
+                  }),
+                  control: (base, state) => ({
+                    ...base,
+                    opacity: state.isDisabled ? 1 : 1,
+                  }),
+                }}
+
+
               />
               <Button
                 variant="light"
@@ -407,14 +402,12 @@ export default function Wimbledon() {
                 disabled={isRunning}
               >🎲</Button>
             </div>
-            {playerB
-              ? renderPlayerCard(playerB)
-              : (
-                <div className="player-card placeholder mt-2 p-3">
-                  <img src={placeholderB} className="img-fluid opacity-25" alt="B"/>
-                  <h5 className="text-muted mt-2">Select Player B</h5>
-                </div>
-              )}
+            {playerB ? renderPlayerCard(playerB) : (
+              <div className="player-card placeholder mt-2 p-3">
+                <img src={placeholderB} className="img-fluid opacity-25" alt="B"/>
+                <h5 className="text-muted mt-2">Select Player B</h5>
+              </div>
+            )}
           </div>
 
         </div>
