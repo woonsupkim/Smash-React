@@ -15,7 +15,6 @@ import {
   Pie,
   Cell,
   Legend,
-  LabelList,
   Tooltip,
   BarChart,
   Bar,
@@ -92,10 +91,10 @@ export default function Wimbledon() {
       const run  = Math.min(chunkSize, left);
       const res  = simulateBatch(pA, pB, run);
 
-      for (let i = 0; i < 2; i++) {
-        acc.matchWins[i] += res.matchWins[i];
-        acc.setsWon[i]   += res.setsWon[i];
-      }
+      acc.matchWins[0] += res.matchWins[0];
+      acc.matchWins[1] += res.matchWins[1];
+      acc.setsWon[0]   += res.setsWon[0];
+      acc.setsWon[1]   += res.setsWon[1];
       for (let i = 0; i < 3; i++) {
         acc.lostInWins[0][i] += res.lostInWins[0][i] || 0;
         acc.lostInWins[1][i] += res.lostInWins[1][i] || 0;
@@ -161,7 +160,7 @@ export default function Wimbledon() {
 
   const opts = players.map(p => ({ value: p.id, label: p.name, data: p }));
 
-  // chart data
+  // doughnut data (B first to start at top)
   const pieData = batchResult
     ? [
         { name: playerB.name, value: batchResult.matchWins[1] },
@@ -169,6 +168,7 @@ export default function Wimbledon() {
       ]
     : [];
 
+  // bar‐chart data
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i) => ({
         name: lbl,
@@ -177,7 +177,7 @@ export default function Wimbledon() {
       }))
     : [];
 
-  // old style stat bars
+  // stat‐bars
   const renderProgress = (label, pct) => (
     <div className="text-start text-white mb-2">
       <strong>{label}</strong>
@@ -285,7 +285,7 @@ export default function Wimbledon() {
               />
             )}
 
-            {/* 1) Doughnut with counts outside & centered text */}
+            {/* —— Thinner Doughnut —— */}
             {batchResult && (
               <div style={{ marginBottom: '2rem' }}>
                 <ResponsiveContainer width={350} height={300}>
@@ -293,34 +293,31 @@ export default function Wimbledon() {
                     <Pie
                       data={pieData}
                       dataKey="value"
-                      innerRadius={60}
+                      innerRadius={80}      // thinner ring
                       outerRadius={100}
                       startAngle={90}
                       endAngle={-270}
                       paddingAngle={4}
+                      isAnimationActive={false}
                     >
                       {pieData.map((_, i) => (
                         <Cell key={i} fill={VS_COLORS[i]} />
                       ))}
-                      {/* show raw counts outside each slice */}
-                      <LabelList
-                        dataKey="value"
-                        position="outside"
-                        formatter={v => v}
-                        fill="#fff"
-                        fontSize={14}
-                      />
                     </Pie>
+
+                    {/* tooltip on hover */}
                     <Tooltip
                       formatter={(value,name) => [`${value} wins`, name]}
                       wrapperStyle={{ color:'#fff' }}
                     />
+
+                    {/* legend */}
                     <Legend
                       verticalAlign="bottom"
                       wrapperStyle={{ color:'#fff' }}
                     />
 
-                    {/* center text “Vs Wins” */}
+                    {/* two-line centered “Vs Wins” */}
                     <text
                       x="50%"
                       y="50%"
@@ -330,30 +327,29 @@ export default function Wimbledon() {
                       fontSize={18}
                       fontWeight="bold"
                     >
-                      Vs Wins
+                      <tspan x="50%" dy="-0.5em">Vs</tspan>
+                      <tspan x="50%" dy="1.2em">Wins</tspan>
                     </text>
 
-                    {/* Player A’s total on left */}
+                    {/* playerA total outside */}
                     <text
-                      x="25%"
-                      y="50%"
+                      x="16%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#fff"
-                      fontSize={20}
+                      fontSize={24}
                       fontWeight="bold"
                     >
                       {batchResult.matchWins[0]}
                     </text>
 
-                    {/* Player B’s total on right */}
+                    {/* playerB total outside */}
                     <text
-                      x="75%"
-                      y="50%"
+                      x="84%" y="50%"
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="#fff"
-                      fontSize={20}
+                      fontSize={24}
                       fontWeight="bold"
                     >
                       {batchResult.matchWins[1]}
@@ -363,7 +359,10 @@ export default function Wimbledon() {
               </div>
             )}
 
-            {/* 2) Horizontal bar chart */}
+            {/* —— Bar Chart Title —— */}
+            {batchResult && <h6 className="text-white mb-2">Sets-Won Distribution</h6>}
+
+            {/* —— Horizontal Bar Chart —— */}
             {batchResult && (
               <div style={{ marginLeft: '3rem' }}>
                 <ResponsiveContainer width="100%" height={180}>
