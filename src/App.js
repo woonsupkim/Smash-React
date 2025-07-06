@@ -7,7 +7,7 @@ import FrenchOpen    from './pages/FrenchOpen';
 import Wimbledon     from './pages/Wimbledon';
 import USOpen        from './pages/USOpen';
 import DreamBrackets from './pages/DreamBrackets';
-import About         from './pages/About';
+// import About         from './pages/About';
 
 import './App.css';
 import logoRG from './assets/logo_rg.png';
@@ -20,8 +20,8 @@ function App() {
     { to: '/french-open',   label: 'French Open',logo: logoRG       },
     { to: '/wimbledon',     label: 'Wimbledon',  logo: logoWB       },
     { to: '/us-open',       label: 'US Open',    logo: logoUS       },
-    { to: '/dream-brackets',label: 'Brackets',   logo: null          },
-    { to: '/about',         label: 'About Us',   logo: null          }
+    { to: '/dream-brackets',label: 'Brackets',   logo: null          }//,
+    // { to: '/about',         label: 'About Us',   logo: null          }
   ];
 
   return (
@@ -81,7 +81,7 @@ function App() {
           <Route path="/wimbledon" element={<Wimbledon />} />
           <Route path="/us-open" element={<USOpen />} />
           <Route path="/dream-brackets" element={<DreamBrackets />} />
-          <Route path="/about" element={<About />} />
+          {/* <Route path="/about" element={<About />} /> */}
         </Routes>
       </main>
     </Router>

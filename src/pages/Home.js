@@ -41,7 +41,7 @@ export default function Home() {
           ))}
         </div>
         <p className="text-white">
-          Learn more <Link to="/about" className="text-warning">About Us</Link>
+          {/* Learn more <Link to="/about" className="text-warning">About Us</Link> */}
         </p>
       </div>
     </div>
