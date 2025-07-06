@@ -31,7 +31,7 @@ function App() {
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">
             <img
-              src={'/assets/atp.png'}
+              src={'./assets/atp.png'}
               height="40"
               alt="ATP logo"
               className="me-2"
