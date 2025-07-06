@@ -374,10 +374,11 @@ export default function Wimbledon() {
                     <Legend
                       verticalAlign="bottom"
                       wrapperStyle={{ color: '#fff' }}
-                      payload={[
-                        { value: playerB.name, type: 'square', color: VS_COLORS[1] },
-                        { value: playerA.name, type: 'square', color: VS_COLORS[0] }
-                      ]}
+                      payload={pieData.map((entry, idx) => ({
+                        value: entry.name,
+                        type: 'square',
+                        color: VS_COLORS[idx]      // VS_COLORS[0] for A, VS_COLORS[1] for B
+                      }))}
                     />
                     <Tooltip formatter={(v,name)=>([`${v} wins`, name])}/>
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
