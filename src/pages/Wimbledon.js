@@ -241,8 +241,8 @@ export default function Wimbledon() {
 
   // --- Chart data ---
   const pieData = batchResult ? [
-    { name: playerB.name, value: batchResult.matchWins[1] },
-    { name: playerA.name, value: batchResult.matchWins[0] }
+    { name: playerA.name, value: batchResult.matchWins[0] },
+    { name: playerB.name, value: batchResult.matchWins[1] }
   ] : [];
 
   const barData = batchResult ? ['3–0','3–1','3–2'].map((lbl,i) => ({
@@ -359,26 +359,25 @@ export default function Wimbledon() {
                 <ResponsiveContainer width={350} height={300}>
                   <PieChart>
                     <Pie
-                      data={[ { name: playerB.name, value: batchResult.matchWins[1] },
-                              { name: playerA.name, value: batchResult.matchWins[0] } ]}
+                      data={[ { name: playerA.name, value: batchResult.matchWins[0] },
+                              { name: playerB.name, value: batchResult.matchWins[1] } ]}
                       dataKey="value"
                       innerRadius={90}
                       outerRadius={100}
                       startAngle={90}
-                      endAngle={-270}
+                      endAngle={450}
                       paddingAngle={4}
                       isAnimationActive={false}
                     >
                       { [0,1].map(i => <Cell key={i} fill={VS_COLORS[i]} />) }
                     </Pie>
-                    <Legend
+                    <Legend 
                       verticalAlign="bottom"
                       wrapperStyle={{ color: '#fff' }}
-                      payload={pieData.map((entry, idx) => ({
-                        value: entry.name,
-                        type: 'square',
-                        color: VS_COLORS[idx]      // VS_COLORS[0] for A, VS_COLORS[1] for B
-                      }))}
+                      payload={[
+                        { value: playerA.name, type: 'square', color: VS_COLORS[0] },
+                        { value: playerB.name, type: 'square', color: VS_COLORS[1] }
+                      ]}
                     />
                     <Tooltip formatter={(v,name)=>([`${v} wins`, name])}/>
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
@@ -408,9 +407,17 @@ export default function Wimbledon() {
                     <XAxis type="number" stroke="#fff" />
                     <YAxis dataKey="name" type="category" stroke="#fff" width={60} />
                     <Tooltip />
-                    <Legend verticalAlign="bottom" align="center" wrapperStyle={{ color: '#fff'}} />
-                    <Bar dataKey={playerA.name} fill={SETBAR_COLORS[0]} barSize={10} />
-                    <Bar dataKey={playerB.name} fill={SETBAR_COLORS[1]} barSize={10} />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      wrapperStyle={{ color: '#fff' }}
+                      payload={[
+                        { value: playerA.name, type: 'square', color: SETBAR_COLORS[1] },
+                        { value: playerB.name, type: 'square', color: SETBAR_COLORS[0] }
+                      ]}
+                    />
+                    <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={10} />
+                    <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={10} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
