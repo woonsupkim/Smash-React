@@ -185,20 +185,19 @@
   z-index: 10;
 }
 
-/* existing styles... */
 
-.player-card {
+/* .player-card {
   transition: background-color 0.3s ease;
 }
-/* Player A hover */
+
 .player-card.player-a:hover {
   box-shadow: 0 0 12px #FFD700;
   transform: translateY(-4px);
   border-color: #FFD700;
 }
-/* Player B hover */
+
 .player-card.player-b:hover {
   box-shadow: 0 0 12px #0033A0;
   transform: translateY(-4px);
   border-color: #0033A0;
-}
+} */
