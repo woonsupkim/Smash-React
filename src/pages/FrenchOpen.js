@@ -1,33 +1,64 @@
-// src/pages/Wimbledon.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
-import { simulateBatch, simulateMatchStepwise } from '../simulator';
-import {
-  Table,
-  Button,
-  Dropdown,
-  ProgressBar,
-  Form
-} from 'react-bootstrap';
+import Select from 'react-select';
 import Swal from 'sweetalert2';
-import './Wimbledon.css';
-import placeholdera from '../assets/players/0a.png';
-import placeholderb from '../assets/players/0b.png';
+import {
+  Button,
+  Form,
+  Spinner,
+  ProgressBar
+} from 'react-bootstrap';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis
+} from 'recharts';
+import { simulateBatch } from '../simulator';
+import './French.css';
+import placeholderA from '../assets/players/0a.png';
+import placeholderB from '../assets/players/0b.png';
 
-const playerImgs = require.context('../assets/players', false, /\.png$/);
+const playerImgs = require.context(
+  '../assets/players',
+  false,
+  /\.png$/
+);
+
+// Color palettes
+const VS_COLORS = ['#B24936', '#1E2E2B'];
+const SETBAR_COLORS = ['#1E2E2B', '#B24936'];
+
+// Keys for the five rates
+const STAT_KEYS = [
+  ['p1', '1st Serve In'],
+  ['p2', '2nd Serve In'],
+  ['p3', '1st Serve Return'],
+  ['p4', '2nd Serve Return'],
+  ['p5', 'Volley Win']
+];
 
 export default function Wimbledon() {
   const [players, setPlayers] = useState([]);
   const [playerA, setPlayerA] = useState(null);
   const [playerB, setPlayerB] = useState(null);
-  const [batchResult, setBatchResult] = useState(null);
-  const [pointGen, setPointGen] = useState(null);
-  const [pointLog, setPointLog] = useState([]);
+  const [statsA, setStatsA] = useState({});
+  const [statsB, setStatsB] = useState({});
   const [simCount, setSimCount] = useState(1000);
+  const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [batchResult, setBatchResult] = useState(null);
+  const batchRef = useRef({ completed: 0, total: 0 });
 
-  // load players
+  // --- Load initial players ---
   useEffect(() => {
-    Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
+    Papa.parse(process.env.PUBLIC_URL + '/data/smash_fr.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
@@ -36,281 +67,388 @@ export default function Wimbledon() {
     });
   }, []);
 
-  // stepwise slow sim
+  // --- Seed statsA when playerA chosen ---
   useEffect(() => {
-    if (!pointGen) return;
-    const timer = setInterval(() => {
-      const { value, done } = pointGen.next();
-      if (done) clearInterval(timer);
-      else setPointLog(prev => [...prev, value]);
-    }, 20);
-    return () => clearInterval(timer);
-  }, [pointGen]);
+    if (!playerA) return;
+    const obj = {};
+    STAT_KEYS.forEach(([key]) => {
+      obj[key] = (playerA[key] || 0) * 100;
+    });
+    setStatsA(obj);
+  }, [playerA]);
+
+  // --- Seed statsB when playerB chosen ---
+  useEffect(() => {
+    if (!playerB) return;
+    const obj = {};
+    STAT_KEYS.forEach(([key]) => {
+      obj[key] = (playerB[key] || 0) * 100;
+    });
+    setStatsB(obj);
+  }, [playerB]);
+
+  // --- Soft-reset charts & progress when players change ---
+  useEffect(() => {
+    setBatchResult(null);
+    setProgress(0);
+  }, [playerA, playerB]);
+
+  // --- Batch simulation driver ---
+  const runBatch = (pA, pB, n) => {
+    batchRef.current = { completed: 0, total: n };
+    setIsRunning(true);
+    setProgress(0);
+
+    let acc = {
+      matchWins: [0, 0],
+      setsWon: [0, 0],
+      lostInWins: [[0, 0, 0], [0, 0, 0]]
+    };
+
+    const chunkSize = 50;
+    const step = () => {
+      const left = batchRef.current.total - batchRef.current.completed;
+      const run  = Math.min(chunkSize, left);
+      const res  = simulateBatch(pA, pB, run);
+
+      // accumulate
+      acc.matchWins[0] += res.matchWins[0];
+      acc.matchWins[1] += res.matchWins[1];
+      for (let i = 0; i < 3; i++) {
+        acc.lostInWins[0][i] += res.lostInWins[0][i] || 0;
+        acc.lostInWins[1][i] += res.lostInWins[1][i] || 0;
+      }
+
+      batchRef.current.completed += run;
+      setProgress(
+        Math.round(100 * batchRef.current.completed / batchRef.current.total)
+      );
+
+      if (batchRef.current.completed < batchRef.current.total) {
+        setTimeout(step, 10);
+      } else {
+        setBatchResult(acc);
+        setIsRunning(false);
+      }
+    };
+
+    step();
+  };
 
   const showPlayerError = () => {
     Swal.fire({
       icon: 'error',
-      title: 'No Players',
-      text: 'Select the players before simulating match results.',
+      title: 'No Players Selected',
+      text: 'Please pick both Player A and Player B!',
       confirmButtonColor: '#3085d6'
     });
   };
 
-  const handleFast = () => {
+  // --- Simulate button ---
+  const handleSimulate = () => {
     if (!playerA || !playerB) return showPlayerError();
-    const pA = [playerA.p1, playerA.p2, playerA.p3, playerA.p4, playerA.p5].map(Number);
-    const pB = [playerB.p1, playerB.p2, playerB.p3, playerB.p4, playerB.p5].map(Number);
-    const result = simulateBatch(pA, pB, simCount);
-    setBatchResult(result);
-    setPointLog([]);
-    setPointGen(null);
-  };
 
-  const handleSlow = () => {
-    if (!playerA || !playerB) return showPlayerError();
-    const pA = [playerA.p1, playerA.p2, playerA.p3, playerA.p4, playerA.p5].map(Number);
-    const pB = [playerB.p1, playerB.p2, playerB.p3, playerB.p4, playerB.p5].map(Number);
+    // soft-reset charts & progress
     setBatchResult(null);
-    setPointLog([]);
-    setPointGen(simulateMatchStepwise(pA, pB));
+    setProgress(0);
+
+    const pA = STAT_KEYS.map(([key]) => (statsA[key] || 0) / 100);
+    const pB = STAT_KEYS.map(([key]) => (statsB[key] || 0) / 100);
+    runBatch(pA, pB, simCount);
   };
 
+  // --- Reset all ---
   const handleReset = () => {
     setPlayerA(null);
     setPlayerB(null);
     setBatchResult(null);
-    setPointGen(null);
-    setPointLog([]);
+    setStatsA({});
+    setStatsB({});
+    setProgress(0);
+    setIsRunning(false);
   };
 
-  const renderProgressBar = (label, value) => (
-    <div className="text-start text-white mb-2">
-      <strong>{label}</strong>
-      <ProgressBar
-        now={value}
-        label={`${Math.round(value)}%`}
-        variant="success"
-        className="bg-dark"
-      />
-    </div>
-  );
+  // --- Random pick ---
+  const randomPick = who => {
+    const idx = Math.floor(Math.random() * players.length);
+    who === 'A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
+  };
 
-  const renderPlayerCard = (player) => (
-    <div className="text-center mt-3 border border-success rounded p-3"
-         style={{ backgroundColor: '#222', width: '230px' }}>
-      <img
-        src={playerImgs(`./${player.id}.png`)}
-        alt={player.name}
-        className="img-fluid rounded shadow"
-        style={{ maxHeight: '200px' }}
-      />
-      <h5 className="text-white mt-3">{player.name}</h5>
-      {renderProgressBar('1st Serve In', player.p1 * 100)}
-      {renderProgressBar('2nd Serve In', player.p2 * 100)}
-      {renderProgressBar('1st Return In', player.p3 * 100)}
-      {renderProgressBar('2nd Return In', player.p4 * 100)}
-      {renderProgressBar('Volley Win', player.p5 * 100)}
-    </div>
-  );
+  // --- Add Player flow ---
+  const handleAddPlayer = async who => {
+    const htmlFields = `
+      <input id="swal-name" class="swal2-input" placeholder="Name">
+      ${STAT_KEYS.map(([key,label]) => `
+        <label style="color:#444;margin:4px 0">${label}: <span id="swal-${key}-val">50%</span></label>
+        <input id="swal-${key}" type="range" min="0" max="100" value="50"
+               class="swal2-range"
+               oninput="document.getElementById('swal-${key}-val').innerText = this.value + '%';">
+      `).join('')}
+      <input type="file" id="swal-file" class="swal2-file" accept="image/*">
+    `;
+    const { value: form } = await Swal.fire({
+      title: 'Add New Player',
+      html: htmlFields,
+      focusConfirm: false,
+      showCancelButton: true,
+      preConfirm: () => {
+        const name = document.getElementById('swal-name').value;
+        if (!name) {
+          Swal.showValidationMessage('Name is required');
+          return;
+        }
+        const stats = {};
+        STAT_KEYS.forEach(([key]) => {
+          stats[key] = +document.getElementById(`swal-${key}`).value;
+        });
+        const file = document.getElementById('swal-file').files[0] || null;
+        return { name, stats, file };
+      }
+    });
+    if (!form) return;
 
-  const renderPlaceholder = (img, label) => (
-    <div className="text-center mt-3 border rounded p-3"
-         style={{ backgroundColor: '#222', width: '230px' }}>
-      <img
-        src={img}
-        alt="placeholder"
-        className="img-fluid rounded shadow"
-        style={{ maxHeight: '200px', opacity: 0.3 }}
-      />
-      <h5 className="text-muted mt-3">{label}</h5>
-    </div>
-  );
-
-  // ===== bulletproof renderSummaryStats() =====
-  const renderSummaryStats = () => {
-    const lostLabels = ['3–0', '3–1', '3–2'];
-
-    // while slow sim is still streaming, just show a message
-    if (
-      !batchResult ||
-      !Array.isArray(batchResult.matchWins) ||
-      !Array.isArray(batchResult.setsWon)
-    ) {
-      return pointGen ? (
-        <h5 className="text-white">Running slow simulation...</h5>
-      ) : null;
+    let imageSrc = null;
+    if (form.file) {
+      imageSrc = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(form.file);
+      });
     }
 
-    const matchWins = batchResult.matchWins;
-    const setsWon   = batchResult.setsWon;
-    const lostInWins = Array.isArray(batchResult.lostInWins)
-      ? batchResult.lostInWins
-      : [[], []];
+    const newId = `custom-${Date.now()}`;
+    const newPlayer = {
+      id: newId,
+      name: form.name,
+      p1: form.stats.p1 / 100,
+      p2: form.stats.p2 / 100,
+      p3: form.stats.p3 / 100,
+      p4: form.stats.p4 / 100,
+      p5: form.stats.p5 / 100,
+      imageSrc,
+      us_rd: 2
+    };
 
+    setPlayers(prev => [newPlayer, ...prev]);
+    who === 'A' ? setPlayerA(newPlayer) : setPlayerB(newPlayer);
+  };
+
+  // --- Dropdown options (+Add Player) ---
+  const buildOptions = () => [
+    { value: 'add', label: '+ Add Player' },
+    ...players.map(p => ({ value: p.id, label: p.name, data: p }))
+  ];
+
+  // --- Chart data ---
+  const pieData = batchResult ? [
+    { name: playerB.name, value: batchResult.matchWins[1] },
+    { name: playerA.name, value: batchResult.matchWins[0] }
+  ] : [];
+
+  const barData = batchResult ? ['3–0','3–1','3–2'].map((lbl,i) => ({
+    name: lbl,
+    [playerA.name]: batchResult.lostInWins[0][i] || 0,
+    [playerB.name]: batchResult.lostInWins[1][i] || 0
+  })) : [];
+
+  // --- Player card + sliders (with grey seed before name)
+  const renderPlayerCard = (player, stats, setStats, placeholder, variant) => {
+    const seedNum = player.us_seed != null ? player.us_seed : null;
     return (
-      <>
-        <h5 className="text-white">Simulation Summary ({simCount} Matches)</h5>
-
-        <Table bordered variant="dark" size="sm" className="mt-2">
-          <thead>
-            <tr>
-              <th></th>
-              <th>{playerA?.name || 'Player A'}</th>
-              <th>{playerB?.name || 'Player B'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Matches Won</td>
-              <td>{matchWins?.[0] ?? '-'}</td>
-              <td>{matchWins?.[1] ?? '-'}</td>
-            </tr>
-            <tr>
-              <td>Avg Sets Won</td>
-              <td>{setsWon?.[0] ? (setsWon[0] / simCount).toFixed(2) : '-'}</td>
-              <td>{setsWon?.[1] ? (setsWon[1] / simCount).toFixed(2) : '-'}</td>
-            </tr>
-          </tbody>
-        </Table>
-
-        <h6 className="text-white mt-3">Wins by Set Scoreline</h6>
-        <Table bordered variant="dark" size="sm">
-          <thead>
-            <tr>
-              <th></th>
-              {lostLabels.map((lbl, i) => <th key={i}>{lbl}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>{playerA?.name || 'Player A'}</td>
-              {[0, 1, 2].map(i => (
-                <td key={i}>
-                  {Array.isArray(lostInWins[0]) && lostInWins[0][i] != null
-                    ? lostInWins[0][i]
-                    : '-'}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td>{playerB?.name || 'Player B'}</td>
-              {[0, 1, 2].map(i => (
-                <td key={i}>
-                  {Array.isArray(lostInWins[1]) && lostInWins[1][i] != null
-                    ? lostInWins[1][i]
-                    : '-'}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </Table>
-      </>
+      <div className={`player-card grass-hover ${variant} mt-2 p-3`}>
+        <img
+          src={player.imageSrc ?? (player.id.startsWith('custom-') ? placeholder : playerImgs(`./${player.id}.png`))}
+          alt={player.name}
+          className="img-fluid rounded"
+        />
+        <h5 className="text-white mt-2">
+          {seedNum != null && (
+            <span style={{ color: '#888', marginRight: '0.5rem' }}>{seedNum}</span>
+          )}
+          {player.name}
+        </h5>
+        {STAT_KEYS.map(([k,label]) => (
+          <Form.Group key={k} className="mb-2">
+            <Form.Label className="text-white">
+              {label}: {Math.round(stats[k]||0)}%
+            </Form.Label>
+            <Form.Range
+              min={0} max={100} step={1}
+              value={stats[k]||0}
+              onChange={e => setStats({ ...stats, [k]: +e.target.value })}
+              disabled={isRunning}
+            />
+          </Form.Group>
+        ))}
+      </div>
     );
   };
-  // ===== end renderSummaryStats() =====
 
   return (
     <div className="page-background french-bg">
       <div className="overlay text-center">
-        <h3 className="text-white mb-4">Men's Singles</h3>
-        <div className="d-flex justify-content-center align-items-start mb-4">
+        <h3 className="text-white mb-4">Men's Singles Simulator</h3>
+        <div className="d-flex flex-wrap justify-content-center">
 
-          {/* Player A picker & card */}
-          <div>
-            <Dropdown onSelect={id => setPlayerA(players.find(p => p.id === id))}>
-              <Dropdown.Toggle variant="light">
-                {playerA ? playerA.name : 'Select Player A'}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {players.map(p => (
-                  <Dropdown.Item eventKey={p.id} key={p.id}>{p.name}</Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown>
+          {/* Player A selector + card */}
+          <div className="mx-3 text-start" style={{ minWidth:260 }}>
+            <Form.Label className="text-white">Player A</Form.Label>
+            <div className="d-flex mb-2">
+              <Select
+                className="react-select w-75"
+                options={buildOptions()}
+                value={playerA ? { value: playerA.id, label: playerA.name } : null}
+                onChange={opt => {
+                  if (opt.value === 'add') return handleAddPlayer('A');
+                  setPlayerA(opt.data);
+                }}
+                placeholder="Type to search…"
+                isDisabled={isRunning}
+                styles={{
+                  option: (b,s) => ({ ...b, color: '#000', backgroundColor: s.isFocused ? '#eee' : 'white' }),
+                  singleValue: b => ({ ...b, color: '#000' }),
+                  control: b => ({ ...b, opacity: 1 })
+                }}
+              />
+              <Button variant="light" className="ms-1" onClick={() => randomPick('A')} disabled={isRunning}>
+                🎲
+              </Button>
+            </div>
             {playerA
-              ? renderPlayerCard(playerA)
-              : renderPlaceholder(placeholdera, 'Select Player A')}
+              ? renderPlayerCard(playerA, statsA, setStatsA, placeholderA, 'player-a')
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderA} className="img-fluid opacity-25" alt="A" />
+                  <h5 className="text-muted mt-2">Select Player A</h5>
+                </div>
+              )}
           </div>
 
-          {/* Controls + summary */}
-          <div className="mx-4">
-            <div className="controls mb-3">
-              <Form.Group controlId="simCount" className="text-white mb-2">
-                <Form.Label>Simulation Count</Form.Label>
-                <Form.Select
-                  value={simCount}
-                  onChange={e => setSimCount(Number(e.target.value))}
-                >
-                  <option value={100}>100</option>
-                  <option value={500}>500</option>
-                  <option value={1000}>1000</option>
-                  <option value={2000}>2000</option>
-                </Form.Select>
-              </Form.Group>
-              <Button variant="warning" onClick={handleSlow}  className="mx-2">Slow</Button>
-              <Button variant="warning" onClick={handleFast}  className="mx-2">Fast</Button>
-              <Button variant="secondary" onClick={handleReset} className="mx-2">Reset</Button>
+          {/* Controls + Charts */}
+          <div className="mx-4 text-center" style={{ minWidth:360 }}>
+            <Form.Group controlId="simCount" className="mb-2">
+              <Form.Label className="text-white">Simulations</Form.Label>
+              <Form.Select
+                value={simCount}
+                onChange={e => setSimCount(+e.target.value)}
+                disabled={isRunning}
+              >
+                {[100,500,1000,2000].map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <div className="mb-3">
+              <Button className="me-2 btn-grass" onClick={handleSimulate} disabled={isRunning}>
+                {isRunning
+                  ? <><Spinner animation="border" size="sm"/> Running…</>
+                  : 'Simulate Matches'}
+              </Button>
+              <Button variant="secondary" onClick={handleReset} disabled={isRunning} className="ms-2">
+                Reset
+              </Button>
             </div>
 
-            {/* Simulation summary */}
-            {renderSummaryStats()}
+            {isRunning && (
+              <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-3" />
+            )}
 
-            {/* point-by-point table: only render the `point` events */}
-            {pointGen && (
-              <div className="point-log mb-3">
-                <h5 className="text-white">Point-by-Point Flow</h5>
-                <Table striped bordered size="sm" variant="dark">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Set</th>
-                      <th>Games A</th>
-                      <th>Games B</th>
-                      <th>Point A</th>
-                      <th>Point B</th>
-                      <th>Winner</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pointLog
-                      .filter(evt => evt.type === 'point')
-                      .map((pt, i) => (
-                        <tr key={i}>
-                          <td>{i + 1}</td>
-                          <td>{pt.set}</td>
-                          <td>{pt.games[0]}</td>
-                          <td>{pt.games[1]}</td>
-                          <td>{pt.points[0]}</td>
-                          <td>{pt.points[1]}</td>
-                          <td className={pt.winner === 0 ? 'text-lime' : 'text-magenta'}>
-                            {pt.winner === 0 ? playerA.name : playerB.name}
-                          </td>
-                        </tr>
-                      ))
-                    }
-                  </tbody>
-                </Table>
+            {batchResult && (
+              <div style={{ marginBottom: '2rem' }}>
+                <ResponsiveContainer width={350} height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[ { name: playerB.name, value: batchResult.matchWins[1] },
+                              { name: playerA.name, value: batchResult.matchWins[0] } ]}
+                      dataKey="value"
+                      innerRadius={90}
+                      outerRadius={100}
+                      startAngle={90}
+                      endAngle={-270}
+                      paddingAngle={4}
+                      isAnimationActive={false}
+                    >
+                      { [0,1].map(i => <Cell key={i} fill={VS_COLORS[i]} />) }
+                    </Pie>
+                    <Legend
+                      verticalAlign="bottom"
+                      wrapperStyle={{ color: '#fff' }}
+                      payload={[
+                        { value: playerB.name, type: 'square', color: VS_COLORS[1] },
+                        { value: playerA.name, type: 'square', color: VS_COLORS[0] }
+                      ]}
+                    />
+                    <Tooltip formatter={(v,name)=>([`${v} wins`, name])}/>
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
+                      <tspan x="50%" dy="-0.5em">Vs</tspan>
+                      <tspan x="50%" dy="1.2em">Wins</tspan>
+                    </text>
+                    <text x="10%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
+                      {batchResult.matchWins[0]}
+                    </text>
+                    <text x="90%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
+                      {batchResult.matchWins[1]}
+                    </text>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {batchResult && <h6 className="text-white mb-2">Sets-Won Distribution</h6>}
+            {batchResult && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+                <ResponsiveContainer width={350} height={200}>
+                  <BarChart layout="vertical" data={ ['3–0','3–1','3–2'].map((lbl,i)=>({
+                      name: lbl,
+                      [playerA.name]: batchResult.lostInWins[0][i]||0,
+                      [playerB.name]: batchResult.lostInWins[1][i]||0
+                  })) } margin={{ top:5, right:30, bottom:40, left:20 }}>
+                    <XAxis type="number" stroke="#fff" />
+                    <YAxis dataKey="name" type="category" stroke="#fff" width={60} />
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" align="center" wrapperStyle={{ color: '#fff'}} />
+                    <Bar dataKey={playerA.name} fill={SETBAR_COLORS[0]} barSize={10} />
+                    <Bar dataKey={playerB.name} fill={SETBAR_COLORS[1]} barSize={10} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
           </div>
 
-          {/* Player B picker & card */}
-          <div>
-            <Dropdown onSelect={id => setPlayerB(players.find(p => p.id === id))}>
-              <Dropdown.Toggle variant="light">
-                {playerB ? playerB.name : 'Select Player B'}
-              </Dropdown.Toggle>
-              <Dropdown.Menu>
-                {players.map(p => (
-                  <Dropdown.Item eventKey={p.id} key={p.id}>{p.name}</Dropdown.Item>
-                ))}
-              </Dropdown.Menu>
-            </Dropdown>
+          {/* Player B selector + card */}
+          <div className="mx-3 text-start" style={{ minWidth:260 }}>
+            <Form.Label className="text-white">Player B</Form.Label>
+            <div className="d-flex mb-2">
+              <Select
+                className="react-select w-75"
+                options={buildOptions()}
+                value={playerB ? { value: playerB.id, label: playerB.name } : null}
+                onChange={opt => {
+                  if (opt.value === 'add') return handleAddPlayer('B');
+                  setPlayerB(opt.data);
+                }}
+                placeholder="Type to search…"
+                isDisabled={isRunning}
+                styles={{
+                  option: (b,s) => ({ ...b, color: '#000', backgroundColor: s.isFocused ? '#eee' : 'white' }),
+                  singleValue: b => ({ ...b, color: '#000' }),
+                  control: b => ({ ...b, opacity: 1 })
+                }}
+              />
+              <Button variant="light" className="ms-1" onClick={() => randomPick('B')} disabled={isRunning}>
+                🎲
+              </Button>
+            </div>
             {playerB
-              ? renderPlayerCard(playerB)
-              : renderPlaceholder(placeholderb, 'Select Player B')}
+              ? renderPlayerCard(playerB, statsB, setStatsB, placeholderB, 'player-b')
+              : (
+                <div className="player-card placeholder mt-2 p-3">
+                  <img src={placeholderB} className="img-fluid opacity-25" alt="B" />
+                  <h5 className="text-muted mt-2">Select Player B</h5>
+                </div>
+              )}
           </div>
-
         </div>
       </div>
     </div>

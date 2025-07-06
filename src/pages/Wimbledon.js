@@ -58,7 +58,7 @@ export default function Wimbledon() {
 
   // --- Load initial players ---
   useEffect(() => {
-    Papa.parse(process.env.PUBLIC_URL + '/data/smash_us.csv', {
+    Papa.parse(process.env.PUBLIC_URL + '/data/smash_wb.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {

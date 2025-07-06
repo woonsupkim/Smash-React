@@ -10,17 +10,18 @@ import DreamBrackets from './pages/DreamBrackets';
 // import About         from './pages/About';
 
 import './App.css';
+import logoHome from './assets/ball.png';
 import logoRG from './assets/logo_rg.png';
 import logoWB from './assets/logo_wb.png';
 import logoUS from './assets/logo_us.png';
 
 function App() {
   const navItems = [
-    { to: '/',              label: 'Home',       logo: null          },
+    { to: '/',              label: 'Home',       logo: logoHome          },
     { to: '/french-open',   label: 'French Open',logo: logoRG       },
     { to: '/wimbledon',     label: 'Wimbledon',  logo: logoWB       },
     { to: '/us-open',       label: 'US Open',    logo: logoUS       },
-    { to: '/dream-brackets',label: 'Brackets',   logo: null          }//,
+    { to: '/dream-brackets',label: 'Brackets (Under Const)',   logo: null          }//,
     // { to: '/about',         label: 'About Us',   logo: null          }
   ];
 
@@ -30,12 +31,12 @@ function App() {
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">
             <img
-              src={process.env.PUBLIC_URL + '/assets/ball.png'}
+              src={process.env.PUBLIC_URL + '/assets/atp.png'}
               height="40"
-              alt="SMASH! logo"
+              alt="ATP logo"
               className="me-2"
             />
-            SMASH!
+            {/* SMASH! */}
           </NavLink>
           <button
             className="navbar-toggler"
