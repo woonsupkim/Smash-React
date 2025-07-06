@@ -21,7 +21,7 @@ import {
   YAxis
 } from 'recharts';
 import { simulateBatch } from '../simulator';
-import './Wimbledon.css';
+import './USOpen.css';
 import placeholderA from '../assets/players/0a.png';
 import placeholderB from '../assets/players/0b.png';
 
@@ -32,8 +32,8 @@ const playerImgs = require.context(
 );
 
 // Color palettes
-const VS_COLORS = ['#3A1C71', '#009B5D'];
-const SETBAR_COLORS = ['#009B5D', '#3A1C71'];
+const VS_COLORS = ['#0033A0', '#FFD700'];
+const SETBAR_COLORS = ['#FFD700', '#0033A0'];
 
 // Keys for the five rates
 const STAT_KEYS = [

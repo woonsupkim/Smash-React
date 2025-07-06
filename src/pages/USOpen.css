@@ -164,11 +164,11 @@
   padding: 8px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-/* .player-card.grass-hover:hover {
+.player-card.grass-hover:hover {
   box-shadow: 0 0 12px rgba(123,182,97,0.8);
   transform: translateY(-4px);
   border-color: #7BB661;
-} */
+}
 .btn-grass {
   background-color: #7BB661;
   border-color: #6AA551;
@@ -192,13 +192,13 @@
 }
 /* Player A hover */
 .player-card.player-a:hover {
-  box-shadow: 0 0 12px #009B5D;
+  box-shadow: 0 0 12px #FFD700;
   transform: translateY(-4px);
-  border-color: #009B5D;
+  border-color: #FFD700;
 }
 /* Player B hover */
 .player-card.player-b:hover {
-  box-shadow: 0 0 12px #3A1C71;
+  box-shadow: 0 0 12px #0033A0;
   transform: translateY(-4px);
-  border-color: #3A1C71;
+  border-color: #0033A0;
 }
