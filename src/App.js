@@ -7,6 +7,7 @@ import FrenchOpen    from './pages/FrenchOpen';
 import Wimbledon     from './pages/Wimbledon';
 import USOpen        from './pages/USOpen';
 import DreamBrackets from './pages/DreamBrackets';
+import logoATP from './assets/atp.png';
 // import About         from './pages/About';
 
 import './App.css';
@@ -31,7 +32,7 @@ function App() {
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">
             <img
-              src={'./assets/atp.png'}
+              src={logoATP}
               height="40"
               alt="ATP logo"
               className="me-2"
