@@ -50,20 +50,20 @@ const STAT_KEYS = [
 
 const Flowchart = () => (
   <div className="flowchart">
-    <div className="step">
-      <strong>1.</strong> Simulate Point
-    </div>
+    {/* Linear sequence */}
+    <div className="step"><strong>1.</strong> Simulate Point</div>
     <div className="arrow">→</div>
-    <div className="step">
-      <strong>2.</strong> Resolve Game
-    </div>
+    <div className="step"><strong>2.</strong> Resolve Game</div>
     <div className="arrow">→</div>
-    <div className="step">
-      <strong>3.</strong> Build Set
-    </div>
+    <div className="step"><strong>3.</strong> Resolve Set</div>
     <div className="arrow">→</div>
-    <div className="step">
-      <strong>4.</strong> Repeat N & Aggregate
+    <div className="step"><strong>4.</strong> Resolve Match</div>
+
+    {/* Looping overlay */}
+    <div className="loop-container">
+      <div className="loop-arrow">⟲</div>      
+      <div className="loop-label">Repeat N times</div>
+      <div className="loop-note">Aggregate results</div>
     </div>
   </div>
 );
