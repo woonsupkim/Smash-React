@@ -2,21 +2,68 @@
 
 /* Dark translucent overlay over the tournament background */
 .overlay {
-  background-color: rgba(0, 0, 0, 0.6);
-  min-height: calc(100vh - 70px); /* account for fixed navbar */
+  background-color: rgba(0, 0, 0, 0.65);
+  min-height: calc(100vh - 70px);
   padding: 80px 20px 40px;
 }
 
-/* Card sizing for each tournament link */
-.home-card {
-  width: 12rem;
-  border: 1px solid #444;
-  border-radius: 8px;
+/* Main heading */
+.main-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
 
-/* Logo sizing inside the cards */
+/* Sub-heading paragraph */
+.sub-title {
+  font-size: 1.25rem;
+  color: #eee;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+/* Card sizing and look */
+.home-card {
+  width: 14rem;
+  background-color: #222;
+  border: none;
+  border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.home-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+}
+
+/* Logo inside card */
 .home-logo {
-  max-width: 6rem;
-  max-height: 6rem;
+  max-width: 5rem;
+  max-height: 5rem;
   object-fit: contain;
+}
+
+/* Tournament title & description */
+.tourney-title {
+  font-size: 1.25rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.tourney-desc {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 1rem;
+}
+
+/* Explore button */
+.explore-btn {
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+}
+
+/* Footer note */
+.footer-note {
+  margin-top: 2rem;
+  color: #ddd;
+  font-size: 0.9rem;
 }
