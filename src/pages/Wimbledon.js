@@ -314,6 +314,7 @@ const renderEvent = ev => {
 
   // --- player card renderer ---
   const renderPlayerCard = (player, stats, setStats, placeholder, variant) => (
+    <div className="wimbledon">
     <motion.div
       className={`player-card grass-hover ${variant} mt-2 p-3`}
       initial={{ y:20, opacity:0 }}
@@ -352,6 +353,7 @@ const renderEvent = ev => {
         </motion.div>
       ))}
     </motion.div>
+    </div>
   );
 
   return (
