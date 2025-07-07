@@ -2,32 +2,35 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 
-import Home          from './pages/Home';
-import FrenchOpen    from './pages/FrenchOpen';
-import Wimbledon     from './pages/Wimbledon';
-import USOpen        from './pages/USOpen';
+import Home from './pages/Home';
+import FrenchOpen from './pages/FrenchOpen';
+import Wimbledon from './pages/Wimbledon';
+import USOpen from './pages/USOpen';
 import DreamBrackets from './pages/DreamBrackets';
-import logoATP from './assets/atp.png';
-// import About         from './pages/About';
 
-import './App.css';
+import GATracker from './components/GATracker'; // <-- added this line
+
+import logoATP from './assets/atp.png';
 import logoHome from './assets/ball.png';
 import logoRG from './assets/logo_rg.png';
 import logoWB from './assets/logo_wb.png';
 import logoUS from './assets/logo_us.png';
 
+import './App.css';
+
 function App() {
   const navItems = [
-    { to: '/',              label: 'Home',       logo: logoHome          },
-    { to: '/french-open',   label: 'French Open',logo: logoRG       },
-    { to: '/wimbledon',     label: 'Wimbledon',  logo: logoWB       },
-    { to: '/us-open',       label: 'US Open',    logo: logoUS       },
-    { to: '/dream-brackets',label: 'Brackets (Under Const)',   logo: null          }//,
-    // { to: '/about',         label: 'About Us',   logo: null          }
+    { to: '/', label: 'Home', logo: logoHome },
+    { to: '/french-open', label: 'French Open', logo: logoRG },
+    { to: '/wimbledon', label: 'Wimbledon', logo: logoWB },
+    { to: '/us-open', label: 'US Open', logo: logoUS },
+    { to: '/dream-brackets', label: 'Brackets (Under Const)', logo: null },
+    // { to: '/about', label: 'About Us', logo: null }
   ];
 
   return (
     <Router>
+      <GATracker /> {/* <-- Google Analytics route change tracker */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">
@@ -37,7 +40,6 @@ function App() {
               alt="ATP logo"
               className="me-2"
             />
-            {/* SMASH! */}
           </NavLink>
           <button
             className="navbar-toggler"
