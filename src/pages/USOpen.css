@@ -186,18 +186,18 @@
 }
 
 
-/* .player-card {
+.usopen .player-card {
   transition: background-color 0.3s ease;
 }
 
-.player-card.player-a:hover {
+.usopen .player-card.player-a:hover {
+  box-shadow: 0 0 12px #0033A0;
+  transform: translateY(-4px);
+  border-color: #0033A0;
+}
+
+.usopen .player-card.player-b:hover {
   box-shadow: 0 0 12px #FFD700;
   transform: translateY(-4px);
   border-color: #FFD700;
 }
-
-.player-card.player-b:hover {
-  box-shadow: 0 0 12px #0033A0;
-  transform: translateY(-4px);
-  border-color: #0033A0;
-} */

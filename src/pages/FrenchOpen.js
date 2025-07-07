@@ -255,6 +255,7 @@ export default function Wimbledon() {
   const renderPlayerCard = (player, stats, setStats, placeholder, variant) => {
     const seedNum = player.us_seed != null ? player.us_seed : null;
     return (
+      <div className="frenchopen">
       <div className={`player-card grass-hover ${variant} mt-2 p-3`}>
         <img
           src={player.imageSrc ?? (player.id.startsWith('custom-') ? placeholder : playerImgs(`./${player.id}.png`))}
@@ -280,6 +281,7 @@ export default function Wimbledon() {
             />
           </Form.Group>
         ))}
+      </div>
       </div>
     );
   };
