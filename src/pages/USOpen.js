@@ -323,7 +323,7 @@ export default function Wimbledon() {
   };
 
   return (
-    <div className="page-background wimbledon-bg">
+    <div className="page-background usopen-bg">
       <div className="overlay text-center">
         <h3 className="text-white mb-4">Men's Singles Simulator</h3>
         <div className="d-flex flex-wrap justify-content-center">
