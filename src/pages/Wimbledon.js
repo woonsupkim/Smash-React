@@ -48,6 +48,27 @@ const STAT_KEYS = [
   ['p5', 'Volley Win']
 ];
 
+const Flowchart = () => (
+  <div className="flowchart">
+    <div className="step">
+      <strong>1.</strong> Simulate Point
+    </div>
+    <div className="arrow">→</div>
+    <div className="step">
+      <strong>2.</strong> Resolve Game
+    </div>
+    <div className="arrow">→</div>
+    <div className="step">
+      <strong>3.</strong> Build Set
+    </div>
+    <div className="arrow">→</div>
+    <div className="step">
+      <strong>4.</strong> Repeat N & Aggregate
+    </div>
+  </div>
+);
+
+
 export default function Wimbledon() {
   // --- state ---
   const [players, setPlayers]   = useState([]);
@@ -337,6 +358,7 @@ const renderEvent = ev => {
     <div className="page-background wimbledon-bg">
       <div className="overlay text-center">
         <h3 className="text-white mb-4">Men's Singles Simulator</h3>
+        
 
         <div className="text-light mb-3">
           <OverlayTrigger
@@ -349,6 +371,11 @@ const renderEvent = ev => {
           >
             <span>ℹ️ Simulation Method</span>
           </OverlayTrigger>
+          <div style={{ marginTop: '1rem' }}>
+            <Flowchart />
+          </div>
+
+          {/* <Flowchart /> */}
         </div>
 
         <div className="d-flex flex-wrap justify-content-center">
@@ -437,7 +464,7 @@ const renderEvent = ev => {
                   exit={{ scale:0.8, opacity:0 }}
                   transition={{ duration:0.5 }}
                 >
-                  <ResponsiveContainer width={350} height={300}>
+                  <ResponsiveContainer width={350} height={350}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -492,8 +519,8 @@ const renderEvent = ev => {
                   exit={{ scale:0.8, opacity:0 }}
                   transition={{ duration:0.5, delay:0.2 }}
                 >
-                  <ResponsiveContainer width={350} height={200}>
-                    <BarChart layout="vertical" data={barData} margin={{ top:5, right:30, bottom:40, left:20 }}>
+                  <ResponsiveContainer width={420} height={260}>
+                    <BarChart layout="vertical" data={barData} margin={{ top:5, right:90, bottom:60, left:20 }}>
                       <XAxis type="number" stroke="#fff"/>
                       <YAxis dataKey="name" type="category" stroke="#fff" width={60}/>
                       <RechartTooltip/>

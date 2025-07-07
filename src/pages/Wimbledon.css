@@ -200,3 +200,26 @@
   transform: translateY(-4px);
   border-color: #009B5D;
 }
+
+.flowchart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.flowchart .step {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  margin: 0.2rem;
+  min-width: 110px;
+  text-align: center;
+}
+.flowchart .arrow {
+  color: #ffc107;
+  font-size: 1.2rem;
+  margin: 0 0.5rem;
+}
