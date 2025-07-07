@@ -31,6 +31,10 @@ const playerImgs = require.context(
   /\.png$/
 );
 
+
+const CLAY_COLOR  = '#3A1C71';  // Player A
+const GREEN_COLOR = '#009B5D';  // Player B
+
 // Color palettes
 const VS_COLORS = ['#3A1C71', '#009B5D'];
 const SETBAR_COLORS = ['#009B5D', '#3A1C71'];
@@ -55,6 +59,38 @@ export default function Wimbledon() {
   const [progress, setProgress] = useState(0);
   const [batchResult, setBatchResult] = useState(null);
   const batchRef = useRef({ completed: 0, total: 0 });
+
+  const renderFixedLegend = () => (
+    <ul style={{
+      display:        'flex',
+      justifyContent: 'center',
+      listStyle:      'none',
+      padding:        0,
+      margin:         '0.5em 0',
+      color:          '#fff'
+    }}>
+      <li style={{ display: 'flex', alignItems: 'center', margin: '0 1em' }}>
+        <span style={{
+          display:       'inline-block',
+          width:         12,
+          height:        12,
+          backgroundColor: CLAY_COLOR,
+          marginRight:   6
+        }} />
+        {playerA.name}
+      </li>
+      <li style={{ display: 'flex', alignItems: 'center', margin: '0 1em' }}>
+        <span style={{
+          display:       'inline-block',
+          width:         12,
+          height:        12,
+          backgroundColor: GREEN_COLOR,
+          marginRight:   6
+        }} />
+        {playerB.name}
+      </li>
+    </ul>
+  );
 
   // --- Load initial players ---
   useEffect(() => {
@@ -373,13 +409,19 @@ export default function Wimbledon() {
                     >
                       { [0,1].map(i => <Cell key={i} fill={VS_COLORS[i]} />) }
                     </Pie>
-                    <Legend 
+                    <Legend
+                      content={renderFixedLegend}
                       verticalAlign="bottom"
-                      wrapperStyle={{ color: '#fff' }}
-                      payload={[
-                        { value: playerA.name, type: 'square', color: VS_COLORS[0] },
-                        { value: playerB.name, type: 'square', color: VS_COLORS[1] }
-                      ]}
+                      // layout = "horizontal"
+                      // verticalAlign="bottom"
+                      // align="center"
+                      // wrapperStyle={{ color: '#fff' }}
+                      // // payload={[
+                      // //   { value: playerA.name, type: 'square', color: VS_COLORS[0] },
+                      // //   { value: playerB.name, type: 'square', color: VS_COLORS[1] }
+                      // // ]}
+                      
+                      // payload={fixedLegendPayload}
                     />
                     <Tooltip formatter={(v,name)=>([`${v} wins`, name])}/>
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
@@ -410,13 +452,18 @@ export default function Wimbledon() {
                     <YAxis dataKey="name" type="category" stroke="#fff" width={60} />
                     <Tooltip />
                     <Legend
+                      content={renderFixedLegend}
                       verticalAlign="bottom"
-                      align="center"
-                      wrapperStyle={{ color: '#fff' }}
-                      payload={[
-                        { value: playerA.name, type: 'square', color: SETBAR_COLORS[1] },
-                        { value: playerB.name, type: 'square', color: SETBAR_COLORS[0] }
-                      ]}
+                      // layout="horizontal"
+                      // verticalAlign="bottom"
+                      // align="center"
+                      // wrapperStyle={{ color: '#fff' }}
+                      // // payload={[
+                      // //   { value: playerA.name, type: 'square', color: SETBAR_COLORS[1] },
+                      // //   { value: playerB.name, type: 'square', color: SETBAR_COLORS[0] }
+                      // // ]}
+
+                      // payload={fixedLegendPayload}
                     />
                     <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={10} />
                     <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={10} />
