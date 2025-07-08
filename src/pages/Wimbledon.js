@@ -34,9 +34,8 @@ const playerImgs = require.context(
   /\.png$/
 );
 
-const CLAY_COLOR  = '#3A1C71';  // Player A
-const GREEN_COLOR = '#009B5D';  // Player B
-
+const CLAY_COLOR  = '#3A1C71';
+const GREEN_COLOR = '#009B5D';
 const VS_COLORS     = ['#3A1C71', '#009B5D'];
 const SETBAR_COLORS = ['#009B5D', '#3A1C71'];
 
@@ -50,7 +49,6 @@ const STAT_KEYS = [
 
 const Flowchart = () => (
   <div className="flowchart">
-    {/* Linear sequence */}
     <div className="step"><strong>1.</strong> Simulate Point</div>
     <div className="arrow">→</div>
     <div className="step"><strong>2.</strong> Resolve Game</div>
@@ -58,35 +56,29 @@ const Flowchart = () => (
     <div className="step"><strong>3.</strong> Resolve Set</div>
     <div className="arrow">→</div>
     <div className="step"><strong>4.</strong> Resolve Match</div>
-
-    {/* Looping overlay */}
     <div className="loop-container">
-      <div className="loop-arrow">⟲</div>      
+      <div className="loop-arrow">⟲</div>
       <div className="loop-label">Repeat N times</div>
       <div className="loop-note">Aggregate results</div>
     </div>
   </div>
 );
 
-
 export default function Wimbledon() {
   // --- state ---
-  const [players, setPlayers]   = useState([]);
-  const [playerA, setPlayerA]   = useState(null);
-  const [playerB, setPlayerB]   = useState(null);
-  const [statsA, setStatsA]     = useState({});
-  const [statsB, setStatsB]     = useState({});
-  const [simCount, setSimCount] = useState(1000);
-  const [isRunning, setIsRunning]   = useState(false);
-  const [progress, setProgress]     = useState(0);
-  const [batchResult, setBatchResult] = useState(null);
-  const [showResults, setShowResults] = useState(false);
-
-  // live step‐by‐step
-  const [liveLog, setLiveLog]   = useState([]);
-  const [isWatching, setIsWatching] = useState(false);
-
-  const batchRef = useRef({ completed: 0, total: 0 });
+  const [players, setPlayers]             = useState([]);
+  const [playerA, setPlayerA]             = useState(null);
+  const [playerB, setPlayerB]             = useState(null);
+  const [statsA, setStatsA]               = useState({});
+  const [statsB, setStatsB]               = useState({});
+  const [simCount, setSimCount]           = useState(1000);
+  const [isRunning, setIsRunning]         = useState(false);
+  const [progress, setProgress]           = useState(0);
+  const [batchResult, setBatchResult]     = useState(null);
+  const [showResults, setShowResults]     = useState(false);
+  const [liveLog, setLiveLog]             = useState([]);
+  const [isWatching, setIsWatching]       = useState(false);
+  const batchRef                          = useRef({ completed: 0, total: 0 });
 
   // --- load players CSV ---
   useEffect(() => {
@@ -99,28 +91,89 @@ export default function Wimbledon() {
     });
   }, []);
 
-  // --- seed stats when playerA/B change ---
+  // --- seed stats ---
   useEffect(() => {
     if (!playerA) return;
     const obj = {};
-    STAT_KEYS.forEach(([key]) => obj[key] = (playerA[key] || 0) * 100);
+    STAT_KEYS.forEach(([k]) => obj[k] = (playerA[k] || 0) * 100);
     setStatsA(obj);
   }, [playerA]);
 
   useEffect(() => {
     if (!playerB) return;
     const obj = {};
-    STAT_KEYS.forEach(([key]) => obj[key] = (playerB[key] || 0) * 100);
+    STAT_KEYS.forEach(([k]) => obj[k] = (playerB[k] || 0) * 100);
     setStatsB(obj);
   }, [playerB]);
 
-  // --- reveal charts with delay ---
+  // --- reveal charts delay ---
   useEffect(() => {
     if (!batchResult) return;
     setShowResults(false);
-    const t = setTimeout(() => setShowResults(true), 500);
-    return () => clearTimeout(t);
+    const tid = setTimeout(() => setShowResults(true), 500);
+    return () => clearTimeout(tid);
   }, [batchResult]);
+
+  // --- Add Player flow ---
+  const handleAddPlayer = async who => {
+    const htmlFields = `
+      <input id="swal-name" class="swal2-input" placeholder="Name">
+      ${STAT_KEYS.map(
+        ([key,label]) => `
+          <label style="color:#444;margin:4px 0">${label}: <span id="swal-${key}-val">50%</span></label>
+          <input id="swal-${key}" type="range" min="0" max="100" value="50"
+            class="swal2-range"
+            oninput="document.getElementById('swal-${key}-val').innerText = this.value + '%';">
+        `
+      ).join('')}
+      <input type="file" id="swal-file" class="swal2-file" accept="image/*">
+    `;
+    const { value: form } = await Swal.fire({
+      title: 'Add New Player',
+      html: htmlFields,
+      focusConfirm: false,
+      showCancelButton: true,
+      preConfirm: () => {
+        const name = document.getElementById('swal-name').value;
+        if (!name) {
+          Swal.showValidationMessage('Name is required');
+          return;
+        }
+        const stats = {};
+        STAT_KEYS.forEach(([key]) => {
+          stats[key] = +document.getElementById(`swal-${key}`).value;
+        });
+        const file = document.getElementById('swal-file').files[0] || null;
+        return { name, stats, file };
+      }
+    });
+    if (!form) return;
+
+    let imageSrc = null;
+    if (form.file) {
+      imageSrc = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(form.file);
+      });
+    }
+
+    const newId = `custom-${Date.now()}`;
+    const newPlayer = {
+      id: newId,
+      name: form.name,
+      p1: form.stats.p1 / 100,
+      p2: form.stats.p2 / 100,
+      p3: form.stats.p3 / 100,
+      p4: form.stats.p4 / 100,
+      p5: form.stats.p5 / 100,
+      imageSrc,
+      us_rd: 2
+    };
+    setPlayers(prev => [newPlayer, ...prev]);
+    if (who === 'A') setPlayerA(newPlayer);
+    else setPlayerB(newPlayer);
+  };
 
   // --- batch driver ---
   const runBatch = (pA, pB, n) => {
@@ -153,11 +206,9 @@ export default function Wimbledon() {
         setIsRunning(false);
       }
     };
-
     step();
   };
 
-  // --- errors ---
   const showPlayerError = () => Swal.fire({
     icon: 'error',
     title: 'No Players Selected',
@@ -165,7 +216,7 @@ export default function Wimbledon() {
     confirmButtonColor: '#3085d6'
   });
 
-  // --- handlers ---
+  // --- simulate / reset / watch ---
   const handleSimulate = () => {
     if (!playerA || !playerB) return showPlayerError();
     setBatchResult(null);
@@ -200,80 +251,53 @@ export default function Wimbledon() {
 
     setLiveLog([]);
     setIsWatching(true);
-
     const advance = () => {
       const { value, done } = gen.next();
-      if (done) {
-        setIsWatching(false);
-        return;
-      }
+      if (done) return setIsWatching(false);
       setLiveLog(prev => [...prev, value]);
       setTimeout(advance, 400);
     };
     advance();
   };
 
-  // --- render event text ---
-// Helper to convert point counts to tennis scoring
-const tennisPointLabel = (pointsA, pointsB) => {
-  const labels = ['Love','15','30','40'];
-  // Deuce / Advantage
-  if (pointsA >= 3 && pointsB >= 3) {
-    if (pointsA === pointsB) {
-      return 'Deuce';
-    } else if (pointsA === pointsB + 1) {
-      return `Advantage ${playerA.name}`;
-    } else if (pointsB === pointsA + 1) {
-      return `Advantage ${playerB.name}`;
+  // --- tennis scoring helper & event renderer ---
+  const tennisPointLabel = (a,b) => {
+    const labels = ['Love','15','30','40'];
+    if (a>=3 && b>=3) {
+      if (a===b)                  return 'Deuce';
+      else if (a===b+1)          return `Advantage ${playerA.name}`;
+      else if (b===a+1)          return `Advantage ${playerB.name}`;
     }
-  }
-  // Standard scoring
-  const aLabel = labels[pointsA] || labels[3];
-  const bLabel = labels[pointsB] || labels[3];
-  return `${aLabel}-${bLabel}`;
-};
+    return `${labels[a]||'40'}-${labels[b]||'40'}`;
+  };
 
-const renderEvent = ev => {
-  switch (ev.type) {
-    case 'point': {
-      const [pA, pB] = ev.points;
-      const pointScore = tennisPointLabel(pA, pB);
-      const [gA, gB] = ev.games;
-      return `🎾 ${pointScore}  (Game: ${gA}-${gB})`;
+  const renderEvent = ev => {
+    switch(ev.type) {
+      case 'point': {
+        const [pa,pb] = ev.points;
+        return `🎾 ${tennisPointLabel(pa,pb)}  (Game: ${ev.games[0]}-${ev.games[1]})`;
+      }
+      case 'game':
+        return `🟩 Game to ${ev.gameWinner===0?ev.playerA.name:ev.playerB.name}`;
+      case 'tiebreak_start':
+        return `⏱ Tie-break begins`;
+      case 'tiebreak_end':
+        return `✅ Tie-break won by ${ev.tiebreakWinner===0?ev.playerA.name:ev.playerB.name}`;
+      case 'set':
+        return `📦 Set ${ev.set} to ${ev.setWinner===0?ev.playerA.name:ev.playerB.name}`;
+      case 'match':
+        return `🏆 Match won by ${ev.winner==='A'?ev.playerA.name:ev.playerB.name}`;
+      default:
+        return `🔸 ${ev.type}`;
     }
-    case 'game': {
-      const winnerName = ev.gameWinner === 0 ? ev.playerA.name : ev.playerB.name;
-      const [gA, gB] = ev.games;
-      return `🟩 Game to ${winnerName}  (Set score: ${gA}-${gB})`;
-    }
-    case 'tiebreak_start':
-      return `⏱ Tie-break begins`;
-    case 'tiebreak_end': {
-      const name = ev.tiebreakWinner === 0 ? ev.playerA.name : ev.playerB.name;
-      return `✅ Tie-break won by ${name}`;
-    }
-    case 'set': {
-      const winnerName = ev.setWinner === 0 ? ev.playerA.name : ev.playerB.name;
-      const [sA, sB] = ev.setScores[ev.set - 1];
-      return `📦 Set ${ev.set} to ${winnerName}  (${sA}-${sB})`;
-    }
-    case 'match': {
-      const winnerName = ev.winner === 'A' ? ev.playerA.name : ev.playerB.name;
-      return `🏆 Match won by ${winnerName}`;
-    }
-    default:
-      return `🔸 ${ev.type}`;
-  }
-};
+  };
 
-
-  // --- build options ---
+  // --- dropdown options + chart data + legend + player card render ---
   const buildOptions = () => [
     { value:'add', label:'+ Add Player' },
     ...players.map(p => ({ value:p.id, label:p.name, data:p }))
   ];
 
-  // --- chart data ---
   const pieData = batchResult
     ? [
         { name: playerA.name, value: batchResult.matchWins[0] },
@@ -282,39 +306,27 @@ const renderEvent = ev => {
     : [];
 
   const barData = batchResult
-    ? ['3–0','3–1','3–2'].map((lbl,i) => ({
+    ? ['3–0','3–1','3–2'].map((lbl,i)=>({
         name: lbl,
         [playerA.name]: batchResult.lostInWins[0][i]||0,
         [playerB.name]: batchResult.lostInWins[1][i]||0
       }))
     : [];
 
-  // --- legend ---
   const renderFixedLegend = () => (
-    <ul style={{
-      display:'flex', justifyContent:'center',
-      listStyle:'none', padding:0, margin:'0.5em 0', color:'#fff'
-    }}>
+    <ul style={{ display:'flex', justifyContent:'center', listStyle:'none', padding:0, margin:'0.5em 0', color:'#fff' }}>
       <li style={{ margin:'0 1em', display:'flex', alignItems:'center' }}>
-        <span style={{
-          display:'inline-block', width:12, height:12,
-          backgroundColor:CLAY_COLOR, marginRight:6
-        }}/>
+        <span style={{ width:12, height:12, backgroundColor:CLAY_COLOR, marginRight:6 }}/>
         {playerA.name}
       </li>
       <li style={{ margin:'0 1em', display:'flex', alignItems:'center' }}>
-        <span style={{
-          display:'inline-block', width:12, height:12,
-          backgroundColor:GREEN_COLOR, marginRight:6
-        }}/>
+        <span style={{ width:12, height:12, backgroundColor:GREEN_COLOR, marginRight:6 }}/>
         {playerB.name}
       </li>
     </ul>
   );
 
-  // --- player card renderer ---
-  const renderPlayerCard = (player, stats, setStats, placeholder, variant) => (
-    <div className="wimbledon">
+  const renderPlayerCard = (player, stats, setStats, _, variant) => (
     <motion.div
       className={`player-card grass-hover ${variant} mt-2 p-3`}
       initial={{ y:20, opacity:0 }}
@@ -328,12 +340,10 @@ const renderEvent = ev => {
         className="img-fluid rounded"
       />
       <h5 className="text-white mt-2">
-        {player.us_seed != null &&
-          <span style={{ color:'#888', marginRight:'0.5rem' }}>{player.us_seed}</span>
-        }
+        {player.us_seed!=null && <span style={{ color:'#888', marginRight:'0.5rem' }}>{player.us_seed}</span>}
         {player.name}
       </h5>
-      {STAT_KEYS.map(([k,label], i) => (
+      {STAT_KEYS.map(([k,label],i)=>(
         <motion.div
           key={k}
           className="mb-2"
@@ -345,43 +355,32 @@ const renderEvent = ev => {
             {label}: {Math.round(stats[k]||0)}%
           </Form.Label>
           <Form.Range
-            min={0} max={100} step={1}
+            min={0} max={100}
             value={stats[k]||0}
             onChange={e => setStats({ ...stats, [k]: +e.target.value })}
-            disabled={isRunning || isWatching}
+            disabled={isRunning||isWatching}
           />
         </motion.div>
       ))}
     </motion.div>
-    </div>
   );
 
   return (
     <div className="page-background wimbledon-bg">
       <div className="overlay text-center">
         <h3 className="text-white mb-4">Men's Singles Simulator</h3>
-        
 
         <div className="text-light mb-3">
           <OverlayTrigger
             placement="top"
-            overlay={
-              <Tooltip>
-                Every match is simulated point-by-point via Monte Carlo
-              </Tooltip>
-            }
+            overlay={<Tooltip>Every match is simulated point-by-point via Monte Carlo</Tooltip>}
           >
             <span>ℹ️ Simulation Method</span>
           </OverlayTrigger>
-          <div style={{ marginTop: '1rem' }}>
-            <Flowchart />
-          </div>
-
-          {/* <Flowchart /> */}
+          <div style={{ marginTop: '1rem' }}><Flowchart /></div>
         </div>
 
         <div className="d-flex flex-wrap justify-content-center">
-
           {/* Player A */}
           <div className="mx-3 text-start" style={{ minWidth:260 }}>
             <Form.Label className="text-white">Player A</Form.Label>
@@ -389,20 +388,23 @@ const renderEvent = ev => {
               <Select
                 className="react-select w-75"
                 options={buildOptions()}
-                value={playerA ? { value:playerA.id, label:playerA.name } : null}
-                onChange={opt => opt.value!=='add' && setPlayerA(opt.data)}
+                value={playerA?{value:playerA.id,label:playerA.name}:null}
+                onChange={opt => {
+                  if (opt.value==='add') handleAddPlayer('A');
+                  else setPlayerA(opt.data);
+                }}
                 placeholder="Type to search…"
-                isDisabled={isRunning || isWatching}
+                isDisabled={isRunning||isWatching}
                 styles={{
-                  option: p => ({ ...p, color:'#000' }),
-                  singleValue: p => ({ ...p, color:'#000' })
+                  option: p => ({...p,color:'#000'}),
+                  singleValue: p => ({...p,color:'#000'})
                 }}
               />
               <Button
                 variant="light"
                 className="ms-1"
-                onClick={() => randomPick('A')}
-                disabled={isRunning || isWatching}
+                onClick={()=>randomPick('A')}
+                disabled={isRunning||isWatching}
               >🎲</Button>
             </div>
             {playerA
@@ -413,14 +415,15 @@ const renderEvent = ev => {
 
           {/* Controls & Charts */}
           <div className="mx-4 text-center" style={{ minWidth:360 }}>
+            {/* Sim count */}
             <Form.Group controlId="simCount" className="mb-2">
               <Form.Label className="text-white">Simulations</Form.Label>
               <Form.Select
                 value={simCount}
-                onChange={e => setSimCount(+e.target.value)}
-                disabled={isRunning || isWatching}
+                onChange={e=>setSimCount(+e.target.value)}
+                disabled={isRunning||isWatching}
               >
-                {[100,500,1000,2000].map(n => <option key={n} value={n}>{n}</option>)}
+                {[100,500,1000,2000].map(n=><option key={n} value={n}>{n}</option>)}
               </Form.Select>
             </Form.Group>
 
@@ -428,33 +431,26 @@ const renderEvent = ev => {
               <Button
                 className="me-2 btn-grass"
                 onClick={handleSimulate}
-                disabled={isRunning || isWatching}
+                disabled={isRunning||isWatching}
               >
                 {isRunning
                   ? <><Spinner size="sm" animation="border"/> Running…</>
-                  : 'Simulate Matches'
-                }
+                  : 'Simulate Matches'}
               </Button>
               <Button
                 variant="outline-light"
                 className="me-2"
                 onClick={handleWatchMatch}
-                disabled={isRunning || isWatching}
-              >
-                🎾 Watch Match
-              </Button>
+                disabled={isRunning||isWatching}
+              >🎾 Watch Match</Button>
               <Button
                 variant="secondary"
                 onClick={handleReset}
-                disabled={isRunning || isWatching}
-              >
-                Reset
-              </Button>
+                disabled={isRunning||isWatching}
+              >Reset</Button>
             </div>
 
-            {isRunning && (
-              <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-3"/>
-            )}
+            {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-3"/>}
 
             {/* Pie Chart */}
             <AnimatePresence>
@@ -476,33 +472,20 @@ const renderEvent = ev => {
                         startAngle={90}
                         endAngle={450}
                         paddingAngle={4}
-                        isAnimationActive={true}
+                        isAnimationActive
                       >
                         {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]}/>)}
                       </Pie>
                       <Legend content={renderFixedLegend} verticalAlign="bottom"/>
-                      <RechartTooltip formatter={(v,name)=>([`${v} wins`, name])}/>
-
-                      <text
-                        x="50%" y="45%"
-                        textAnchor="middle" dominantBaseline="middle"
-                        fill="#ccc" fontSize={18} fontWeight="bold"
-                      >
+                      <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
+                      <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
                         <tspan x="50%" dy="-0.5em">Vs</tspan>
                         <tspan x="50%" dy="1.2em">Wins</tspan>
                       </text>
-                      <text
-                        x="10%" y="45%"
-                        textAnchor="middle" dominantBaseline="middle"
-                        fill="#fff" fontSize={24} fontWeight="bold"
-                      >
+                      <text x="10%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
                         {batchResult.matchWins[0]}
                       </text>
-                      <text
-                        x="90%" y="45%"
-                        textAnchor="middle" dominantBaseline="middle"
-                        fill="#fff" fontSize={24} fontWeight="bold"
-                      >
+                      <text x="90%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
                         {batchResult.matchWins[1]}
                       </text>
                     </PieChart>
@@ -536,20 +519,14 @@ const renderEvent = ev => {
             </AnimatePresence>
 
             {/* Live Commentary */}
-            {liveLog.length > 0 && (
-              <div
-                className="live-commentary text-start mt-3 px-3 text-white"
-                style={{ maxHeight:'150px', overflowY:'auto' }}
-              >
+            {liveLog.length>0 && (
+              <div className="live-commentary text-start mt-3 px-3 text-white" style={{ maxHeight:'150px', overflowY:'auto' }}>
                 <h6>Live Match Commentary</h6>
-                {liveLog.map((ev,i)=>(<motion.div
-                  key={i}
-                  initial={{ opacity:0, x:-10 }}
-                  animate={{ opacity:1, x:0 }}
-                  transition={{ duration:0.3 }}
-                >
-                  {renderEvent(ev)}
-                </motion.div>))}
+                {liveLog.map((ev,i)=>(
+                  <motion.div key={i} initial={{opacity:0,x:-10}} animate={{opacity:1,x:0}} transition={{duration:0.3}}>
+                    {renderEvent(ev)}
+                  </motion.div>
+                ))}
               </div>
             )}
           </div>
@@ -561,20 +538,23 @@ const renderEvent = ev => {
               <Select
                 className="react-select w-75"
                 options={buildOptions()}
-                value={playerB ? { value:playerB.id, label:playerB.name } : null}
-                onChange={opt => opt.value!=='add' && setPlayerB(opt.data)}
+                value={playerB?{value:playerB.id,label:playerB.name}:null}
+                onChange={opt => {
+                  if (opt.value==='add') handleAddPlayer('B');
+                  else setPlayerB(opt.data);
+                }}
                 placeholder="Type to search…"
-                isDisabled={isRunning || isWatching}
+                isDisabled={isRunning||isWatching}
                 styles={{
-                  option: p => ({ ...p, color:'#000' }),
-                  singleValue: p => ({ ...p, color:'#000' })
+                  option: p => ({...p,color:'#000'}),
+                  singleValue: p => ({...p,color:'#000'})
                 }}
               />
               <Button
                 variant="light"
                 className="ms-1"
-                onClick={() => randomPick('B')}
-                disabled={isRunning || isWatching}
+                onClick={()=>randomPick('B')}
+                disabled={isRunning||isWatching}
               >🎲</Button>
             </div>
             {playerB
@@ -582,7 +562,6 @@ const renderEvent = ev => {
               : <div className="player-card placeholder mt-2 p-3"><h5 className="text-muted">Select Player B</h5></div>
             }
           </div>
-
         </div>
       </div>
     </div>

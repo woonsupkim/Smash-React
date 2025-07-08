@@ -10,7 +10,7 @@ import DreamBrackets from './pages/DreamBrackets';
 
 import GATracker from './components/GATracker'; // <-- added this line
 
-import logoATP from './assets/atp.png';
+import logoATP from './assets/atp2.png';
 import logoHome from './assets/ball.png';
 import logoRG from './assets/logo_rg.png';
 import logoWB from './assets/logo_wb.png';
