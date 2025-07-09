@@ -327,6 +327,7 @@ export default function Wimbledon() {
   );
 
   const renderPlayerCard = (player, stats, setStats, _, variant) => (
+    <div className="wimbledon">
     <motion.div
       className={`player-card grass-hover ${variant} mt-2 p-3`}
       initial={{ y:20, opacity:0 }}
@@ -363,6 +364,7 @@ export default function Wimbledon() {
         </motion.div>
       ))}
     </motion.div>
+    </div>
   );
 
   return (
