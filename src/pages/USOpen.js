@@ -324,6 +324,21 @@ export default function Wimbledon() {
     </ul>
   );
 
+
+  const getPlayerImageSrc = (player) => {
+    if (!player) return null;
+    if (player.imageSrc) return player.imageSrc; // uploaded data URL
+
+    // only use require.context if the PNG actually exists
+    const key = `./${player.id}.png`;
+    const keys = playerImgs.keys ? playerImgs.keys() : [];
+    if (keys.includes(key)) return playerImgs(key);
+
+    // fallback to a default image in /public (add one if you don’t have it)
+    return `${process.env.PUBLIC_URL}/assets/players/default.png`;
+  };
+
+
   const renderPlayerCard = (player, stats, setStats, _, variant) => (
     <div className="usopen">
     <motion.div
@@ -333,11 +348,18 @@ export default function Wimbledon() {
       transition={{ duration:0.4 }}
       whileHover={{ scale:1.03, boxShadow:'0 0 12px rgba(0,0,0,0.3)' }}
     >
-      <img
+      {/* <img
         src={player.imageSrc ?? playerImgs(`./${player.id}.png`)}
         alt={player.name}
         className="img-fluid rounded"
+      /> */}
+
+      <img
+        src={getPlayerImageSrc(player)}
+        alt={player.name}
+        className="img-fluid rounded"
       />
+
       <h5 className="text-white mt-2">
         {player.us_seed!=null && <span style={{ color:'#888', marginRight:'0.5rem' }}>{player.us_seed}</span>}
         {player.name}
