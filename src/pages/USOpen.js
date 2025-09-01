@@ -303,6 +303,10 @@ export default function Wimbledon() {
       ]
     : [];
 
+  const totalWins = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
+  const pct = v => totalWins ? Math.round((v / totalWins) * 100) : 0;
+    
+
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i)=>({
         name: lbl,
@@ -495,21 +499,24 @@ export default function Wimbledon() {
                         endAngle={450}
                         paddingAngle={4}
                         isAnimationActive
+                        // label={({ value }) => `${pct(value)}%`}
+                        // labelLine={false}                        
                       >
                         {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]}/>)}
                       </Pie>
                       <Legend content={renderFixedLegend} verticalAlign="bottom"/>
                       <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
                       <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
-                        <tspan x="50%" dy="-0.5em">Vs</tspan>
-                        <tspan x="50%" dy="1.2em">Wins</tspan>
+                        <tspan x="50%" dy="-0.5em">Win</tspan>
+                        <tspan x="50%" dy="1.2em">Percentage</tspan>
                       </text>
                       <text x="10%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                        {batchResult.matchWins[0]}
+                        {pct(batchResult.matchWins[0])}%
                       </text>
                       <text x="90%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                        {batchResult.matchWins[1]}
+                        {pct(batchResult.matchWins[1])}%
                       </text>
+
                     </PieChart>
                   </ResponsiveContainer>
                 </motion.div>
