@@ -131,52 +131,37 @@
   color: #ddd;
 }
 
-/* Grass-court accent for “Fast” button: */
+/* Grass/hard-court accent button */
 .btn-grass {
-  background-color: #8BC34A;
-  border-color: #7CB342;
-  color: #111;
+  background-color: #7BB661;
+  border-color: #6AA551;
+  color: #fff;
+  min-height: 44px;
+}
+.btn-grass:hover {
+  background-color: #6AA551;
+  border-color: #5A9441;
 }
 .btn-grass:disabled {
   opacity: 0.6;
 }
 
-/* Player card hover animation */
+/* Player card */
 .player-card {
-  width: 230px;
+  width: 100%;
+  max-width: 230px;
   height: auto;
   margin-top: .5rem;
-  border: 2px solid #fff;
-  border-radius: 8px;
-  transition: transform .2s, border-color .2s;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-card, 8px);
+  padding: 8px;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 .player-card:hover {
-  transform: scale(1.05);
-  border-color: #8BC34A;
+  transform: translateY(-4px);
 }
 .player-card.placeholder {
   opacity: 0.3;
-}
-
-.player-card {
-  border: 2px solid rgba(255,255,255,0.2);
-  border-radius: 6px;
-  padding: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.player-card.grass-hover:hover {
-  box-shadow: 0 0 12px rgba(123,182,97,0.8);
-  transform: translateY(-4px);
-  border-color: #7BB661;
-}
-.btn-grass {
-  background-color: #7BB661;
-  border-color: #6AA551;
-  color: #fff;
-}
-.btn-grass:hover {
-  background-color: #6AA551;
-  border-color: #5A9441;
 }
 .react-select__control {
   border-radius: 4px;
@@ -185,19 +170,39 @@
   z-index: 10;
 }
 
-
 .usopen .player-card {
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .usopen .player-card.player-a:hover {
-  box-shadow: 0 0 12px #0033A0;
-  transform: translateY(-4px);
-  border-color: #0033A0;
+  box-shadow: 0 0 12px var(--accent-us-a, #0033A0);
+  border-color: var(--accent-us-a, #0033A0);
 }
 
 .usopen .player-card.player-b:hover {
-  box-shadow: 0 0 12px #FFD700;
-  transform: translateY(-4px);
-  border-color: #FFD700;
+  box-shadow: 0 0 12px var(--accent-us-b, #FFD700);
+  border-color: var(--accent-us-b, #FFD700);
+}
+
+/* Mobile: stack Player A / Controls / Player B and shrink panels */
+@media (max-width: 768px) {
+  .wimble-scoreboard, .wimble-sim-panel { max-width: 100%; }
+  .wimble-results { max-width: 100%; flex-wrap: wrap; }
+  .player-card { max-width: 280px; margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 576px) {
+  .wimble-card .big-number { font-size: clamp(1.75rem, 8vw, 3rem); }
+  .wimble-sim-panel button { margin: 0.25rem; }
+}
+/* Three-column simulator layout: shrink-to-fit on mobile instead of a fixed minWidth */
+.sim-col {
+  width: 100%;
+  max-width: 260px;
+}
+.sim-col-controls {
+  width: 100%;
+  max-width: 360px;
+}
+.sim-chart-wrap {
+  width: 100%;
 }

@@ -1,7 +1,10 @@
-.dream-brackets-page {
+/* Dark translucent overlay over the tournament background, denser than
+   Home's since this page has a lot of small text/controls. */
+.bracket-overlay {
+  background-color: rgba(0, 0, 0, 0.78);
+  min-height: calc(100vh - 70px);
   padding: 2rem;
   color: #fff;
-  background: #111; /* dark background */
   font-family: Arial, sans-serif;
 }
 
@@ -10,60 +13,155 @@
 }
 
 .bracket-controls {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Flex container for each round */
+/* Flex container for each round. align-items: stretch makes every column
+   share the row's full height (the height of the tallest column, i.e. the
+   round with the most matches) instead of each column only being as tall
+   as its own content — without that, a column with just one card (e.g.
+   Champion) would only ever be as tall as that one card and could never
+   appear vertically centered relative to the rest of the bracket. */
 .bracket-row {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 2rem;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
   margin-bottom: 2rem;
 }
 
 .bracket-col {
   flex: 1;
+  max-width: 220px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Round headers */
+/* Thin strip between two columns that draws the connector SVG — its width
+   (CONNECTOR_W in DreamBrackets.js) is the entire visual gap between
+   columns now, so .bracket-row itself has no extra gap of its own. Mirrors
+   .bracket-col's [header][content] structure (with an invisible header
+   spacer) so its svg lines up with .bracket-col-matches, not the header. */
+.bracket-connector {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bracket-connector h6 {
+  flex: 0 0 auto;
+  visibility: hidden;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Round headers sit outside the absolutely-positioned matches area below,
+   so a short column (e.g. Champion, with just one card) can still place
+   its card at the exact geometric center computed for the whole bracket,
+   unaffected by header height. */
 .bracket-col h6 {
-  font-size: 0.9rem;
-  letter-spacing: .05em;
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  letter-spacing: .08em;
   margin-bottom: 1rem;
+  color: #ddd;
 }
 
-/* Card style for each match-up */
-.bracket-card {
-  background: #f5f5f5;
-  color: #222;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+/* Height is set inline (per-stage, computed in JS) — this just establishes
+   the positioning context for the absolutely-placed match boxes inside. */
+.bracket-col-matches {
   position: relative;
 }
 
-/* Connector lines */
-.bracket-card::before {
-  content: "";
-  position: absolute;
-  left: -1.5rem;
-  top: 50%;
-  width: 1rem;
-  height: 2px;
-  background: #4caf50;
-  transform: translateY(-50%);
+/* One match = both competitors + a "vs" divider, so it's obvious who's
+   playing who instead of a flat list of names. Position/top/height are set
+   inline per-box from the computed bracket geometry. */
+.bracket-match {
+  background: var(--color-surface, #1c1c1c);
+  border-radius: var(--radius-card, 10px);
+  padding: 0.5rem 0.6rem;
+  box-shadow: var(--shadow-card, 0 4px 16px rgba(0,0,0,0.4));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-/* Champion column needs no connector on left */
-.bracket-col.champion .bracket-card::before {
-  display: none;
+.competitor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  text-align: left;
+  color: #eee;
+  font-size: 0.92rem;
 }
 
-.bracket-col.champion .bracket-card {
-  margin-top: 2.5rem;
+.competitor-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.competitor.winner {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 0 1px var(--bracket-accent, #4caf50);
+}
+
+.competitor.loser {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.competitor.placeholder {
+  color: #888;
+  justify-content: center;
+}
+
+.bracket-result-tag {
+  margin-left: auto;
+  font-size: 0.85rem;
+}
+
+.bracket-vs {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: #888;
+  text-align: center;
+  margin: 0.1rem 0;
+}
+
+.player-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: #333;
+}
+
+/* Editable slot (still a player-card-like Select, just paired now) */
+.competitor.editable {
+  display: block;
+  padding: 0.25rem 0;
+}
+.competitor.editable .bracket-result-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+}
+
+/* Champion column gets its own bigger, centered card */
+.champion-card {
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+.champion-card .competitor {
+  justify-content: center;
+  font-size: 1.1rem;
 }
 
 /* Buttons */
@@ -75,4 +173,30 @@
 .dream-brackets-page .progress {
   max-width: 400px;
   margin-bottom: 2rem;
+}
+
+/* Mobile: turn the multi-column bracket into a deliberate horizontal swipe,
+   one round per snap-point, instead of letting it silently overflow. */
+@media (max-width: 768px) {
+  .bracket-overlay { padding: 1.25rem; }
+  .dream-brackets-page .btn { min-width: 130px; }
+  .dream-brackets-page .progress { max-width: 100%; }
+
+  .bracket-row {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0;
+  }
+  .bracket-col {
+    flex: 0 0 82vw;
+    max-width: 82vw;
+    scroll-snap-align: start;
+  }
+  /* connector lines don't mean anything once each round is its own swipe page */
+  .bracket-connector {
+    display: none;
+  }
 }

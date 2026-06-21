@@ -187,11 +187,17 @@ export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {}
   let server = Math.random() < 0.5 ? 0 : 1;
 
   while (Math.max(...setsWon) < targetSets) {
-    // Regular point
-    const pointWinner = simulatePoint(
+    // Regular point. simulatePoint returns 0/1 relative to server/returner,
+    // not to player A/B, so it must be remapped back to an absolute player
+    // index before being used as a points[]/games[] slot (otherwise, since
+    // the server usually wins their own service game, every service game
+    // would get incorrectly credited to whichever player happens to occupy
+    // index 0 — producing a deterministic sweep instead of a real contest).
+    const rawWinner = simulatePoint(
       server === 0 ? probA : probB,
       server === 0 ? probB : probA
     );
+    const pointWinner = server === 0 ? rawWinner : 1 - rawWinner;
     points[pointWinner]++;
     yield { type: 'point', set: currentSet+1, games: [...games], points: [...points], server, winner: pointWinner, playerA: playerInfo.A, playerB: playerInfo.B };
 

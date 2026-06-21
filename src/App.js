@@ -24,7 +24,7 @@ function App() {
     { to: '/french-open', label: 'French Open', logo: logoRG },
     { to: '/wimbledon', label: 'Wimbledon', logo: logoWB },
     { to: '/us-open', label: 'US Open', logo: logoUS },
-    { to: '/dream-brackets', label: 'Brackets (Under Const)', logo: null },
+    { to: '/dream-brackets', label: 'Dream Brackets', logo: null },
     // { to: '/about', label: 'About Us', logo: null }
   ];
 

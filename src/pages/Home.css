@@ -9,7 +9,7 @@
 
 /* Main heading */
 .main-title {
-  font-size: 3rem;
+  font-size: clamp(2rem, 7vw, 3rem);
   font-weight: 700;
   color: #fff;
   text-shadow: 0 2px 6px rgba(0,0,0,0.7);
@@ -17,7 +17,7 @@
 
 /* Sub-heading paragraph */
 .sub-title {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 3vw, 1.25rem);
   color: #eee;
   max-width: 600px;
   margin: 0 auto 2rem;
@@ -25,15 +25,21 @@
 
 /* Card sizing and look */
 .home-card {
-  width: 14rem;
-  background-color: #222;
+  width: min(14rem, 80vw);
+  background-color: var(--color-surface);
   border: none;
-  border-radius: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-base);
 }
 .home-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-card-hover);
+}
+
+@media (max-width: 576px) {
+  .overlay { padding: 56px 16px 32px; }
+  .home-card { width: min(14rem, 70vw); }
 }
 
 /* Logo inside card */
@@ -58,7 +64,8 @@
 /* Explore button */
 .explore-btn {
   font-weight: 600;
-  padding: 0.5rem 1.25rem;
+  padding: 0.65rem 1.25rem;
+  min-height: 44px;
 }
 
 /* Footer note */

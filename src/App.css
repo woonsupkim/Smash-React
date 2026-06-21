@@ -4,10 +4,49 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+:root {
+  /* spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+
+  /* shared surface/shape language, reused by cards & buttons across pages */
+  --radius-card: 10px;
+  --radius-pill: 999px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-card-hover: 0 10px 24px rgba(0,0,0,0.5);
+  --transition-base: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  /* base palette */
+  --color-surface: #1c1c1c;
+  --color-surface-2: #262626;
+  --color-text-dim: #ccc;
+
+  /* per-tournament accents (referenced by each tournament page's CSS) */
+  --accent-us-a: #0033A0;
+  --accent-us-b: #FFD700;
+  --accent-fr-a: #B24936;
+  --accent-fr-b: #1E2E2B;
+  --accent-wb-a: #3A1C71;
+  --accent-wb-b: #009B5D;
+}
+
 body {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   background-color: #111;
   color: #fff;
+  overflow-x: hidden;
+}
+
+/* Responsive heading scale shared across pages instead of flat 3rem headers */
+h1, .heading-xl {
+  font-size: clamp(1.75rem, 6vw, 3rem);
+}
+h2, .heading-lg {
+  font-size: clamp(1.4rem, 4.5vw, 2.25rem);
 }
 
 /* Navbar overrides */
@@ -66,6 +105,23 @@ body {
 .wimbledon-bg { background-image: url(./assets/smash2b.jpg); }
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
+
+/* Shared card/button polish, reused across Home/tournament/bracket pages */
+.app-card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-base);
+}
+.app-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+@media (max-width: 576px) {
+  .page-content { padding-top: 60px; }
+  .page-background { min-height: calc(100vh - 60px); }
+}
 
 
 /* Text color utilities */

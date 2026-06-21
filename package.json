@@ -25,7 +25,14 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "build-roster": "node data-pipeline/buildRoster.js",
+    "fetch-images": "node data-pipeline/fetchImages.js",
+    "fetch-stats": "node data-pipeline/fetch.js",
+    "compute-stats": "node data-pipeline/computeStats.js",
+    "build-stats-csv": "node data-pipeline/buildTournamentCsv.js",
+    "backtest": "node data-pipeline/backtest.js",
+    "refresh-stats": "npm run fetch-stats && npm run compute-stats && npm run build-stats-csv"
   },
   "eslintConfig": {
     "extends": [
@@ -46,6 +53,7 @@
     ]
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.11"
+    "@tailwindcss/postcss": "^4.1.11",
+    "dotenv": "^17.4.2"
   }
 }

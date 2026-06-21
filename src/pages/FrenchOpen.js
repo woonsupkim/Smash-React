@@ -77,6 +77,8 @@ export default function Wimbledon() {
   const [liveLog, setLiveLog]             = useState([]);
   const [isWatching, setIsWatching]       = useState(false);
   const batchRef                          = useRef({ completed: 0, total: 0 });
+  const watchTimeoutRef = useRef(null);
+  const commentaryRef = useRef(null);
 
   // --- load players CSV ---
   useEffect(() => {
@@ -103,6 +105,16 @@ export default function Wimbledon() {
     STAT_KEYS.forEach(([k]) => obj[k] = (playerB[k] || 0) * 100);
     setStatsB(obj);
   }, [playerB]);
+
+  // stop the watch-match playback loop if the component unmounts mid-match
+  useEffect(() => {
+    return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
+  }, []);
+
+  // keep the live commentary box scrolled to the newest point as it streams in
+  useEffect(() => {
+    if (commentaryRef.current) commentaryRef.current.scrollTop = commentaryRef.current.scrollHeight;
+  }, [liveLog]);
 
   // --- reveal charts delay ---
   useEffect(() => {
@@ -243,6 +255,7 @@ export default function Wimbledon() {
 
   const handleWatchMatch = () => {
     if (!playerA || !playerB) return showPlayerError();
+    if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current);
     const pA = STAT_KEYS.map(([k]) => (statsA[k]||0)/100);
     const pB = STAT_KEYS.map(([k]) => (statsB[k]||0)/100);
     const gen = simulateMatchStepwise(pA, pB, { A: playerA, B: playerB });
@@ -251,9 +264,9 @@ export default function Wimbledon() {
     setIsWatching(true);
     const advance = () => {
       const { value, done } = gen.next();
-      if (done) return setIsWatching(false);
+      if (done) { watchTimeoutRef.current = null; return setIsWatching(false); }
       setLiveLog(prev => [...prev, value]);
-      setTimeout(advance, 400);
+      watchTimeoutRef.current = setTimeout(advance, 400);
     };
     advance();
   };
@@ -382,7 +395,7 @@ export default function Wimbledon() {
 
         <div className="d-flex flex-wrap justify-content-center">
           {/* Player A */}
-          <div className="mx-3 text-start" style={{ minWidth:260 }}>
+          <div className="mx-3 text-start sim-col">
             <Form.Label className="text-white">Player A</Form.Label>
             <div className="d-flex mb-2">
               <Select
@@ -414,7 +427,7 @@ export default function Wimbledon() {
           </div>
 
           {/* Controls & Charts */}
-          <div className="mx-4 text-center" style={{ minWidth:360 }}>
+          <div className="mx-4 text-center sim-col-controls">
             {/* Sim count */}
             <Form.Group controlId="simCount" className="mb-2">
               <Form.Label className="text-white">Simulations</Form.Label>
@@ -462,7 +475,7 @@ export default function Wimbledon() {
                   exit={{ scale:0.8, opacity:0 }}
                   transition={{ duration:0.5 }}
                 >
-                  <ResponsiveContainer width={350} height={350}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -504,7 +517,7 @@ export default function Wimbledon() {
                   exit={{ scale:0.8, opacity:0 }}
                   transition={{ duration:0.5, delay:0.2 }}
                 >
-                  <ResponsiveContainer width={420} height={260}>
+                  <ResponsiveContainer width="100%" height={260}>
                     <BarChart layout="vertical" data={barData} margin={{ top:5, right:90, bottom:60, left:20 }}>
                       <XAxis type="number" stroke="#fff"/>
                       <YAxis dataKey="name" type="category" stroke="#fff" width={60}/>
@@ -520,8 +533,8 @@ export default function Wimbledon() {
 
             {/* Live Commentary */}
             {liveLog.length>0 && (
-              <div className="live-commentary text-start mt-3 px-3 text-white" style={{ maxHeight:'150px', overflowY:'auto' }}>
-                <h6>Live Match Commentary</h6>
+              <div ref={commentaryRef} className="live-commentary text-start mt-3 px-3 text-white" style={{ maxHeight:'220px', overflowY:'auto' }}>
+                <h6>Live Match Commentary {isWatching && '(playing...)'}</h6>
                 {liveLog.map((ev,i)=>(
                   <motion.div key={i} initial={{opacity:0,x:-10}} animate={{opacity:1,x:0}} transition={{duration:0.3}}>
                     {renderEvent(ev)}
@@ -532,7 +545,7 @@ export default function Wimbledon() {
           </div>
 
           {/* Player B */}
-          <div className="mx-3 text-start" style={{ minWidth:260 }}>
+          <div className="mx-3 text-start sim-col">
             <Form.Label className="text-white">Player B</Form.Label>
             <div className="d-flex mb-2">
               <Select
