@@ -15,6 +15,7 @@ import logoHome from './assets/ball.png';
 import logoRG from './assets/logo_rg.png';
 import logoWB from './assets/logo_wb.png';
 import logoUS from './assets/logo_us.png';
+import iconBracket from './assets/icon_bracket.svg';
 
 import './App.css';
 
@@ -24,7 +25,7 @@ function App() {
     { to: '/french-open', label: 'French Open', logo: logoRG },
     { to: '/wimbledon', label: 'Wimbledon', logo: logoWB },
     { to: '/us-open', label: 'US Open', logo: logoUS },
-    { to: '/dream-brackets', label: 'Dream Brackets', logo: null },
+    { to: '/dream-brackets', label: 'Brackets', logo: iconBracket },
     // { to: '/about', label: 'About Us', logo: null }
   ];
 

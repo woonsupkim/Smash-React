@@ -1,7 +1,11 @@
 /**
- * Merges data-pipeline/output/player_stats.csv (decayed p1-p5) into the
- * existing public/data/smash_*.csv files, overwriting only p1-p5 and
- * leaving id/name/first/last/us_seed/us_rd untouched.
+ * Merges data-pipeline/output/player_stats_<surface>.csv (decayed p1-p6,
+ * computed separately per court surface) into the matching
+ * public/data/smash_*.csv file, overwriting only p1-p6 and leaving
+ * id/name/first/last/us_seed/us_rd untouched. US Open is hard, French Open
+ * is clay, Wimbledon is grass — each tournament's players get stats
+ * computed from their matches on that specific surface, not a blended
+ * all-surfaces average.
  */
 const fs = require('fs');
 const path = require('path');
@@ -9,24 +13,29 @@ const Papa = require('papaparse');
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
-const TARGET_FILES = ['smash_us.csv', 'smash_fr.csv', 'smash_wb.csv'];
+const SURFACE_BY_FILE = {
+  'smash_us.csv': 'hard',
+  'smash_fr.csv': 'clay',
+  'smash_wb.csv': 'grass',
+};
 
 function main() {
-  const statsPath = path.join(OUTPUT_DIR, 'player_stats.csv');
-  if (!fs.existsSync(statsPath)) {
-    console.error('Missing data-pipeline/output/player_stats.csv — run computeStats.js first.');
-    process.exit(1);
-  }
-  const { data: statsRows } = Papa.parse(fs.readFileSync(statsPath, 'utf8'), { header: true });
-  const statsById = new Map(statsRows.filter((r) => r.id).map((r) => [r.id, r]));
+  for (const [file, surface] of Object.entries(SURFACE_BY_FILE)) {
+    const statsPath = path.join(OUTPUT_DIR, `player_stats_${surface}.csv`);
+    if (!fs.existsSync(statsPath)) {
+      console.warn(`  skip ${file}: missing ${statsPath} — run computeStats.js first.`);
+      continue;
+    }
+    const { data: statsRows } = Papa.parse(fs.readFileSync(statsPath, 'utf8'), { header: true });
+    const statsById = new Map(statsRows.filter((r) => r.id).map((r) => [r.id, r]));
 
-  for (const file of TARGET_FILES) {
     const csvPath = path.join(PUBLIC_DATA_DIR, file);
     if (!fs.existsSync(csvPath)) {
       console.warn(`  skip ${file}: not found`);
       continue;
     }
     const { data: rows, meta } = Papa.parse(fs.readFileSync(csvPath, 'utf8'), { header: true });
+    const fields = meta.fields.includes('p6') ? meta.fields : [...meta.fields, 'p6'];
 
     let updated = 0;
     let missing = 0;
@@ -34,14 +43,16 @@ function main() {
       const stat = statsById.get(row.id);
       if (!stat) {
         missing++;
-        return row;
+        // p6 is a new column — give rows with no surface-specific data yet
+        // a neutral fallback instead of leaving it blank.
+        return { ...row, p6: row.p6 || '0.05' };
       }
       updated++;
-      return { ...row, p1: stat.p1, p2: stat.p2, p3: stat.p3, p4: stat.p4, p5: stat.p5 };
+      return { ...row, p1: stat.p1, p2: stat.p2, p3: stat.p3, p4: stat.p4, p5: stat.p5, p6: stat.p6 };
     });
 
-    fs.writeFileSync(csvPath, Papa.unparse({ fields: meta.fields, data: merged }));
-    console.log(`  ${file}: updated ${updated} players, ${missing} kept as-is (no recent match data)`);
+    fs.writeFileSync(csvPath, Papa.unparse({ fields, data: merged }));
+    console.log(`  ${file} (${surface}): updated ${updated} players, ${missing} kept as-is (no ${surface}-court match data)`);
   }
 }
 

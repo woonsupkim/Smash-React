@@ -1,12 +1,17 @@
 /**
  * Simulates a single point given server and returner probabilities.
- * @param {number[]} srv - [p1, p2, p3, p4, p5] for server
- * @param {number[]} rtn - [p1, p2, p3, p4, p5] for returner
+ * @param {number[]} srv - [p1, p2, p3, p4, p5, p6] for server (p6 = ace rate given 1st serve in; optional, defaults to 0 if omitted)
+ * @param {number[]} rtn - [p1, p2, p3, p4, p5, p6] for returner
  * @returns {0|1} 0 if server wins, 1 if returner wins
  */
 function simulatePoint(srv, rtn) {
   // First serve
   if (Math.random() < srv[0]) {
+    // Unreturnable ace — the point ends before the returner gets involved at
+    // all, which is why this is checked separately from the rally win rate
+    // (p5): an ace isn't a function of the returner's skill, but blending
+    // it into p5 (as the original model did) made it look like one.
+    if (Math.random() < srv[5]) return 0;
     // Return first serve
     if (Math.random() < rtn[2]) {
       // Rally outcome

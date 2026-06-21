@@ -42,7 +42,8 @@ const STAT_KEYS = [
   ['p2', '2nd Serve In'],
   ['p3', '1st Serve Return'],
   ['p4', '2nd Serve Return'],
-  ['p5', 'Volley Win']
+  ['p5', 'Volley Win'],
+  ['p6', 'Ace Rate']
 ];
 
 const Flowchart = () => (
@@ -177,6 +178,7 @@ export default function Wimbledon() {
       p3: form.stats.p3 / 100,
       p4: form.stats.p4 / 100,
       p5: form.stats.p5 / 100,
+      p6: form.stats.p6 / 100,
       imageSrc,
       us_rd: 2
     };

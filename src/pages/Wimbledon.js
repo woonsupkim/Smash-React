@@ -44,7 +44,8 @@ const STAT_KEYS = [
   ['p2', '2nd Serve In'],
   ['p3', '1st Serve Return'],
   ['p4', '2nd Serve Return'],
-  ['p5', 'Volley Win']
+  ['p5', 'Volley Win'],
+  ['p6', 'Ace Rate']
 ];
 
 const Flowchart = () => (
@@ -179,6 +180,7 @@ export default function Wimbledon() {
       p3: form.stats.p3 / 100,
       p4: form.stats.p4 / 100,
       p5: form.stats.p5 / 100,
+      p6: form.stats.p6 / 100,
       imageSrc,
       us_rd: 2
     };
@@ -317,6 +319,9 @@ export default function Wimbledon() {
         { name: playerB.name, value: batchResult.matchWins[1] }
       ]
     : [];
+
+  const totalWins = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
+  const pct = v => totalWins ? Math.round((v / totalWins) * 100) : 0;
 
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i)=>({
@@ -494,14 +499,14 @@ export default function Wimbledon() {
                       <Legend content={renderFixedLegend} verticalAlign="bottom"/>
                       <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
                       <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
-                        <tspan x="50%" dy="-0.5em">Vs</tspan>
-                        <tspan x="50%" dy="1.2em">Wins</tspan>
+                        <tspan x="50%" dy="-0.5em">Win</tspan>
+                        <tspan x="50%" dy="1.2em">Percentage</tspan>
                       </text>
                       <text x="10%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                        {batchResult.matchWins[0]}
+                        {pct(batchResult.matchWins[0])}%
                       </text>
                       <text x="90%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                        {batchResult.matchWins[1]}
+                        {pct(batchResult.matchWins[1])}%
                       </text>
                     </PieChart>
                   </ResponsiveContainer>

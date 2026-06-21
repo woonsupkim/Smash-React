@@ -144,24 +144,43 @@
   background: #333;
 }
 
-/* Editable slot (still a player-card-like Select, just paired now) */
+/* Editable slot (still a player-card-like Select, just paired now). The
+   result tag is an absolutely-positioned badge rather than inline content,
+   so it never adds extra height to the row — that extra height was
+   overflowing the fixed MATCH_BOX_H box and overlapping the match below
+   once results appeared. */
 .competitor.editable {
   display: block;
+  position: relative;
   padding: 0.25rem 0;
 }
 .competitor.editable .bracket-result-tag {
-  display: inline-block;
-  margin-left: 0.5rem;
+  position: absolute;
+  top: 0.25rem;
+  right: -0.4rem;
+  background: #1c1c1c;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  line-height: 1;
 }
 
-/* Champion column gets its own bigger, centered card */
+/* Champion column gets its own bigger, centered card. Width is intrinsic
+   (set inline, max-content) rather than stretched to the column width, so
+   long names size the box instead of wrapping to a second line. */
 .champion-card {
-  padding: 1.25rem 1rem;
+  padding: 1.25rem 1.5rem;
   text-align: center;
+  white-space: nowrap;
 }
 .champion-card .competitor {
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 1.6vw, 1.1rem);
+  white-space: nowrap;
 }
 
 /* Buttons */

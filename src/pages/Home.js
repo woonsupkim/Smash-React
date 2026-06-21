@@ -8,12 +8,14 @@ import './Home.css';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
+import iconBracket from '../assets/icon_bracket.svg';
 
 export default function Home() {
   const tournaments = [
     { to: '/french-open', logo: logoRG, title: 'French Open', desc: 'Clay-court drama awaits' },
     { to: '/wimbledon',  logo: logoWB, title: 'Wimbledon',  desc: 'Tradition meets grass magic' },
     { to: '/us-open',    logo: logoUS, title: 'US Open',    desc: 'Hard-court showdowns' },
+    { to: '/dream-brackets', logo: iconBracket, title: 'Brackets', desc: 'Crown your bracket champion' },
   ];
 
   return (

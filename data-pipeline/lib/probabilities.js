@@ -1,8 +1,14 @@
 /**
  * Shared logic for turning raw per-match serve/return box scores into
- * simulator.js-compatible p1-p5 probabilities, with exponential time-decay
+ * simulator.js-compatible p1-p6 probabilities, with exponential time-decay
  * weighting. Used by both computeStats.js (live refresh) and backtest.js
  * (point-in-time calibration).
+ *
+ * p6 (ace rate given 1st serve in) was added after a backtested prototype
+ * (data-pipeline/prototypeAceModel.js) showed splitting it out of p5
+ * improves calibration (lower Brier score / log loss) versus blending ace
+ * rate into the rally-win rate — an ace isn't a function of the returner's
+ * skill, so lumping it into p5 made aces look like rally dominance.
  */
 const P5_BASELINE = 0.38;
 
@@ -14,7 +20,7 @@ function decayWeight(matchDate, asOfDate, halfLifeDays) {
 
 function emptyAgg() {
   return {
-    svpt: 0, firstIn: 0, df: 0, firstWon: 0, secondAttempts: 0, secondWon: 0,
+    svpt: 0, firstIn: 0, df: 0, firstWon: 0, secondAttempts: 0, secondWon: 0, aces: 0,
     oppFirstIn: 0, oppFirstWon: 0, oppSecondAttempts: 0, oppSecondWon: 0,
   };
 }
@@ -26,6 +32,7 @@ function addServerStats(agg, w, side) {
   const firstWon = Number(side.winningOnFirstServe) || 0;
   const secondTotal = Number(side.winningOnSecondServeOf) || 0; // includes DFs
   const secondWon = Number(side.winningOnSecondServe) || 0;
+  const aces = Number(side.aces) || 0;
   const secondAttempts = Math.max(secondTotal - df, 0); // 2nd serves actually put in play
   agg.svpt += w * svpt;
   agg.firstIn += w * firstIn;
@@ -33,6 +40,7 @@ function addServerStats(agg, w, side) {
   agg.firstWon += w * firstWon;
   agg.secondAttempts += w * secondAttempts;
   agg.secondWon += w * secondWon;
+  agg.aces += w * aces; // attributed entirely to 1st serve — box scores don't split aces by serve number, and 2nd-serve aces are rare enough in pro tennis to approximate as zero
 }
 
 function addReturnerStats(agg, w, opponentSide) {
@@ -73,32 +81,41 @@ function clamp01(x) {
   return Math.min(1, Math.max(0, x));
 }
 
-// Derives p1-p5 from one player's aggregated sums plus tour-average rates
+// Derives p1-p6 from one player's aggregated sums plus tour-average rates
 // (used as a fallback when data is thin, and as the centering baseline for
-// p5 — see computeStats.js header comment for why p5 needs a baseline).
+// p5 — see header comment for why p5 needs a baseline).
 function deriveProbabilities(agg, tourAverages) {
-  const { r3Avg, r4Avg, tourServerWin1st, tourServerWin2nd } = tourAverages;
+  const { r3Avg, r4Avg, tourServerWin1stNonAce, tourServerWin2nd } = tourAverages;
   if (agg.svpt < 200) return null; // not enough data to trust
 
   const p1 = agg.firstIn / agg.svpt;
   const p2 = agg.secondAttempts / (agg.svpt - agg.firstIn);
   const p3 = agg.oppFirstIn > 0 ? 1 - agg.oppFirstWon / agg.oppFirstIn : r3Avg;
   const p4 = agg.oppSecondAttempts > 0 ? 1 - agg.oppSecondWon / agg.oppSecondAttempts : r4Avg;
+  const p6 = agg.firstIn > 0 ? clamp01(agg.aces / agg.firstIn) : 0;
 
-  const serverWin1st = agg.firstWon / agg.firstIn;
+  // p5 is rally-win rate net of aces: aces are pulled out of the
+  // first-serve-win rate before centering against the (also ace-adjusted)
+  // tour average, so p5 represents pure rally skill rather than rally+ace
+  // combined.
+  const nonAceFirstWon = Math.max(agg.firstWon - agg.aces, 0);
+  const nonAceFirstIn = Math.max(agg.firstIn - agg.aces, 1e-9);
+  const serverWin1stNonAce = nonAceFirstWon / nonAceFirstIn;
   const serverWin2nd = agg.secondWon / agg.secondAttempts;
-  const delta1 = serverWin1st - tourServerWin1st;
+  const delta1 = serverWin1stNonAce - tourServerWin1stNonAce;
   const delta2 = serverWin2nd - tourServerWin2nd;
   const p5 = Math.min(0.65, Math.max(0.05, P5_BASELINE + (delta1 + delta2) / 2));
 
-  return [clamp01(p1), clamp01(p2), clamp01(p3), clamp01(p4), p5];
+  return [clamp01(p1), clamp01(p2), clamp01(p3), clamp01(p4), p5, p6];
 }
 
 function deriveTourAverages(tourTotals) {
+  const nonAceFirstWon = Math.max(tourTotals.firstWon - tourTotals.aces, 0);
+  const nonAceFirstIn = Math.max(tourTotals.firstIn - tourTotals.aces, 1e-9);
   return {
     r3Avg: 1 - tourTotals.firstWon / tourTotals.firstIn,
     r4Avg: 1 - tourTotals.secondWon / tourTotals.secondAttempts,
-    tourServerWin1st: tourTotals.firstWon / tourTotals.firstIn,
+    tourServerWin1stNonAce: nonAceFirstWon / nonAceFirstIn,
     tourServerWin2nd: tourTotals.secondWon / tourTotals.secondAttempts,
   };
 }

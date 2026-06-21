@@ -1,51 +1,51 @@
-id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5
-sinne,Jannik Sinner,Jannik,Sinner,1,2,0.63,0.94,0.36,0.48,0.45
-alcar,Carlos Alcaraz,Carlos,Alcaraz,2,2,0.67,0.90,0.35,0.50,0.42
-zvere,Alexander Zverev,Alexander,Zverev,3,2,0.72,0.91,0.30,0.48,0.44
-auger,Felix Auger Aliassime,Felix,Auger Aliassime,4,2,0.68,0.91,0.30,0.41,0.41
-shelt,Ben Shelton,Ben,Shelton,5,2,0.68,0.89,0.23,0.40,0.46
-demin,Alex De Minaur,Alex,De Minaur,6,2,0.57,0.92,0.33,0.49,0.39
-medve,Daniil Medvedev,Daniil,Medvedev,7,2,0.64,0.86,0.34,0.49,0.39
-djoko,Novak Djokovic,Novak,Djokovic,8,2,0.68,0.91,0.31,0.49,0.41
-fritz,Taylor Fritz,Taylor,Fritz,9,2,0.68,0.93,0.25,0.42,0.43
-cobol,Flavio Cobolli,Flavio,Cobolli,10,2,0.55,0.92,0.30,0.43,0.40
-bubli,Alexander Bublik,Alexander,Bublik,11,2,0.65,0.87,0.26,0.41,0.40
-lehec,Jiri Lehecka,Jiri,Lehecka,12,2,0.65,0.96,0.28,0.39,0.41
-ruble,Andrey Rublev,Andrey,Rublev,13,2,0.61,0.91,0.31,0.45,0.38
-ruud,Casper Ruud,Casper,Ruud,14,2,0.66,0.91,0.31,0.48,0.41
-muset,Lorenzo Musetti,Lorenzo,Musetti,15,2,0.66,0.92,0.30,0.44,0.37
-mensi,Jakub Mensik,Jakub,Mensik,16,2,0.60,0.88,0.30,0.43,0.40
-darde,Luciano Darderi,Luciano,Darderi,17,2,0.57,0.93,0.33,0.42,0.37
-khach,Karen Khachanov,Karen,Khachanov,18,2,0.65,0.95,0.27,0.44,0.39
-tien,Learner Tien,Learner,Tien,19,2,0.61,0.88,0.32,0.46,0.39
-vache,Valentin Vacherot,Valentin,Vacherot,20,2,0.64,0.90,0.29,0.42,0.42
-fils,Arthur Fils,Arthur,Fils,21,2,0.64,0.91,0.28,0.45,0.42
-fokin,Alejandro Davidovich Fokina,Alejandro,Davidovich Fokina,22,2,0.70,0.95,0.29,0.43,0.35
-jodar,Rafael Jodar,Rafael,Jodar,23,2,0.64,0.93,0.35,0.48,0.39
-rinde,Arthur Rinderknech,Arthur,Rinderknech,24,2,0.63,0.90,0.25,0.41,0.41
-fonse,Joao Fonseca,Joao,Fonseca,25,2,0.68,0.95,0.27,0.47,0.39
-tiafo,Frances Tiafoe,Frances,Tiafoe,26,2,0.60,0.94,0.27,0.47,0.40
-cerun,Francisco Cerundolo,Francisco,Cerundolo,27,2,0.59,0.90,0.34,0.51,0.37
-paul,Tommy Paul,Tommy,Paul,28,2,0.61,0.94,0.32,0.48,0.40
-norri,Cameron Norrie,Cameron,Norrie,29,2,0.63,0.92,0.27,0.44,0.37
-etche,Tomas Martin Etcheverry,Tomas,Martin Etcheverry,30,2,0.65,0.92,0.28,0.43,0.39
-tabil,Alejandro Tabilo,Alejandro,Tabilo,31,2,0.63,0.94,0.30,0.46,0.39
-nakas,Brandon Nakashima,Brandon,Nakashima,32,2,0.67,0.97,0.27,0.47,0.38
-humbe,Ugo Humbert,Ugo,Humbert,33,2,0.59,0.88,0.25,0.46,0.43
-arnal,Matteo Arnaldi,Matteo,Arnaldi,34,2,0.60,0.90,0.33,0.45,0.37
-buse,Ignacio Buse,Ignacio,Buse,35,2,0.59,0.94,0.33,0.46,0.36
-moute,Corentin Moutet,Corentin,Moutet,36,2,0.65,0.92,0.31,0.47,0.35
-block,Alexander Blockx,Alexander,Blockx,37,2,0.61,0.93,0.31,0.43,0.42
-miche,Alex Michelsen,Alex,Michelsen,38,2,0.65,0.91,0.28,0.46,0.37
-navon,Mariano Navone,Mariano,Navone,39,2,0.75,0.89,0.35,0.51,0.34
-griek,Tallon Griekspoor,Tallon,Griekspoor,40,2,0.62,0.89,0.26,0.41,0.39
-shapo,Denis Shapovalov,Denis,Shapovalov,41,2,0.58,0.82,0.29,0.44,0.39
-macha,Tomas Machac,Tomas,Machac,42,2,0.64,0.91,0.29,0.43,0.36
-clar,Jaume Antoni Munar Clar,Jaume,Antoni Munar Clar,43,2,0.62,0.92,0.30,0.45,0.36
-manna,Adrian Mannarino,Adrian,Mannarino,44,2,0.63,0.93,0.26,0.44,0.35
-cerun1,Juan Manuel Cerundolo,Juan,Manuel Cerundolo,45,2,0.58,0.93,0.31,0.46,0.38
-cilic,Marin Cilic,Marin,Cilic,46,2,0.58,0.91,0.26,0.42,0.38
-majch,Kamil Majchrzak,Kamil,Majchrzak,47,2,0.65,0.96,0.28,0.44,0.37
-bergs,Zizou Bergs,Zizou,Bergs,48,2,0.58,0.87,0.29,0.43,0.40
-berre,Matteo Berrettini,Matteo,Berrettini,49,2,0.64,0.94,0.29,0.39,0.40
-kecma,Miomir Kecmanovic,Miomir,Kecmanovic,50,2,0.62,0.93,0.30,0.46,0.39
+id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5,p6
+sinne,Jannik Sinner,Jannik,Sinner,1,2,0.67,0.94,0.32,0.49,0.44,0.24
+alcar,Carlos Alcaraz,Carlos,Alcaraz,2,2,0.69,0.92,0.34,0.51,0.43,0.10
+zvere,Alexander Zverev,Alexander,Zverev,3,2,0.71,0.93,0.28,0.46,0.43,0.20
+auger,Felix Auger Aliassime,Felix,Auger Aliassime,4,2,0.68,0.87,0.29,0.43,0.42,0.19
+shelt,Ben Shelton,Ben,Shelton,5,2,0.65,0.91,0.25,0.36,0.46,0.21
+demin,Alex De Minaur,Alex,De Minaur,6,2,0.59,0.91,0.29,0.49,0.40,0.12
+medve,Daniil Medvedev,Daniil,Medvedev,7,2,0.67,0.87,0.35,0.52,0.39,0.16
+djoko,Novak Djokovic,Novak,Djokovic,8,2,0.66,0.90,0.30,0.50,0.41,0.12
+fritz,Taylor Fritz,Taylor,Fritz,9,2,0.66,0.95,0.25,0.46,0.40,0.24
+cobol,Flavio Cobolli,Flavio,Cobolli,10,2,0.55,0.92,0.30,0.43,0.40,0.05
+bubli,Alexander Bublik,Alexander,Bublik,11,2,0.66,0.88,0.29,0.39,0.40,0.23
+lehec,Jiri Lehecka,Jiri,Lehecka,12,2,0.65,0.96,0.30,0.42,0.38,0.15
+ruble,Andrey Rublev,Andrey,Rublev,13,2,0.63,0.91,0.29,0.45,0.40,0.17
+ruud,Casper Ruud,Casper,Ruud,14,2,0.67,0.92,0.24,0.39,0.40,0.14
+muset,Lorenzo Musetti,Lorenzo,Musetti,15,2,0.65,0.92,0.32,0.51,0.39,0.10
+mensi,Jakub Mensik,Jakub,Mensik,16,2,0.62,0.87,0.30,0.42,0.39,0.24
+darde,Luciano Darderi,Luciano,Darderi,17,2,0.57,0.93,0.33,0.42,0.37,0.05
+khach,Karen Khachanov,Karen,Khachanov,18,2,0.65,0.93,0.26,0.42,0.40,0.16
+tien,Learner Tien,Learner,Tien,19,2,0.61,0.85,0.30,0.47,0.40,0.15
+vache,Valentin Vacherot,Valentin,Vacherot,20,2,0.67,0.87,0.26,0.41,0.43,0.23
+fils,Arthur Fils,Arthur,Fils,21,2,0.65,0.92,0.26,0.47,0.43,0.11
+fokin,Alejandro Davidovich Fokina,Alejandro,Davidovich Fokina,22,2,0.69,0.92,0.28,0.46,0.40,0.10
+jodar,Rafael Jodar,Rafael,Jodar,23,2,0.63,0.93,0.32,0.48,0.40,0.12
+rinde,Arthur Rinderknech,Arthur,Rinderknech,24,2,0.65,0.93,0.22,0.39,0.36,0.20
+fonse,Joao Fonseca,Joao,Fonseca,25,2,0.68,0.95,0.27,0.47,0.39,0.05
+tiafo,Frances Tiafoe,Frances,Tiafoe,26,2,0.61,0.95,0.25,0.47,0.38,0.15
+cerun,Francisco Cerundolo,Francisco,Cerundolo,27,2,0.62,0.92,0.31,0.50,0.38,0.07
+paul,Tommy Paul,Tommy,Paul,28,2,0.61,0.95,0.29,0.46,0.45,0.13
+norri,Cameron Norrie,Cameron,Norrie,29,2,0.63,0.93,0.28,0.44,0.38,0.11
+etche,Tomas Martin Etcheverry,Tomas,Martin Etcheverry,30,2,0.66,0.95,0.27,0.40,0.40,0.15
+tabil,Alejandro Tabilo,Alejandro,Tabilo,31,2,0.67,0.93,0.25,0.46,0.38,0.13
+nakas,Brandon Nakashima,Brandon,Nakashima,32,2,0.67,0.97,0.27,0.47,0.38,0.05
+humbe,Ugo Humbert,Ugo,Humbert,33,2,0.63,0.91,0.25,0.41,0.41,0.17
+arnal,Matteo Arnaldi,Matteo,Arnaldi,34,2,0.60,0.90,0.33,0.45,0.37,0.05
+buse,Ignacio Buse,Ignacio,Buse,35,2,0.59,0.94,0.33,0.46,0.36,0.05
+moute,Corentin Moutet,Corentin,Moutet,36,2,0.65,0.92,0.31,0.47,0.35,0.05
+block,Alexander Blockx,Alexander,Blockx,37,2,0.57,0.94,0.34,0.41,0.38,0.16
+miche,Alex Michelsen,Alex,Michelsen,38,2,0.66,0.93,0.26,0.45,0.40,0.14
+navon,Mariano Navone,Mariano,Navone,39,2,0.70,0.91,0.32,0.44,0.37,0.04
+griek,Tallon Griekspoor,Tallon,Griekspoor,40,2,0.62,0.89,0.26,0.41,0.39,0.05
+shapo,Denis Shapovalov,Denis,Shapovalov,41,2,0.58,0.82,0.29,0.44,0.39,0.05
+macha,Tomas Machac,Tomas,Machac,42,2,0.64,0.93,0.29,0.45,0.37,0.11
+clar,Jaume Antoni Munar Clar,Jaume,Antoni Munar Clar,43,2,0.62,0.92,0.30,0.45,0.36,0.05
+manna,Adrian Mannarino,Adrian,Mannarino,44,2,0.63,0.93,0.26,0.44,0.35,0.05
+cerun1,Juan Manuel Cerundolo,Juan,Manuel Cerundolo,45,2,0.58,0.93,0.31,0.46,0.38,0.05
+cilic,Marin Cilic,Marin,Cilic,46,2,0.58,0.91,0.26,0.42,0.38,0.05
+majch,Kamil Majchrzak,Kamil,Majchrzak,47,2,0.64,0.94,0.28,0.46,0.35,0.11
+bergs,Zizou Bergs,Zizou,Bergs,48,2,0.57,0.87,0.25,0.44,0.40,0.17
+berre,Matteo Berrettini,Matteo,Berrettini,49,2,0.64,0.94,0.29,0.39,0.40,0.05
+kecma,Miomir Kecmanovic,Miomir,Kecmanovic,50,2,0.62,0.93,0.30,0.46,0.39,0.05

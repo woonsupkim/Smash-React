@@ -29,9 +29,9 @@ const getPlayerImageSrc = (player) => {
 };
 
 const TOURNAMENTS = [
-  { value: 'smash_us.csv', label: 'US Open', bgClass: 'usopen-bg', accentVar: '--accent-us-a' },
   { value: 'smash_fr.csv', label: 'French Open', bgClass: 'french-bg', accentVar: '--accent-fr-a' },
   { value: 'smash_wb.csv', label: 'Wimbledon', bgClass: 'wimbledon-bg', accentVar: '--accent-wb-a' },
+  { value: 'smash_us.csv', label: 'US Open', bgClass: 'usopen-bg', accentVar: '--accent-us-a' },
 ];
 
 // Each stage's slot count, plus the round labels from that starting point
@@ -43,7 +43,8 @@ const STAGES = [
   { value: 'final', label: 'Final', slots: 2, roundLabels: ['FINAL', 'CHAMPION'] },
 ];
 
-const SIMS_PER_MATCHUP = 1000;
+const SIMS_PER_MATCHUP_OPTIONS = [1, 10, 500, 1000];
+const DEFAULT_SIMS_PER_MATCHUP = 1000;
 
 // Bracket-tree geometry constants. Match box height needs to comfortably
 // fit 2 competitor rows (avatar+name, or a react-select control) plus the
@@ -112,6 +113,7 @@ export default function DreamBrackets() {
 
   const [slots, setSlots] = useState(Array(stageConfig.slots).fill(null));
   const [playersPool, setPlayersPool] = useState([]);
+  const [simsPerMatch, setSimsPerMatch] = useState(DEFAULT_SIMS_PER_MATCHUP);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -143,6 +145,7 @@ export default function DreamBrackets() {
                 Number(r.p3),
                 Number(r.p4),
                 Number(r.p5),
+                Number(r.p6) || 0,
               ],
             }))
         );
@@ -165,6 +168,22 @@ export default function DreamBrackets() {
     const next = [...slots];
     next[idx] = player;
     setSlots(next);
+  };
+
+  // fill every slot with a random, non-duplicate set of players from the pool
+  const handleRandomizeAll = () => {
+    if (playersPool.length < slots.length) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Not enough players',
+        text: `Need at least ${slots.length} players in the pool to randomize this bracket.`
+      });
+      return;
+    }
+    const shuffled = [...playersPool].sort(() => Math.random() - 0.5);
+    setSlots(shuffled.slice(0, slots.length));
+    setRounds([]); // clear any stale simulation results from before the slots changed
+    setProgress(0);
   };
 
   // options for a given slot exclude players already chosen in the other slots
@@ -200,7 +219,7 @@ export default function DreamBrackets() {
         const { matchWins } = simulateBatch(
           A.probabilities,
           B.probabilities,
-          SIMS_PER_MATCHUP
+          simsPerMatch
         );
         winners.push(matchWins[0] > matchWins[1] ? A : B);
       }
@@ -269,7 +288,7 @@ export default function DreamBrackets() {
   return (
     <div className={`page-background ${tournamentConfig.bgClass}`} style={{ '--bracket-accent': `var(${tournamentConfig.accentVar})` }}>
       <div className="dream-brackets-page bracket-overlay">
-        <h3>Dream Bracket Simulator</h3>
+        <h3>Bracket Simulator</h3>
 
         <div className="mb-3 bracket-controls text-start d-flex flex-wrap gap-3">
           <Form.Select
@@ -293,6 +312,17 @@ export default function DreamBrackets() {
               <option key={s.value} value={s.value}>Start at {s.label}</option>
             ))}
           </Form.Select>
+
+          <Form.Select
+            value={simsPerMatch}
+            onChange={e => setSimsPerMatch(Number(e.target.value))}
+            disabled={isRunning}
+            style={{ maxWidth: 220 }}
+          >
+            {SIMS_PER_MATCHUP_OPTIONS.map(n => (
+              <option key={n} value={n}>{n} sim{n === 1 ? '' : 's'}/match</option>
+            ))}
+          </Form.Select>
         </div>
 
         <div className="mb-3 bracket-controls text-start">
@@ -305,6 +335,14 @@ export default function DreamBrackets() {
             {isRunning
               ? <><Spinner animation="border" size="sm" /> Running…</>
               : 'Simulate Tournament'}
+          </Button>
+          <Button
+            variant="light"
+            onClick={handleRandomizeAll}
+            disabled={isRunning}
+            className="me-2"
+          >
+            🎲 Randomize
           </Button>
           <Button
             variant="secondary"
@@ -341,7 +379,7 @@ export default function DreamBrackets() {
                   {isChampionCol ? (
                     <div
                       className="bracket-match champion-card"
-                      style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: 0, right: 0, height: CHAMPION_BOX_H }}
+                      style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: '50%', transform: 'translateX(-50%)', height: CHAMPION_BOX_H, width: 'max-content', maxWidth: '60vw' }}
                     >
                       {colPlayers[0] ? (
                         <div className="competitor winner">
