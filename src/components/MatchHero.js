@@ -179,6 +179,8 @@ export default function MatchHero({
                     <Scoreboard
                       nameA={playerA.name}
                       nameB={playerB.name}
+                      countryA={playerA.country}
+                      countryB={playerB.country}
                       completedSets={scoreline.setScores}
                       winner={scoreline.winner}
                     />

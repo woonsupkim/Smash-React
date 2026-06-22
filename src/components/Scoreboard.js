@@ -1,4 +1,5 @@
 import React from 'react';
+import { countryFlagUrl } from './countryFlags';
 import './Scoreboard.css';
 
 const POINT_LABELS = ['0', '15', '30', '40'];
@@ -72,6 +73,8 @@ export function deriveLiveScoreboardState(events) {
 export default function Scoreboard({
   nameA,
   nameB,
+  countryA = null,
+  countryB = null,
   completedSets = [],
   liveGames = null,
   livePoints = null,
@@ -79,12 +82,17 @@ export default function Scoreboard({
   winner = null,
 }) {
   const points = livePoints ? tennisPointLabel(livePoints[0], livePoints[1]) : null;
+  const flagA = countryFlagUrl(countryA);
+  const flagB = countryFlagUrl(countryB);
 
   return (
     <table className="scoreboard">
       <tbody>
         <tr className={winner === 'A' ? 'sb-winner-row' : ''}>
-          <td className="sb-name">{nameA}{winner === 'A' && <span className="sb-check">✓</span>}</td>
+          <td className="sb-name">
+            {flagA && <img src={flagA} alt={countryA} className="sb-flag" />}
+            {nameA}{winner === 'A' && <span className="sb-check">✓</span>}
+          </td>
           {completedSets.map(([a, b], i) => (
             <td key={i} className={a > b ? 'sb-set-won' : 'sb-set-lost'}>{a}</td>
           ))}
@@ -92,7 +100,10 @@ export default function Scoreboard({
           {points && <td className="sb-points">{isTiebreak ? livePoints[0] : points[0]}</td>}
         </tr>
         <tr className={winner === 'B' ? 'sb-winner-row' : ''}>
-          <td className="sb-name">{nameB}{winner === 'B' && <span className="sb-check">✓</span>}</td>
+          <td className="sb-name">
+            {flagB && <img src={flagB} alt={countryB} className="sb-flag" />}
+            {nameB}{winner === 'B' && <span className="sb-check">✓</span>}
+          </td>
           {completedSets.map(([a, b], i) => (
             <td key={i} className={b > a ? 'sb-set-won' : 'sb-set-lost'}>{b}</td>
           ))}

@@ -12,6 +12,19 @@
   margin-bottom: 1.5rem;
 }
 
+/* Same translucent near-black card used by the H2H hero and Advanced
+   Controls — wraps the title, controls, and the whole bracket tree in one
+   continuous surface instead of a loose collection of pieces. */
+.bracket-card {
+  background: rgba(10, 10, 14, 0.78);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 1.75rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+
 .bracket-controls-panel {
   background: rgba(255,255,255,0.05);
   border-radius: 12px;
@@ -20,6 +33,22 @@
   max-width: 1080px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.upset-toggle-switch {
+  display: flex;
+  align-items: center;
+  color: #fff;
+  font-size: 0.95rem;
+  padding-left: 2.5em;
+}
+.upset-toggle-switch .form-check-input {
+  width: 2.5em;
+  cursor: pointer;
+}
+.upset-toggle-switch .form-check-label {
+  margin-left: 0.5rem;
+  cursor: pointer;
 }
 
 .bracket-select-row {

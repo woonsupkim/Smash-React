@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { credibleInterval, confidenceLabel } from '../credibleInterval';
+import { countryFlagUrl } from './countryFlags';
 import Scoreboard, { deriveLiveScoreboardState } from './Scoreboard';
 import './AdvancedSimPanel.css';
 
@@ -55,6 +56,8 @@ export default function AdvancedSimPanel({
   defaultOpen = false,
   colorA = '#0033A0',
   colorB = '#FFD700',
+  colorAText = '#fff',
+  colorBText = '#fff',
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const VS_COLORS = [colorA, colorB];
@@ -128,7 +131,10 @@ export default function AdvancedSimPanel({
           <div className="adv-header">
             <div className="adv-player-col">
               <img src={getPlayerImageSrc(playerA)} alt={playerA.name} className="adv-player-photo" />
-              <div className="adv-player-name">{playerA.name}</div>
+              <div className="adv-player-name">
+                {countryFlagUrl(playerA.country) && <img src={countryFlagUrl(playerA.country)} alt={playerA.country} className="adv-player-flag" />}
+                {playerA.name}
+              </div>
             </div>
 
             <div className="adv-controls-col">
@@ -145,7 +151,7 @@ export default function AdvancedSimPanel({
 
               <div className="advanced-button-row mb-2">
                 <Button
-                  className="btn-grass"
+                  style={{ background: colorA, borderColor: colorA, color: colorAText }}
                   onClick={onSimulate}
                   disabled={isRunning||isWatching}
                 >
@@ -155,11 +161,12 @@ export default function AdvancedSimPanel({
                 </Button>
                 <Button
                   variant="outline-light"
+                  style={{ borderColor: colorA, color: '#fff' }}
                   onClick={onWatchMatch}
                   disabled={isRunning||isWatching}
                 >Watch Match</Button>
                 <Button
-                  variant="warning"
+                  style={{ background: colorB, borderColor: colorB, color: colorBText }}
                   onClick={onUpsetScenario}
                   disabled={isRunning||isWatching}
                 >Upset Scenario</Button>
@@ -170,7 +177,10 @@ export default function AdvancedSimPanel({
 
             <div className="adv-player-col">
               <img src={getPlayerImageSrc(playerB)} alt={playerB.name} className="adv-player-photo" />
-              <div className="adv-player-name">{playerB.name}</div>
+              <div className="adv-player-name">
+                {countryFlagUrl(playerB.country) && <img src={countryFlagUrl(playerB.country)} alt={playerB.country} className="adv-player-flag" />}
+                {playerB.name}
+              </div>
             </div>
           </div>
 
@@ -216,6 +226,10 @@ export default function AdvancedSimPanel({
                     const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
                     return (
                       <div className="adv-ci-caption">
+                        <div className="adv-ci-range">
+                          <span>95% CI: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
+                          <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
+                        </div>
                         {confidenceLabel(favProb, favLower, favUpper)}
                         {underdogCompetitiveness && (
                           <div className="adv-underdog-caption">

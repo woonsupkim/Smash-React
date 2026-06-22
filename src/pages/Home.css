@@ -170,6 +170,39 @@
 }
 .update-data-link:hover { color: #999; }
 
+.refresh-meta {
+  font-size: 0.68rem;
+  color: #555;
+}
+
+/* One-time intro overlay, similar in spirit to a sports broadcast's logo
+   sting — plays once per browser session then fades to reveal the page. */
+.home-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.home-intro-logo {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+}
+
+.home-intro-title {
+  font-size: clamp(2.5rem, 10vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--accent-brand, #c6ff1c);
+  text-transform: uppercase;
+}
+
 @media (max-width: 576px) {
   .home-hero { padding: 3.5rem 1.25rem 2.5rem; }
   .surface-tile { flex: 1 1 100%; }

@@ -136,6 +136,22 @@ function main() {
 
   fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'h2h.json'), JSON.stringify(h2h));
   console.log(`Wrote ${Object.keys(h2h).length} head-to-head pairs to public/data/h2h.json`);
+
+  // --- freshness metadata, shown on the Home page ---
+  let mostRecentMatchDate = null;
+  for (const ourId of Object.keys(idMap)) {
+    for (const m of loadMatches(ourId)) {
+      if (!m.date) continue;
+      if (!mostRecentMatchDate || new Date(m.date) > new Date(mostRecentMatchDate)) {
+        mostRecentMatchDate = m.date;
+      }
+    }
+  }
+  fs.writeFileSync(
+    path.join(PUBLIC_DATA_DIR, 'refresh-meta.json'),
+    JSON.stringify({ refreshedAt: new Date().toISOString(), mostRecentMatchDate })
+  );
+  console.log(`Wrote refresh-meta.json (refreshed now, most recent match ${mostRecentMatchDate}).`);
 }
 
 main();

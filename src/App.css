@@ -141,6 +141,7 @@ h2, .heading-lg {
 .wimbledon-bg { background-image: url(./assets/smash2b.jpg); }
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
+.bracket-bg   { background-image: url(./assets/oldsmash2b.jpg); }
 
 /* Dark tint over the background photo on the tournament pages — without
    this the raw photo renders at full brightness behind the UI. */

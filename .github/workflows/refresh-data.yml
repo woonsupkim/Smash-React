@@ -10,6 +10,11 @@ name: Refresh player stats
 on:
   workflow_dispatch: {}
 
+# The default GITHUB_TOKEN is read-only on contents unless explicitly
+# elevated — without this, the final "git push" step fails with exit 1.
+permissions:
+  contents: write
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -18,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - run: npm ci
 

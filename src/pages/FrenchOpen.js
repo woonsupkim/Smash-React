@@ -17,8 +17,12 @@ const playerImgs = require.context(
 // Matches the "Clay" surface palette used on the Home page.
 const ACCENT_COLOR = '#e8694a';
 const ACCENT_TEXT_COLOR = '#fff';
-const PANEL_COLOR_A = '#e8694a';
-const PANEL_COLOR_B = '#7c2f20';
+// Roland Garros' actual clay-red + green — restores French Open's original
+// broadcast-style chart palette for the Advanced Controls pie/bar charts.
+const PANEL_COLOR_A = '#B24936';
+const PANEL_COLOR_B = '#1E2E2B';
+const PANEL_COLOR_A_TEXT = '#fff';
+const PANEL_COLOR_B_TEXT = '#fff';
 
 export default function FrenchOpen() {
   const [players, setPlayers]             = useState([]);
@@ -227,6 +231,8 @@ export default function FrenchOpen() {
         }
         const pA = STAT_KEYS.map(([k]) => Number(rowA[k]) || 0);
         const pB = STAT_KEYS.map(([k]) => Number(rowB[k]) || 0);
+        setStatsA(Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowA[k]) || 0) * 100])));
+        setStatsB(Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowB[k]) || 0) * 100])));
         runBatch(pA, pB, simCount);
       }
     });
@@ -290,9 +296,17 @@ export default function FrenchOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 150, flex: 1}),
-                  option: p => ({...p,color:'#000'}),
-                  singleValue: p => ({...p,color:'#000'})
+                  container: b => ({...b, minWidth: 230, flex: 1}),
+                  control: (b, state) => ({
+                    ...b,
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
+                    boxShadow: 'none',
+                  }),
+                  singleValue: p => ({...p,color:'#fff'}),
+                  input: p => ({...p,color:'#fff'}),
+                  placeholder: p => ({...p,color:'#888'}),
+                  option: p => ({...p,color:'#000'})
                 }}
               />
               <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
@@ -311,9 +325,17 @@ export default function FrenchOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 150, flex: 1}),
-                  option: p => ({...p,color:'#000'}),
-                  singleValue: p => ({...p,color:'#000'})
+                  container: b => ({...b, minWidth: 230, flex: 1}),
+                  control: (b, state) => ({
+                    ...b,
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
+                    boxShadow: 'none',
+                  }),
+                  singleValue: p => ({...p,color:'#fff'}),
+                  input: p => ({...p,color:'#fff'}),
+                  placeholder: p => ({...p,color:'#888'}),
+                  option: p => ({...p,color:'#000'})
                 }}
               />
               <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
@@ -330,6 +352,8 @@ export default function FrenchOpen() {
         <AdvancedSimPanel
           colorA={PANEL_COLOR_A}
           colorB={PANEL_COLOR_B}
+          colorAText={PANEL_COLOR_A_TEXT}
+          colorBText={PANEL_COLOR_B_TEXT}
           playerA={playerA}
           playerB={playerB}
           getPlayerImageSrc={getPlayerImageSrc}

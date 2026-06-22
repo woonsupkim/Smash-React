@@ -1,5 +1,5 @@
 // src/pages/DreamBrackets.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
@@ -105,8 +105,10 @@ function buildConnectorPath(feeders, outputs, width) {
   return d;
 }
 
+const DEFAULT_TOURNAMENT = 'smash_us.csv';
+
 export default function DreamBrackets() {
-  const [tournament, setTournament] = useState(TOURNAMENTS[0].value);
+  const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);
   const [stage, setStage] = useState(STAGES[1].value); // default to Quarter-Finals, as before
   const stageConfig = STAGES.find(s => s.value === stage);
   const tournamentConfig = TOURNAMENTS.find(t => t.value === tournament);
@@ -132,32 +134,47 @@ export default function DreamBrackets() {
     setIsRunning(false);
   };
 
-  // load & normalize CSV into playersPool whenever the tournament or upset mode changes
+  // load & normalize CSV into playersPool whenever the tournament or upset mode changes.
+  // Switching TOURNAMENT invalidates any picks (different player roster), but
+  // toggling UPSET MODE should keep the same players selected — only the
+  // underlying stats source changes, so existing slots are remapped to the
+  // matching player in the new pool by id instead of being cleared.
+  const prevTournamentRef = useRef(tournament);
   useEffect(() => {
     const csvFile = upsetMode ? tournament.replace('.csv', '_upset.csv') : tournament;
+    const tournamentChanged = prevTournamentRef.current !== tournament;
+    prevTournamentRef.current = tournament;
+
     Papa.parse(process.env.PUBLIC_URL + '/data/' + csvFile, {
       header: true,
       download: true,
       complete: ({ data }) => {
-        setPlayersPool(
-          data
-            .filter(r => Number(r.us_rd) === 2)
-            .map(r => ({
-              ...r,
-              probabilities: [
-                Number(r.p1),
-                Number(r.p2),
-                Number(r.p3),
-                Number(r.p4),
-                Number(r.p5),
-                Number(r.p6) || 0,
-              ],
-            }))
-        );
+        const newPool = data
+          .filter(r => Number(r.us_rd) === 2)
+          .map(r => ({
+            ...r,
+            probabilities: [
+              Number(r.p1),
+              Number(r.p2),
+              Number(r.p3),
+              Number(r.p4),
+              Number(r.p5),
+              Number(r.p6) || 0,
+            ],
+          }));
+        setPlayersPool(newPool);
+
+        if (tournamentChanged) {
+          resetBracketState(stageConfig.slots);
+        } else {
+          // Same tournament, different stats source (upset toggle, or
+          // initial mount) — keep whichever players were already picked.
+          setSlots(prevSlots => prevSlots.map(s => (s ? (newPool.find(p => p.id === s.id) || null) : null)));
+          setRounds([]); // old results were computed from the old stats, no longer valid
+          setProgress(0);
+        }
       }
     });
-    // switching tournaments invalidates any picks/results from the old draw
-    resetBracketState(stageConfig.slots);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament, upsetMode]);
 
@@ -302,8 +319,9 @@ export default function DreamBrackets() {
   };
 
   return (
-    <div className={`page-background ${tournamentConfig.bgClass}`} style={{ '--bracket-accent': `var(${tournamentConfig.accentVar})` }}>
+    <div className="page-background bracket-bg" style={{ '--bracket-accent': `var(${tournamentConfig.accentVar})` }}>
       <div className="dream-brackets-page bracket-overlay">
+        <div className="bracket-card" style={{ '--accent': 'var(--bracket-accent)' }}>
         <h3 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
           {tournamentConfig.label} · Bracket Simulator
         </h3>
@@ -356,15 +374,17 @@ export default function DreamBrackets() {
               onClick={handleRandomizeAll}
               disabled={isRunning}
             >
-              Randomize
+              Random
             </Button>
-            <Button
-              variant={upsetMode ? 'warning' : 'outline-warning'}
-              onClick={() => setUpsetMode(v => !v)}
+            <Form.Check
+              type="switch"
+              id="upset-mode-toggle"
+              className="upset-toggle-switch"
+              label="Upset Scenario"
+              checked={upsetMode}
+              onChange={() => setUpsetMode(v => !v)}
               disabled={isRunning}
-            >
-              Upset Scenario {upsetMode ? '(on)' : '(off)'}
-            </Button>
+            />
             <Button
               variant="secondary"
               onClick={handleReset}
@@ -466,6 +486,7 @@ export default function DreamBrackets() {
               </React.Fragment>
             );
           })}
+        </div>
         </div>
       </div>
     </div>

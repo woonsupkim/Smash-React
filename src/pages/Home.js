@@ -1,9 +1,11 @@
 // src/pages/Home.js
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from 'react-bootstrap';
+import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
+import logoHome from '../assets/ball.png';
 import './Home.css';
 
 const SURFACES = [
@@ -12,7 +14,35 @@ const SURFACES = [
   { to: '/us-open',     label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
 ];
 
+const INTRO_SESSION_KEY = 'smash-intro-played';
+
+function formatDate(iso) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export default function Home() {
+  const [refreshMeta, setRefreshMeta] = useState(null);
+  // Plays once per browser session — a returning visitor navigating back to
+  // Home from another page won't see it replay every time.
+  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SESSION_KEY));
+
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/refresh-meta.json')
+      .then(r => r.json())
+      .then(setRefreshMeta)
+      .catch(() => setRefreshMeta(null));
+  }, []);
+
+  useEffect(() => {
+    if (!showIntro) return;
+    const tid = setTimeout(() => {
+      setShowIntro(false);
+      sessionStorage.setItem(INTRO_SESSION_KEY, '1');
+    }, 1800);
+    return () => clearTimeout(tid);
+  }, [showIntro]);
+
   const handleUpdateData = async () => {
     const { value: password } = await Swal.fire({
       title: 'Admin password',
@@ -39,6 +69,34 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      <AnimatePresence>
+        {showIntro && (
+          <motion.div
+            className="home-intro"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, delay: 1.2 }}
+          >
+            <motion.img
+              src={logoHome}
+              alt=""
+              className="home-intro-logo"
+              initial={{ scale: 0, rotate: -90, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 14 }}
+            />
+            <motion.div
+              className="home-intro-title"
+              initial={{ scale: 2.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.4, ease: 'easeOut' }}
+            >
+              SMASH!
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="home-hero">
         <div className="eyebrow">GRAND SLAM MATCH ENGINE</div>
         <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
@@ -73,6 +131,12 @@ export default function Home() {
         <button type="button" className="update-data-link" onClick={handleUpdateData}>
           Update Data
         </button>
+        {refreshMeta && (
+          <span className="refresh-meta">
+            Data last refreshed {formatDate(refreshMeta.refreshedAt)}
+            {refreshMeta.mostRecentMatchDate && ` · most recent match ${formatDate(refreshMeta.mostRecentMatchDate)}`}
+          </span>
+        )}
       </div>
     </div>
   );
