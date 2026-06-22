@@ -70,6 +70,8 @@
   letter-spacing: 0.05em;
   color: #999;
   margin-bottom: 0.4rem;
+  cursor: help;
+  display: inline-block;
 }
 
 .match-hero-bar {
@@ -106,7 +108,7 @@
 
 .match-hero-chips {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.9rem;
   margin-top: 2rem;
 }
@@ -140,5 +142,5 @@
 
 @media (max-width: 768px) {
   .match-hero-main { flex-direction: column; gap: 1rem; }
-  .match-hero-chips { grid-template-columns: repeat(2, 1fr); }
+  .match-hero-chips { grid-template-columns: 1fr; }
 }

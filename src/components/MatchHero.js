@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Button } from 'react-bootstrap';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { simulateMatch, simulateBatch } from '../simulator';
 import { STAT_KEYS } from './AdvancedSimPanel';
 import { countryFlag } from './countryFlags';
+import Scoreboard from './Scoreboard';
 import './MatchHero.css';
 
 const MUTED_COLOR = '#8a8f98';
@@ -31,6 +32,13 @@ export default function MatchHero({
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
 
+  // Picking either player resets the previous roll — otherwise a stale
+  // scoreline from the old matchup stays on screen next to the new pair.
+  useEffect(() => {
+    setScoreline(null);
+    setIsRolling(false);
+  }, [playerA?.id, playerB?.id]);
+
   // Model's estimated win probability (500-trial average) — this is a
   // statistical estimate, not a guarantee, which is why a single
   // "Simulate Match" roll below can still go the other way, especially
@@ -55,8 +63,6 @@ export default function MatchHero({
     return {
       winsA: aIsFirst ? rec.winsA : rec.winsB,
       winsB: aIsFirst ? rec.winsB : rec.winsA,
-      recentFormA: aIsFirst ? rec.recentFormA : rec.recentFormB,
-      recentFormB: aIsFirst ? rec.recentFormB : rec.recentFormA,
     };
   }, [playerA, playerB, h2hData]);
 
@@ -68,13 +74,19 @@ export default function MatchHero({
     return `${w}-${l}`;
   };
 
+  // Recent form (last 10 matches, any surface) is a per-player fact — unlike
+  // head-to-head, it doesn't depend on these two players having met before.
+  const recentForm = (player) => {
+    const w = player.recent_w, l = player.recent_l;
+    if (w === undefined || w === '' || l === undefined || l === '') return null;
+    return `${w}-${l}`;
+  };
+
   const rollMatch = () => {
     setIsRolling(true);
     setTimeout(() => {
       const res = simulateMatch(probsFromRow(playerA), probsFromRow(playerB));
-      const winnerName = res.winner === 'A' ? playerA.name : playerB.name;
-      const setsText = res.setScores.map(([a,b]) => `${a}-${b}`).join(', ');
-      setScoreline({ winnerName, setsText });
+      setScoreline(res);
       setIsRolling(false);
     }, 250);
   };
@@ -87,18 +99,13 @@ export default function MatchHero({
     },
     {
       label: 'Recent form (last 10)',
-      a: h2h?.recentFormA || '—',
-      b: h2h?.recentFormB || '—',
+      a: recentForm(playerA) || '—',
+      b: recentForm(playerB) || '—',
     },
     {
       label: 'Head-to-head (career)',
       a: h2h ? `${h2h.winsA}` : '0',
       b: h2h ? `${h2h.winsB}` : '0',
-    },
-    {
-      label: '1st Serve %',
-      a: `${Math.round((Number(playerA.p1)||0) * 100)}%`,
-      b: `${Math.round((Number(playerB.p1)||0) * 100)}%`,
     },
   ];
 
@@ -113,7 +120,17 @@ export default function MatchHero({
 
         <div className="match-hero-center">
           <div className="match-hero-vs">VS</div>
-          <div className="match-hero-bar-label-top">Modeled win probability</div>
+          <OverlayTrigger
+            placement="top"
+            overlay={
+              <Tooltip>
+                Average outcome of {QUICK_ESTIMATE_SIMS} simulated matches using each player's
+                serve/return stats — a statistical estimate, not a guarantee.
+              </Tooltip>
+            }
+          >
+            <div className="match-hero-bar-label-top">Modeled win probability ⓘ</div>
+          </OverlayTrigger>
           <div className="match-hero-bar">
             <div
               className="match-hero-bar-fill a"
@@ -152,7 +169,12 @@ export default function MatchHero({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
               >
-                <strong>{scoreline.winnerName}</strong> wins, {scoreline.setsText}
+                <Scoreboard
+                  nameA={playerA.name}
+                  nameB={playerB.name}
+                  completedSets={scoreline.setScores}
+                  winner={scoreline.winner}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -181,13 +203,14 @@ export default function MatchHero({
 }
 
 function PlayerCol({ player, getPlayerImageSrc, align }) {
+  const flag = countryFlag(player.country);
   return (
     <div className={`match-hero-player ${align}`}>
       <img src={getPlayerImageSrc(player)} alt={player.name} className="match-hero-photo" />
       <div className="match-hero-name">{player.name}</div>
       <div className="match-hero-meta">
         {player.us_seed != null && player.us_seed !== '' && <span>Rank {player.us_seed}</span>}
-        {player.country && <span> &middot; {countryFlag(player.country)} {player.country}</span>}
+        {player.country && <span> &middot; {flag || player.country}</span>}
         {player.age && <span> &middot; Age {player.age}</span>}
       </div>
     </div>

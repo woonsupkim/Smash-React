@@ -133,3 +133,34 @@ h2, .heading-lg {
   background-color: rgba(0, 0, 0, 0.5);
   padding-bottom: 40px;
 }
+
+/* Broadcast/ESPN-style page title used on the tournament pages — set
+   --accent on the element to tint the underline per tournament. */
+.broadcast-title {
+  display: inline-block;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--accent, #fff);
+  margin-bottom: 1.5rem !important;
+}
+
+/* Player A/B selection — sleeker card matching the rest of the page's
+   dark-glass aesthetic, instead of bare dropdowns floating on the bg. */
+.player-select-panel {
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-card, 12px);
+  border-top: 3px solid var(--accent, #fff);
+  padding: 0.9rem 1rem;
+  min-width: 280px;
+}
+.player-select-panel .form-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #aaa;
+  margin-bottom: 0.4rem;
+}

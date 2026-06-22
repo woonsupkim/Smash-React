@@ -1,0 +1,30 @@
+.advanced-toggle {
+  border-radius: 20px;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+.advanced-panel-card {
+  background: rgba(255,255,255,0.04);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.advanced-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.advanced-button-row .btn {
+  border-radius: 8px;
+}
+
+.watch-match-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

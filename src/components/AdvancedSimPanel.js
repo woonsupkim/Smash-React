@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { credibleInterval, confidenceLabel } from '../credibleInterval';
+import Scoreboard, { deriveLiveScoreboardState } from './Scoreboard';
+import './AdvancedSimPanel.css';
 
 export const STAT_KEYS = [
   ['p1', '1st Serve In'],
@@ -28,6 +30,9 @@ export const STAT_KEYS = [
  * Detailed slider/chart panel, collapsed by default under the MatchHero.
  * All simulation logic/state lives in the page (USOpen/FrenchOpen/Wimbledon)
  * and is passed in as props — this component is purely presentational.
+ * Only one result view shows at a time: a batch "Simulate Matches" run
+ * clears any in-progress Watch Match state, and vice versa (enforced by the
+ * page-level handlers that own batchResult/liveLog).
  */
 export default function AdvancedSimPanel({
   playerA,
@@ -44,12 +49,9 @@ export default function AdvancedSimPanel({
   showResults,
   liveLog,
   isWatching,
-  commentaryRef,
   onSimulate,
   onUpsetScenario,
   onWatchMatch,
-  onReset,
-  renderEvent,
   defaultOpen = false,
   colorA = '#0033A0',
   colorB = '#FFD700',
@@ -113,6 +115,10 @@ export default function AdvancedSimPanel({
 
   if (!playerA || !playerB) return null;
 
+  const showBatch = batchResult && showResults && liveLog.length === 0;
+  const showWatch = liveLog.length > 0;
+  const live = showWatch ? deriveLiveScoreboardState(liveLog) : null;
+
   return (
     <div className="advanced-sim-panel mt-4">
       <Button
@@ -120,12 +126,13 @@ export default function AdvancedSimPanel({
         size="sm"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
+        className="advanced-toggle"
       >
         {open ? '▾ Hide Advanced Controls' : '▸ Advanced Controls (sliders, charts, upset scenario, watch match)'}
       </Button>
 
       {open && (
-        <div className="mt-3 text-center">
+        <div className="advanced-panel-card mt-3">
           <div className="d-flex flex-wrap justify-content-center">
             {/* Player A sliders */}
             <div className="mx-3 text-start sim-col">
@@ -153,7 +160,7 @@ export default function AdvancedSimPanel({
 
             {/* Controls & Charts */}
             <div className="mx-4 text-center sim-col-controls">
-              <Form.Group controlId="simCount" className="mb-2">
+              <Form.Group controlId="simCount" className="mb-3">
                 <Form.Label className="text-white">Simulations</Form.Label>
                 <Form.Select
                   value={simCount}
@@ -164,9 +171,9 @@ export default function AdvancedSimPanel({
                 </Form.Select>
               </Form.Group>
 
-              <div className="mb-3">
+              <div className="advanced-button-row mb-3">
                 <Button
-                  className="me-2 btn-grass"
+                  className="btn-grass"
                   onClick={onSimulate}
                   disabled={isRunning||isWatching}
                 >
@@ -176,27 +183,20 @@ export default function AdvancedSimPanel({
                 </Button>
                 <Button
                   variant="outline-light"
-                  className="me-2"
                   onClick={onWatchMatch}
                   disabled={isRunning||isWatching}
                 >🎾 Watch Match</Button>
                 <Button
                   variant="warning"
-                  className="me-2"
                   onClick={onUpsetScenario}
                   disabled={isRunning||isWatching}
                 >⚡ Upset Scenario</Button>
-                <Button
-                  variant="secondary"
-                  onClick={onReset}
-                  disabled={isRunning||isWatching}
-                >Reset</Button>
               </div>
 
               {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-3"/>}
 
               <AnimatePresence>
-                {batchResult && showResults && (
+                {showBatch && (
                   <motion.div
                     style={{ marginBottom:'2rem' }}
                     initial={{ scale:0.8, opacity:0 }}
@@ -258,7 +258,7 @@ export default function AdvancedSimPanel({
               </AnimatePresence>
 
               <AnimatePresence>
-                {batchResult && showResults && (
+                {showBatch && (
                   <motion.div
                     style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:'2rem' }}
                     initial={{ scale:0.8, opacity:0 }}
@@ -285,14 +285,18 @@ export default function AdvancedSimPanel({
                 )}
               </AnimatePresence>
 
-              {liveLog.length>0 && (
-                <div ref={commentaryRef} className="live-commentary text-start mt-3 px-3 text-white" style={{ maxHeight:'220px', overflowY:'auto' }}>
-                  <h6>Live Match Commentary {isWatching && '(playing...)'}</h6>
-                  {liveLog.map((ev,i)=>(
-                    <motion.div key={i} initial={{opacity:0,x:-10}} animate={{opacity:1,x:0}} transition={{duration:0.3}}>
-                      {renderEvent(ev)}
-                    </motion.div>
-                  ))}
+              {showWatch && (
+                <div className="watch-match-board mt-3">
+                  <h6 className="text-white">Live Match {isWatching && '(playing...)'}</h6>
+                  <Scoreboard
+                    nameA={playerA.name}
+                    nameB={playerB.name}
+                    completedSets={live.completedSets}
+                    liveGames={live.liveGames}
+                    livePoints={live.livePoints}
+                    isTiebreak={live.isTiebreak}
+                    winner={live.winner}
+                  />
                 </div>
               )}
             </div>

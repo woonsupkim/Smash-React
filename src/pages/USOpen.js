@@ -36,7 +36,6 @@ export default function USOpen() {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const watchTimeoutRef = useRef(null);
-  const commentaryRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
 
   useEffect(() => {
@@ -72,15 +71,22 @@ export default function USOpen() {
   }, []);
 
   useEffect(() => {
-    if (commentaryRef.current) commentaryRef.current.scrollTop = commentaryRef.current.scrollHeight;
-  }, [liveLog]);
-
-  useEffect(() => {
     if (!batchResult) return;
     setShowResults(false);
     const tid = setTimeout(() => setShowResults(true), 500);
     return () => clearTimeout(tid);
   }, [batchResult]);
+
+  // Switching either player clears any previous result — a stale batch
+  // chart or watch-match scoreboard from the old matchup shouldn't linger.
+  useEffect(() => {
+    if (watchTimeoutRef.current) { clearTimeout(watchTimeoutRef.current); watchTimeoutRef.current = null; }
+    setBatchResult(null);
+    setLiveLog([]);
+    setIsWatching(false);
+    setIsRunning(false);
+    setProgress(0);
+  }, [playerA?.id, playerB?.id]);
 
   const handleAddPlayer = async who => {
     const htmlFields = `
@@ -183,8 +189,17 @@ export default function USOpen() {
     confirmButtonColor: '#3085d6'
   });
 
+  // Only one result view shows at a time — running a batch sim clears any
+  // in-progress/finished Watch Match, and vice versa (see handleWatchMatch).
+  const stopWatching = () => {
+    if (watchTimeoutRef.current) { clearTimeout(watchTimeoutRef.current); watchTimeoutRef.current = null; }
+    setLiveLog([]);
+    setIsWatching(false);
+  };
+
   const handleSimulate = () => {
     if (!playerA || !playerB) return showPlayerError();
+    stopWatching();
     setBatchResult(null);
     setProgress(0);
     const pA = STAT_KEYS.map(([k]) => (statsA[k]||0)/100);
@@ -194,6 +209,7 @@ export default function USOpen() {
 
   const handleUpsetScenario = () => {
     if (!playerA || !playerB) return showPlayerError();
+    stopWatching();
     setBatchResult(null);
     setProgress(0);
     Papa.parse(process.env.PUBLIC_URL + '/data/smash_us_upset.csv', {
@@ -217,18 +233,6 @@ export default function USOpen() {
     });
   };
 
-  const handleReset = () => {
-    setPlayerA(null);
-    setPlayerB(null);
-    setBatchResult(null);
-    setStatsA({});
-    setStatsB({});
-    setProgress(0);
-    setIsRunning(false);
-    setLiveLog([]);
-    setIsWatching(false);
-  };
-
   const randomPick = who => {
     const idx = Math.floor(Math.random() * players.length);
     who === 'A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
@@ -236,6 +240,7 @@ export default function USOpen() {
 
   const handleWatchMatch = () => {
     if (!playerA || !playerB) return showPlayerError();
+    setBatchResult(null);
     if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current);
     const pA = STAT_KEYS.map(([k]) => (statsA[k]||0)/100);
     const pB = STAT_KEYS.map(([k]) => (statsB[k]||0)/100);
@@ -250,37 +255,6 @@ export default function USOpen() {
       watchTimeoutRef.current = setTimeout(advance, 400);
     };
     advance();
-  };
-
-  const tennisPointLabel = (a,b) => {
-    const labels = ['Love','15','30','40'];
-    if (a>=3 && b>=3) {
-      if (a===b)                  return 'Deuce';
-      else if (a===b+1)          return `Advantage ${playerA.name}`;
-      else if (b===a+1)          return `Advantage ${playerB.name}`;
-    }
-    return `${labels[a]||'40'}-${labels[b]||'40'}`;
-  };
-
-  const renderEvent = ev => {
-    switch(ev.type) {
-      case 'point': {
-        const [pa,pb] = ev.points;
-        return `🎾 ${tennisPointLabel(pa,pb)}  (Game: ${ev.games[0]}-${ev.games[1]})`;
-      }
-      case 'game':
-        return `🟩 Game to ${ev.gameWinner===0?ev.playerA.name:ev.playerB.name}`;
-      case 'tiebreak_start':
-        return `⏱ Tie-break begins`;
-      case 'tiebreak_end':
-        return `✅ Tie-break won by ${ev.tiebreakWinner===0?ev.playerA.name:ev.playerB.name}`;
-      case 'set':
-        return `📦 Set ${ev.set} to ${ev.setWinner===0?ev.playerA.name:ev.playerB.name}`;
-      case 'match':
-        return `🏆 Match won by ${ev.winner==='A'?ev.playerA.name:ev.playerB.name}`;
-      default:
-        return `🔸 ${ev.type}`;
-    }
   };
 
   const buildOptions = () => [
@@ -300,12 +274,12 @@ export default function USOpen() {
   return (
     <div className="page-background usopen-bg">
       <div className="overlay text-center">
-        <h3 className="text-white mb-4">Men's Singles Simulator — US Open</h3>
+        <h3 className="broadcast-title" style={{ '--accent': ACCENT_COLOR }}>US Open — Hard Court</h3>
 
-        <div className="d-flex flex-wrap justify-content-center mb-3">
-          <div className="mx-3 text-start">
-            <Form.Label className="text-white">Player A</Form.Label>
-            <div className="d-flex mb-2">
+        <div className="d-flex flex-wrap justify-content-center gap-3 mb-3">
+          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
+            <Form.Label>Player A</Form.Label>
+            <div className="d-flex">
               <Select
                 className="react-select"
                 options={buildOptions()}
@@ -317,7 +291,7 @@ export default function USOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 260}),
+                  container: b => ({...b, minWidth: 220, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
@@ -325,9 +299,9 @@ export default function USOpen() {
               <Button variant="light" className="ms-1" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>🎲</Button>
             </div>
           </div>
-          <div className="mx-3 text-start">
-            <Form.Label className="text-white">Player B</Form.Label>
-            <div className="d-flex mb-2">
+          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
+            <Form.Label>Player B</Form.Label>
+            <div className="d-flex">
               <Select
                 className="react-select"
                 options={buildOptions()}
@@ -339,7 +313,7 @@ export default function USOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 260}),
+                  container: b => ({...b, minWidth: 220, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
@@ -381,12 +355,9 @@ export default function USOpen() {
           showResults={showResults}
           liveLog={liveLog}
           isWatching={isWatching}
-          commentaryRef={commentaryRef}
           onSimulate={handleSimulate}
           onUpsetScenario={handleUpsetScenario}
           onWatchMatch={handleWatchMatch}
-          onReset={handleReset}
-          renderEvent={renderEvent}
         />
       </div>
     </div>

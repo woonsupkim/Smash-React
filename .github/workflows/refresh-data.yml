@@ -1,0 +1,46 @@
+name: Refresh player stats
+
+# Triggered manually from the Home page's "Update Data" button (via
+# api/trigger-refresh.js) or directly from the GitHub Actions tab. Runs the
+# full data-pipeline refresh and commits the regenerated CSVs/h2h.json back
+# to main, which triggers a Vercel redeploy. Doing this in a GitHub Action
+# (rather than inside the Vercel serverless function) sidesteps Vercel's
+# function execution time limits — a full refresh across ~50 players can
+# take several minutes.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Refresh stats (fetch + recompute + rebuild CSVs)
+        run: npm run refresh-stats
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+
+      - name: Rebuild upset-scenario CSVs
+        run: npm run build-upset-csv
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+
+      - name: Fetch any missing player headshots
+        run: npm run fetch-images
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "smash-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add public/data data-pipeline/output src/assets/players
+          git diff --cached --quiet || git commit -m "Automated data refresh"
+          git push

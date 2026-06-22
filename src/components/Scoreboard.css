@@ -1,0 +1,57 @@
+.scoreboard {
+  border-collapse: collapse;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.scoreboard td {
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #ddd;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.scoreboard tr:last-child td {
+  border-bottom: none;
+}
+
+.sb-name {
+  text-align: left;
+  font-weight: 600;
+  color: #fff;
+  min-width: 110px;
+  white-space: nowrap;
+}
+
+.sb-check {
+  color: #4ade80;
+  margin-left: 0.4rem;
+}
+
+.sb-winner-row .sb-name {
+  font-weight: 800;
+}
+
+.sb-set-won {
+  font-weight: 700;
+  color: #fff;
+}
+
+.sb-set-lost {
+  color: #999;
+}
+
+.sb-live {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+}
+
+.sb-points {
+  font-weight: 600;
+  color: #f2c14e;
+  background: rgba(255,255,255,0.06);
+}

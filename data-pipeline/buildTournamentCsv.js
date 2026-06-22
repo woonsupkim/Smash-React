@@ -83,18 +83,33 @@ function mergePlayerFacts() {
     const csvPath = path.join(PUBLIC_DATA_DIR, file);
     if (!fs.existsSync(csvPath)) continue;
     const { data: rows, meta } = Papa.parse(fs.readFileSync(csvPath, 'utf8'), { header: true });
-    const newCols = ['country', 'age', 'year_w', 'year_l'];
+    // recent_w/recent_l (last 10 matches, any surface) is a per-player fact,
+    // independent of who they're currently matched against — it must NOT be
+    // sourced from the H2H pair record (h2h.json only has an entry for pairs
+    // that have actually played each other, so any matchup with zero career
+    // meetings would otherwise show no recent form at all, even though both
+    // players individually have one).
+    const newCols = ['country', 'age', 'year_w', 'year_l', 'recent_w', 'recent_l'];
     const fields = [...meta.fields, ...newCols.filter((c) => !meta.fields.includes(c))];
 
     const merged = rows.filter((r) => r.id).map((row) => {
       const f = facts[row.id];
       if (!f) return row;
       const record = f.yearRecord?.[surface] || { w: 0, l: 0 };
-      return { ...row, country: f.country || '', age: f.age ?? '', year_w: record.w, year_l: record.l };
+      const recent = f.recentForm || { w: 0, l: 0 };
+      return {
+        ...row,
+        country: f.country || '',
+        age: f.age ?? '',
+        year_w: record.w,
+        year_l: record.l,
+        recent_w: recent.w,
+        recent_l: recent.l,
+      };
     });
 
     fs.writeFileSync(csvPath, Papa.unparse({ fields, data: merged }));
-    console.log(`  ${file}: merged country/age/year-record for ${merged.length} players`);
+    console.log(`  ${file}: merged country/age/year-record/recent-form for ${merged.length} players`);
   }
 }
 
