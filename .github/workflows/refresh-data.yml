@@ -25,7 +25,11 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm ci
+      # --legacy-peer-deps: an unrelated optional peer (@sveltejs/kit, only
+      # used by @vercel/analytics' Svelte integration, which this project
+      # doesn't use) otherwise makes plain `npm ci` fail with an ERESOLVE
+      # conflict — same issue hit installing locally.
+      - run: npm ci --legacy-peer-deps
 
       - name: Refresh stats (fetch + recompute + rebuild CSVs)
         run: npm run refresh-stats

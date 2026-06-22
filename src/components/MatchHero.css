@@ -12,7 +12,10 @@
    own element — now part of the card itself, sized up since it's the page's
    primary heading. */
 .match-hero-title {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   text-align: center;
   font-size: clamp(1.7rem, 4.5vw, 2.5rem);
   font-weight: 800;
@@ -22,6 +25,12 @@
   padding-bottom: 0.6rem;
   margin-bottom: 1.25rem;
   border-bottom: 3px solid var(--accent, #fff);
+}
+
+.match-hero-title-logo {
+  height: 1.5em;
+  width: auto;
+  object-fit: contain;
 }
 
 .match-hero-context {

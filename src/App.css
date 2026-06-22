@@ -141,7 +141,6 @@ h2, .heading-lg {
 .wimbledon-bg { background-image: url(./assets/smash2b.jpg); }
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
-.bracket-bg   { background-image: url(./assets/oldsmash2b.jpg); }
 
 /* Dark tint over the background photo on the tournament pages — without
    this the raw photo renders at full brightness behind the UI. */
@@ -182,7 +181,9 @@ h2, .heading-lg {
 /* Broadcast/ESPN-style page title used on the tournament pages — set
    --accent on the element to tint the underline per tournament. */
 .broadcast-title {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
   font-size: clamp(1.4rem, 4vw, 2rem);
   font-weight: 800;
   letter-spacing: 0.04em;

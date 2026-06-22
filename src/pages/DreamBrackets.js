@@ -1,5 +1,5 @@
 // src/pages/DreamBrackets.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
@@ -12,6 +12,17 @@ import {
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
 import { credibleInterval } from '../credibleInterval';
+import logoRG from '../assets/logo_rg.png';
+import logoWB from '../assets/logo_wb.png';
+import logoUS from '../assets/logo_us.png';
+// Distinct from the tournament pages' own background photos. Sourced from
+// Wikimedia Commons (CC BY-SA 4.0):
+//  - clay:  Empty clay tennis court in Melbourne, Australia — KeepActive.com.au
+//  - grass: Wimbledon Centre Court (May 15, 2019) — GATORFAN2525
+//  - hard:  2019 USTA NTC Court 4 and Ashe at sunset
+import bgClay from '../assets/bracket-clay.jpg';
+import bgGrass from '../assets/bracket-grass.jpg';
+import bgHard from '../assets/bracket-hard.jpg';
 
 const playerImgs = require.context('../assets/players', false, /\.png$/);
 
@@ -30,9 +41,9 @@ const getPlayerImageSrc = (player) => {
 };
 
 const TOURNAMENTS = [
-  { value: 'smash_fr.csv', label: 'French Open', bgClass: 'french-bg', accentVar: '--accent-fr-a' },
-  { value: 'smash_wb.csv', label: 'Wimbledon', bgClass: 'wimbledon-bg', accentVar: '--accent-wb-a' },
-  { value: 'smash_us.csv', label: 'US Open', bgClass: 'usopen-bg', accentVar: '--accent-us-a' },
+  { value: 'smash_fr.csv', label: 'French Open', logo: logoRG, bgImage: bgClay, accentVar: '--accent-fr-a' },
+  { value: 'smash_wb.csv', label: 'Wimbledon', logo: logoWB, bgImage: bgGrass, accentVar: '--accent-wb-a' },
+  { value: 'smash_us.csv', label: 'US Open', logo: logoUS, bgImage: bgHard, accentVar: '--accent-us-a' },
 ];
 
 // Each stage's slot count, plus the round labels from that starting point
@@ -134,17 +145,16 @@ export default function DreamBrackets() {
     setIsRunning(false);
   };
 
-  // load & normalize CSV into playersPool whenever the tournament or upset mode changes.
-  // Switching TOURNAMENT invalidates any picks (different player roster), but
-  // toggling UPSET MODE should keep the same players selected — only the
-  // underlying stats source changes, so existing slots are remapped to the
-  // matching player in the new pool by id instead of being cleared.
-  const prevTournamentRef = useRef(tournament);
+  // Load & normalize CSV into playersPool whenever the tournament or upset
+  // mode changes. The player roster (ids) is the same across all three
+  // tournament CSVs and both upset variants — only the per-surface/recency
+  // stats differ — so switching either one keeps whichever players were
+  // already picked, remapped to their row in the new pool, instead of
+  // clearing the bracket. Only the slot COUNT changing (handleStageChange)
+  // forces an actual reset, since old picks can't map onto a different
+  // number of slots.
   useEffect(() => {
     const csvFile = upsetMode ? tournament.replace('.csv', '_upset.csv') : tournament;
-    const tournamentChanged = prevTournamentRef.current !== tournament;
-    prevTournamentRef.current = tournament;
-
     Papa.parse(process.env.PUBLIC_URL + '/data/' + csvFile, {
       header: true,
       download: true,
@@ -163,19 +173,11 @@ export default function DreamBrackets() {
             ],
           }));
         setPlayersPool(newPool);
-
-        if (tournamentChanged) {
-          resetBracketState(stageConfig.slots);
-        } else {
-          // Same tournament, different stats source (upset toggle, or
-          // initial mount) — keep whichever players were already picked.
-          setSlots(prevSlots => prevSlots.map(s => (s ? (newPool.find(p => p.id === s.id) || null) : null)));
-          setRounds([]); // old results were computed from the old stats, no longer valid
-          setProgress(0);
-        }
+        setSlots(prevSlots => prevSlots.map(s => (s ? (newPool.find(p => p.id === s.id) || null) : null)));
+        setRounds([]); // old results were computed from the old stats, no longer valid
+        setProgress(0);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament, upsetMode]);
 
   // switching the starting stage changes the slot count — reset picks/results
@@ -319,10 +321,14 @@ export default function DreamBrackets() {
   };
 
   return (
-    <div className="page-background bracket-bg" style={{ '--bracket-accent': `var(${tournamentConfig.accentVar})` }}>
+    <div
+      className="page-background"
+      style={{ backgroundImage: `url(${tournamentConfig.bgImage})`, '--bracket-accent': `var(${tournamentConfig.accentVar})` }}
+    >
       <div className="dream-brackets-page bracket-overlay">
         <div className="bracket-card" style={{ '--accent': 'var(--bracket-accent)' }}>
         <h3 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
+          <img src={tournamentConfig.logo} alt="" className="bracket-title-logo" />
           {tournamentConfig.label} · Bracket Simulator
         </h3>
 
@@ -361,7 +367,7 @@ export default function DreamBrackets() {
 
           <div className="bracket-button-row">
             <Button
-              variant="success"
+              style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
               onClick={runDreamBracket}
               disabled={isRunning}
             >
@@ -370,7 +376,8 @@ export default function DreamBrackets() {
                 : 'Simulate Tournament'}
             </Button>
             <Button
-              variant="light"
+              variant="outline-light"
+              style={{ borderColor: 'var(--bracket-accent)' }}
               onClick={handleRandomizeAll}
               disabled={isRunning}
             >
@@ -427,9 +434,6 @@ export default function DreamBrackets() {
                         <div className="competitor winner">
                           <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" />
                           <span>{colPlayers[0].name}</span>
-                          {colPlayers[0]._ciLower != null && (
-                            <div className="bracket-ci-tag">{Math.round(colPlayers[0]._winProb*100)}% [{Math.round(colPlayers[0]._ciLower*100)}–{Math.round(colPlayers[0]._ciUpper*100)}%]</div>
-                          )}
                         </div>
                       ) : (
                         <div className="competitor placeholder">TBD</div>

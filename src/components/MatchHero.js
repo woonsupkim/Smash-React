@@ -23,6 +23,7 @@ function probsFromRow(row) {
  */
 export default function MatchHero({
   title,
+  logo,
   playerA,
   playerB,
   selectorA,
@@ -115,7 +116,12 @@ export default function MatchHero({
 
   return (
     <div className="match-hero" style={{ '--hero-accent': accentColor }}>
-      {title && <h3 className="match-hero-title" style={{ '--accent': accentColor }}>{title}</h3>}
+      {title && (
+        <h3 className="match-hero-title" style={{ '--accent': accentColor }}>
+          {logo && <img src={logo} alt="" className="match-hero-title-logo" />}
+          {title}
+        </h3>
+      )}
       <div className="match-hero-context">
         {surfaceLabel} &middot; Best of 5
       </div>

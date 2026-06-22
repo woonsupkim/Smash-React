@@ -39,7 +39,7 @@ export default function Home() {
     const tid = setTimeout(() => {
       setShowIntro(false);
       sessionStorage.setItem(INTRO_SESSION_KEY, '1');
-    }, 1800);
+    }, 1400);
     return () => clearTimeout(tid);
   }, [showIntro]);
 
@@ -75,7 +75,7 @@ export default function Home() {
             className="home-intro"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 }}
+            transition={{ duration: 0.6 }}
           >
             <motion.img
               src={logoHome}
@@ -97,47 +97,53 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className="home-hero">
-        <div className="eyebrow">GRAND SLAM MATCH ENGINE</div>
-        <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
-        <p className="sub-title">
-          Pick any two players, choose a surface, and run the matchup.<br/>
-          Build full draws and crown a champion.
-        </p>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1, delay: showIntro ? 1.3 : 0 }}
+      >
+        <div className="home-hero">
+          <div className="eyebrow">GRAND SLAM MATCH ENGINE</div>
+          <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
+          <p className="sub-title">
+            Pick any two players, choose a surface, and run the matchup.<br/>
+            Build full draws and crown a champion.
+          </p>
 
-        <div className="d-flex flex-wrap gap-3 hero-ctas">
-          <Button as={Link} to="/us-open" className="cta-primary">
-            Quick H2H
-          </Button>
-          <Button as={Link} to="/dream-brackets" className="cta-secondary">
-            Build a Bracket
-          </Button>
+          <div className="d-flex flex-wrap gap-3 hero-ctas">
+            <Button as={Link} to="/us-open" className="cta-primary">
+              Quick H2H
+            </Button>
+            <Button as={Link} to="/dream-brackets" className="cta-secondary">
+              Build a Bracket
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div className="surface-strip">
-        {SURFACES.map(({ to, label, city, desc, className }) => (
-          <Link key={to} to={to} className={`surface-tile ${className}`}>
-            <div className="surface-tile-label">{label}</div>
-            <div className="surface-tile-city">{city}</div>
-            <div className="surface-tile-desc">{desc}</div>
-            <div className="surface-tile-enter">ENTER →</div>
-          </Link>
-        ))}
-      </div>
+        <div className="surface-strip">
+          {SURFACES.map(({ to, label, city, desc, className }) => (
+            <Link key={to} to={to} className={`surface-tile ${className}`}>
+              <div className="surface-tile-label">{label}</div>
+              <div className="surface-tile-city">{city}</div>
+              <div className="surface-tile-desc">{desc}</div>
+              <div className="surface-tile-enter">ENTER →</div>
+            </Link>
+          ))}
+        </div>
 
-      <div className="home-footer">
-        <span className="trust-signal">Powered by real ATP match data, not made-up numbers.</span>
-        <button type="button" className="update-data-link" onClick={handleUpdateData}>
-          Update Data
-        </button>
-        {refreshMeta && (
-          <span className="refresh-meta">
-            Data last refreshed {formatDate(refreshMeta.refreshedAt)}
-            {refreshMeta.mostRecentMatchDate && ` · most recent match ${formatDate(refreshMeta.mostRecentMatchDate)}`}
-          </span>
-        )}
-      </div>
+        <div className="home-footer">
+          <span className="trust-signal">Powered by real ATP match data, not made-up numbers.</span>
+          <button type="button" className="update-data-link" onClick={handleUpdateData}>
+            Update Data
+          </button>
+          {refreshMeta && (
+            <span className="refresh-meta">
+              Data last refreshed {formatDate(refreshMeta.refreshedAt)}
+              {refreshMeta.mostRecentMatchDate && ` · most recent match ${formatDate(refreshMeta.mostRecentMatchDate)}`}
+            </span>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

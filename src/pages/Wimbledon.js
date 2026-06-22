@@ -6,6 +6,7 @@ import { Button } from 'react-bootstrap';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
+import logoWB from '../assets/logo_wb.png';
 import './Wimbledon.css';
 
 const playerImgs = require.context(
@@ -17,12 +18,12 @@ const playerImgs = require.context(
 // Matches the "Grass" surface palette used on the Home page.
 const ACCENT_COLOR = '#3ddc84';
 const ACCENT_TEXT_COLOR = '#0b3d1f';
-// Neon purple + neon green — restores Wimbledon's original broadcast-style
-// chart palette for the Advanced Controls pie/bar charts specifically.
-const PANEL_COLOR_A = '#b026ff';
-const PANEL_COLOR_B = '#39ff14';
+// Wimbledon's actual brand purple + green (AELTC colors) — broadcast-bold
+// but not neon, for the Advanced Controls pie/bar charts specifically.
+const PANEL_COLOR_A = '#4F2683';
+const PANEL_COLOR_B = '#1E7A45';
 const PANEL_COLOR_A_TEXT = '#fff';
-const PANEL_COLOR_B_TEXT = '#0b3d1f';
+const PANEL_COLOR_B_TEXT = '#fff';
 
 export default function Wimbledon() {
   const [players, setPlayers]             = useState([]);
@@ -38,6 +39,7 @@ export default function Wimbledon() {
   const [liveLog, setLiveLog]             = useState([]);
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
+  const [upsetMode, setUpsetMode]         = useState(false);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
 
@@ -55,19 +57,38 @@ export default function Wimbledon() {
       .catch(() => setH2hData({}));
   }, []);
 
+  // Re-seeds both sliders whenever a player changes OR the Upset Scenario
+  // toggle flips — upset mode pulls from the heavy-recency CSV instead of
+  // the normal season-long one, falling back to normal stats (with a
+  // one-time notice) if a player has too few recent matches on this surface.
   useEffect(() => {
-    if (!playerA) return;
-    const obj = {};
-    STAT_KEYS.forEach(([k]) => obj[k] = (playerA[k] || 0) * 100);
-    setStatsA(obj);
-  }, [playerA]);
+    if (!playerA && !playerB) return;
+    const seedNormal = (player) => Object.fromEntries(STAT_KEYS.map(([k]) => [k, (player[k] || 0) * 100]));
 
-  useEffect(() => {
-    if (!playerB) return;
-    const obj = {};
-    STAT_KEYS.forEach(([k]) => obj[k] = (playerB[k] || 0) * 100);
-    setStatsB(obj);
-  }, [playerB]);
+    if (!upsetMode) {
+      if (playerA) setStatsA(seedNormal(playerA));
+      if (playerB) setStatsB(seedNormal(playerB));
+      return;
+    }
+
+    Papa.parse(process.env.PUBLIC_URL + '/data/smash_wb_upset.csv', {
+      header: true,
+      download: true,
+      complete: ({ data }) => {
+        const rowA = playerA && data.find(r => r.id === playerA.id);
+        const rowB = playerB && data.find(r => r.id === playerB.id);
+        if (playerA) setStatsA(rowA ? Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowA[k]) || 0) * 100])) : seedNormal(playerA));
+        if (playerB) setStatsB(rowB ? Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowB[k]) || 0) * 100])) : seedNormal(playerB));
+        if ((playerA && !rowA) || (playerB && !rowB)) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Not enough recent data',
+            text: 'One or both players have too few recent matches on this surface for an upset scenario — using their normal stats instead.'
+          });
+        }
+      }
+    });
+  }, [playerA, playerB, upsetMode]);
 
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
@@ -210,33 +231,6 @@ export default function Wimbledon() {
     runBatch(pA, pB, simCount);
   };
 
-  const handleUpsetScenario = () => {
-    if (!playerA || !playerB) return showPlayerError();
-    stopWatching();
-    setBatchResult(null);
-    setProgress(0);
-    Papa.parse(process.env.PUBLIC_URL + '/data/smash_wb_upset.csv', {
-      header: true,
-      download: true,
-      complete: ({ data }) => {
-        const rowA = data.find(r => r.id === playerA.id);
-        const rowB = data.find(r => r.id === playerB.id);
-        if (!rowA || !rowB) {
-          Swal.fire({
-            icon: 'info',
-            title: 'Not enough recent data',
-            text: 'One or both players have too few recent matches on this surface for an upset scenario. Try different players.'
-          });
-          return;
-        }
-        const pA = STAT_KEYS.map(([k]) => Number(rowA[k]) || 0);
-        const pB = STAT_KEYS.map(([k]) => Number(rowB[k]) || 0);
-        setStatsA(Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowA[k]) || 0) * 100])));
-        setStatsB(Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowB[k]) || 0) * 100])));
-        runBatch(pA, pB, simCount);
-      }
-    });
-  };
 
   const randomPick = who => {
     const idx = Math.floor(Math.random() * players.length);
@@ -281,6 +275,7 @@ export default function Wimbledon() {
       <div className="overlay text-center">
         <MatchHero
           title="Wimbledon · Grass Court"
+          logo={logoWB}
           playerA={playerA}
           playerB={playerB}
           selectorA={
@@ -369,8 +364,9 @@ export default function Wimbledon() {
           showResults={showResults}
           liveLog={liveLog}
           isWatching={isWatching}
+          upsetMode={upsetMode}
+          setUpsetMode={setUpsetMode}
           onSimulate={handleSimulate}
-          onUpsetScenario={handleUpsetScenario}
           onWatchMatch={handleWatchMatch}
         />
       </div>
