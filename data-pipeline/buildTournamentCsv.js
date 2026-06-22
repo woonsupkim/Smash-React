@@ -63,6 +63,39 @@ function main() {
     fs.writeFileSync(csvPath, Papa.unparse({ fields, data: merged }));
     console.log(`  ${file} (${surface}): updated ${updated} players, ${missing} kept as-is (no ${surface}-court match data)`);
   }
+
+  // country/age/year-record only apply to the base files (the H2H hero
+  // doesn't need them in the upset-mode variant)
+  if (!suffix) mergePlayerFacts();
+}
+
+// Adds country/age/this-year-W-L (for that file's surface) into each base
+// smash_*.csv, from data-pipeline/output/player_facts.json (computeMatchupFacts.js).
+function mergePlayerFacts() {
+  const factsPath = path.join(OUTPUT_DIR, 'player_facts.json');
+  if (!fs.existsSync(factsPath)) {
+    console.warn('  skip player facts: missing output/player_facts.json — run computeMatchupFacts.js first.');
+    return;
+  }
+  const facts = JSON.parse(fs.readFileSync(factsPath, 'utf8'));
+
+  for (const [file, surface] of Object.entries(SURFACE_BY_FILE)) {
+    const csvPath = path.join(PUBLIC_DATA_DIR, file);
+    if (!fs.existsSync(csvPath)) continue;
+    const { data: rows, meta } = Papa.parse(fs.readFileSync(csvPath, 'utf8'), { header: true });
+    const newCols = ['country', 'age', 'year_w', 'year_l'];
+    const fields = [...meta.fields, ...newCols.filter((c) => !meta.fields.includes(c))];
+
+    const merged = rows.filter((r) => r.id).map((row) => {
+      const f = facts[row.id];
+      if (!f) return row;
+      const record = f.yearRecord?.[surface] || { w: 0, l: 0 };
+      return { ...row, country: f.country || '', age: f.age ?? '', year_w: record.w, year_l: record.l };
+    });
+
+    fs.writeFileSync(csvPath, Papa.unparse({ fields, data: merged }));
+    console.log(`  ${file}: merged country/age/year-record for ${merged.length} players`);
+  }
 }
 
 main();

@@ -32,7 +32,7 @@ async function apiGet(urlPath) {
 function collectTournamentIds() {
   const ids = new Set();
   const files = fs.readdirSync(RAW_DIR).filter(
-    (f) => f.endsWith('.json') && f !== 'player-id-map.json' && f !== 'tournament-surfaces.json'
+    (f) => f.endsWith('.json') && f !== 'player-id-map.json' && f !== 'tournament-surfaces.json' && f !== 'player-profiles.json'
   );
   for (const f of files) {
     const matches = JSON.parse(fs.readFileSync(path.join(RAW_DIR, f), 'utf8'));

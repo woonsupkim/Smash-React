@@ -7,6 +7,14 @@
   padding: 80px 20px 40px;
 }
 
+.eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: #f2c14e;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
 /* Main heading */
 .main-title {
   font-size: clamp(2rem, 7vw, 3rem);
@@ -23,54 +31,56 @@
   margin: 0 auto 2rem;
 }
 
-/* Card sizing and look */
-.home-card {
-  width: min(14rem, 80vw);
-  background-color: var(--color-surface);
-  border: none;
+.cta-primary,
+.cta-secondary {
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  min-height: 44px;
   border-radius: var(--radius-card);
+}
+
+.trust-signal {
+  font-size: 0.85rem;
+  color: #bbb;
+}
+
+.surface-strip {
+  gap: 1.25rem;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.surface-tile {
+  flex: 1 1 180px;
+  max-width: 220px;
+  border-radius: var(--radius-card);
+  padding: 1.5rem 1rem;
+  text-decoration: none;
   box-shadow: var(--shadow-card);
   transition: var(--transition-base);
 }
-.home-card:hover {
+.surface-tile:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
 }
 
+.surface-tile-label {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.surface-tile-tournament {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.85);
+  margin-top: 0.25rem;
+}
+
+.surface-clay  { background: linear-gradient(135deg, #B24936, #7c2f20); }
+.surface-grass { background: linear-gradient(135deg, #1E7A45, #0f3d22); }
+.surface-hard  { background: linear-gradient(135deg, #0033A0, #001c5c); }
+
 @media (max-width: 576px) {
   .overlay { padding: 56px 16px 32px; }
-  .home-card { width: min(14rem, 70vw); }
-}
-
-/* Logo inside card */
-.home-logo {
-  max-width: 5rem;
-  max-height: 5rem;
-  object-fit: contain;
-}
-
-/* Tournament title & description */
-.tourney-title {
-  font-size: 1.25rem;
-  color: #fff;
-  margin-bottom: 0.5rem;
-}
-.tourney-desc {
-  font-size: 0.9rem;
-  color: #ccc;
-  margin-bottom: 1rem;
-}
-
-/* Explore button */
-.explore-btn {
-  font-weight: 600;
-  padding: 0.65rem 1.25rem;
-  min-height: 44px;
-}
-
-/* Footer note */
-.footer-note {
-  margin-top: 2rem;
-  color: #ddd;
-  font-size: 0.9rem;
+  .surface-tile { flex: 1 1 100%; max-width: 280px; }
 }

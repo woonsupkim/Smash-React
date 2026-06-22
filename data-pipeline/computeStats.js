@@ -30,10 +30,21 @@ const RAW_DIR = path.join(__dirname, 'raw');
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
-// 60 days was the best-scoring half-life in npm run backtest (lowest Brier
-// score across 600+ historical roster-vs-roster matches) — rerun backtest
-// periodically as more match data accumulates and adjust if it changes.
-const HALF_LIFE_DAYS = Number(process.argv[2]) || 60;
+// Backtesting each surface separately (`node backtest.js <list> <surface>`)
+// scores noticeably differently per surface — a single blended half-life
+// (150d) was a compromise across all three. Surface-specific best Brier
+// scores: hard=270d, clay=365d, grass=270d (grass's season is short and
+// annual, so a too-short half-life decays away last year's Wimbledon
+// fortnight before this year's rolls around). An explicit CLI arg still
+// overrides ALL surfaces (used by build-upset-csv's 7-day recency mode).
+const HALF_LIFE_OVERRIDE = process.argv[2] ? Number(process.argv[2]) : null;
+const HALF_LIFE_BY_SURFACE = { hard: 270, clay: 365, grass: 270 };
+
+// Grass's short annual season means far fewer matches accumulate real
+// decay-weight than hard/clay even with a longer half-life — lower the bar
+// so grass coverage isn't gutted by the same 200-point threshold tuned for
+// the other two surfaces.
+const MIN_SVPT_BY_SURFACE = { hard: 200, clay: 200, grass: 100 };
 
 const SURFACES = ['hard', 'clay', 'grass'];
 const SURFACE_DISPLAY = { hard: 'Hard', clay: 'Clay', grass: 'Grass' };
@@ -51,7 +62,12 @@ function computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt) {
 
     const agg = perPlayer.get(ourId) || emptyAgg();
     for (const m of matches) {
-      if (surfaceMap[String(m.tournamentId)] !== wantedSurface) continue;
+      // "I.hard" (indoor hard) is a separate label from the API but plays
+      // the same as outdoor hard for serve/return purposes — fold it in,
+      // otherwise ~half of all hard-court matches are silently dropped.
+      const matchSurface = surfaceMap[String(m.tournamentId)];
+      const normalizedSurface = matchSurface === 'I.hard' ? 'Hard' : matchSurface;
+      if (normalizedSurface !== wantedSurface) continue;
       accumulateMatch(agg, tourTotals, m, apiId, now, halfLifeDays);
     }
     perPlayer.set(ourId, agg);
@@ -83,19 +99,21 @@ function main() {
 
   const requestedSurface = process.argv[3];
   const suffix = process.argv[4] ? `_${process.argv[4]}` : ''; // e.g. "upset" -> player_stats_hard_upset.csv
-  // "upset" runs use a much shorter half-life, so few players clear the
-  // default 200-service-point bar — lower it so heavy-recency mode actually
-  // produces usable (if noisier) stats instead of falling back for everyone.
-  const minSvpt = suffix === '_upset' ? 60 : 200;
+  const isUpset = suffix === '_upset';
   const surfacesToRun = requestedSurface ? [requestedSurface] : SURFACES;
 
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
   for (const surface of surfacesToRun) {
-    const rows = computeForSurface(surface, idMap, surfaceMap, HALF_LIFE_DAYS, minSvpt);
+    const halfLifeDays = HALF_LIFE_OVERRIDE ?? HALF_LIFE_BY_SURFACE[surface];
+    // "upset" runs use a much shorter half-life, so few players clear the
+    // normal per-surface bar — lower it so heavy-recency mode actually
+    // produces usable (if noisier) stats instead of falling back for everyone.
+    const minSvpt = isUpset ? 60 : MIN_SVPT_BY_SURFACE[surface];
+    const rows = computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt);
     const outPath = path.join(OUTPUT_DIR, `player_stats_${surface}${suffix}.csv`);
     fs.writeFileSync(outPath, Papa.unparse(rows));
-    console.log(`Wrote ${rows.length} players to ${outPath} (surface=${SURFACE_DISPLAY[surface]}, half-life=${HALF_LIFE_DAYS}d)`);
+    console.log(`Wrote ${rows.length} players to ${outPath} (surface=${SURFACE_DISPLAY[surface]}, half-life=${halfLifeDays}d, minSvpt=${minSvpt})`);
   }
 }
 

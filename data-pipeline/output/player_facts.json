@@ -1,0 +1,1256 @@
+{
+  "alcar": {
+    "country": "ESP",
+    "age": 23,
+    "yearRecord": {
+      "hard": {
+        "w": 17,
+        "l": 2
+      },
+      "clay": {
+        "w": 5,
+        "l": 1
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "cerun": {
+    "country": "ARG",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 4
+      },
+      "clay": {
+        "w": 15,
+        "l": 8
+      },
+      "grass": {
+        "w": 5,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "cobol": {
+    "country": "ITA",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 9,
+        "l": 7
+      },
+      "clay": {
+        "w": 14,
+        "l": 6
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "dimit": {
+    "country": null,
+    "age": 35,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "djoko": {
+    "country": "SRB",
+    "age": 39,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 2
+      },
+      "clay": {
+        "w": 2,
+        "l": 2
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "drap": {
+    "country": null,
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "fils": {
+    "country": "FRA",
+    "age": 22,
+    "yearRecord": {
+      "hard": {
+        "w": 13,
+        "l": 5
+      },
+      "clay": {
+        "w": 9,
+        "l": 2
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "fritz": {
+    "country": "USA",
+    "age": 28,
+    "yearRecord": {
+      "hard": {
+        "w": 12,
+        "l": 8
+      },
+      "clay": {
+        "w": 0,
+        "l": 2
+      },
+      "grass": {
+        "w": 7,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "humbe": {
+    "country": "FRA",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 11,
+        "l": 9
+      },
+      "clay": {
+        "w": 5,
+        "l": 5
+      },
+      "grass": {
+        "w": 4,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "hurka": {
+    "country": null,
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "khach": {
+    "country": "RUS",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 7
+      },
+      "clay": {
+        "w": 7,
+        "l": 6
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "lehec": {
+    "country": "CZE",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 11,
+        "l": 6
+      },
+      "clay": {
+        "w": 6,
+        "l": 4
+      },
+      "grass": {
+        "w": 3,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 5,
+      "l": 5
+    }
+  },
+  "macha": {
+    "country": "CZE",
+    "age": 25,
+    "yearRecord": {
+      "hard": {
+        "w": 8,
+        "l": 5
+      },
+      "clay": {
+        "w": 6,
+        "l": 5
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "medve": {
+    "country": "RUS",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 19,
+        "l": 5
+      },
+      "clay": {
+        "w": 5,
+        "l": 4
+      },
+      "grass": {
+        "w": 4,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "mensi": {
+    "country": "CZE",
+    "age": 20,
+    "yearRecord": {
+      "hard": {
+        "w": 15,
+        "l": 6
+      },
+      "clay": {
+        "w": 8,
+        "l": 4
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "demin": {
+    "country": "AUS",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 12,
+        "l": 5
+      },
+      "clay": {
+        "w": 7,
+        "l": 6
+      },
+      "grass": {
+        "w": 5,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "muset": {
+    "country": "ITA",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 3
+      },
+      "clay": {
+        "w": 6,
+        "l": 4
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "paul": {
+    "country": "USA",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 14,
+        "l": 7
+      },
+      "clay": {
+        "w": 12,
+        "l": 4
+      },
+      "grass": {
+        "w": 4,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "popyr": {
+    "country": null,
+    "age": 26,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "ruble": {
+    "country": "RUS",
+    "age": 28,
+    "yearRecord": {
+      "hard": {
+        "w": 10,
+        "l": 6
+      },
+      "clay": {
+        "w": 11,
+        "l": 5
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "rune": {
+    "country": null,
+    "age": 23,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "ruud": {
+    "country": "NOR",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 7
+      },
+      "clay": {
+        "w": 16,
+        "l": 5
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "shelt": {
+    "country": "USA",
+    "age": 23,
+    "yearRecord": {
+      "hard": {
+        "w": 11,
+        "l": 4
+      },
+      "clay": {
+        "w": 8,
+        "l": 5
+      },
+      "grass": {
+        "w": 6,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "sinne": {
+    "country": "ITA",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 19,
+        "l": 2
+      },
+      "clay": {
+        "w": 18,
+        "l": 1
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 9,
+      "l": 1
+    }
+  },
+  "tiafo": {
+    "country": "USA",
+    "age": 28,
+    "yearRecord": {
+      "hard": {
+        "w": 15,
+        "l": 7
+      },
+      "clay": {
+        "w": 7,
+        "l": 4
+      },
+      "grass": {
+        "w": 7,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "zvere": {
+    "country": "GER",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 15,
+        "l": 5
+      },
+      "clay": {
+        "w": 20,
+        "l": 4
+      },
+      "grass": {
+        "w": 3,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 9,
+      "l": 1
+    }
+  },
+  "alias": {
+    "country": null,
+    "age": 25,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "minau": {
+    "country": null,
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "bubli": {
+    "country": "KAZ",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 13,
+        "l": 6
+      },
+      "clay": {
+        "w": 5,
+        "l": 6
+      },
+      "grass": {
+        "w": 2,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 5,
+      "l": 5
+    }
+  },
+  "darde": {
+    "country": "ITA",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 4,
+        "l": 4
+      },
+      "clay": {
+        "w": 17,
+        "l": 9
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "tien": {
+    "country": "USA",
+    "age": 20,
+    "yearRecord": {
+      "hard": {
+        "w": 10,
+        "l": 6
+      },
+      "clay": {
+        "w": 9,
+        "l": 4
+      },
+      "grass": {
+        "w": 1,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "vache": {
+    "country": "MON",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 10,
+        "l": 7
+      },
+      "clay": {
+        "w": 5,
+        "l": 2
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "fokin": {
+    "country": "ESP",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 9,
+        "l": 7
+      },
+      "clay": {
+        "w": 4,
+        "l": 4
+      },
+      "grass": {
+        "w": 2,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 5,
+      "l": 5
+    }
+  },
+  "jodar": {
+    "country": "ESP",
+    "age": 19,
+    "yearRecord": {
+      "hard": {
+        "w": 18,
+        "l": 7
+      },
+      "clay": {
+        "w": 19,
+        "l": 4
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "rinde": {
+    "country": "FRA",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 5,
+        "l": 7
+      },
+      "clay": {
+        "w": 6,
+        "l": 6
+      },
+      "grass": {
+        "w": 0,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "fonse": {
+    "country": "BRA",
+    "age": 19,
+    "yearRecord": {
+      "hard": {
+        "w": 4,
+        "l": 3
+      },
+      "clay": {
+        "w": 10,
+        "l": 7
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 5,
+      "l": 5
+    }
+  },
+  "norri": {
+    "country": "GBR",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 9,
+        "l": 7
+      },
+      "clay": {
+        "w": 5,
+        "l": 6
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "etche": {
+    "country": "ARG",
+    "age": 26,
+    "yearRecord": {
+      "hard": {
+        "w": 5,
+        "l": 5
+      },
+      "clay": {
+        "w": 16,
+        "l": 8
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "auger": {
+    "country": "CAN",
+    "age": 25,
+    "yearRecord": {
+      "hard": {
+        "w": 15,
+        "l": 6
+      },
+      "clay": {
+        "w": 8,
+        "l": 5
+      },
+      "grass": {
+        "w": 3,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "tabil": {
+    "country": "CHI",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 6,
+        "l": 5
+      },
+      "clay": {
+        "w": 24,
+        "l": 10
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "nakas": {
+    "country": "USA",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 10,
+        "l": 7
+      },
+      "clay": {
+        "w": 5,
+        "l": 5
+      },
+      "grass": {
+        "w": 3,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "arnal": {
+    "country": "ITA",
+    "age": 25,
+    "yearRecord": {
+      "hard": {
+        "w": 1,
+        "l": 3
+      },
+      "clay": {
+        "w": 13,
+        "l": 6
+      },
+      "grass": {
+        "w": 2,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 9,
+      "l": 1
+    }
+  },
+  "buse": {
+    "country": "PER",
+    "age": 22,
+    "yearRecord": {
+      "hard": {
+        "w": 3,
+        "l": 2
+      },
+      "clay": {
+        "w": 16,
+        "l": 10
+      },
+      "grass": {
+        "w": 1,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "moute": {
+    "country": "FRA",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 5,
+        "l": 6
+      },
+      "clay": {
+        "w": 3,
+        "l": 7
+      },
+      "grass": {
+        "w": 1,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 2,
+      "l": 8
+    }
+  },
+  "block": {
+    "country": "BEL",
+    "age": 21,
+    "yearRecord": {
+      "hard": {
+        "w": 16,
+        "l": 7
+      },
+      "clay": {
+        "w": 13,
+        "l": 4
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "miche": {
+    "country": "USA",
+    "age": 21,
+    "yearRecord": {
+      "hard": {
+        "w": 12,
+        "l": 7
+      },
+      "clay": {
+        "w": 6,
+        "l": 7
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 5,
+      "l": 5
+    }
+  },
+  "navon": {
+    "country": "ARG",
+    "age": 25,
+    "yearRecord": {
+      "hard": {
+        "w": 6,
+        "l": 5
+      },
+      "clay": {
+        "w": 15,
+        "l": 9
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "griek": {
+    "country": "NED",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 6
+      },
+      "clay": {
+        "w": 3,
+        "l": 7
+      },
+      "grass": {
+        "w": 1,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "shapo": {
+    "country": "CAN",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 6,
+        "l": 6
+      },
+      "clay": {
+        "w": 2,
+        "l": 5
+      },
+      "grass": {
+        "w": 1,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 3,
+      "l": 7
+    }
+  },
+  "clar": {
+    "country": "ESP",
+    "age": 29,
+    "yearRecord": {
+      "hard": {
+        "w": 5,
+        "l": 5
+      },
+      "clay": {
+        "w": 4,
+        "l": 6
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "manna": {
+    "country": "FRA",
+    "age": 37,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 10
+      },
+      "clay": {
+        "w": 0,
+        "l": 8
+      },
+      "grass": {
+        "w": 4,
+        "l": 3
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "cerun1": {
+    "country": "ARG",
+    "age": 24,
+    "yearRecord": {
+      "hard": {
+        "w": 2,
+        "l": 2
+      },
+      "clay": {
+        "w": 20,
+        "l": 11
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "cilic": {
+    "country": "CRO",
+    "age": 37,
+    "yearRecord": {
+      "hard": {
+        "w": 8,
+        "l": 6
+      },
+      "clay": {
+        "w": 3,
+        "l": 4
+      },
+      "grass": {
+        "w": 2,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "majch": {
+    "country": "POL",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 7,
+        "l": 8
+      },
+      "clay": {
+        "w": 1,
+        "l": 3
+      },
+      "grass": {
+        "w": 8,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 8,
+      "l": 2
+    }
+  },
+  "bergs": {
+    "country": "BEL",
+    "age": 27,
+    "yearRecord": {
+      "hard": {
+        "w": 6,
+        "l": 7
+      },
+      "clay": {
+        "w": 7,
+        "l": 7
+      },
+      "grass": {
+        "w": 0,
+        "l": 2
+      }
+    },
+    "recentForm": {
+      "w": 4,
+      "l": 6
+    }
+  },
+  "berre": {
+    "country": "ITA",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 3,
+        "l": 2
+      },
+      "clay": {
+        "w": 12,
+        "l": 10
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "kecma": {
+    "country": "SRB",
+    "age": 26,
+    "yearRecord": {
+      "hard": {
+        "w": 8,
+        "l": 10
+      },
+      "clay": {
+        "w": 7,
+        "l": 5
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  }
+}

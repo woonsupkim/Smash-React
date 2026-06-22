@@ -32,9 +32,11 @@
     "fetch-surfaces": "node data-pipeline/fetchSurfaces.js",
     "compute-stats": "node data-pipeline/computeStats.js",
     "build-stats-csv": "node data-pipeline/buildTournamentCsv.js",
-    "build-upset-csv": "node data-pipeline/computeStats.js 7 '' upset && node data-pipeline/buildTournamentCsv.js upset",
+    "build-upset-csv": "node data-pipeline/computeStats.js 7 \"\" upset && node data-pipeline/buildTournamentCsv.js upset",
+    "fetch-profiles": "node data-pipeline/fetchProfiles.js",
+    "compute-matchup-facts": "node data-pipeline/computeMatchupFacts.js",
     "backtest": "node data-pipeline/backtest.js",
-    "refresh-stats": "npm run fetch-stats && npm run fetch-surfaces && npm run compute-stats && npm run build-stats-csv"
+    "refresh-stats": "npm run fetch-stats && npm run fetch-surfaces && npm run fetch-profiles && npm run compute-stats && npm run compute-matchup-facts && npm run build-stats-csv"
   },
   "eslintConfig": {
     "extends": [

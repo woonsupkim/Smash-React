@@ -9,7 +9,12 @@
  * candidate half-life so you can pick the half-life that's actually most
  * predictive, rather than just plausible-looking.
  *
- * Usage: node backtest.js [comma-separated halfLifeDays list]
+ * Usage: node backtest.js [comma-separated halfLifeDays list] [surface]
+ *   surface: hard | clay | grass — omit to backtest across all surfaces
+ *   combined (the original behavior). Passing a surface restricts both the
+ *   test cases and the point-in-time history aggregation to matches on that
+ *   surface, so e.g. grass's half-life can be tuned on its own — grass's
+ *   short annual season makes it behave very differently from hard/clay.
  */
 const fs = require('fs');
 const os = require('os');
@@ -18,9 +23,18 @@ const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = r
 
 const RAW_DIR = path.join(__dirname, 'raw');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
+const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 const SIMULATOR_PATH = path.join(__dirname, '..', 'src', 'simulator.js');
 const SIMS_PER_MATCH = 300;
 const DEFAULT_HALF_LIVES = [60, 90, 150, 270, 365, 540, 730];
+const SURFACE_DISPLAY = { hard: 'Hard', clay: 'Clay', grass: 'Grass' };
+
+// "I.hard" (indoor hard) is a separate API label from outdoor "Hard" but is
+// the same court surface for stats purposes — fold it in (mirrors
+// computeStats.js/computeMatchupFacts.js's normalization).
+function normalizeSurface(rawSurface) {
+  return rawSurface === 'I.hard' ? 'Hard' : rawSurface;
+}
 
 // src/simulator.js is an ES module (used by the React app's build). Rather
 // than duplicate its logic here, transpile it to CommonJS on the fly into a
@@ -43,7 +57,7 @@ function loadMatches(ourId) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function findTestCases(idMap) {
+function findTestCases(idMap, surfaceMap, wantedSurface) {
   const apiToOur = new Map(Object.entries(idMap).map(([ourId, apiId]) => [String(apiId), ourId]));
   const seen = new Set();
   const testCases = [];
@@ -51,6 +65,7 @@ function findTestCases(idMap) {
   for (const ourId of Object.keys(idMap)) {
     for (const m of loadMatches(ourId)) {
       if (!m.id || seen.has(m.id) || !m.date || !m.stats || m.match_winner == null) continue;
+      if (wantedSurface && normalizeSurface(surfaceMap[String(m.tournamentId)]) !== wantedSurface) continue;
       const p1OurId = apiToOur.get(String(m.player1Id));
       const p2OurId = apiToOur.get(String(m.player2Id));
       if (!p1OurId || !p2OurId) continue; // need both sides in our roster to backtest this match
@@ -64,33 +79,38 @@ function findTestCases(idMap) {
 // Point-in-time probabilities for a player: aggregate all their OTHER
 // matches (excluding the one being predicted) with decay weight relative to
 // asOfDate, so nothing from the test match itself leaks into the estimate.
-function probabilitiesAsOf(ourId, excludeMatchId, asOfDate, halfLifeDays, idMap, tourAverages) {
+// When wantedSurface is set, only same-surface matches count — mirrors what
+// computeStats.js actually does at serve time, so the backtest measures the
+// half-life that surface will really be computed with.
+function probabilitiesAsOf(ourId, excludeMatchId, asOfDate, halfLifeDays, idMap, tourAverages, surfaceMap, wantedSurface) {
   const apiId = idMap[ourId];
   const agg = emptyAgg();
   for (const m of loadMatches(ourId)) {
     if (m.id === excludeMatchId) continue;
+    if (wantedSurface && normalizeSurface(surfaceMap[String(m.tournamentId)]) !== wantedSurface) continue;
     accumulateMatch(agg, null, m, apiId, asOfDate, halfLifeDays);
   }
   return deriveProbabilities(agg, tourAverages);
 }
 
-function computeGlobalTourAverages(idMap, asOfDate, halfLifeDays) {
+function computeGlobalTourAverages(idMap, asOfDate, halfLifeDays, surfaceMap, wantedSurface) {
   const tourTotals = emptyAgg();
   for (const [ourId, apiId] of Object.entries(idMap)) {
     for (const m of loadMatches(ourId)) {
+      if (wantedSurface && normalizeSurface(surfaceMap[String(m.tournamentId)]) !== wantedSurface) continue;
       accumulateMatch(emptyAgg(), tourTotals, m, apiId, asOfDate, halfLifeDays);
     }
   }
   return deriveTourAverages(tourTotals);
 }
 
-async function scoreHalfLife(halfLifeDays, testCases, idMap, simulateBatch) {
+async function scoreHalfLife(halfLifeDays, testCases, idMap, simulateBatch, surfaceMap, wantedSurface) {
   // Tour averages only affect p3/p4 fallback + the p5 baseline (a roughly
   // constant offset shared by both sides of a matchup), so using one global
   // snapshot rather than a fresh point-in-time one per test case is a
   // reasonable simplification — it doesn't need to be exact to compare
   // half-life options against each other.
-  const tourAverages = computeGlobalTourAverages(idMap, new Date(), halfLifeDays);
+  const tourAverages = computeGlobalTourAverages(idMap, new Date(), halfLifeDays, surfaceMap, wantedSurface);
 
   let n = 0;
   let brierSum = 0;
@@ -99,8 +119,8 @@ async function scoreHalfLife(halfLifeDays, testCases, idMap, simulateBatch) {
 
   for (const { match, p1OurId, p2OurId } of testCases) {
     const asOfDate = new Date(match.date);
-    const probA = probabilitiesAsOf(p1OurId, match.id, asOfDate, halfLifeDays, idMap, tourAverages);
-    const probB = probabilitiesAsOf(p2OurId, match.id, asOfDate, halfLifeDays, idMap, tourAverages);
+    const probA = probabilitiesAsOf(p1OurId, match.id, asOfDate, halfLifeDays, idMap, tourAverages, surfaceMap, wantedSurface);
+    const probB = probabilitiesAsOf(p2OurId, match.id, asOfDate, halfLifeDays, idMap, tourAverages, surfaceMap, wantedSurface);
     if (!probA || !probB) continue; // not enough prior history at this point in time
 
     const { matchWins } = simulateBatch(probA, probB, SIMS_PER_MATCH);
@@ -129,10 +149,18 @@ async function main() {
     process.exit(1);
   }
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8'));
+  const surfaceMap = fs.existsSync(SURFACES_PATH) ? JSON.parse(fs.readFileSync(SURFACES_PATH, 'utf8')) : {};
   const { simulateBatch } = loadSimulatorAsCjs();
 
-  const testCases = findTestCases(idMap);
-  console.log(`Found ${testCases.length} historical intra-roster matches to backtest against.\n`);
+  const surfaceArg = process.argv[3];
+  const wantedSurface = surfaceArg ? SURFACE_DISPLAY[surfaceArg] : null;
+  if (surfaceArg && !wantedSurface) {
+    console.error(`Unknown surface "${surfaceArg}" — expected hard, clay, or grass.`);
+    process.exit(1);
+  }
+
+  const testCases = findTestCases(idMap, surfaceMap, wantedSurface);
+  console.log(`Found ${testCases.length} historical intra-roster matches to backtest against${wantedSurface ? ` (surface=${wantedSurface})` : ''}.\n`);
   if (testCases.length === 0) {
     console.log('No matches between two roster players found — nothing to backtest.');
     return;
@@ -144,7 +172,7 @@ async function main() {
 
   const results = [];
   for (const hl of halfLives) {
-    results.push(await scoreHalfLife(hl, testCases, idMap, simulateBatch));
+    results.push(await scoreHalfLife(hl, testCases, idMap, simulateBatch, surfaceMap, wantedSurface));
   }
 
   console.log('half-life(d) | n cases | accuracy | brier (lower=better) | log loss (lower=better)');

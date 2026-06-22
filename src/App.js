@@ -22,9 +22,9 @@ import './App.css';
 function App() {
   const navItems = [
     { to: '/', label: 'Home', logo: logoHome },
-    { to: '/french-open', label: 'French Open', logo: logoRG },
-    { to: '/wimbledon', label: 'Wimbledon', logo: logoWB },
-    { to: '/us-open', label: 'US Open', logo: logoUS },
+    { to: '/french-open', label: 'Clay', logo: logoRG },
+    { to: '/wimbledon', label: 'Grass', logo: logoWB },
+    { to: '/us-open', label: 'Hard', logo: logoUS },
     { to: '/dream-brackets', label: 'Brackets', logo: iconBracket },
     // { to: '/about', label: 'About Us', logo: null }
   ];
