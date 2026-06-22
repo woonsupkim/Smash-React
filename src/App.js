@@ -9,6 +9,7 @@ import USOpen from './pages/USOpen';
 import DreamBrackets from './pages/DreamBrackets';
 
 import GATracker from './components/GATracker'; // <-- added this line
+import { Analytics } from '@vercel/analytics/react';
 
 import logoHome from './assets/ball.png';
 
@@ -27,6 +28,7 @@ function App() {
   return (
     <Router>
       <GATracker /> {/* <-- Google Analytics route change tracker */}
+      <Analytics /> {/* <-- Vercel Web Analytics */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">

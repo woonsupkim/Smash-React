@@ -5,7 +5,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
   Tooltip as RechartTooltip,
   BarChart,
   Bar,
