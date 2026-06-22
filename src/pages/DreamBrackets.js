@@ -304,77 +304,75 @@ export default function DreamBrackets() {
   return (
     <div className={`page-background ${tournamentConfig.bgClass}`} style={{ '--bracket-accent': `var(${tournamentConfig.accentVar})` }}>
       <div className="dream-brackets-page bracket-overlay">
-        <h3>Bracket Simulator</h3>
+        <h3 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
+          {tournamentConfig.label} · Bracket Simulator
+        </h3>
 
-        <div className="mb-3 bracket-controls text-start d-flex flex-wrap gap-3">
-          <Form.Select
-            value={tournament}
-            onChange={e => setTournament(e.target.value)}
-            disabled={isRunning}
-            style={{ maxWidth: 260 }}
-          >
-            {TOURNAMENTS.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </Form.Select>
+        <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>
+          <div className="bracket-select-row">
+            <Form.Select
+              value={tournament}
+              onChange={e => setTournament(e.target.value)}
+              disabled={isRunning}
+            >
+              {TOURNAMENTS.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </Form.Select>
 
-          <Form.Select
-            value={stage}
-            onChange={e => handleStageChange(e.target.value)}
-            disabled={isRunning}
-            style={{ maxWidth: 260 }}
-          >
-            {STAGES.map(s => (
-              <option key={s.value} value={s.value}>Start at {s.label}</option>
-            ))}
-          </Form.Select>
+            <Form.Select
+              value={stage}
+              onChange={e => handleStageChange(e.target.value)}
+              disabled={isRunning}
+            >
+              {STAGES.map(s => (
+                <option key={s.value} value={s.value}>Start at {s.label}</option>
+              ))}
+            </Form.Select>
 
-          <Form.Select
-            value={simsPerMatch}
-            onChange={e => setSimsPerMatch(Number(e.target.value))}
-            disabled={isRunning}
-            style={{ maxWidth: 220 }}
-          >
-            {SIMS_PER_MATCHUP_OPTIONS.map(n => (
-              <option key={n} value={n}>{n} sim{n === 1 ? '' : 's'}/match</option>
-            ))}
-          </Form.Select>
-        </div>
+            <Form.Select
+              value={simsPerMatch}
+              onChange={e => setSimsPerMatch(Number(e.target.value))}
+              disabled={isRunning}
+            >
+              {SIMS_PER_MATCHUP_OPTIONS.map(n => (
+                <option key={n} value={n}>{n} sim{n === 1 ? '' : 's'}/match</option>
+              ))}
+            </Form.Select>
+          </div>
 
-        <div className="mb-3 bracket-controls text-start">
-          <Button
-            variant="success"
-            onClick={runDreamBracket}
-            disabled={isRunning}
-            className="me-2"
-          >
-            {isRunning
-              ? <><Spinner animation="border" size="sm" /> Running…</>
-              : 'Simulate Tournament'}
-          </Button>
-          <Button
-            variant="light"
-            onClick={handleRandomizeAll}
-            disabled={isRunning}
-            className="me-2"
-          >
-            🎲 Randomize
-          </Button>
-          <Button
-            variant={upsetMode ? 'warning' : 'outline-warning'}
-            onClick={() => setUpsetMode(v => !v)}
-            disabled={isRunning}
-            className="me-2"
-          >
-            ⚡ Upset Scenario {upsetMode ? '(on)' : '(off)'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleReset}
-            disabled={isRunning}
-          >
-            Reset
-          </Button>
+          <div className="bracket-button-row">
+            <Button
+              variant="success"
+              onClick={runDreamBracket}
+              disabled={isRunning}
+            >
+              {isRunning
+                ? <><Spinner animation="border" size="sm" /> Running…</>
+                : 'Simulate Tournament'}
+            </Button>
+            <Button
+              variant="light"
+              onClick={handleRandomizeAll}
+              disabled={isRunning}
+            >
+              Randomize
+            </Button>
+            <Button
+              variant={upsetMode ? 'warning' : 'outline-warning'}
+              onClick={() => setUpsetMode(v => !v)}
+              disabled={isRunning}
+            >
+              Upset Scenario {upsetMode ? '(on)' : '(off)'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleReset}
+              disabled={isRunning}
+            >
+              Reset
+            </Button>
+          </div>
         </div>
 
         {isRunning && (
@@ -408,7 +406,7 @@ export default function DreamBrackets() {
                       {colPlayers[0] ? (
                         <div className="competitor winner">
                           <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" />
-                          <span>🏆 {colPlayers[0].name}</span>
+                          <span>{colPlayers[0].name}</span>
                           {colPlayers[0]._ciLower != null && (
                             <div className="bracket-ci-tag">{Math.round(colPlayers[0]._winProb*100)}% [{Math.round(colPlayers[0]._ciLower*100)}–{Math.round(colPlayers[0]._ciUpper*100)}%]</div>
                           )}

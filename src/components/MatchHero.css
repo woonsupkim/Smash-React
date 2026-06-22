@@ -8,6 +8,22 @@
   box-shadow: 0 8px 30px rgba(0,0,0,0.35);
 }
 
+/* Same large broadcast-style title used to live outside the card as its
+   own element — now part of the card itself, sized up since it's the page's
+   primary heading. */
+.match-hero-title {
+  display: block;
+  text-align: center;
+  font-size: clamp(1.7rem, 4.5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  padding-bottom: 0.6rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 3px solid var(--accent, #fff);
+}
+
 .match-hero-context {
   text-align: center;
   font-size: 0.85rem;
@@ -15,6 +31,10 @@
   text-transform: uppercase;
   color: #aaa;
   margin-bottom: 1.5rem;
+}
+
+.match-hero-selector {
+  margin-bottom: 1rem;
 }
 
 .match-hero-main {
@@ -38,6 +58,17 @@
   border: 3px solid rgba(255,255,255,0.25);
 }
 
+.match-hero-photo-placeholder {
+  background: rgba(255,255,255,0.06);
+  border-style: dashed;
+}
+
+.match-hero-vs-placeholder {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #555;
+}
+
 .match-hero-name {
   font-size: 1.25rem;
   font-weight: 700;
@@ -48,6 +79,20 @@
   font-size: 0.85rem;
   color: #ccc;
   margin-top: 0.15rem;
+}
+
+.match-hero-flag-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.match-hero-flag {
+  width: 18px;
+  height: 13px;
+  object-fit: cover;
+  border-radius: 2px;
+  vertical-align: middle;
 }
 
 .match-hero-center {

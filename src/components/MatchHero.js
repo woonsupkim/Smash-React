@@ -3,7 +3,7 @@ import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { simulateMatch, simulateBatch } from '../simulator';
 import { STAT_KEYS } from './AdvancedSimPanel';
-import { countryFlag } from './countryFlags';
+import { countryFlagUrl } from './countryFlags';
 import Scoreboard from './Scoreboard';
 import './MatchHero.css';
 
@@ -15,13 +15,18 @@ function probsFromRow(row) {
 }
 
 /**
- * Broadcast-graphic style matchup hero: context bar, two player cards,
- * center VS + favorite-colored probability bar, comparison chips, and a
- * re-rollable single-match "Simulate Match" prediction.
+ * Broadcast-graphic style matchup card: title, player selectors positioned
+ * directly above each player's photo, center VS + favorite-colored
+ * probability bar, comparison chips, and a re-rollable single-match
+ * "Simulate Match" prediction. Always renders (even before both players are
+ * picked) so the selectors, title, and hero live in one continuous card.
  */
 export default function MatchHero({
+  title,
   playerA,
   playerB,
+  selectorA,
+  selectorB,
   surfaceLabel,
   surfaceKey, // 'hard' | 'clay' | 'grass' — matches year_w/year_l on the row
   accentColor,
@@ -31,6 +36,7 @@ export default function MatchHero({
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
+  const bothPicked = !!(playerA && playerB);
 
   // Picking either player resets the previous roll — otherwise a stale
   // scoreline from the old matchup stays on screen next to the new pair.
@@ -44,17 +50,17 @@ export default function MatchHero({
   // "Simulate Match" roll below can still go the other way, especially
   // when the percentages are close together.
   const winProb = useMemo(() => {
-    if (!playerA || !playerB) return 0.5;
+    if (!bothPicked) return 0.5;
     const res = simulateBatch(probsFromRow(playerA), probsFromRow(playerB), QUICK_ESTIMATE_SIMS);
     return res.matchWins[0] / QUICK_ESTIMATE_SIMS;
-  }, [playerA, playerB]);
+  }, [playerA, playerB, bothPicked]);
 
   const favoredIsA = winProb >= 0.5;
   const pctA = Math.round(winProb * 100);
   const pctB = 100 - pctA;
 
   const h2h = useMemo(() => {
-    if (!playerA || !playerB || !h2hData) return null;
+    if (!bothPicked || !h2hData) return null;
     const [idA, idB] = [playerA.id, playerB.id].sort();
     const key = `${idA}_${idB}`;
     const rec = h2hData[key];
@@ -64,9 +70,7 @@ export default function MatchHero({
       winsA: aIsFirst ? rec.winsA : rec.winsB,
       winsB: aIsFirst ? rec.winsB : rec.winsA,
     };
-  }, [playerA, playerB, h2hData]);
-
-  if (!playerA || !playerB) return null;
+  }, [playerA, playerB, h2hData, bothPicked]);
 
   const yearRecord = (player) => {
     const w = player.year_w, l = player.year_l;
@@ -91,7 +95,7 @@ export default function MatchHero({
     }, 250);
   };
 
-  const chips = [
+  const chips = bothPicked ? [
     {
       label: `${surfaceLabel} record (this yr)`,
       a: yearRecord(playerA) || '—',
@@ -107,112 +111,135 @@ export default function MatchHero({
       a: h2h ? `${h2h.winsA}` : '0',
       b: h2h ? `${h2h.winsB}` : '0',
     },
-  ];
+  ] : [];
 
   return (
     <div className="match-hero" style={{ '--hero-accent': accentColor }}>
+      {title && <h3 className="match-hero-title" style={{ '--accent': accentColor }}>{title}</h3>}
       <div className="match-hero-context">
         {surfaceLabel} &middot; Best of 5
       </div>
 
       <div className="match-hero-main">
-        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" />
+        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} />
 
         <div className="match-hero-center">
-          <div className="match-hero-vs">VS</div>
-          <OverlayTrigger
-            placement="top"
-            overlay={
-              <Tooltip>
-                Average outcome of {QUICK_ESTIMATE_SIMS} simulated matches using each player's
-                serve/return stats — a statistical estimate, not a guarantee.
-              </Tooltip>
-            }
-          >
-            <div className="match-hero-bar-label-top">Modeled win probability ⓘ</div>
-          </OverlayTrigger>
-          <div className="match-hero-bar">
-            <div
-              className="match-hero-bar-fill a"
-              style={{
-                width: `${pctA}%`,
-                background: favoredIsA ? accentColor : MUTED_COLOR,
-              }}
-            />
-            <div
-              className="match-hero-bar-fill b"
-              style={{
-                width: `${pctB}%`,
-                background: !favoredIsA ? accentColor : MUTED_COLOR,
-              }}
-            />
-          </div>
-          <div className="match-hero-bar-labels">
-            <span style={{ color: favoredIsA ? accentColor : MUTED_COLOR, fontWeight: favoredIsA ? 700 : 400 }}>{pctA}%</span>
-            <span style={{ color: !favoredIsA ? accentColor : MUTED_COLOR, fontWeight: !favoredIsA ? 700 : 400 }}>{pctB}%</span>
-          </div>
-
-          <Button
-            className="mt-3"
-            style={{ background: accentColor, borderColor: accentColor, color: accentTextColor }}
-            onClick={rollMatch}
-            disabled={isRolling}
-          >
-            {isRolling ? 'Simulating…' : scoreline ? '🔁 Simulate Again' : '🎾 Simulate Match'}
-          </Button>
-
-          <AnimatePresence>
-            {scoreline && !isRolling && (
-              <motion.div
-                className="match-hero-scoreline"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
+          {bothPicked ? (
+            <>
+              <div className="match-hero-vs">VS</div>
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip>
+                    Average outcome of {QUICK_ESTIMATE_SIMS} simulated matches using each player's
+                    serve/return stats. A statistical estimate, not a guarantee.
+                  </Tooltip>
+                }
               >
-                <Scoreboard
-                  nameA={playerA.name}
-                  nameB={playerB.name}
-                  completedSets={scoreline.setScores}
-                  winner={scoreline.winner}
+                <div className="match-hero-bar-label-top">Modeled win probability ⓘ</div>
+              </OverlayTrigger>
+              <div className="match-hero-bar">
+                <div
+                  className="match-hero-bar-fill a"
+                  style={{
+                    width: `${pctA}%`,
+                    background: favoredIsA ? accentColor : MUTED_COLOR,
+                  }}
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="match-hero-disclaimer">
-            One simulated match — the underdog can still win, especially in a close matchup.
-          </div>
+                <div
+                  className="match-hero-bar-fill b"
+                  style={{
+                    width: `${pctB}%`,
+                    background: !favoredIsA ? accentColor : MUTED_COLOR,
+                  }}
+                />
+              </div>
+              <div className="match-hero-bar-labels">
+                <span style={{ color: favoredIsA ? accentColor : MUTED_COLOR, fontWeight: favoredIsA ? 700 : 400 }}>{pctA}%</span>
+                <span style={{ color: !favoredIsA ? accentColor : MUTED_COLOR, fontWeight: !favoredIsA ? 700 : 400 }}>{pctB}%</span>
+              </div>
+
+              <Button
+                className="mt-3"
+                style={{ background: accentColor, borderColor: accentColor, color: accentTextColor }}
+                onClick={rollMatch}
+                disabled={isRolling}
+              >
+                {isRolling ? 'Simulating...' : scoreline ? 'Simulate Again' : 'Simulate Match'}
+              </Button>
+
+              <AnimatePresence>
+                {scoreline && !isRolling && (
+                  <motion.div
+                    className="match-hero-scoreline"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                  >
+                    <Scoreboard
+                      nameA={playerA.name}
+                      nameB={playerB.name}
+                      completedSets={scoreline.setScores}
+                      winner={scoreline.winner}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="match-hero-disclaimer">
+                One simulated match. The underdog can still win, especially in a close matchup.
+              </div>
+            </>
+          ) : (
+            <div className="match-hero-vs-placeholder">VS</div>
+          )}
         </div>
 
-        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" />
+        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" selector={selectorB} />
       </div>
 
-      <div className="match-hero-chips">
-        {chips.map((c) => (
-          <div className="match-hero-chip" key={c.label}>
-            <div className="chip-label">{c.label}</div>
-            <div className="chip-values">
-              <span>{c.a}</span>
-              <span className="chip-sep">vs</span>
-              <span>{c.b}</span>
+      {bothPicked && (
+        <div className="match-hero-chips">
+          {chips.map((c) => (
+            <div className="match-hero-chip" key={c.label}>
+              <div className="chip-label">{c.label}</div>
+              <div className="chip-values">
+                <span>{c.a}</span>
+                <span className="chip-sep">vs</span>
+                <span>{c.b}</span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function PlayerCol({ player, getPlayerImageSrc, align }) {
-  const flag = countryFlag(player.country);
+function PlayerCol({ player, getPlayerImageSrc, align, selector }) {
+  const flagUrl = player ? countryFlagUrl(player.country) : null;
   return (
     <div className={`match-hero-player ${align}`}>
-      <img src={getPlayerImageSrc(player)} alt={player.name} className="match-hero-photo" />
-      <div className="match-hero-name">{player.name}</div>
-      <div className="match-hero-meta">
-        {player.us_seed != null && player.us_seed !== '' && <span>Rank {player.us_seed}</span>}
-        {player.country && <span> &middot; {flag || player.country}</span>}
-        {player.age && <span> &middot; Age {player.age}</span>}
-      </div>
+      {selector && <div className="match-hero-selector">{selector}</div>}
+      {player ? (
+        <>
+          <img src={getPlayerImageSrc(player)} alt={player.name} className="match-hero-photo" />
+          <div className="match-hero-name">{player.name}</div>
+          <div className="match-hero-meta">
+            {player.us_seed != null && player.us_seed !== '' && <span>Rank {player.us_seed}</span>}
+            {player.country && (
+              <span className="match-hero-flag-wrap">
+                {' · '}
+                {flagUrl
+                  ? <img src={flagUrl} alt={player.country} className="match-hero-flag" />
+                  : player.country}
+              </span>
+            )}
+            {player.age && <span> &middot; Age {player.age}</span>}
+          </div>
+        </>
+      ) : (
+        <div className="match-hero-photo match-hero-photo-placeholder" />
+      )}
     </div>
   );
 }

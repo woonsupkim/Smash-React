@@ -37,6 +37,7 @@ export const STAT_KEYS = [
 export default function AdvancedSimPanel({
   playerA,
   playerB,
+  getPlayerImageSrc,
   statsA,
   setStatsA,
   statsB,
@@ -101,15 +102,9 @@ export default function AdvancedSimPanel({
   })();
 
   const renderFixedLegend = () => (
-    <ul style={{ display:'flex', justifyContent:'center', listStyle:'none', padding:0, margin:'0.5em 0', color:'#fff' }}>
-      <li style={{ margin:'0 1em', display:'flex', alignItems:'center' }}>
-        <span style={{ width:12, height:12, backgroundColor:VS_COLORS[0], marginRight:6 }}/>
-        {playerA.name}
-      </li>
-      <li style={{ margin:'0 1em', display:'flex', alignItems:'center' }}>
-        <span style={{ width:12, height:12, backgroundColor:VS_COLORS[1], marginRight:6 }}/>
-        {playerB.name}
-      </li>
+    <ul className="adv-legend">
+      <li><span style={{ backgroundColor:VS_COLORS[0] }}/>{playerA.name}</li>
+      <li><span style={{ backgroundColor:VS_COLORS[1] }}/>{playerB.name}</li>
     </ul>
   );
 
@@ -122,28 +117,162 @@ export default function AdvancedSimPanel({
   return (
     <div className="advanced-sim-panel mt-4">
       <Button
-        variant="outline-light"
-        size="sm"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
         className="advanced-toggle"
       >
-        {open ? '▾ Hide Advanced Controls' : '▸ Advanced Controls (sliders, charts, upset scenario, watch match)'}
+        {open ? '▾ Hide Advanced Controls' : '▸ Advanced Controls'}
       </Button>
 
       {open && (
         <div className="advanced-panel-card mt-3">
-          <div className="d-flex flex-wrap justify-content-center">
-            {/* Player A sliders */}
-            <div className="mx-3 text-start sim-col">
-              <h6 className="text-white">{playerA.name}</h6>
+          <div className="adv-header">
+            <div className="adv-player-col">
+              <img src={getPlayerImageSrc(playerA)} alt={playerA.name} className="adv-player-photo" />
+              <div className="adv-player-name">{playerA.name}</div>
+            </div>
+
+            <div className="adv-controls-col">
+              <Form.Group controlId="simCount" className="mb-2">
+                <Form.Label className="text-white">Simulations</Form.Label>
+                <Form.Select
+                  value={simCount}
+                  onChange={e=>setSimCount(+e.target.value)}
+                  disabled={isRunning||isWatching}
+                >
+                  {[100,500,1000,2000].map(n=><option key={n} value={n}>{n}</option>)}
+                </Form.Select>
+              </Form.Group>
+
+              <div className="advanced-button-row mb-2">
+                <Button
+                  className="btn-grass"
+                  onClick={onSimulate}
+                  disabled={isRunning||isWatching}
+                >
+                  {isRunning
+                    ? <><Spinner size="sm" animation="border"/> Running...</>
+                    : 'Simulate Matches'}
+                </Button>
+                <Button
+                  variant="outline-light"
+                  onClick={onWatchMatch}
+                  disabled={isRunning||isWatching}
+                >Watch Match</Button>
+                <Button
+                  variant="warning"
+                  onClick={onUpsetScenario}
+                  disabled={isRunning||isWatching}
+                >Upset Scenario</Button>
+              </div>
+
+              {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-2"/>}
+            </div>
+
+            <div className="adv-player-col">
+              <img src={getPlayerImageSrc(playerB)} alt={playerB.name} className="adv-player-photo" />
+              <div className="adv-player-name">{playerB.name}</div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showBatch && (
+              <motion.div
+                className="adv-results-row"
+                initial={{ opacity:0 }}
+                animate={{ opacity:1 }}
+                exit={{ opacity:0 }}
+                transition={{ duration:0.4 }}
+              >
+                <div className="adv-pie-col">
+                  <ResponsiveContainer width="100%" height={170}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        innerRadius={55}
+                        outerRadius={65}
+                        startAngle={90}
+                        endAngle={450}
+                        paddingAngle={4}
+                        isAnimationActive
+                      >
+                        {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]}/>)}
+                      </Pie>
+                      <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
+                      <text x="50%" y="48%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={11} fontWeight="bold">
+                        Win %
+                      </text>
+                      <text x="8%" y="48%" textAnchor="middle" dominantBaseline="middle" fill={VS_COLORS[0]} fontSize={16} fontWeight="bold">
+                        {pct(batchResult.matchWins[0])}%
+                      </text>
+                      <text x="92%" y="48%" textAnchor="middle" dominantBaseline="middle" fill={VS_COLORS[1]} fontSize={16} fontWeight="bold">
+                        {pct(batchResult.matchWins[1])}%
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {(() => {
+                    const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
+                    const favProb = favoredWins / totalWins;
+                    const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
+                    return (
+                      <div className="adv-ci-caption">
+                        {confidenceLabel(favProb, favLower, favUpper)}
+                        {underdogCompetitiveness && (
+                          <div className="adv-underdog-caption">
+                            {underdogCompetitiveness.name} takes a set {underdogCompetitiveness.pct}% of their losses
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div className="adv-bar-col">
+                  {mostLikelyScoreline && (
+                    <div className="adv-scoreline-caption">
+                      Most likely: <strong>{favoredName}</strong> wins <strong>{mostLikelyScoreline.scoreline}</strong> ({mostLikelyScoreline.pct}%)
+                    </div>
+                  )}
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart layout="vertical" data={barData} margin={{ top:0, right:10, bottom:0, left:0 }}>
+                      <XAxis type="number" stroke="#999" tick={{ fontSize: 10 }} />
+                      <YAxis dataKey="name" type="category" stroke="#999" width={36} tick={{ fontSize: 10 }} />
+                      <RechartTooltip/>
+                      <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={9}/>
+                      <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={9}/>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  {renderFixedLegend()}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {showWatch && (
+            <div className="watch-match-board">
+              <h6 className="text-white mb-2">Live Match {isWatching && '(playing...)'}</h6>
+              <Scoreboard
+                nameA={playerA.name}
+                nameB={playerB.name}
+                completedSets={live.completedSets}
+                liveGames={live.liveGames}
+                livePoints={live.livePoints}
+                isTiebreak={live.isTiebreak}
+                winner={live.winner}
+              />
+            </div>
+          )}
+
+          <div className="adv-sliders-row">
+            <div className="sim-col">
               {STAT_KEYS.map(([k,label],i)=>(
                 <motion.div
                   key={k}
                   className="mb-2"
-                  initial={{ x:-30, opacity:0 }}
+                  initial={{ x:-20, opacity:0 }}
                   animate={{ x:0, opacity:1 }}
-                  transition={{ delay:0.1+i*0.05, duration:0.3 }}
+                  transition={{ delay:0.05+i*0.03, duration:0.25 }}
                 >
                   <Form.Label className="text-white">
                     {label}: {Math.round(statsA[k]||0)}%
@@ -157,160 +286,14 @@ export default function AdvancedSimPanel({
                 </motion.div>
               ))}
             </div>
-
-            {/* Controls & Charts */}
-            <div className="mx-4 text-center sim-col-controls">
-              <Form.Group controlId="simCount" className="mb-3">
-                <Form.Label className="text-white">Simulations</Form.Label>
-                <Form.Select
-                  value={simCount}
-                  onChange={e=>setSimCount(+e.target.value)}
-                  disabled={isRunning||isWatching}
-                >
-                  {[100,500,1000,2000].map(n=><option key={n} value={n}>{n}</option>)}
-                </Form.Select>
-              </Form.Group>
-
-              <div className="advanced-button-row mb-3">
-                <Button
-                  className="btn-grass"
-                  onClick={onSimulate}
-                  disabled={isRunning||isWatching}
-                >
-                  {isRunning
-                    ? <><Spinner size="sm" animation="border"/> Running…</>
-                    : 'Simulate Matches'}
-                </Button>
-                <Button
-                  variant="outline-light"
-                  onClick={onWatchMatch}
-                  disabled={isRunning||isWatching}
-                >🎾 Watch Match</Button>
-                <Button
-                  variant="warning"
-                  onClick={onUpsetScenario}
-                  disabled={isRunning||isWatching}
-                >⚡ Upset Scenario</Button>
-              </div>
-
-              {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-3"/>}
-
-              <AnimatePresence>
-                {showBatch && (
-                  <motion.div
-                    style={{ marginBottom:'2rem' }}
-                    initial={{ scale:0.8, opacity:0 }}
-                    animate={{ scale:1, opacity:1 }}
-                    exit={{ scale:0.8, opacity:0 }}
-                    transition={{ duration:0.5 }}
-                  >
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          innerRadius={90}
-                          outerRadius={100}
-                          startAngle={90}
-                          endAngle={450}
-                          paddingAngle={4}
-                          isAnimationActive
-                        >
-                          {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]}/>)}
-                        </Pie>
-                        <Legend content={renderFixedLegend} verticalAlign="bottom"/>
-                        <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
-                        <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#ccc" fontSize={18} fontWeight="bold">
-                          <tspan x="50%" dy="-0.5em">Win</tspan>
-                          <tspan x="50%" dy="1.2em">Percentage</tspan>
-                        </text>
-                        <text x="10%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                          {pct(batchResult.matchWins[0])}%
-                        </text>
-                        <text x="90%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
-                          {pct(batchResult.matchWins[1])}%
-                        </text>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    {(() => {
-                      const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
-                      const favProb = favoredWins / totalWins;
-                      const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
-                      return (
-                        <>
-                          <div className="d-flex justify-content-between px-2" style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '-0.5rem' }}>
-                            <span>95% CI: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
-                            <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
-                          </div>
-                          <div className="text-center mt-1" style={{ fontSize: '0.75rem', color: '#ddd' }}>
-                            {confidenceLabel(favProb, favLower, favUpper)}
-                          </div>
-                          {underdogCompetitiveness && (
-                            <div className="text-center" style={{ fontSize: '0.7rem', color: '#aaa' }}>
-                              Even when {underdogCompetitiveness.name} loses, they take a set {underdogCompetitiveness.pct}% of the time
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {showBatch && (
-                  <motion.div
-                    style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:'2rem' }}
-                    initial={{ scale:0.8, opacity:0 }}
-                    animate={{ scale:1, opacity:1 }}
-                    exit={{ scale:0.8, opacity:0 }}
-                    transition={{ duration:0.5, delay:0.2 }}
-                  >
-                    {mostLikelyScoreline && (
-                      <div className="mb-2" style={{ fontSize: '0.8rem', color: '#ddd' }}>
-                        Most likely: <strong>{favoredName}</strong> wins <strong>{mostLikelyScoreline.scoreline}</strong> ({mostLikelyScoreline.pct}% of their wins)
-                      </div>
-                    )}
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart layout="vertical" data={barData} margin={{ top:5, right:90, bottom:60, left:20 }}>
-                        <XAxis type="number" stroke="#fff"/>
-                        <YAxis dataKey="name" type="category" stroke="#fff" width={60}/>
-                        <RechartTooltip/>
-                        <Legend content={renderFixedLegend} verticalAlign="bottom"/>
-                        <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={10}/>
-                        <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={10}/>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {showWatch && (
-                <div className="watch-match-board mt-3">
-                  <h6 className="text-white">Live Match {isWatching && '(playing...)'}</h6>
-                  <Scoreboard
-                    nameA={playerA.name}
-                    nameB={playerB.name}
-                    completedSets={live.completedSets}
-                    liveGames={live.liveGames}
-                    livePoints={live.livePoints}
-                    isTiebreak={live.isTiebreak}
-                    winner={live.winner}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Player B sliders */}
-            <div className="mx-3 text-start sim-col">
-              <h6 className="text-white">{playerB.name}</h6>
+            <div className="sim-col">
               {STAT_KEYS.map(([k,label],i)=>(
                 <motion.div
                   key={k}
                   className="mb-2"
-                  initial={{ x:30, opacity:0 }}
+                  initial={{ x:20, opacity:0 }}
                   animate={{ x:0, opacity:1 }}
-                  transition={{ delay:0.1+i*0.05, duration:0.3 }}
+                  transition={{ delay:0.05+i*0.03, duration:0.25 }}
                 >
                   <Form.Label className="text-white">
                     {label}: {Math.round(statsB[k]||0)}%

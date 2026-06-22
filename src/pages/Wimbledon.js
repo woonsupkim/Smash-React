@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
-import { Button, Form } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
@@ -14,12 +14,13 @@ const playerImgs = require.context(
   /\.png$/
 );
 
-// Purple read poorly against the dark hero background — use Wimbledon's
-// green accent instead for the favorite-colored probability bar.
-const ACCENT_COLOR = '#1E8449';
-const ACCENT_TEXT_COLOR = '#fff';
-const PANEL_COLOR_A = '#3A1C71';
-const PANEL_COLOR_B = '#009B5D';
+// Matches the "Grass" surface palette used on the Home page.
+const ACCENT_COLOR = '#3ddc84';
+const ACCENT_TEXT_COLOR = '#0b3d1f';
+// Neon purple + neon green — restores Wimbledon's original broadcast-style
+// chart palette for the Advanced Controls pie/bar charts specifically.
+const PANEL_COLOR_A = '#b026ff';
+const PANEL_COLOR_B = '#39ff14';
 
 export default function Wimbledon() {
   const [players, setPlayers]             = useState([]);
@@ -222,7 +223,7 @@ export default function Wimbledon() {
           Swal.fire({
             icon: 'info',
             title: 'Not enough recent data',
-            text: 'One or both players have too few recent matches on this surface for an upset scenario — try different players.'
+            text: 'One or both players have too few recent matches on this surface for an upset scenario. Try different players.'
           });
           return;
         }
@@ -274,11 +275,11 @@ export default function Wimbledon() {
   return (
     <div className="page-background wimbledon-bg">
       <div className="overlay text-center">
-        <h3 className="broadcast-title" style={{ '--accent': ACCENT_COLOR }}>Wimbledon — Grass Court</h3>
-
-        <div className="d-flex flex-wrap justify-content-center gap-3 mb-3">
-          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
-            <Form.Label>Player A</Form.Label>
+        <MatchHero
+          title="Wimbledon · Grass Court"
+          playerA={playerA}
+          playerB={playerB}
+          selectorA={
             <div className="d-flex">
               <Select
                 className="react-select"
@@ -291,16 +292,15 @@ export default function Wimbledon() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 220, flex: 1}),
+                  container: b => ({...b, minWidth: 150, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
               />
-              <Button variant="light" className="ms-1" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>🎲</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
             </div>
-          </div>
-          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
-            <Form.Label>Player B</Form.Label>
+          }
+          selectorB={
             <div className="d-flex">
               <Select
                 className="react-select"
@@ -313,36 +313,28 @@ export default function Wimbledon() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 220, flex: 1}),
+                  container: b => ({...b, minWidth: 150, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
               />
-              <Button variant="light" className="ms-1" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>🎲</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
             </div>
-          </div>
-        </div>
-
-        {playerA && playerB ? (
-          <MatchHero
-            playerA={playerA}
-            playerB={playerB}
-            surfaceLabel="Grass Court"
-            surfaceKey="grass"
-            accentColor={ACCENT_COLOR}
-            accentTextColor={ACCENT_TEXT_COLOR}
-            h2hData={h2hData}
-            getPlayerImageSrc={getPlayerImageSrc}
-          />
-        ) : (
-          <div className="text-light mb-4">Select both players to see the matchup.</div>
-        )}
+          }
+          surfaceLabel="Grass Court"
+          surfaceKey="grass"
+          accentColor={ACCENT_COLOR}
+          accentTextColor={ACCENT_TEXT_COLOR}
+          h2hData={h2hData}
+          getPlayerImageSrc={getPlayerImageSrc}
+        />
 
         <AdvancedSimPanel
           colorA={PANEL_COLOR_A}
           colorB={PANEL_COLOR_B}
           playerA={playerA}
           playerB={playerB}
+          getPlayerImageSrc={getPlayerImageSrc}
           statsA={statsA}
           setStatsA={setStatsA}
           statsB={statsB}

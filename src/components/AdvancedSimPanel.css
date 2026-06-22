@@ -1,30 +1,176 @@
+/* Prominent, hard to miss — a player landing on the page should notice
+   this exists, not mistake it for a minor secondary control. */
 .advanced-toggle {
-  border-radius: 20px;
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+  display: block;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.6rem 1.5rem;
+  border-radius: 4px;
+}
+.advanced-toggle:hover,
+.advanced-toggle:focus {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.4);
+  color: #fff;
 }
 
+/* Same translucent near-black tint as the H2H hero card, but with a visible
+   border/shadow so the card actually reads as a contained rectangle against
+   the (also very dark) page background, instead of blending into it. */
 .advanced-panel-card {
-  background: rgba(255,255,255,0.04);
+  background: rgba(10, 10, 14, 0.78);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
   padding: 1.5rem;
   max-width: 1080px;
   margin: 0 auto;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+
+.adv-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.adv-player-col {
+  flex: 0 0 110px;
+  text-align: center;
+}
+
+.adv-player-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.adv-player-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ddd;
+  margin-top: 0.4rem;
+}
+
+.adv-controls-col {
+  flex: 1 1 320px;
+  max-width: 380px;
+  text-align: center;
 }
 
 .advanced-button-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .advanced-button-row .btn {
-  border-radius: 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.adv-results-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.adv-pie-col {
+  flex: 0 0 220px;
+  width: 220px;
+  min-width: 220px;
+  text-align: center;
+}
+
+.adv-bar-col {
+  flex: 1 1 280px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 380px;
+}
+
+.adv-scoreline-caption {
+  font-size: 0.75rem;
+  color: #ddd;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+
+.adv-ci-caption {
+  font-size: 0.75rem;
+  color: #ddd;
+  margin-top: -0.4rem;
+}
+
+.adv-underdog-caption {
+  font-size: 0.68rem;
+  color: #999;
+  margin-top: 0.2rem;
+}
+
+.adv-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  color: #ccc;
+}
+.adv-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.adv-legend li span {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
 }
 
 .watch-match-board {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.adv-sliders-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.adv-sliders-row .sim-col {
+  flex: 1 1 240px;
+  max-width: 320px;
+  text-align: left;
+}
+
+@media (max-width: 700px) {
+  .adv-header { flex-direction: column; }
+  .adv-results-row { flex-direction: column; align-items: center; }
 }

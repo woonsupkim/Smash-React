@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
-import { Button, Form } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
@@ -14,10 +14,11 @@ const playerImgs = require.context(
   /\.png$/
 );
 
-const ACCENT_COLOR = '#B24936';
+// Matches the "Clay" surface palette used on the Home page.
+const ACCENT_COLOR = '#e8694a';
 const ACCENT_TEXT_COLOR = '#fff';
-const PANEL_COLOR_A = '#B24936';
-const PANEL_COLOR_B = '#1E2E2B';
+const PANEL_COLOR_A = '#e8694a';
+const PANEL_COLOR_B = '#7c2f20';
 
 export default function FrenchOpen() {
   const [players, setPlayers]             = useState([]);
@@ -220,7 +221,7 @@ export default function FrenchOpen() {
           Swal.fire({
             icon: 'info',
             title: 'Not enough recent data',
-            text: 'One or both players have too few recent matches on this surface for an upset scenario — try different players.'
+            text: 'One or both players have too few recent matches on this surface for an upset scenario. Try different players.'
           });
           return;
         }
@@ -272,11 +273,11 @@ export default function FrenchOpen() {
   return (
     <div className="page-background french-bg">
       <div className="overlay text-center">
-        <h3 className="broadcast-title" style={{ '--accent': ACCENT_COLOR }}>French Open — Clay Court</h3>
-
-        <div className="d-flex flex-wrap justify-content-center gap-3 mb-3">
-          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
-            <Form.Label>Player A</Form.Label>
+        <MatchHero
+          title="French Open · Clay Court"
+          playerA={playerA}
+          playerB={playerB}
+          selectorA={
             <div className="d-flex">
               <Select
                 className="react-select"
@@ -289,16 +290,15 @@ export default function FrenchOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 220, flex: 1}),
+                  container: b => ({...b, minWidth: 150, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
               />
-              <Button variant="light" className="ms-1" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>🎲</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
             </div>
-          </div>
-          <div className="player-select-panel text-start" style={{ '--accent': ACCENT_COLOR }}>
-            <Form.Label>Player B</Form.Label>
+          }
+          selectorB={
             <div className="d-flex">
               <Select
                 className="react-select"
@@ -311,36 +311,28 @@ export default function FrenchOpen() {
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
                 styles={{
-                  container: b => ({...b, minWidth: 220, flex: 1}),
+                  container: b => ({...b, minWidth: 150, flex: 1}),
                   option: p => ({...p,color:'#000'}),
                   singleValue: p => ({...p,color:'#000'})
                 }}
               />
-              <Button variant="light" className="ms-1" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>🎲</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
             </div>
-          </div>
-        </div>
-
-        {playerA && playerB ? (
-          <MatchHero
-            playerA={playerA}
-            playerB={playerB}
-            surfaceLabel="Clay Court"
-            surfaceKey="clay"
-            accentColor={ACCENT_COLOR}
-            accentTextColor={ACCENT_TEXT_COLOR}
-            h2hData={h2hData}
-            getPlayerImageSrc={getPlayerImageSrc}
-          />
-        ) : (
-          <div className="text-light mb-4">Select both players to see the matchup.</div>
-        )}
+          }
+          surfaceLabel="Clay Court"
+          surfaceKey="clay"
+          accentColor={ACCENT_COLOR}
+          accentTextColor={ACCENT_TEXT_COLOR}
+          h2hData={h2hData}
+          getPlayerImageSrc={getPlayerImageSrc}
+        />
 
         <AdvancedSimPanel
           colorA={PANEL_COLOR_A}
           colorB={PANEL_COLOR_B}
           playerA={playerA}
           playerB={playerB}
+          getPlayerImageSrc={getPlayerImageSrc}
           statsA={statsA}
           setStatsA={setStatsA}
           statsB={statsB}

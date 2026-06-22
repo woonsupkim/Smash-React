@@ -13,8 +13,9 @@
   --space-4: 1.5rem;
   --space-5: 2rem;
 
-  /* shared surface/shape language, reused by cards & buttons across pages */
-  --radius-card: 10px;
+  /* shared surface/shape language, reused by cards & buttons across pages.
+     Broadcast/ESPN-style look: sharp edges, not soft rounded cards. */
+  --radius-card: 4px;
   --radius-pill: 999px;
   --shadow-card: 0 4px 16px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 10px 24px rgba(0,0,0,0.5);
@@ -25,13 +26,19 @@
   --color-surface-2: #262626;
   --color-text-dim: #ccc;
 
-  /* per-tournament accents (referenced by each tournament page's CSS) */
-  --accent-us-a: #0033A0;
-  --accent-us-b: #FFD700;
-  --accent-fr-a: #B24936;
-  --accent-fr-b: #1E2E2B;
-  --accent-wb-a: #3A1C71;
-  --accent-wb-b: #009B5D;
+  /* site-wide brand accent (nav, primary CTAs) — distinct from each
+     tournament's own surface-specific accent below */
+  --accent-brand: #c6ff1c;
+
+  /* per-tournament accents (referenced by DreamBrackets.js and each
+     tournament page's CSS) — matches the Clay/Grass/Hard palette used on
+     the Home page's surface strip. */
+  --accent-us-a: #5b8cff;
+  --accent-us-b: #001c5c;
+  --accent-fr-a: #e8694a;
+  --accent-fr-b: #7c2f20;
+  --accent-wb-a: #3ddc84;
+  --accent-wb-b: #0f3d22;
 }
 
 body {
@@ -49,17 +56,46 @@ h2, .heading-lg {
   font-size: clamp(1.4rem, 4.5vw, 2.25rem);
 }
 
-/* Navbar overrides */
+/* Navbar overrides — broadcast/ESPN style: near-black bar, uppercase
+   letter-spaced links, lime brand accent for the active link. */
 .navbar {
-  background-color: #222 !important;
+  background-color: #0a0a0a !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.navbar .navbar-brand,
-.navbar .nav-link {
+.navbar .navbar-brand {
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: #fff !important;
+}
+.navbar .nav-link {
+  color: #aaa !important;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.9rem !important;
 }
 .navbar .nav-link.active,
 .navbar .nav-link:hover {
-  color: #ffc107 !important;
+  color: var(--accent-brand) !important;
+}
+
+.brand-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+.brand-dot img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .nav-logo-icon {
@@ -106,6 +142,14 @@ h2, .heading-lg {
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
 
+/* Dark tint over the background photo on the tournament pages — without
+   this the raw photo renders at full brightness behind the UI. */
+.overlay {
+  background-color: rgba(0, 0, 0, 0.82);
+  min-height: calc(100vh - 70px);
+  padding: 2rem 1.5rem;
+}
+
 /* Shared card/button polish, reused across Home/tournament/bracket pages */
 .app-card {
   background-color: var(--color-surface);
@@ -148,19 +192,3 @@ h2, .heading-lg {
   margin-bottom: 1.5rem !important;
 }
 
-/* Player A/B selection — sleeker card matching the rest of the page's
-   dark-glass aesthetic, instead of bare dropdowns floating on the bg. */
-.player-select-panel {
-  background: rgba(255,255,255,0.05);
-  border-radius: var(--radius-card, 12px);
-  border-top: 3px solid var(--accent, #fff);
-  padding: 0.9rem 1rem;
-  min-width: 280px;
-}
-.player-select-panel .form-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #aaa;
-  margin-bottom: 0.4rem;
-}
