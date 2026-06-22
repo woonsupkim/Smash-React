@@ -11,6 +11,7 @@ import {
 } from 'react-bootstrap';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
+import { credibleInterval } from '../credibleInterval';
 
 const playerImgs = require.context('../assets/players', false, /\.png$/);
 
@@ -52,7 +53,7 @@ const DEFAULT_SIMS_PER_MATCHUP = 1000;
 const MATCH_BOX_H = 112;
 const CHAMPION_BOX_H = 90;
 const LEAF_GAP = 20;
-const CONNECTOR_W = 32;
+const CONNECTOR_W = 56; // wide enough that the champion card's intrinsic-width name (+ CI caption) can't spill into the Final column's box
 
 const pairUp = (arr) => {
   const pairs = [];
@@ -114,6 +115,9 @@ export default function DreamBrackets() {
   const [slots, setSlots] = useState(Array(stageConfig.slots).fill(null));
   const [playersPool, setPlayersPool] = useState([]);
   const [simsPerMatch, setSimsPerMatch] = useState(DEFAULT_SIMS_PER_MATCHUP);
+  // heavy-recency-weighted stats (7-day half-life) instead of the default
+  // 60-day-calibrated CSV — see data-pipeline/computeStats.js "upset" suffix
+  const [upsetMode, setUpsetMode] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -128,9 +132,10 @@ export default function DreamBrackets() {
     setIsRunning(false);
   };
 
-  // load & normalize CSV into playersPool whenever the tournament changes
+  // load & normalize CSV into playersPool whenever the tournament or upset mode changes
   useEffect(() => {
-    Papa.parse(process.env.PUBLIC_URL + '/data/' + tournament, {
+    const csvFile = upsetMode ? tournament.replace('.csv', '_upset.csv') : tournament;
+    Papa.parse(process.env.PUBLIC_URL + '/data/' + csvFile, {
       header: true,
       download: true,
       complete: ({ data }) => {
@@ -154,7 +159,7 @@ export default function DreamBrackets() {
     // switching tournaments invalidates any picks/results from the old draw
     resetBracketState(stageConfig.slots);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tournament]);
+  }, [tournament, upsetMode]);
 
   // switching the starting stage changes the slot count — reset picks/results
   const handleStageChange = (value) => {
@@ -221,7 +226,12 @@ export default function DreamBrackets() {
           B.probabilities,
           simsPerMatch
         );
-        winners.push(matchWins[0] > matchWins[1] ? A : B);
+        const aWon = matchWins[0] > matchWins[1];
+        const winner = aWon ? A : B;
+        const winCount = aWon ? matchWins[0] : matchWins[1];
+        const loseCount = aWon ? matchWins[1] : matchWins[0];
+        const { lower, upper } = credibleInterval(winCount, loseCount);
+        winners.push({ ...winner, _winProb: winCount / (winCount + loseCount), _ciLower: lower, _ciUpper: upper });
       }
       return winners;
     };
@@ -259,8 +269,11 @@ export default function DreamBrackets() {
     singleValue: base => ({ ...base, color: '#000' }),
   };
 
-  const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser }) => {
+  const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner }) => {
     const competitorClass = `competitor${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
+    const ciCaption = isWinner && winner && winner._ciLower != null
+      ? <div className="bracket-ci-tag">{Math.round(winner._winProb*100)}% [{Math.round(winner._ciLower*100)}–{Math.round(winner._ciUpper*100)}%]</div>
+      : null;
     if (colIdx === 0) {
       return (
         <div className={`${competitorClass} editable`}>
@@ -279,7 +292,10 @@ export default function DreamBrackets() {
     return (
       <div className={competitorClass}>
         <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" />
-        <span className="competitor-name">{p ? p.name : '—'}</span>
+        <div className="competitor-name-col">
+          <span className="competitor-name">{p ? p.name : '—'}</span>
+          {ciCaption}
+        </div>
         {isWinner && <span className="bracket-result-tag">✓</span>}
       </div>
     );
@@ -345,6 +361,14 @@ export default function DreamBrackets() {
             🎲 Randomize
           </Button>
           <Button
+            variant={upsetMode ? 'warning' : 'outline-warning'}
+            onClick={() => setUpsetMode(v => !v)}
+            disabled={isRunning}
+            className="me-2"
+          >
+            ⚡ Upset Scenario {upsetMode ? '(on)' : '(off)'}
+          </Button>
+          <Button
             variant="secondary"
             onClick={handleReset}
             disabled={isRunning}
@@ -385,6 +409,9 @@ export default function DreamBrackets() {
                         <div className="competitor winner">
                           <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" />
                           <span>🏆 {colPlayers[0].name}</span>
+                          {colPlayers[0]._ciLower != null && (
+                            <div className="bracket-ci-tag">{Math.round(colPlayers[0]._winProb*100)}% [{Math.round(colPlayers[0]._ciLower*100)}–{Math.round(colPlayers[0]._ciUpper*100)}%]</div>
+                          )}
                         </div>
                       ) : (
                         <div className="competitor placeholder">TBD</div>
@@ -406,7 +433,7 @@ export default function DreamBrackets() {
                             const isLoser = !!(winner && p && winner.id !== p.id);
                             return (
                               <React.Fragment key={slotIdx}>
-                                {renderCompetitor(p, { colIdx, globalSlotIdx, isWinner, isLoser })}
+                                {renderCompetitor(p, { colIdx, globalSlotIdx, isWinner, isLoser, winner })}
                                 {slotIdx === 0 && <div className="bracket-vs">vs</div>}
                               </React.Fragment>
                             );

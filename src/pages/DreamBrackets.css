@@ -98,6 +98,13 @@
   font-size: 0.92rem;
 }
 
+.competitor-name-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
 .competitor-name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -124,6 +131,15 @@
 .bracket-result-tag {
   margin-left: auto;
   font-size: 0.85rem;
+}
+
+/* Bayesian 95% credible interval caption under a match's winner — wide at
+   low sim counts (honest about uncertainty), tight at high sim counts. */
+.bracket-ci-tag {
+  font-size: 0.62rem;
+  color: #999;
+  white-space: nowrap;
+  margin-top: 0.1rem;
 }
 
 .bracket-vs {
@@ -173,13 +189,13 @@
    (set inline, max-content) rather than stretched to the column width, so
    long names size the box instead of wrapping to a second line. */
 .champion-card {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1rem;
   text-align: center;
   white-space: nowrap;
 }
 .champion-card .competitor {
   justify-content: center;
-  font-size: clamp(0.9rem, 1.6vw, 1.1rem);
+  font-size: clamp(0.8rem, 1.3vw, 0.95rem);
   white-space: nowrap;
 }
 

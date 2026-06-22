@@ -20,8 +20,14 @@ const SURFACE_BY_FILE = {
 };
 
 function main() {
+  // Optional suffix (e.g. "upset") writes to a separate output file using
+  // the normal smash_*.csv as a template for id/name/seed/round columns,
+  // instead of overwriting the default calibrated CSV.
+  const suffixArg = process.argv[2];
+  const suffix = suffixArg ? `_${suffixArg}` : '';
+
   for (const [file, surface] of Object.entries(SURFACE_BY_FILE)) {
-    const statsPath = path.join(OUTPUT_DIR, `player_stats_${surface}.csv`);
+    const statsPath = path.join(OUTPUT_DIR, `player_stats_${surface}${suffix}.csv`);
     if (!fs.existsSync(statsPath)) {
       console.warn(`  skip ${file}: missing ${statsPath} — run computeStats.js first.`);
       continue;
@@ -29,12 +35,15 @@ function main() {
     const { data: statsRows } = Papa.parse(fs.readFileSync(statsPath, 'utf8'), { header: true });
     const statsById = new Map(statsRows.filter((r) => r.id).map((r) => [r.id, r]));
 
-    const csvPath = path.join(PUBLIC_DATA_DIR, file);
-    if (!fs.existsSync(csvPath)) {
+    const templatePath = path.join(PUBLIC_DATA_DIR, file);
+    if (!fs.existsSync(templatePath)) {
       console.warn(`  skip ${file}: not found`);
       continue;
     }
-    const { data: rows, meta } = Papa.parse(fs.readFileSync(csvPath, 'utf8'), { header: true });
+    const csvPath = suffix
+      ? path.join(PUBLIC_DATA_DIR, file.replace('.csv', `${suffix}.csv`))
+      : templatePath;
+    const { data: rows, meta } = Papa.parse(fs.readFileSync(templatePath, 'utf8'), { header: true });
     const fields = meta.fields.includes('p6') ? meta.fields : [...meta.fields, 'p6'];
 
     let updated = 0;

@@ -38,7 +38,7 @@ const HALF_LIFE_DAYS = Number(process.argv[2]) || 60;
 const SURFACES = ['hard', 'clay', 'grass'];
 const SURFACE_DISPLAY = { hard: 'Hard', clay: 'Clay', grass: 'Grass' };
 
-function computeForSurface(surface, idMap, surfaceMap, halfLifeDays) {
+function computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt) {
   const wantedSurface = SURFACE_DISPLAY[surface];
   const now = new Date();
   const perPlayer = new Map(); // ourId -> agg
@@ -61,7 +61,7 @@ function computeForSurface(surface, idMap, surfaceMap, halfLifeDays) {
 
   const rows = [];
   for (const [id, agg] of perPlayer.entries()) {
-    const probs = deriveProbabilities(agg, tourAverages);
+    const probs = deriveProbabilities(agg, tourAverages, minSvpt);
     if (!probs) continue;
     const [p1, p2, p3, p4, p5, p6] = probs;
     rows.push({ id, p1: p1.toFixed(2), p2: p2.toFixed(2), p3: p3.toFixed(2), p4: p4.toFixed(2), p5: p5.toFixed(2), p6: p6.toFixed(2) });
@@ -82,13 +82,18 @@ function main() {
   const surfaceMap = JSON.parse(fs.readFileSync(SURFACES_PATH, 'utf8')); // tournamentId -> "Hard"|"Clay"|"Grass"|...
 
   const requestedSurface = process.argv[3];
+  const suffix = process.argv[4] ? `_${process.argv[4]}` : ''; // e.g. "upset" -> player_stats_hard_upset.csv
+  // "upset" runs use a much shorter half-life, so few players clear the
+  // default 200-service-point bar — lower it so heavy-recency mode actually
+  // produces usable (if noisier) stats instead of falling back for everyone.
+  const minSvpt = suffix === '_upset' ? 60 : 200;
   const surfacesToRun = requestedSurface ? [requestedSurface] : SURFACES;
 
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
   for (const surface of surfacesToRun) {
-    const rows = computeForSurface(surface, idMap, surfaceMap, HALF_LIFE_DAYS);
-    const outPath = path.join(OUTPUT_DIR, `player_stats_${surface}.csv`);
+    const rows = computeForSurface(surface, idMap, surfaceMap, HALF_LIFE_DAYS, minSvpt);
+    const outPath = path.join(OUTPUT_DIR, `player_stats_${surface}${suffix}.csv`);
     fs.writeFileSync(outPath, Papa.unparse(rows));
     console.log(`Wrote ${rows.length} players to ${outPath} (surface=${SURFACE_DISPLAY[surface]}, half-life=${HALF_LIFE_DAYS}d)`);
   }

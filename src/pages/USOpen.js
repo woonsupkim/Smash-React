@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
+import { credibleInterval, confidenceLabel } from '../credibleInterval';
 import './USOpen.css';
 
 const playerImgs = require.context(
@@ -238,6 +239,34 @@ export default function Wimbledon() {
     runBatch(pA, pB, simCount);
   };
 
+  // Heavy-recency-weighted stats (7-day half-life, precomputed offline in
+  // data-pipeline) instead of the default 60-day-calibrated CSV — surfaces
+  // hot/cold recent form rather than season-long averages.
+  const handleUpsetScenario = () => {
+    if (!playerA || !playerB) return showPlayerError();
+    setBatchResult(null);
+    setProgress(0);
+    Papa.parse(process.env.PUBLIC_URL + '/data/smash_us_upset.csv', {
+      header: true,
+      download: true,
+      complete: ({ data }) => {
+        const rowA = data.find(r => r.id === playerA.id);
+        const rowB = data.find(r => r.id === playerB.id);
+        if (!rowA || !rowB) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Not enough recent data',
+            text: 'One or both players have too few recent matches on this surface for an upset scenario — try different players.'
+          });
+          return;
+        }
+        const pA = STAT_KEYS.map(([k]) => Number(rowA[k]) || 0);
+        const pB = STAT_KEYS.map(([k]) => Number(rowB[k]) || 0);
+        runBatch(pA, pB, simCount);
+      }
+    });
+  };
+
   const handleReset = () => {
     setPlayerA(null);
     setPlayerB(null);
@@ -320,15 +349,40 @@ export default function Wimbledon() {
 
   const totalWins = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
   const pct = v => totalWins ? Math.round((v / totalWins) * 100) : 0;
-    
 
+  // % of that player's OWN wins won by each scoreline, so the two players'
+  // bars are comparable regardless of how lopsided the overall split is.
   const barData = batchResult
     ? ['3–0','3–1','3–2'].map((lbl,i)=>({
         name: lbl,
-        [playerA.name]: batchResult.lostInWins[0][i]||0,
-        [playerB.name]: batchResult.lostInWins[1][i]||0
+        [playerA.name]: batchResult.matchWins[0] ? Math.round((batchResult.lostInWins[0][i]||0) / batchResult.matchWins[0] * 100) : 0,
+        [playerB.name]: batchResult.matchWins[1] ? Math.round((batchResult.lostInWins[1][i]||0) / batchResult.matchWins[1] * 100) : 0,
       }))
     : [];
+
+  const favoredIdx = batchResult ? (batchResult.matchWins[0] >= batchResult.matchWins[1] ? 0 : 1) : null;
+  const favoredName = favoredIdx === 0 ? playerA?.name : playerB?.name;
+  const underdogName = favoredIdx === 0 ? playerB?.name : playerA?.name;
+  const favoredWins = batchResult ? batchResult.matchWins[favoredIdx] : 0;
+
+  const mostLikelyScoreline = (() => {
+    if (!batchResult || !favoredWins) return null;
+    const dist = batchResult.lostInWins[favoredIdx];
+    let maxIdx = 0;
+    for (let i = 1; i < dist.length; i++) if ((dist[i]||0) > (dist[maxIdx]||0)) maxIdx = i;
+    return { scoreline: `3–${maxIdx}`, pct: Math.round((dist[maxIdx]||0) / favoredWins * 100) };
+  })();
+
+  // Suppressed when neither player is meaningfully favored — calling
+  // someone the "underdog" in a true toss-up would be misleading.
+  const underdogCompetitiveness = (() => {
+    if (!batchResult || !totalWins) return null;
+    const favoredShare = favoredWins / totalWins;
+    if (Math.abs(favoredShare - 0.5) < 0.05) return null;
+    const dist = batchResult.lostInWins[favoredIdx];
+    const tookSet = (dist[1]||0) + (dist[2]||0);
+    return { name: underdogName, pct: favoredWins ? Math.round(tookSet / favoredWins * 100) : 0 };
+  })();
 
   const renderFixedLegend = () => (
     <ul style={{ display:'flex', justifyContent:'center', listStyle:'none', padding:0, margin:'0.5em 0', color:'#fff' }}>
@@ -485,6 +539,12 @@ export default function Wimbledon() {
                 disabled={isRunning||isWatching}
               >🎾 Watch Match</Button>
               <Button
+                variant="warning"
+                className="me-2"
+                onClick={handleUpsetScenario}
+                disabled={isRunning||isWatching}
+              >⚡ Upset Scenario</Button>
+              <Button
                 variant="secondary"
                 onClick={handleReset}
                 disabled={isRunning||isWatching}
@@ -531,9 +591,29 @@ export default function Wimbledon() {
                       <text x="90%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={24} fontWeight="bold">
                         {pct(batchResult.matchWins[1])}%
                       </text>
-
                     </PieChart>
                   </ResponsiveContainer>
+                  {(() => {
+                    const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
+                    const favProb = favoredWins / totalWins;
+                    const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
+                    return (
+                      <>
+                        <div className="d-flex justify-content-between px-2" style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '-0.5rem' }}>
+                          <span>95% CI: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
+                          <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
+                        </div>
+                        <div className="text-center mt-1" style={{ fontSize: '0.75rem', color: '#ddd' }}>
+                          {confidenceLabel(favProb, favLower, favUpper)}
+                        </div>
+                        {underdogCompetitiveness && (
+                          <div className="text-center" style={{ fontSize: '0.7rem', color: '#aaa' }}>
+                            Even when {underdogCompetitiveness.name} loses, they take a set {underdogCompetitiveness.pct}% of the time
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -542,12 +622,17 @@ export default function Wimbledon() {
             <AnimatePresence>
               {batchResult && showResults && (
                 <motion.div
-                  style={{ display:'flex', justifyContent:'center', marginBottom:'2rem' }}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:'2rem' }}
                   initial={{ scale:0.8, opacity:0 }}
                   animate={{ scale:1, opacity:1 }}
                   exit={{ scale:0.8, opacity:0 }}
                   transition={{ duration:0.5, delay:0.2 }}
                 >
+                  {mostLikelyScoreline && (
+                    <div className="mb-2" style={{ fontSize: '0.8rem', color: '#ddd' }}>
+                      Most likely: <strong>{favoredName}</strong> wins <strong>{mostLikelyScoreline.scoreline}</strong> ({mostLikelyScoreline.pct}% of their wins)
+                    </div>
+                  )}
                   <ResponsiveContainer width="100%" height={260}>
                     <BarChart layout="vertical" data={barData} margin={{ top:5, right:90, bottom:60, left:20 }}>
                       <XAxis type="number" stroke="#fff"/>

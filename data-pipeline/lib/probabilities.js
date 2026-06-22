@@ -84,9 +84,9 @@ function clamp01(x) {
 // Derives p1-p6 from one player's aggregated sums plus tour-average rates
 // (used as a fallback when data is thin, and as the centering baseline for
 // p5 — see header comment for why p5 needs a baseline).
-function deriveProbabilities(agg, tourAverages) {
+function deriveProbabilities(agg, tourAverages, minSvpt = 200) {
   const { r3Avg, r4Avg, tourServerWin1stNonAce, tourServerWin2nd } = tourAverages;
-  if (agg.svpt < 200) return null; // not enough data to trust
+  if (agg.svpt < minSvpt) return null; // not enough data to trust
 
   const p1 = agg.firstIn / agg.svpt;
   const p2 = agg.secondAttempts / (agg.svpt - agg.firstIn);
