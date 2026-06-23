@@ -129,10 +129,11 @@ function simulateSet(probA, probB) {
 
 /**
  * Fast match simulation: returns final winner, sets won, and scores.
+ * @param {number} bestOf - 5 (ATP Grand Slam default) or 3 (WTA Grand Slam).
  */
-export function simulateMatch(probA, probB) {
-  const maxSets = 5;
-  const targetSets = 3;
+export function simulateMatch(probA, probB, bestOf = 5) {
+  const maxSets = bestOf;
+  const targetSets = Math.ceil(bestOf / 2);
   const setsWon = [0, 0];
   const setScores = [];
 
@@ -151,15 +152,16 @@ export function simulateMatch(probA, probB) {
 
 /**
  * Runs N fast simulations and aggregates results for batch display.
+ * @param {number} bestOf - 5 (ATP Grand Slam default) or 3 (WTA Grand Slam).
  */
-export function simulateBatch(probA, probB, n = 1000) {
+export function simulateBatch(probA, probB, n = 1000, bestOf = 5) {
   const setsWonAgg = [0, 0];
   const matchWins = [0, 0];
   const lostInWins = [[0, 0, 0], [0, 0, 0]];
   let lastSetScores = [];
 
   for (let i = 0; i < n; i++) {
-    const { setsWon, setScores } = simulateMatch(probA, probB);
+    const { setsWon, setScores } = simulateMatch(probA, probB, bestOf);
     setsWonAgg[0] += setsWon[0];
     setsWonAgg[1] += setsWon[1];
     const winner = setsWon[0] > setsWon[1] ? 0 : 1;
@@ -182,8 +184,8 @@ export function simulateBatch(probA, probB, n = 1000) {
  * Generator for stepwise (slow) match simulation.
  * Yields detailed events including tie-breaks.
  */
-export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {} }) {
-  const targetSets = 3;
+export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {} }, bestOf = 5) {
+  const targetSets = Math.ceil(bestOf / 2);
   const setsWon = [0, 0];
   const setScores = [];
   let currentSet = 0;

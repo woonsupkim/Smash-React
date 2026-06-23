@@ -14,12 +14,18 @@ const SURFACES = [
   { to: '/us-open',     label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
 ];
 
+// /women/* mirrors every men's route 1:1 (see App.js) — prefixing here keeps
+// this one Home component shared between both tours instead of forking it.
+const withTourPrefix = (path, isWta) => (isWta ? `/women${path}` : path);
+
 function formatDate(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function Home() {
+export default function Home({ tour = 'atp' }) {
+  const isWta = tour === 'wta';
+  const dataDir = isWta ? '/data/women' : '/data';
   const [refreshMeta, setRefreshMeta] = useState(null);
   // Plays every time this component mounts — i.e. every time the user lands
   // on the Home page (including navigating back to it from elsewhere in the
@@ -27,11 +33,11 @@ export default function Home() {
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
-    fetch(process.env.PUBLIC_URL + '/data/refresh-meta.json')
+    fetch(process.env.PUBLIC_URL + dataDir + '/refresh-meta.json')
       .then(r => r.json())
       .then(setRefreshMeta)
       .catch(() => setRefreshMeta(null));
-  }, []);
+  }, [dataDir]);
 
   useEffect(() => {
     if (!showIntro) return;
@@ -119,7 +125,7 @@ export default function Home() {
         transition={{ duration: 1, delay: showIntro ? 1.9 : 0 }}
       >
         <div className="home-hero">
-          <div className="eyebrow">GRAND SLAM MATCH ENGINE</div>
+          <div className="eyebrow">GRAND SLAM MATCH ENGINE{isWta ? ' · WTA' : ''}</div>
           <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
           <p className="sub-title">
             Pick any two players, choose a surface, and run the matchup.<br/>
@@ -127,10 +133,10 @@ export default function Home() {
           </p>
 
           <div className="d-flex flex-wrap gap-3 hero-ctas">
-            <Button as={Link} to="/us-open" className="cta-primary">
+            <Button as={Link} to={withTourPrefix('/us-open', isWta)} className="cta-primary">
               Quick H2H
             </Button>
-            <Button as={Link} to="/dream-brackets" className="cta-secondary">
+            <Button as={Link} to={withTourPrefix('/dream-brackets', isWta)} className="cta-secondary">
               Build a Bracket
             </Button>
           </div>
@@ -138,7 +144,7 @@ export default function Home() {
 
         <div className="surface-strip">
           {SURFACES.map(({ to, label, city, desc, className }) => (
-            <Link key={to} to={to} className={`surface-tile ${className}`}>
+            <Link key={to} to={withTourPrefix(to, isWta)} className={`surface-tile ${className}`}>
               <div className="surface-tile-label">{label}</div>
               <div className="surface-tile-city">{city}</div>
               <div className="surface-tile-desc">{desc}</div>
@@ -148,7 +154,7 @@ export default function Home() {
         </div>
 
         <div className="home-footer">
-          <span className="trust-signal">Powered by real ATP match data, not made-up numbers.</span>
+          <span className="trust-signal">Powered by real {isWta ? 'WTA' : 'ATP'} match data, not made-up numbers.</span>
           <button type="button" className="update-data-link" onClick={handleUpdateData}>
             Update Data
           </button>

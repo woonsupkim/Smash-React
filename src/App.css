@@ -214,3 +214,34 @@ h2, .heading-lg {
   color: #fff;
 }
 
+/* ATP/WTA tour switcher pill in the navbar — switches the current page to
+   its tour-mirrored counterpart (see TourToggle in App.js) instead of
+   always bouncing back to Home. */
+.tour-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  margin-left: 0.75rem;
+  order: 1;
+}
+@media (min-width: 992px) {
+  .tour-toggle { order: 0; margin-left: 1rem; }
+}
+.tour-toggle-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.tour-toggle-btn.active {
+  background: var(--accent-brand);
+  color: #111;
+}
+

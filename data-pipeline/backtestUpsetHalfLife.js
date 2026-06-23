@@ -12,14 +12,16 @@
  *      "seeing the upset coming" via recent form.
  *
  * No API calls — uses cached match data already in data-pipeline/raw/.
- * Usage: node data-pipeline/backtestUpsetHalfLife.js
+ * Usage: node data-pipeline/backtestUpsetHalfLife.js [tour]
+ *   tour: atp (default) | wta — reads from data-pipeline/raw/women/ instead.
  */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
 
-const RAW_DIR = path.join(__dirname, 'raw');
+const TOUR_ARG = process.argv[2] || 'atp';
+const RAW_DIR = path.join(__dirname, 'raw', TOUR_ARG === 'wta' ? 'women' : '');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SIMULATOR_PATH = path.join(__dirname, '..', 'src', 'simulator.js');
 const SIMS_PER_MATCH = 300;

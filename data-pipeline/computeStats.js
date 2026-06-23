@@ -17,8 +17,9 @@
  * baseline (a player's clay return stats should be compared against the
  * tour's clay average, not blended with hard/grass matches).
  *
- * Usage: node computeStats.js [halfLifeDays] [surface]
+ * Usage: node computeStats.js [halfLifeDays] [surface] [suffix] [tour]
  *   surface: hard | clay | grass — omit to compute all three.
+ *   tour: atp (default) | wta — namespaces raw/output paths under women/.
  * Run `npm run backtest` to find/validate a good halfLifeDays value.
  */
 const fs = require('fs');
@@ -26,8 +27,9 @@ const path = require('path');
 const Papa = require('papaparse');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
 
-const RAW_DIR = path.join(__dirname, 'raw');
-const OUTPUT_DIR = path.join(__dirname, 'output');
+const TOUR = process.argv[5] || 'atp';
+const RAW_DIR = path.join(__dirname, 'raw', TOUR === 'wta' ? 'women' : '');
+const OUTPUT_DIR = path.join(__dirname, 'output', TOUR === 'wta' ? 'women' : '');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 // Backtesting each surface separately (`node backtest.js <list> <surface>`)

@@ -8,12 +8,12 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 
-const RAW_DIR = path.join(__dirname, 'raw');
-const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
+const TOUR = process.argv[2] || 'atp'; // 'atp' or 'wta'
+const RAW_DIR = path.join(__dirname, 'raw', TOUR === 'wta' ? 'women' : '');
+const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data', TOUR === 'wta' ? 'women' : '');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
-const TOUR = process.argv[2] || 'atp'; // 'atp' or 'wta'
 const PAGES_PER_PLAYER = 6; // ~50/page -> up to 300 recent matches (was 2, capped to conserve API quota)
 const PAGE_SIZE = 50;
 const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;

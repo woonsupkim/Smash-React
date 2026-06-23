@@ -24,21 +24,16 @@ import bgClay from '../assets/bracket-clay.jpg';
 import bgGrass from '../assets/bracket-grass.jpg';
 import bgHard from '../assets/bracket-hard.jpg';
 
-const playerImgs = require.context('../assets/players', false, /\.png$/);
+const playerImgsByTour = {
+  atp: require.context('../assets/players', false, /\.png$/),
+  wta: require.context('../assets/players-women', false, /\.png$/),
+};
 
 // Plain gray-circle SVG, used when a player has no headshot and the
 // public/assets/players/default.png fallback isn't present in this env.
 const BLANK_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%23555"/><circle cx="16" cy="12" r="6" fill="%23999"/><path d="M4 30c0-7 5-11 12-11s12 4 12 11" fill="%23999"/></svg>'
 );
-
-const getPlayerImageSrc = (player) => {
-  if (!player) return BLANK_AVATAR;
-  const key = `./${player.id}.png`;
-  const keys = playerImgs.keys ? playerImgs.keys() : [];
-  if (keys.includes(key)) return playerImgs(key);
-  return `${process.env.PUBLIC_URL}/assets/players/default.png`;
-};
 
 const TOURNAMENTS = [
   { value: 'smash_fr.csv', label: 'French Open', logo: logoRG, bgImage: bgClay, accentVar: '--accent-fr-a' },
@@ -118,7 +113,20 @@ function buildConnectorPath(feeders, outputs, width) {
 
 const DEFAULT_TOURNAMENT = 'smash_us.csv';
 
-export default function DreamBrackets() {
+export default function DreamBrackets({ tour = 'atp' }) {
+  const isWta = tour === 'wta';
+  const bestOf = isWta ? 3 : 5;
+  const dataDir = isWta ? '/data/women' : '/data';
+  const playerImgs = playerImgsByTour[tour];
+
+  const getPlayerImageSrc = (player) => {
+    if (!player) return BLANK_AVATAR;
+    const key = `./${player.id}.png`;
+    const keys = playerImgs.keys ? playerImgs.keys() : [];
+    if (keys.includes(key)) return playerImgs(key);
+    return `${process.env.PUBLIC_URL}/assets/players/default.png`;
+  };
+
   const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);
   const [stage, setStage] = useState(STAGES[1].value); // default to Quarter-Finals, as before
   const stageConfig = STAGES.find(s => s.value === stage);
@@ -155,7 +163,7 @@ export default function DreamBrackets() {
   // number of slots.
   useEffect(() => {
     const csvFile = upsetMode ? tournament.replace('.csv', '_upset.csv') : tournament;
-    Papa.parse(process.env.PUBLIC_URL + '/data/' + csvFile, {
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + csvFile, {
       header: true,
       download: true,
       complete: ({ data }) => {
@@ -178,7 +186,7 @@ export default function DreamBrackets() {
         setProgress(0);
       }
     });
-  }, [tournament, upsetMode]);
+  }, [tournament, upsetMode, dataDir]);
 
   // switching the starting stage changes the slot count — reset picks/results
   const handleStageChange = (value) => {
@@ -243,7 +251,8 @@ export default function DreamBrackets() {
         const { matchWins } = simulateBatch(
           A.probabilities,
           B.probabilities,
-          simsPerMatch
+          simsPerMatch,
+          bestOf
         );
         const aWon = matchWins[0] > matchWins[1];
         const winner = aWon ? A : B;
@@ -339,7 +348,7 @@ export default function DreamBrackets() {
         <div className="bracket-card" style={{ '--accent': 'var(--bracket-accent)' }}>
         <h3 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
           <img src={tournamentConfig.logo} alt="" className="bracket-title-logo" />
-          {tournamentConfig.label} · Bracket Simulator
+          {tournamentConfig.label}{isWta ? " Women's" : ''} · Bracket Simulator
         </h3>
 
         <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>

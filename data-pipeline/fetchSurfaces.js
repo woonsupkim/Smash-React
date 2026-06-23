@@ -10,11 +10,11 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-const RAW_DIR = path.join(__dirname, 'raw');
+const TOUR = process.argv[2] || 'atp';
+const RAW_DIR = path.join(__dirname, 'raw', TOUR === 'wta' ? 'women' : '');
 const OUT_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
-const TOUR = 'atp';
 
 if (!API_KEY) {
   console.error('Missing RAPIDAPI_KEY — set it in .env (see .env.example).');

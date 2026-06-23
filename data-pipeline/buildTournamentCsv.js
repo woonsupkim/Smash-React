@@ -11,8 +11,6 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 
-const OUTPUT_DIR = path.join(__dirname, 'output');
-const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
 const SURFACE_BY_FILE = {
   'smash_us.csv': 'hard',
   'smash_fr.csv': 'clay',
@@ -25,6 +23,11 @@ function main() {
   // instead of overwriting the default calibrated CSV.
   const suffixArg = process.argv[2];
   const suffix = suffixArg ? `_${suffixArg}` : '';
+  const tour = process.argv[3] || 'atp';
+  const ns = tour === 'wta' ? 'women' : '';
+  const OUTPUT_DIR = path.join(__dirname, 'output', ns);
+  const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data', ns);
+  if (!fs.existsSync(PUBLIC_DATA_DIR)) fs.mkdirSync(PUBLIC_DATA_DIR, { recursive: true });
 
   for (const [file, surface] of Object.entries(SURFACE_BY_FILE)) {
     const statsPath = path.join(OUTPUT_DIR, `player_stats_${surface}${suffix}.csv`);
@@ -66,12 +69,12 @@ function main() {
 
   // country/age/year-record only apply to the base files (the H2H hero
   // doesn't need them in the upset-mode variant)
-  if (!suffix) mergePlayerFacts();
+  if (!suffix) mergePlayerFacts(OUTPUT_DIR, PUBLIC_DATA_DIR);
 }
 
 // Adds country/age/this-year-W-L (for that file's surface) into each base
 // smash_*.csv, from data-pipeline/output/player_facts.json (computeMatchupFacts.js).
-function mergePlayerFacts() {
+function mergePlayerFacts(OUTPUT_DIR, PUBLIC_DATA_DIR) {
   const factsPath = path.join(OUTPUT_DIR, 'player_facts.json');
   if (!fs.existsSync(factsPath)) {
     console.warn('  skip player facts: missing output/player_facts.json — run computeMatchupFacts.js first.');

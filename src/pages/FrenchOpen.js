@@ -9,11 +9,10 @@ import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import logoRG from '../assets/logo_rg.png';
 import './French.css';
 
-const playerImgs = require.context(
-  '../assets/players',
-  false,
-  /\.png$/
-);
+const playerImgsByTour = {
+  atp: require.context('../assets/players', false, /\.png$/),
+  wta: require.context('../assets/players-women', false, /\.png$/),
+};
 
 // Dark-themed react-select styling — control + the open dropdown menu/options
 // all match the app's dark surfaces instead of react-select's default white.
@@ -47,7 +46,11 @@ const PANEL_COLOR_B = '#1E2E2B';
 const PANEL_COLOR_A_TEXT = '#fff';
 const PANEL_COLOR_B_TEXT = '#fff';
 
-export default function FrenchOpen() {
+export default function FrenchOpen({ tour = 'atp' }) {
+  const isWta = tour === 'wta';
+  const bestOf = isWta ? 3 : 5;
+  const dataDir = isWta ? '/data/women' : '/data';
+  const playerImgs = playerImgsByTour[tour];
   const [players, setPlayers]             = useState([]);
   const [playerA, setPlayerA]             = useState(null);
   const [playerB, setPlayerB]             = useState(null);
@@ -66,18 +69,18 @@ export default function FrenchOpen() {
   const batchRef                          = useRef({ completed: 0, total: 0 });
 
   useEffect(() => {
-    Papa.parse(process.env.PUBLIC_URL + '/data/smash_fr.csv', {
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/smash_fr.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
         setPlayers(data.filter(r => Number(r.us_rd) === 2));
       }
     });
-    fetch(process.env.PUBLIC_URL + '/data/h2h.json')
+    fetch(process.env.PUBLIC_URL + dataDir + '/h2h.json')
       .then(r => r.json())
       .then(setH2hData)
       .catch(() => setH2hData({}));
-  }, []);
+  }, [dataDir]);
 
   // Re-seeds both sliders whenever a player changes OR the Upset Scenario
   // toggle flips — upset mode pulls from the heavy-recency CSV instead of
@@ -93,7 +96,7 @@ export default function FrenchOpen() {
       return;
     }
 
-    Papa.parse(process.env.PUBLIC_URL + '/data/smash_fr_upset.csv', {
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/smash_fr_upset.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
@@ -110,7 +113,7 @@ export default function FrenchOpen() {
         }
       }
     });
-  }, [playerA, playerB, upsetMode]);
+  }, [playerA, playerB, upsetMode, dataDir]);
 
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
@@ -206,7 +209,7 @@ export default function FrenchOpen() {
     const step = () => {
       const left = batchRef.current.total - batchRef.current.completed;
       const run  = Math.min(chunk, left);
-      const res  = simulateBatch(pA, pB, run);
+      const res  = simulateBatch(pA, pB, run, bestOf);
 
       acc.matchWins[0] += res.matchWins[0];
       acc.matchWins[1] += res.matchWins[1];
@@ -264,7 +267,7 @@ export default function FrenchOpen() {
     if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current);
     const pA = STAT_KEYS.map(([k]) => (statsA[k]||0)/100);
     const pB = STAT_KEYS.map(([k]) => (statsB[k]||0)/100);
-    const gen = simulateMatchStepwise(pA, pB, { A: playerA, B: playerB });
+    const gen = simulateMatchStepwise(pA, pB, { A: playerA, B: playerB }, bestOf);
 
     setLiveLog([]);
     setIsWatching(true);
@@ -295,7 +298,7 @@ export default function FrenchOpen() {
     <div className="page-background french-bg">
       <div className="overlay text-center">
         <MatchHero
-          title="French Open · Clay Court"
+          title={isWta ? "French Open Women's · Clay Court" : 'French Open · Clay Court'}
           logo={logoRG}
           playerA={playerA}
           playerB={playerB}
@@ -335,6 +338,7 @@ export default function FrenchOpen() {
           }
           surfaceLabel="Clay Court"
           surfaceKey="clay"
+          bestOf={bestOf}
           accentColor={ACCENT_COLOR}
           accentTextColor={ACCENT_TEXT_COLOR}
           h2hData={h2hData}
@@ -367,6 +371,7 @@ export default function FrenchOpen() {
           setUpsetMode={setUpsetMode}
           onSimulate={handleSimulate}
           onWatchMatch={handleWatchMatch}
+          bestOf={bestOf}
         />
       </div>
     </div>

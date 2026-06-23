@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import Home from './pages/Home';
 import FrenchOpen from './pages/FrenchOpen';
@@ -15,6 +15,36 @@ import { motion } from 'framer-motion';
 import logoHome from './assets/ball.png';
 
 import './App.css';
+
+// Maps the current pathname to its tour-mirrored counterpart, e.g.
+// "/us-open" <-> "/women/us-open", "/" <-> "/women" — keeps whichever page
+// you're on when switching tours instead of always bouncing back to Home.
+function TourToggle() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isWomen = location.pathname.startsWith('/women');
+  const menPath = isWomen ? (location.pathname.replace(/^\/women/, '') || '/') : location.pathname;
+  const womenPath = isWomen ? location.pathname : `/women${location.pathname === '/' ? '' : location.pathname}`;
+
+  return (
+    <div className="tour-toggle" role="group" aria-label="Tour">
+      <button
+        type="button"
+        className={`tour-toggle-btn${!isWomen ? ' active' : ''}`}
+        onClick={() => navigate(menPath)}
+      >
+        ATP
+      </button>
+      <button
+        type="button"
+        className={`tour-toggle-btn${isWomen ? ' active' : ''}`}
+        onClick={() => navigate(womenPath)}
+      >
+        WTA
+      </button>
+    </div>
+  );
+}
 
 function App() {
   const navItems = [
@@ -36,6 +66,7 @@ function App() {
             <span className="brand-dot"><motion.img layoutId="home-intro-logo" src={logoHome} alt="" /></span>
             Smash!
           </NavLink>
+          <TourToggle />
           <button
             className="navbar-toggler"
             type="button"
@@ -68,11 +99,17 @@ function App() {
 
       <main className="page-content">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/french-open" element={<FrenchOpen />} />
-          <Route path="/wimbledon" element={<Wimbledon />} />
-          <Route path="/us-open" element={<USOpen />} />
-          <Route path="/dream-brackets" element={<DreamBrackets />} />
+          <Route path="/" element={<Home tour="atp" />} />
+          <Route path="/french-open" element={<FrenchOpen tour="atp" />} />
+          <Route path="/wimbledon" element={<Wimbledon tour="atp" />} />
+          <Route path="/us-open" element={<USOpen tour="atp" />} />
+          <Route path="/dream-brackets" element={<DreamBrackets tour="atp" />} />
+
+          <Route path="/women" element={<Home tour="wta" />} />
+          <Route path="/women/french-open" element={<FrenchOpen tour="wta" />} />
+          <Route path="/women/wimbledon" element={<Wimbledon tour="wta" />} />
+          <Route path="/women/us-open" element={<USOpen tour="wta" />} />
+          <Route path="/women/dream-brackets" element={<DreamBrackets tour="wta" />} />
           {/* <Route path="/about" element={<About />} /> */}
         </Routes>
       </main>

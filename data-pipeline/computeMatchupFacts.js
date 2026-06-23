@@ -9,14 +9,17 @@
  *     histories are cached, any match between two rostered players shows
  *     up in both — across either player's cache it's the same match)
  *
- * Usage: node computeMatchupFacts.js
+ * Usage: node computeMatchupFacts.js [tour]
+ *   tour: atp (default) | wta — namespaces raw/output/public paths under women/.
  */
 const fs = require('fs');
 const path = require('path');
 
-const RAW_DIR = path.join(__dirname, 'raw');
-const OUTPUT_DIR = path.join(__dirname, 'output');
-const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
+const TOUR = process.argv[2] || 'atp';
+const NS = TOUR === 'wta' ? 'women' : '';
+const RAW_DIR = path.join(__dirname, 'raw', NS);
+const OUTPUT_DIR = path.join(__dirname, 'output', NS);
+const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data', NS);
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 
@@ -134,8 +137,9 @@ function main() {
     h2h[key].recentFormB = recentForm[idB] ? `${recentForm[idB].w}-${recentForm[idB].l}` : null;
   }
 
-  fs.writeFileSync(path.join(PUBLIC_DATA_DIR, 'h2h.json'), JSON.stringify(h2h));
-  console.log(`Wrote ${Object.keys(h2h).length} head-to-head pairs to public/data/h2h.json`);
+  const h2hPath = path.join(PUBLIC_DATA_DIR, 'h2h.json');
+  fs.writeFileSync(h2hPath, JSON.stringify(h2h));
+  console.log(`Wrote ${Object.keys(h2h).length} head-to-head pairs to ${h2hPath}`);
 
   // --- freshness metadata, shown on the Home page ---
   let mostRecentMatchDate = null;
@@ -147,11 +151,12 @@ function main() {
       }
     }
   }
+  const refreshMetaPath = path.join(PUBLIC_DATA_DIR, 'refresh-meta.json');
   fs.writeFileSync(
-    path.join(PUBLIC_DATA_DIR, 'refresh-meta.json'),
+    refreshMetaPath,
     JSON.stringify({ refreshedAt: new Date().toISOString(), mostRecentMatchDate })
   );
-  console.log(`Wrote refresh-meta.json (refreshed now, most recent match ${mostRecentMatchDate}).`);
+  console.log(`Wrote ${refreshMetaPath} (refreshed now, most recent match ${mostRecentMatchDate}).`);
 }
 
 main();

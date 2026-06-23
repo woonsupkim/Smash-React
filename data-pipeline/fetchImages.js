@@ -3,13 +3,19 @@
  * each roster player on Wikidata (free/CC-licensed images via Wikimedia
  * Commons) and downloading their photo. Never overwrites an image that
  * already exists — only fills gaps for players who don't have one yet.
+ *
+ * Usage: node fetchImages.js [tour]
+ *   tour: atp (default, writes to src/assets/players/) | wta (writes to
+ *   src/assets/players-women/, kept separate so a man and woman who share a
+ *   surname-derived id never silently collide on the same headshot file).
  */
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 
-const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
-const PLAYERS_DIR = path.join(__dirname, '..', 'src', 'assets', 'players');
+const TOUR = process.argv[2] || 'atp';
+const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data', TOUR === 'wta' ? 'women' : '');
+const PLAYERS_DIR = path.join(__dirname, '..', 'src', 'assets', TOUR === 'wta' ? 'players-women' : 'players');
 
 function loadRoster() {
   const byId = new Map();

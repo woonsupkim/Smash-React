@@ -30,6 +30,7 @@ export default function MatchHero({
   selectorB,
   surfaceLabel,
   surfaceKey, // 'hard' | 'clay' | 'grass' — matches year_w/year_l on the row
+  bestOf = 5, // 5 (ATP Grand Slam) or 3 (WTA Grand Slam)
   accentColor,
   accentTextColor = '#fff',
   h2hData,
@@ -52,9 +53,9 @@ export default function MatchHero({
   // when the percentages are close together.
   const winProb = useMemo(() => {
     if (!bothPicked) return 0.5;
-    const res = simulateBatch(probsFromRow(playerA), probsFromRow(playerB), QUICK_ESTIMATE_SIMS);
+    const res = simulateBatch(probsFromRow(playerA), probsFromRow(playerB), QUICK_ESTIMATE_SIMS, bestOf);
     return res.matchWins[0] / QUICK_ESTIMATE_SIMS;
-  }, [playerA, playerB, bothPicked]);
+  }, [playerA, playerB, bothPicked, bestOf]);
 
   const favoredIsA = winProb >= 0.5;
   const pctA = Math.round(winProb * 100);
@@ -90,7 +91,7 @@ export default function MatchHero({
   const rollMatch = () => {
     setIsRolling(true);
     setTimeout(() => {
-      const res = simulateMatch(probsFromRow(playerA), probsFromRow(playerB));
+      const res = simulateMatch(probsFromRow(playerA), probsFromRow(playerB), bestOf);
       setScoreline(res);
       setIsRolling(false);
     }, 250);
@@ -123,7 +124,7 @@ export default function MatchHero({
         </h3>
       )}
       <div className="match-hero-context">
-        {surfaceLabel} &middot; Best of 5
+        {surfaceLabel} &middot; Best of {bestOf}
       </div>
 
       <div className="match-hero-main">

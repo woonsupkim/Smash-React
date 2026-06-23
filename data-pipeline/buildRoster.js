@@ -5,17 +5,19 @@
  * p1-p5 are left blank here — run `npm run refresh-stats` afterward to fill
  * them in from real match data.
  *
- * Usage: node buildRoster.js [topN]
+ * Usage: node buildRoster.js [topN] [tour]
+ *   tour: atp (default) | wta — writes to public/data/women/ for wta,
+ *   keeping the men's roster at public/data/ untouched either way.
  */
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 
-const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data');
+const TOUR = process.argv[3] || 'atp';
+const PUBLIC_DATA_DIR = path.join(__dirname, '..', 'public', 'data', TOUR === 'wta' ? 'women' : '');
 const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
-const TOUR = 'atp';
 const TOP_N = Number(process.argv[2]) || 50;
 const TARGET_FILES = ['smash_us.csv', 'smash_fr.csv', 'smash_wb.csv'];
 
@@ -70,7 +72,7 @@ async function fetchTopPlayers(n) {
 }
 
 async function main() {
-  console.log(`Fetching ATP top ${TOP_N} singles ranking...`);
+  console.log(`Fetching ${TOUR.toUpperCase()} top ${TOP_N} singles ranking...`);
   const topPlayers = await fetchTopPlayers(TOP_N);
   if (topPlayers.length === 0) {
     console.error('Could not fetch rankings.');
@@ -93,6 +95,7 @@ async function main() {
     };
   });
 
+  if (!fs.existsSync(PUBLIC_DATA_DIR)) fs.mkdirSync(PUBLIC_DATA_DIR, { recursive: true });
   for (const file of TARGET_FILES) {
     const csvPath = path.join(PUBLIC_DATA_DIR, file);
     fs.writeFileSync(csvPath, Papa.unparse(roster));

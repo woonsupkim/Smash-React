@@ -37,7 +37,18 @@
     "fetch-profiles": "node data-pipeline/fetchProfiles.js",
     "compute-matchup-facts": "node data-pipeline/computeMatchupFacts.js",
     "backtest": "node data-pipeline/backtest.js",
-    "refresh-stats": "npm run fetch-stats && npm run fetch-surfaces && npm run fetch-profiles && npm run compute-stats && npm run compute-matchup-facts && npm run build-stats-csv"
+    "refresh-stats": "npm run fetch-stats && npm run fetch-surfaces && npm run fetch-profiles && npm run compute-stats && npm run compute-matchup-facts && npm run build-stats-csv",
+    "build-roster-women": "node data-pipeline/buildRoster.js 50 wta",
+    "fetch-images-women": "node data-pipeline/fetchImages.js wta",
+    "fetch-stats-women": "node data-pipeline/fetch.js wta",
+    "fetch-surfaces-women": "node data-pipeline/fetchSurfaces.js wta",
+    "compute-stats-women": "node data-pipeline/computeStats.js \"\" \"\" \"\" wta",
+    "build-stats-csv-women": "node data-pipeline/buildTournamentCsv.js \"\" wta",
+    "build-upset-csv-women": "node data-pipeline/computeStats.js 7 \"\" upset wta && node data-pipeline/buildTournamentCsv.js upset wta",
+    "fetch-profiles-women": "node data-pipeline/fetchProfiles.js wta",
+    "compute-matchup-facts-women": "node data-pipeline/computeMatchupFacts.js wta",
+    "backtest-women": "node data-pipeline/backtest.js \"\" \"\" wta",
+    "refresh-stats-women": "npm run fetch-stats-women && npm run fetch-surfaces-women && npm run fetch-profiles-women && npm run compute-stats-women && npm run compute-matchup-facts-women && npm run build-stats-csv-women"
   },
   "eslintConfig": {
     "extends": [

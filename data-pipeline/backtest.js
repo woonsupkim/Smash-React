@@ -9,19 +9,21 @@
  * candidate half-life so you can pick the half-life that's actually most
  * predictive, rather than just plausible-looking.
  *
- * Usage: node backtest.js [comma-separated halfLifeDays list] [surface]
+ * Usage: node backtest.js [comma-separated halfLifeDays list] [surface] [tour]
  *   surface: hard | clay | grass — omit to backtest across all surfaces
  *   combined (the original behavior). Passing a surface restricts both the
  *   test cases and the point-in-time history aggregation to matches on that
  *   surface, so e.g. grass's half-life can be tuned on its own — grass's
  *   short annual season makes it behave very differently from hard/clay.
+ *   tour: atp (default) | wta — reads from data-pipeline/raw/women/ instead.
  */
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
 
-const RAW_DIR = path.join(__dirname, 'raw');
+const TOUR_ARG = process.argv[4] || 'atp';
+const RAW_DIR = path.join(__dirname, 'raw', TOUR_ARG === 'wta' ? 'women' : '');
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 const SIMULATOR_PATH = path.join(__dirname, '..', 'src', 'simulator.js');
