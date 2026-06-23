@@ -15,6 +15,28 @@ const playerImgs = require.context(
   /\.png$/
 );
 
+// Dark-themed react-select styling — control + the open dropdown menu/options
+// all match the app's dark surfaces instead of react-select's default white.
+const SELECT_STYLES = {
+  container: b => ({...b, minWidth: 230, flex: 1}),
+  control: (b, state) => ({
+    ...b,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
+    boxShadow: 'none',
+  }),
+  singleValue: p => ({...p,color:'#fff'}),
+  input: p => ({...p,color:'#fff'}),
+  placeholder: p => ({...p,color:'#888'}),
+  menu: b => ({...b, backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)'}),
+  menuList: b => ({...b, backgroundColor: '#1a1a1a'}),
+  option: (b, state) => ({
+    ...b,
+    backgroundColor: state.isSelected ? 'rgba(255,255,255,0.18)' : state.isFocused ? 'rgba(255,255,255,0.08)' : 'transparent',
+    color: '#fff',
+  }),
+};
+
 // Matches the "Clay" surface palette used on the Home page.
 const ACCENT_COLOR = '#e8694a';
 const ACCENT_TEXT_COLOR = '#fff';
@@ -289,19 +311,7 @@ export default function FrenchOpen() {
                 }}
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
-                styles={{
-                  container: b => ({...b, minWidth: 230, flex: 1}),
-                  control: (b, state) => ({
-                    ...b,
-                    backgroundColor: 'rgba(255,255,255,0.08)',
-                    borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
-                    boxShadow: 'none',
-                  }),
-                  singleValue: p => ({...p,color:'#fff'}),
-                  input: p => ({...p,color:'#fff'}),
-                  placeholder: p => ({...p,color:'#888'}),
-                  option: p => ({...p,color:'#000'})
-                }}
+                styles={SELECT_STYLES}
               />
               <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
             </div>
@@ -318,19 +328,7 @@ export default function FrenchOpen() {
                 }}
                 placeholder="Type to search…"
                 isDisabled={isRunning||isWatching}
-                styles={{
-                  container: b => ({...b, minWidth: 230, flex: 1}),
-                  control: (b, state) => ({
-                    ...b,
-                    backgroundColor: 'rgba(255,255,255,0.08)',
-                    borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
-                    boxShadow: 'none',
-                  }),
-                  singleValue: p => ({...p,color:'#fff'}),
-                  input: p => ({...p,color:'#fff'}),
-                  placeholder: p => ({...p,color:'#888'}),
-                  option: p => ({...p,color:'#000'})
-                }}
+                styles={SELECT_STYLES}
               />
               <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
             </div>

@@ -281,9 +281,11 @@ export default function DreamBrackets() {
   const selectStyles = {
     option: (base, state) => ({
       ...base,
-      color: '#000',
-      backgroundColor: state.isFocused ? '#eee' : '#fff',
+      color: '#fff',
+      backgroundColor: state.isSelected ? 'rgba(255,255,255,0.18)' : state.isFocused ? 'rgba(255,255,255,0.08)' : 'transparent',
     }),
+    menu: base => ({ ...base, backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)' }),
+    menuList: base => ({ ...base, backgroundColor: '#1a1a1a' }),
     control: (base, state) => ({
       ...base,
       opacity: 1,

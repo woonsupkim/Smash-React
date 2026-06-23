@@ -14,8 +14,6 @@ const SURFACES = [
   { to: '/us-open',     label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
 ];
 
-const INTRO_SESSION_KEY = 'smash-intro-played';
-
 function formatDate(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
