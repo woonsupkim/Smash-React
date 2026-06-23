@@ -10,6 +10,7 @@ import DreamBrackets from './pages/DreamBrackets';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import { Analytics } from '@vercel/analytics/react';
+import { motion } from 'framer-motion';
 
 import logoHome from './assets/ball.png';
 
@@ -32,7 +33,7 @@ function App() {
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div className="container">
           <NavLink to="/" className="navbar-brand d-flex align-items-center">
-            <span className="brand-dot"><img src={logoHome} alt="" /></span>
+            <span className="brand-dot"><motion.img layoutId="home-intro-logo" src={logoHome} alt="" /></span>
             Smash!
           </NavLink>
           <button

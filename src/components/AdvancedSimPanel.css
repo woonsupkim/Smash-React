@@ -75,6 +75,12 @@
   border-radius: 2px;
 }
 
+.adv-player-meta {
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-top: 0.15rem;
+}
+
 .adv-controls-col {
   flex: 1 1 320px;
   max-width: 380px;
@@ -91,6 +97,13 @@
 .advanced-button-row .btn {
   border-radius: 4px;
   font-size: 0.85rem;
+}
+
+/* Centered as its own row below the buttons, not tucked into the controls
+   column with everything else. */
+.advanced-panel-card > .upset-toggle-switch {
+  width: fit-content;
+  margin: 0 auto 1.25rem;
 }
 
 .adv-results-row {

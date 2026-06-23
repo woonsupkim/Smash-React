@@ -231,17 +231,14 @@ function PlayerCol({ player, getPlayerImageSrc, align, selector }) {
       {player ? (
         <>
           <img src={getPlayerImageSrc(player)} alt={player.name} className="match-hero-photo" />
-          <div className="match-hero-name">{player.name}</div>
+          <div className="match-hero-name">
+            {flagUrl
+              ? <img src={flagUrl} alt={player.country} className="match-hero-flag" />
+              : null}
+            {player.name}
+          </div>
           <div className="match-hero-meta">
             {player.us_seed != null && player.us_seed !== '' && <span>Rank {player.us_seed}</span>}
-            {player.country && (
-              <span className="match-hero-flag-wrap">
-                {' · '}
-                {flagUrl
-                  ? <img src={flagUrl} alt={player.country} className="match-hero-flag" />
-                  : player.country}
-              </span>
-            )}
             {player.age && <span> &middot; Age {player.age}</span>}
           </div>
         </>

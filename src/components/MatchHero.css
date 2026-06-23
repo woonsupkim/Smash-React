@@ -82,18 +82,16 @@
   font-size: 1.25rem;
   font-weight: 700;
   margin-top: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .match-hero-meta {
   font-size: 0.85rem;
   color: #ccc;
   margin-top: 0.15rem;
-}
-
-.match-hero-flag-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
 }
 
 .match-hero-flag {

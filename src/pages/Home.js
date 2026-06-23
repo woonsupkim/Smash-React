@@ -36,10 +36,12 @@ export default function Home() {
 
   useEffect(() => {
     if (!showIntro) return;
+    // Hold on the fully-revealed logo+title for a beat before the logo
+    // morphs into the nav's home button and the rest of the page fades in.
     const tid = setTimeout(() => {
       setShowIntro(false);
       sessionStorage.setItem(INTRO_SESSION_KEY, '1');
-    }, 1400);
+    }, 2200);
     return () => clearTimeout(tid);
   }, [showIntro]);
 
@@ -75,16 +77,8 @@ export default function Home() {
             className="home-intro"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
-            <motion.img
-              src={logoHome}
-              alt=""
-              className="home-intro-logo"
-              initial={{ scale: 0, rotate: -90, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 14 }}
-            />
             <motion.div
               className="home-intro-title"
               initial={{ scale: 2.5, opacity: 0 }}
@@ -97,10 +91,26 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Separate from .home-intro's own fade so this can morph into the
+          nav's home button (same layoutId) instead of just fading in place. */}
+      <AnimatePresence>
+        {showIntro && (
+          <motion.img
+            layoutId="home-intro-logo"
+            src={logoHome}
+            alt=""
+            className="home-intro-logo"
+            initial={{ scale: 0, rotate: -90, opacity: 0 }}
+            animate={{ scale: 1, rotate: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 14, layout: { duration: 0.7, ease: 'easeInOut' } }}
+          />
+        )}
+      </AnimatePresence>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: showIntro ? 1.3 : 0 }}
+        transition={{ duration: 1, delay: showIntro ? 1.9 : 0 }}
       >
         <div className="home-hero">
           <div className="eyebrow">GRAND SLAM MATCH ENGINE</div>

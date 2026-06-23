@@ -247,18 +247,16 @@
   line-height: 1;
 }
 
-/* Champion column gets its own bigger, centered card. Width is intrinsic
-   (set inline, max-content) rather than stretched to the column width, so
-   long names size the box instead of wrapping to a second line. */
+/* Champion card now matches the same width as every other round's match
+   cards (stretched left:0/right:0 to the column), instead of an intrinsic
+   max-content box — names wrap instead of forcing the box wider. */
 .champion-card {
   padding: 1rem 1rem;
   text-align: center;
-  white-space: nowrap;
 }
 .champion-card .competitor {
   justify-content: center;
   font-size: clamp(0.8rem, 1.3vw, 0.95rem);
-  white-space: nowrap;
 }
 
 /* Buttons */

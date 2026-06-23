@@ -176,23 +176,30 @@
 }
 
 /* One-time intro overlay, similar in spirit to a sports broadcast's logo
-   sting — plays once per browser session then fades to reveal the page. */
+   sting — plays once per browser session then fades to reveal the page.
+   z-index sits BELOW the navbar (Bootstrap's fixed-top is ~1030) so the
+   real nav logo stays visible the whole time — that's the landing target
+   the big intro logo morphs into via the shared layoutId. */
 .home-intro {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 900;
   background: #0a0a0a;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
 }
 
 .home-intro-logo {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 90px;
   height: 90px;
   object-fit: contain;
+  z-index: 901;
 }
 
 .home-intro-title {

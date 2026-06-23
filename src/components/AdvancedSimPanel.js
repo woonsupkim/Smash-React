@@ -59,7 +59,12 @@ export default function AdvancedSimPanel({
   colorB = '#FFD700',
   colorAText = '#fff',
   colorBText = '#fff',
+  simulateButtonColor,
+  simulateButtonTextColor,
+  textOutline = true,
 }) {
+  const simColor = simulateButtonColor || colorA;
+  const simColorText = simulateButtonTextColor || colorAText;
   const [open, setOpen] = useState(defaultOpen);
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
@@ -136,6 +141,10 @@ export default function AdvancedSimPanel({
                 {countryFlagUrl(playerA.country) && <img src={countryFlagUrl(playerA.country)} alt={playerA.country} className="adv-player-flag" />}
                 {playerA.name}
               </div>
+              <div className="adv-player-meta">
+                {playerA.us_seed != null && playerA.us_seed !== '' && <span>Rank {playerA.us_seed}</span>}
+                {playerA.age && <span> &middot; Age {playerA.age}</span>}
+              </div>
             </div>
 
             <div className="adv-controls-col">
@@ -152,7 +161,7 @@ export default function AdvancedSimPanel({
 
               <div className="advanced-button-row mb-2">
                 <Button
-                  style={{ background: colorA, borderColor: colorA, color: colorAText }}
+                  style={{ background: simColor, borderColor: simColor, color: simColorText }}
                   onClick={onSimulate}
                   disabled={isRunning||isWatching}
                 >
@@ -168,17 +177,7 @@ export default function AdvancedSimPanel({
                 >Watch Match</Button>
               </div>
 
-              <Form.Check
-                type="switch"
-                id="upset-mode-toggle"
-                className="upset-toggle-switch"
-                label="Upset Scenario"
-                checked={upsetMode}
-                onChange={() => setUpsetMode(v => !v)}
-                disabled={isRunning||isWatching}
-              />
-
-              {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-2 mt-2"/>}
+              {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-2"/>}
             </div>
 
             <div className="adv-player-col">
@@ -187,8 +186,22 @@ export default function AdvancedSimPanel({
                 {countryFlagUrl(playerB.country) && <img src={countryFlagUrl(playerB.country)} alt={playerB.country} className="adv-player-flag" />}
                 {playerB.name}
               </div>
+              <div className="adv-player-meta">
+                {playerB.us_seed != null && playerB.us_seed !== '' && <span>Rank {playerB.us_seed}</span>}
+                {playerB.age && <span> &middot; Age {playerB.age}</span>}
+              </div>
             </div>
           </div>
+
+          <Form.Check
+            type="switch"
+            id="upset-mode-toggle"
+            className="upset-toggle-switch"
+            label="Upset Scenario"
+            checked={upsetMode}
+            onChange={() => setUpsetMode(v => !v)}
+            disabled={isRunning||isWatching}
+          />
 
           <AnimatePresence>
             {showBatch && (
@@ -217,23 +230,21 @@ export default function AdvancedSimPanel({
                       <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
                       <text
                         x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
-                        fill={VS_COLORS[favoredIdx]} fontSize={22} fontWeight="bold"
-                        stroke="#fff" strokeWidth={3} paintOrder="stroke"
+                        fill="#ccc" fontSize={13} fontWeight="bold"
                       >
-                        <tspan x="50%" dy="-0.15em">{pct(favoredWins)}%</tspan>
-                        <tspan x="50%" dy="1.1em" fontSize={10} fill="#444" stroke="none">WIN %</tspan>
+                        WIN %
                       </text>
                       <text
                         x="8%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[0]} fontSize={16} fontWeight="bold"
-                        stroke="#fff" strokeWidth={3} paintOrder="stroke"
+                        {...(textOutline ? { stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke' } : {})}
                       >
                         {pct(batchResult.matchWins[0])}%
                       </text>
                       <text
                         x="92%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[1]} fontSize={16} fontWeight="bold"
-                        stroke="#fff" strokeWidth={3} paintOrder="stroke"
+                        {...(textOutline ? { stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke' } : {})}
                       >
                         {pct(batchResult.matchWins[1])}%
                       </text>
@@ -287,6 +298,8 @@ export default function AdvancedSimPanel({
               <Scoreboard
                 nameA={playerA.name}
                 nameB={playerB.name}
+                countryA={playerA.country}
+                countryB={playerB.country}
                 completedSets={live.completedSets}
                 liveGames={live.liveGames}
                 livePoints={live.livePoints}

@@ -428,7 +428,7 @@ export default function DreamBrackets() {
                   {isChampionCol ? (
                     <div
                       className="bracket-match champion-card"
-                      style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: '50%', transform: 'translateX(-50%)', height: CHAMPION_BOX_H, width: 'max-content', maxWidth: '60vw' }}
+                      style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: 0, right: 0, height: CHAMPION_BOX_H }}
                     >
                       {colPlayers[0] ? (
                         <div className="competitor winner">

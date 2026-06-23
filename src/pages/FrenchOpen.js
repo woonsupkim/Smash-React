@@ -348,6 +348,8 @@ export default function FrenchOpen() {
           colorB={PANEL_COLOR_B}
           colorAText={PANEL_COLOR_A_TEXT}
           colorBText={PANEL_COLOR_B_TEXT}
+          simulateButtonColor={PANEL_COLOR_B}
+          simulateButtonTextColor={PANEL_COLOR_B_TEXT}
           playerA={playerA}
           playerB={playerB}
           getPlayerImageSrc={getPlayerImageSrc}
