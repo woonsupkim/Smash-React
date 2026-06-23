@@ -44,7 +44,7 @@
 }
 
 .adv-player-col {
-  flex: 0 0 200px;
+  flex: 0 0 220px;
   text-align: center;
 }
 
@@ -54,14 +54,14 @@
   border-radius: 50%;
   object-fit: cover;
   object-position: top center;
-  border: 3px solid rgba(255,255,255,0.2);
+  border: 3px solid rgba(255,255,255,0.25);
 }
 
 .adv-player-name {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #fff;
-  margin-top: 0.5rem;
+  margin-top: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: center;

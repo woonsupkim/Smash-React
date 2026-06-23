@@ -15,11 +15,11 @@ import { credibleInterval } from '../credibleInterval';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
-// Distinct from the tournament pages' own background photos. Sourced from
-// Wikimedia Commons (CC BY-SA 4.0):
-//  - clay:  Empty clay tennis court in Melbourne, Australia — KeepActive.com.au
-//  - grass: Wimbledon Centre Court (May 15, 2019) — GATORFAN2525
-//  - hard:  2019 USTA NTC Court 4 and Ashe at sunset
+// Distinct from the tournament pages' own background photos — all three are
+// inside-the-stadium shots, sourced from Wikimedia Commons:
+//  - clay:  Interieur Court Philippe-Chatrier, Roland Garros (2024) — CC BY-SA 4.0
+//  - grass: Wimbledon Centre Court (May 15, 2019) — GATORFAN2525, CC BY-SA 4.0
+//  - hard:  Arthur Ashe Stadium interior, 2005 US Open — Davidwboswell, CC BY-SA 3.0
 import bgClay from '../assets/bracket-clay.jpg';
 import bgGrass from '../assets/bracket-grass.jpg';
 import bgHard from '../assets/bracket-hard.jpg';
@@ -284,8 +284,16 @@ export default function DreamBrackets() {
       color: '#000',
       backgroundColor: state.isFocused ? '#eee' : '#fff',
     }),
-    control: base => ({ ...base, opacity: 1 }),
-    singleValue: base => ({ ...base, color: '#000' }),
+    control: (base, state) => ({
+      ...base,
+      opacity: 1,
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      borderColor: state.isFocused ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)',
+      boxShadow: 'none',
+    }),
+    singleValue: base => ({ ...base, color: '#fff' }),
+    input: base => ({ ...base, color: '#fff' }),
+    placeholder: base => ({ ...base, color: '#888' }),
   };
 
   const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner }) => {
@@ -335,6 +343,7 @@ export default function DreamBrackets() {
         <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>
           <div className="bracket-select-row">
             <Form.Select
+              className="dark-select"
               value={tournament}
               onChange={e => setTournament(e.target.value)}
               disabled={isRunning}
@@ -345,6 +354,7 @@ export default function DreamBrackets() {
             </Form.Select>
 
             <Form.Select
+              className="dark-select"
               value={stage}
               onChange={e => handleStageChange(e.target.value)}
               disabled={isRunning}
@@ -355,6 +365,7 @@ export default function DreamBrackets() {
             </Form.Select>
 
             <Form.Select
+              className="dark-select"
               value={simsPerMatch}
               onChange={e => setSimsPerMatch(Number(e.target.value))}
               disabled={isRunning}

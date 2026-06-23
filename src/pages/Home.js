@@ -78,32 +78,42 @@ export default function Home() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              className="home-intro-title"
-              initial={{ scale: 2.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.35, duration: 0.4, ease: 'easeOut' }}
-            >
-              SMASH!
-            </motion.div>
-          </motion.div>
+          />
         )}
       </AnimatePresence>
 
-      {/* Separate from .home-intro's own fade so this can morph into the
-          nav's home button (same layoutId) instead of just fading in place. */}
+      {/* Logo and title each live in their own plain (non-animated) fixed
+          row so they share one exact horizontal centerline and a fixed gap
+          — the motion components inside only animate scale/rotate/opacity,
+          never position, so nothing fights the row's own centering. The
+          logo is kept out of .home-intro's own fade (above) so it can morph
+          into the nav's home button (same layoutId) instead of fading. */}
       <AnimatePresence>
         {showIntro && (
-          <motion.img
-            layoutId="home-intro-logo"
-            src={logoHome}
-            alt=""
-            className="home-intro-logo"
-            initial={{ scale: 0, rotate: -90, opacity: 0 }}
-            animate={{ scale: 1, rotate: 0, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 14, layout: { duration: 0.7, ease: 'easeInOut' } }}
-          />
+          <>
+            <div className="home-intro-logo-row">
+              <motion.img
+                layoutId="home-intro-logo"
+                src={logoHome}
+                alt=""
+                className="home-intro-logo"
+                initial={{ scale: 0, rotate: -90, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 14, layout: { duration: 0.7, ease: 'easeInOut' } }}
+              />
+            </div>
+            <div className="home-intro-title-row">
+              <motion.div
+                className="home-intro-title"
+                initial={{ scale: 2.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.35, duration: 0.4, ease: 'easeOut' }}
+              >
+                SMASH!
+              </motion.div>
+            </div>
+          </>
         )}
       </AnimatePresence>
 

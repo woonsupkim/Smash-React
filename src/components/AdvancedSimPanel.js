@@ -61,7 +61,6 @@ export default function AdvancedSimPanel({
   colorBText = '#fff',
   simulateButtonColor,
   simulateButtonTextColor,
-  textOutline = true,
 }) {
   const simColor = simulateButtonColor || colorA;
   const simColorText = simulateButtonTextColor || colorAText;
@@ -151,6 +150,7 @@ export default function AdvancedSimPanel({
               <Form.Group controlId="simCount" className="mb-2">
                 <Form.Label className="text-white">Simulations</Form.Label>
                 <Form.Select
+                  className="dark-select"
                   value={simCount}
                   onChange={e=>setSimCount(+e.target.value)}
                   disabled={isRunning||isWatching}
@@ -237,14 +237,12 @@ export default function AdvancedSimPanel({
                       <text
                         x="8%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[0]} fontSize={16} fontWeight="bold"
-                        {...(textOutline ? { stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke' } : {})}
                       >
                         {pct(batchResult.matchWins[0])}%
                       </text>
                       <text
                         x="92%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[1]} fontSize={16} fontWeight="bold"
-                        {...(textOutline ? { stroke: '#fff', strokeWidth: 3, paintOrder: 'stroke' } : {})}
                       >
                         {pct(batchResult.matchWins[1])}%
                       </text>

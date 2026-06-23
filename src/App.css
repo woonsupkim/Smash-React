@@ -194,3 +194,23 @@ h2, .heading-lg {
   margin-bottom: 1.5rem !important;
 }
 
+/* Dark-themed native <select>, matching the translucent look of the
+   react-select player dropdowns — reused on the Advanced Controls'
+   Simulations select and all of the Dream Brackets selects. */
+.dark-select {
+  background-color: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+.dark-select:focus {
+  background-color: rgba(255,255,255,0.12) !important;
+  border-color: rgba(255,255,255,0.45) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+.dark-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+

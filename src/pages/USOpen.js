@@ -351,7 +351,6 @@ export default function USOpen() {
           colorB={PANEL_COLOR_B}
           colorAText={PANEL_COLOR_A_TEXT}
           colorBText={PANEL_COLOR_B_TEXT}
-          textOutline={false}
           playerA={playerA}
           playerB={playerB}
           getPlayerImageSrc={getPlayerImageSrc}

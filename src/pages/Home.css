@@ -1,7 +1,10 @@
 /* src/pages/Home.css */
 
 .home-page {
-  background: #0a0a0a;
+  background: linear-gradient(rgba(5,5,8,0.86), rgba(5,5,8,0.86)), url(../assets/smash1.jpg);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   min-height: calc(100vh - 70px);
 }
 
@@ -185,21 +188,36 @@
   inset: 0;
   z-index: 900;
   background: #0a0a0a;
+}
+
+/* Logo and title rows share the exact same horizontal centerline (left:0;
+   right:0; display:flex; justify-content:center) and split the vertical
+   center between them with a fixed gap — plain CSS transforms on the ROW,
+   never on the animated motion element itself, so framer-motion's own
+   scale/rotate animation on the child never gets clobbered by a competing
+   inline transform. */
+.home-intro-logo-row,
+.home-intro-title-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  z-index: 901;
+  pointer-events: none;
+}
+.home-intro-logo-row {
+  transform: translateY(calc(-100% - 8px));
+}
+.home-intro-title-row {
+  transform: translateY(8px);
 }
 
 .home-intro-logo {
-  position: fixed;
-  top: 38%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 90px;
   height: 90px;
   object-fit: contain;
-  z-index: 901;
 }
 
 .home-intro-title {
@@ -208,6 +226,7 @@
   letter-spacing: 0.02em;
   color: var(--accent-brand, #c6ff1c);
   text-transform: uppercase;
+  line-height: 1;
 }
 
 @media (max-width: 576px) {
