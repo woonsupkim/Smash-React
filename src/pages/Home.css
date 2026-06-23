@@ -1,7 +1,7 @@
 /* src/pages/Home.css */
 
 .home-page {
-  background: linear-gradient(rgba(5,5,8,0.86), rgba(5,5,8,0.86)), url(../assets/smash1.jpg);
+  background: linear-gradient(rgba(5,5,8,0.94), rgba(5,5,8,0.94)), url(../assets/smash1.jpg);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

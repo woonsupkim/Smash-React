@@ -54,7 +54,8 @@
 }
 
 .match-hero-player {
-  flex: 0 0 220px;
+  flex: 0 1 auto;
+  min-width: 220px;
   text-align: center;
 }
 
@@ -86,6 +87,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  white-space: nowrap;
 }
 
 .match-hero-meta {

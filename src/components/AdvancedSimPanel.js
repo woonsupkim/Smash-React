@@ -225,7 +225,7 @@ export default function AdvancedSimPanel({
                         paddingAngle={4}
                         isAnimationActive
                       >
-                        {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]}/>)}
+                        {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]} stroke="none"/>)}
                       </Pie>
                       <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
                       <text
@@ -280,8 +280,8 @@ export default function AdvancedSimPanel({
                       <XAxis type="number" stroke="#999" tick={{ fontSize: 10 }} />
                       <YAxis dataKey="name" type="category" stroke="#999" width={36} tick={{ fontSize: 10 }} />
                       <RechartTooltip/>
-                      <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} stroke="#fff" strokeWidth={1} barSize={9}/>
-                      <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} stroke="#fff" strokeWidth={1} barSize={9}/>
+                      <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={9}/>
+                      <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={9}/>
                     </BarChart>
                   </ResponsiveContainer>
                   {renderFixedLegend()}

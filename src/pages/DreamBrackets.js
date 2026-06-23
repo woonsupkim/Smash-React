@@ -18,7 +18,7 @@ import logoUS from '../assets/logo_us.png';
 // Distinct from the tournament pages' own background photos — all three are
 // inside-the-stadium shots, sourced from Wikimedia Commons:
 //  - clay:  Interieur Court Philippe-Chatrier, Roland Garros (2024) — CC BY-SA 4.0
-//  - grass: Wimbledon Centre Court (May 15, 2019) — GATORFAN2525, CC BY-SA 4.0
+//  - grass: 2023 Wimbledon Men's singles final, Centre Court — Daniel Cooper, CC BY-SA 2.0
 //  - hard:  Arthur Ashe Stadium interior, 2005 US Open — Davidwboswell, CC BY-SA 3.0
 import bgClay from '../assets/bracket-clay.jpg';
 import bgGrass from '../assets/bracket-grass.jpg';
