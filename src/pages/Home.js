@@ -21,9 +21,10 @@ function formatDate(iso) {
 
 export default function Home() {
   const [refreshMeta, setRefreshMeta] = useState(null);
-  // Plays once per browser session — a returning visitor navigating back to
-  // Home from another page won't see it replay every time.
-  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SESSION_KEY));
+  // Plays every time this component mounts — i.e. every time the user lands
+  // on the Home page (including navigating back to it from elsewhere in the
+  // app), not just once per browser session.
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/refresh-meta.json')
@@ -36,10 +37,7 @@ export default function Home() {
     if (!showIntro) return;
     // Hold on the fully-revealed logo+title for a beat before the logo
     // morphs into the nav's home button and the rest of the page fades in.
-    const tid = setTimeout(() => {
-      setShowIntro(false);
-      sessionStorage.setItem(INTRO_SESSION_KEY, '1');
-    }, 2200);
+    const tid = setTimeout(() => setShowIntro(false), 2200);
     return () => clearTimeout(tid);
   }, [showIntro]);
 
