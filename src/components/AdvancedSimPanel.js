@@ -83,11 +83,14 @@ export default function AdvancedSimPanel({
   const targetSets = Math.ceil(bestOf / 2);
   const scorelineLabels = Array.from({ length: targetSets }, (_, i) => `${targetSets}–${i}`);
 
+  // Likelihood of each exact set outcome across ALL simulations (not just
+  // conditional on that player winning) — every bar's % is out of totalWins
+  // (= total completed sims), so all bars together sum to ~100%.
   const barData = batchResult
     ? scorelineLabels.map((lbl,i)=>({
         name: lbl,
-        [playerA.name]: batchResult.matchWins[0] ? Math.round((batchResult.lostInWins[0][i]||0) / batchResult.matchWins[0] * 100) : 0,
-        [playerB.name]: batchResult.matchWins[1] ? Math.round((batchResult.lostInWins[1][i]||0) / batchResult.matchWins[1] * 100) : 0,
+        [playerA.name]: pct(batchResult.lostInWins[0][i]||0),
+        [playerB.name]: pct(batchResult.lostInWins[1][i]||0),
       }))
     : [];
 
@@ -101,7 +104,7 @@ export default function AdvancedSimPanel({
     const dist = batchResult.lostInWins[favoredIdx].slice(0, targetSets);
     let maxIdx = 0;
     for (let i = 1; i < dist.length; i++) if ((dist[i]||0) > (dist[maxIdx]||0)) maxIdx = i;
-    return { scoreline: `${targetSets}–${maxIdx}`, pct: Math.round((dist[maxIdx]||0) / favoredWins * 100) };
+    return { scoreline: `${targetSets}–${maxIdx}`, pct: pct(dist[maxIdx]||0) };
   })();
 
   const underdogCompetitiveness = (() => {
