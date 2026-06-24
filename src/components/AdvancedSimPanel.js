@@ -235,7 +235,13 @@ export default function AdvancedSimPanel({
                       >
                         {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]} stroke="none"/>)}
                       </Pie>
-                      <RechartTooltip formatter={(v,n)=>([`${v} wins`,n])}/>
+                      <RechartTooltip
+                        contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, maxWidth: 190 }}
+                        labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: 4, whiteSpace: 'normal' }}
+                        itemStyle={{ color: '#ddd', whiteSpace: 'normal' }}
+                        formatter={(v,n)=>([`${pct(v)}% win probability (${v} of ${totalWins} simulations)`, n])}
+                        wrapperStyle={{ transform: 'translateX(-90px)', pointerEvents: 'none' }}
+                      />
                       <text
                         x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill="#ccc" fontSize={13} fontWeight="bold"
