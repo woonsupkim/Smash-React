@@ -16,9 +16,7 @@ import './App.css';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
-  { to: '/h2h?surface=clay', label: 'Clay' },
-  { to: '/h2h?surface=grass', label: 'Grass' },
-  { to: '/h2h?surface=hard', label: 'Hard' },
+  { to: '/h2h?surface=hard', label: 'H2H' },
   { to: '/dream-brackets', label: 'Brackets' },
   // { to: '/about', label: 'About Us' }
 ];
