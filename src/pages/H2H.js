@@ -1,13 +1,16 @@
+// src/pages/H2H.js
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
-import { Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
+import logoUS from '../assets/logo_us.png';
+import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
-import './Wimbledon.css';
 
 const playerImgsByTour = {
   atp: require.context('../assets/players', false, /\.png$/),
@@ -36,21 +39,49 @@ const SELECT_STYLES = {
   }),
 };
 
-// Matches the "Grass" surface palette used on the Home page.
-const ACCENT_COLOR = '#3ddc84';
-const ACCENT_TEXT_COLOR = '#0b3d1f';
-// Wimbledon's actual brand purple + green (AELTC colors) — broadcast-bold
-// but not neon, for the Advanced Controls pie/bar charts specifically.
-const PANEL_COLOR_A = '#4F2683';
-const PANEL_COLOR_B = '#1E7A45';
-const PANEL_COLOR_A_TEXT = '#fff';
-const PANEL_COLOR_B_TEXT = '#fff';
+// Everything that used to be a separate page's hardcoded constants (US
+// Open/French Open/Wimbledon) — one entry per surface, switched via the
+// dropdown instead of three near-identical page files.
+const TOURNAMENT_CONFIGS = {
+  clay: {
+    csvFile: 'smash_fr.csv', label: 'French Open', logo: logoRG, bgClass: 'french-bg',
+    surfaceLabel: 'Clay Court', surfaceKey: 'clay',
+    accentColor: '#e8694a', accentTextColor: '#fff',
+    panelColorA: '#B24936', panelColorB: '#1E2E2B', panelColorAText: '#fff', panelColorBText: '#fff',
+    simulateButtonColor: '#1E2E2B', simulateButtonTextColor: '#fff',
+  },
+  grass: {
+    csvFile: 'smash_wb.csv', label: 'Wimbledon', logo: logoWB, bgClass: 'wimbledon-bg',
+    surfaceLabel: 'Grass Court', surfaceKey: 'grass',
+    accentColor: '#3ddc84', accentTextColor: '#0b3d1f',
+    panelColorA: '#4F2683', panelColorB: '#1E7A45', panelColorAText: '#fff', panelColorBText: '#fff',
+  },
+  hard: {
+    csvFile: 'smash_us.csv', label: 'US Open', logo: logoUS, bgClass: 'usopen-bg',
+    surfaceLabel: 'Hard Court', surfaceKey: 'hard',
+    accentColor: '#5b8cff', accentTextColor: '#0a1330',
+    panelColorA: '#fff200', panelColorB: '#0033A0', panelColorAText: '#1a1a1a', panelColorBText: '#fff',
+  },
+};
+const VALID_SURFACES = Object.keys(TOURNAMENT_CONFIGS);
 
-export default function Wimbledon({ tour = 'atp' }) {
+export default function H2H({ tour = 'atp' }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const surfaceParam = searchParams.get('surface');
+  const surface = VALID_SURFACES.includes(surfaceParam) ? surfaceParam : 'hard';
+  const config = TOURNAMENT_CONFIGS[surface];
+
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
   const dataDir = isWta ? '/data/women' : '/data';
   const playerImgs = playerImgsByTour[tour];
+
+  const handleSurfaceChange = (value) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('surface', value);
+    setSearchParams(next);
+  };
+
   const [players, setPlayers]             = useState([]);
   const [playerA, setPlayerA]             = useState(null);
   const [playerB, setPlayerB]             = useState(null);
@@ -64,23 +95,39 @@ export default function Wimbledon({ tour = 'atp' }) {
   const [liveLog, setLiveLog]             = useState([]);
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
+  // heavy-recency-weighted stats (7-day half-life) instead of the default
+  // 60-day-calibrated CSV — toggling this re-seeds the sliders, it doesn't
+  // run a simulation by itself.
   const [upsetMode, setUpsetMode]         = useState(false);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
 
+  // Reload whenever the surface (tournament) or tour changes. Player picks
+  // are kept and remapped to their row in the new pool by id (rather than
+  // cleared) — same player, different surface's stats, so you can see how
+  // the matchup shifts across Clay/Grass/Hard. Any previous simulation
+  // result is surface-specific, so it's cleared here too.
   useEffect(() => {
-    Papa.parse(process.env.PUBLIC_URL + dataDir + '/smash_wb.csv', {
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile, {
       header: true,
       download: true,
       complete: ({ data }) => {
-        setPlayers(data.filter(r => Number(r.us_rd) === 2));
+        const newPool = data.filter(r => Number(r.us_rd) === 2);
+        setPlayers(newPool);
+        setPlayerA(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
+        setPlayerB(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
       }
     });
     fetch(process.env.PUBLIC_URL + dataDir + '/h2h.json')
       .then(r => r.json())
       .then(setH2hData)
       .catch(() => setH2hData({}));
-  }, [dataDir]);
+    setBatchResult(null);
+    setLiveLog([]);
+    setIsWatching(false);
+    setIsRunning(false);
+    setProgress(0);
+  }, [config.csvFile, dataDir]);
 
   // Re-seeds both sliders whenever a player changes OR the Upset Scenario
   // toggle flips — upset mode pulls from the heavy-recency CSV instead of
@@ -96,7 +143,7 @@ export default function Wimbledon({ tour = 'atp' }) {
       return;
     }
 
-    Papa.parse(process.env.PUBLIC_URL + dataDir + '/smash_wb_upset.csv', {
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile.replace('.csv', '_upset.csv'), {
       header: true,
       download: true,
       complete: ({ data }) => {
@@ -113,7 +160,7 @@ export default function Wimbledon({ tour = 'atp' }) {
         }
       }
     });
-  }, [playerA, playerB, upsetMode, dataDir]);
+  }, [playerA, playerB, upsetMode, dataDir, config.csvFile]);
 
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
@@ -256,10 +303,15 @@ export default function Wimbledon({ tour = 'atp' }) {
     runBatch(pA, pB, simCount);
   };
 
-
+  // Excludes whichever player is already picked on the OTHER side, so the
+  // same player can never be matched up against themselves — both for the
+  // dropdown (the id is simply not offered as an option) and for Random.
   const randomPick = who => {
-    const idx = Math.floor(Math.random() * players.length);
-    who === 'A' ? setPlayerA(players[idx]) : setPlayerB(players[idx]);
+    const excludeId = who === 'A' ? playerB?.id : playerA?.id;
+    const pool = excludeId ? players.filter(p => p.id !== excludeId) : players;
+    if (pool.length === 0) return;
+    const idx = Math.floor(Math.random() * pool.length);
+    who === 'A' ? setPlayerA(pool[idx]) : setPlayerB(pool[idx]);
   };
 
   const handleWatchMatch = () => {
@@ -281,9 +333,9 @@ export default function Wimbledon({ tour = 'atp' }) {
     advance();
   };
 
-  const buildOptions = () => [
+  const buildOptions = (excludeId) => [
     { value:'add', label:'+ Add Player' },
-    ...players.map(p => ({ value:p.id, label:p.name, data:p }))
+    ...players.filter(p => p.id !== excludeId).map(p => ({ value:p.id, label:p.name, data:p }))
   ];
 
   const getPlayerImageSrc = (player) => {
@@ -296,18 +348,29 @@ export default function Wimbledon({ tour = 'atp' }) {
   };
 
   return (
-    <div className="page-background wimbledon-bg">
+    <div className={`page-background ${config.bgClass}`}>
       <div className="overlay text-center">
+        <Form.Select
+          className="dark-select h2h-tournament-select"
+          value={surface}
+          onChange={e => handleSurfaceChange(e.target.value)}
+          disabled={isRunning||isWatching}
+        >
+          <option value="clay">French Open · Clay</option>
+          <option value="grass">Wimbledon · Grass</option>
+          <option value="hard">US Open · Hard</option>
+        </Form.Select>
+
         <MatchHero
-          title={isWta ? "Wimbledon Women's · Grass Court" : 'Wimbledon · Grass Court'}
-          logo={logoWB}
+          title={`${config.label}${isWta ? " Women's" : ''} · ${config.surfaceLabel}`}
+          logo={config.logo}
           playerA={playerA}
           playerB={playerB}
           selectorA={
             <div className="d-flex">
               <Select
                 className="react-select"
-                options={buildOptions()}
+                options={buildOptions(playerB?.id)}
                 value={playerA?{value:playerA.id,label:playerA.name}:null}
                 onChange={opt => {
                   if (opt.value==='add') handleAddPlayer('A');
@@ -324,7 +387,7 @@ export default function Wimbledon({ tour = 'atp' }) {
             <div className="d-flex">
               <Select
                 className="react-select"
-                options={buildOptions()}
+                options={buildOptions(playerA?.id)}
                 value={playerB?{value:playerB.id,label:playerB.name}:null}
                 onChange={opt => {
                   if (opt.value==='add') handleAddPlayer('B');
@@ -337,20 +400,22 @@ export default function Wimbledon({ tour = 'atp' }) {
               <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
             </div>
           }
-          surfaceLabel="Grass Court"
-          surfaceKey="grass"
+          surfaceLabel={config.surfaceLabel}
+          surfaceKey={config.surfaceKey}
           bestOf={bestOf}
-          accentColor={ACCENT_COLOR}
-          accentTextColor={ACCENT_TEXT_COLOR}
+          accentColor={config.accentColor}
+          accentTextColor={config.accentTextColor}
           h2hData={h2hData}
           getPlayerImageSrc={getPlayerImageSrc}
         />
 
         <AdvancedSimPanel
-          colorA={PANEL_COLOR_A}
-          colorB={PANEL_COLOR_B}
-          colorAText={PANEL_COLOR_A_TEXT}
-          colorBText={PANEL_COLOR_B_TEXT}
+          colorA={config.panelColorA}
+          colorB={config.panelColorB}
+          colorAText={config.panelColorAText}
+          colorBText={config.panelColorBText}
+          simulateButtonColor={config.simulateButtonColor}
+          simulateButtonTextColor={config.simulateButtonTextColor}
           playerA={playerA}
           playerB={playerB}
           getPlayerImageSrc={getPlayerImageSrc}

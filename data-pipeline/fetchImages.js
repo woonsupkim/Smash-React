@@ -67,23 +67,36 @@ async function main() {
   console.log(`${missing.length} player(s) missing images — looking up on Wikidata...`);
   let found = 0;
   for (const [id, name] of missing) {
-    await new Promise((r) => setTimeout(r, 2000)); // be polite to Wikimedia's API
-    try {
-      const filename = await findWikidataImage(name);
-      if (!filename) {
-        console.log(`  ${name}: no Wikidata image found`);
-        continue;
+    await new Promise((r) => setTimeout(r, 4500)); // be polite to Wikimedia's API — 2s used to get rate-limited after ~20 requests
+    // One retry with a much longer backoff on failure (typically a rate-limit
+    // HTML page instead of JSON, surfacing as a JSON parse error) — most
+    // transient 429s clear within 10s, and this halves how many manual
+    // re-invocations a full 50-player run needs.
+    let lastErr = null;
+    let ok = false;
+    for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+      try {
+        const filename = await findWikidataImage(name);
+        if (!filename) {
+          console.log(`  ${name}: no Wikidata image found`);
+          lastErr = null;
+          break;
+        }
+        const saved = await downloadCommonsImage(filename, path.join(PLAYERS_DIR, `${id}.png`));
+        if (saved) {
+          found++;
+          ok = true;
+          console.log(`  ${name}: saved (${filename})`);
+        } else {
+          console.log(`  ${name}: found a filename but download failed`);
+        }
+        lastErr = null;
+      } catch (err) {
+        lastErr = err;
+        if (attempt === 1) await new Promise((r) => setTimeout(r, 10000));
       }
-      const ok = await downloadCommonsImage(filename, path.join(PLAYERS_DIR, `${id}.png`));
-      if (ok) {
-        found++;
-        console.log(`  ${name}: saved (${filename})`);
-      } else {
-        console.log(`  ${name}: found a filename but download failed`);
-      }
-    } catch (err) {
-      console.log(`  ${name}: error (${err.message})`);
     }
+    if (lastErr) console.log(`  ${name}: error after retry (${lastErr.message})`);
   }
   console.log(`Done. ${found}/${missing.length} images fetched. Remaining players fall back to default.png.`);
 }

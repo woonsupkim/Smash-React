@@ -3,15 +3,24 @@
 // combinations — e.g. plain "IT"/"ES" instead of an actual flag on some
 // Windows setups — so we use real flag images instead).
 const ALPHA2 = {
-  ARG: 'ar', AUS: 'au', AUT: 'at', BEL: 'be', BRA: 'br',
-  BUL: 'bg', CAN: 'ca', CHI: 'cl', CHN: 'cn', COL: 'co',
-  CRO: 'hr', CZE: 'cz', DEN: 'dk', ECU: 'ec', EGY: 'eg',
-  ESP: 'es', FIN: 'fi', FRA: 'fr', GBR: 'gb', GEO: 'ge',
-  GER: 'de', GRE: 'gr', IND: 'in', ITA: 'it', JPN: 'jp',
-  KAZ: 'kz', KOR: 'kr', MEX: 'mx', MON: 'mc', NED: 'nl',
-  NOR: 'no', PER: 'pe', POL: 'pl', POR: 'pt', RSA: 'za',
-  RUS: 'ru', SRB: 'rs', SUI: 'ch', SWE: 'se', TPE: 'tw',
-  TUN: 'tn', UKR: 'ua', URU: 'uy', USA: 'us',
+  ALG: 'dz', ARG: 'ar', ARM: 'am', AUS: 'au', AUT: 'at',
+  AZE: 'az', BAR: 'bb', BEL: 'be', BIH: 'ba', BLR: 'by',
+  BOL: 'bo', BRA: 'br', BUL: 'bg', CAN: 'ca', CHI: 'cl',
+  CHN: 'cn', COL: 'co', CRC: 'cr', CRO: 'hr', CYP: 'cy',
+  CZE: 'cz', DEN: 'dk', DOM: 'do', ECU: 'ec', EGY: 'eg',
+  ESP: 'es', EST: 'ee', FIN: 'fi', FRA: 'fr', GBR: 'gb',
+  GEO: 'ge', GER: 'de', GRE: 'gr', GUA: 'gt', HKG: 'hk',
+  HUN: 'hu', INA: 'id', IND: 'in', IRL: 'ie', ISL: 'is',
+  ISR: 'il', ITA: 'it', JPN: 'jp', KAZ: 'kz', KOR: 'kr',
+  KUW: 'kw', LAT: 'lv', LIB: 'lb', LTU: 'lt', LUX: 'lu',
+  MAR: 'ma', MDA: 'md', MEX: 'mx', MKD: 'mk', MNE: 'me',
+  MON: 'mc', NED: 'nl', NGR: 'ng', NOR: 'no', NZL: 'nz',
+  PAR: 'py', PER: 'pe', PHI: 'ph', POL: 'pl', POR: 'pt',
+  PUR: 'pr', QAT: 'qa', ROU: 'ro', RSA: 'za', RUS: 'ru',
+  SGP: 'sg', SLO: 'si', SRB: 'rs', SUI: 'ch', SVK: 'sk',
+  SWE: 'se', THA: 'th', TPE: 'tw', TUN: 'tn', TUR: 'tr',
+  UAE: 'ae', UKR: 'ua', URU: 'uy', USA: 'us', UZB: 'uz',
+  VEN: 've', VIE: 'vn',
 };
 
 // flagcdn.com serves small flat PNG flags by ISO alpha-2 code — no API key,

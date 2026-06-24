@@ -9,9 +9,9 @@ import logoHome from '../assets/ball.png';
 import './Home.css';
 
 const SURFACES = [
-  { to: '/french-open', label: 'Clay',  city: 'Paris',    desc: 'Slow, high bounce. Grinders thrive.', className: 'surface-clay' },
-  { to: '/wimbledon',   label: 'Grass', city: 'London',   desc: 'Fast, low skid. Big servers fly.', className: 'surface-grass' },
-  { to: '/us-open',     label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
+  { to: '/h2h?surface=clay',  label: 'Clay',  city: 'Paris',    desc: 'Slow, high bounce. Grinders thrive.', className: 'surface-clay' },
+  { to: '/h2h?surface=grass', label: 'Grass', city: 'London',   desc: 'Fast, low skid. Big servers fly.', className: 'surface-grass' },
+  { to: '/h2h?surface=hard',  label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
 ];
 
 // /women/* mirrors every men's route 1:1 (see App.js) — prefixing here keeps
@@ -133,7 +133,7 @@ export default function Home({ tour = 'atp' }) {
           </p>
 
           <div className="d-flex flex-wrap gap-3 hero-ctas">
-            <Button as={Link} to={withTourPrefix('/us-open', isWta)} className="cta-primary">
+            <Button as={Link} to={withTourPrefix('/h2h', isWta)} className="cta-primary">
               Quick H2H
             </Button>
             <Button as={Link} to={withTourPrefix('/dream-brackets', isWta)} className="cta-secondary">

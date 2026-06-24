@@ -245,3 +245,11 @@ h2, .heading-lg {
   color: #111;
 }
 
+/* H2H page's tournament (surface) picker — sits above the MatchHero card,
+   re-themes the whole page on change instead of routing to a separate page
+   per surface. */
+.h2h-tournament-select {
+  max-width: 280px;
+  margin: 0 auto 1.25rem;
+}
+

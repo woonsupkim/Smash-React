@@ -28,7 +28,7 @@ export const STAT_KEYS = [
 
 /**
  * Detailed slider/chart panel, collapsed by default under the MatchHero.
- * All simulation logic/state lives in the page (USOpen/FrenchOpen/Wimbledon)
+ * All simulation logic/state lives in the page (H2H.js, DreamBrackets.js)
  * and is passed in as props — this component is purely presentational.
  * Only one result view shows at a time: a batch "Simulate Matches" run
  * clears any in-progress Watch Match state, and vice versa (enforced by the
