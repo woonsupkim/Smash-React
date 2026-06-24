@@ -287,7 +287,14 @@ export default function AdvancedSimPanel({
                     <BarChart layout="vertical" data={barData} margin={{ top:0, right:10, bottom:0, left:0 }}>
                       <XAxis type="number" stroke="#999" tick={{ fontSize: 10 }} />
                       <YAxis dataKey="name" type="category" stroke="#999" width={36} tick={{ fontSize: 10 }} />
-                      <RechartTooltip/>
+                      <RechartTooltip
+                        cursor={{ fill: 'rgba(255,255,255,0.06)' }}
+                        contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6 }}
+                        labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: 4 }}
+                        itemStyle={{ color: '#ddd' }}
+                        labelFormatter={(label) => `Final score: ${label}`}
+                        formatter={(value, name) => [`${value}% of all simulations`, name]}
+                      />
                       <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={9}/>
                       <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={9}/>
                     </BarChart>
