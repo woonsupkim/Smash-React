@@ -415,7 +415,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
     try {
       // Route through our own serverless proxy (/api/espn-bracket) so the
       // fetch goes server-side — ESPN blocks direct browser requests (CORS).
-      const apiUrl = `/api/espn-bracket?slug=${encodeURIComponent(parsed.slug)}&season=${parsed.season}`;
+      const apiUrl = `/api/espn-bracket?slug=${encodeURIComponent(parsed.slug)}&season=${parsed.season}&slots=${stageConfig.slots}&tour=${tour}`;
       const res = await fetch(apiUrl);
       if (!res.ok) throw new Error(`ESPN returned ${res.status}`);
       const json = await res.json();

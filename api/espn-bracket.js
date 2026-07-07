@@ -1,150 +1,117 @@
 // Vercel serverless proxy for ESPN bracket data.
-// ESPN's internal bracket API varies by tournament and often returns HTML
-// instead of JSON. Strategy:
-//   1. Try the JSON API endpoint.
-//   2. If the response isn't JSON, scrape the actual ESPN bracket page and
-//      extract player names from the embedded __espnfitt__ page-data object.
-// Returns { players: string[] } — ordered list of draw names for the client
-// to fuzzy-match against our roster.
+//
+// ESPN's www pages are bot-protected (return a 202 challenge page to servers),
+// but their public scoreboard JSON API is open and returns the FULL draw of a
+// Grand Slam (all rounds, qualifying included) for any date during the event:
+//   https://site.api.espn.com/apis/site/v2/sports/tennis/{league}/scoreboard?dates=YYYYMMDD
+//
+// Strategy: probe a few dates inside the tournament's usual window for the
+// requested season until the event appears, pick the singles grouping for the
+// requested tour, find the round whose match count equals slots/2, and return
+// the competitors in draw order.
 //
 // Query params:
-//   slug   — ESPN tournament slug  (e.g. "wimbledon", "french-open", "us-open")
-//   season — 4-digit year          (e.g. "2026")
+//   slug   — ESPN tournament slug: "wimbledon" | "french-open" | "us-open"
+//   season — 4-digit year (e.g. "2026")
+//   slots  — bracket size the client wants to fill: 16 | 8 | 4 | 2 (default 16)
+//   tour   — "atp" (default) | "wta"
 
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const TOURNEYS = {
+  wimbledon: {
+    namePattern: /wimbledon/i,
+    // MMDD probe dates — draw is published a few days before play starts
+    probes: ['0701', '0706', '0629', '0627', '0710'],
+  },
+  'french-open': {
+    namePattern: /french open|roland garros/i,
+    probes: ['0528', '0601', '0525', '0605', '0523'],
+  },
+  'us-open': {
+    namePattern: /us open/i,
+    probes: ['0901', '0828', '0826', '0905', '0908'],
+  },
+};
 
-// Extract player display names from ESPN's embedded __espnfitt__ page-data
-// object. ESPN embeds it in a <script> tag as:
-//   window['__espnfitt__']={...huge JSON...}
-// We scan the HTML by brace-counting rather than regex to handle large payloads.
-function extractPlayersFromHtml(html) {
-  const marker = "window['__espnfitt__']=";
-  const start = html.indexOf(marker);
-  if (start === -1) return [];
-
-  let depth = 0, i = start + marker.length, jsonStart = -1;
-  for (; i < html.length && i < start + marker.length + 2_000_000; i++) {
-    const ch = html[i];
-    if (ch === '{') {
-      if (depth === 0) jsonStart = i;
-      depth++;
-    } else if (ch === '}') {
-      depth--;
-      if (depth === 0) { i++; break; }
-    }
-  }
-  if (jsonStart === -1) return [];
-
-  let data;
-  try {
-    data = JSON.parse(html.slice(jsonStart, i));
-  } catch {
-    return [];
-  }
-
-  // Walk the fitt object looking for bracket/draw data — ESPN's schema has
-  // changed over the years so we try several known paths.
-  const names = [];
-
-  const searchBracket = (obj, depth = 0) => {
-    if (!obj || typeof obj !== 'object' || depth > 8) return;
-    if (Array.isArray(obj)) { obj.forEach(el => searchBracket(el, depth + 1)); return; }
-
-    // ESPN bracket rounds structure
-    const rounds = obj.rounds || obj.draws || obj.entries;
-    if (rounds && Array.isArray(rounds)) {
-      for (const round of rounds) {
-        const matchups = round.matchups || round.matches || round.competitions || [];
-        for (const mu of matchups) {
-          const comps = mu.competitors || mu.players || mu.entries || [];
-          for (const c of comps) {
-            const name =
-              c?.athlete?.displayName ||
-              c?.player?.displayName ||
-              c?.displayName ||
-              c?.name || '';
-            if (name && !/^(tbd|bye|qualifier|q\d+)$/i.test(name.trim())) {
-              names.push(name.trim());
-            }
-          }
-        }
-      }
-      if (names.length > 0) return; // found it
-    }
-
-    // Recurse into child objects
-    for (const key of Object.keys(obj)) {
-      if (['__proto__', 'constructor'].includes(key)) continue;
-      searchBracket(obj[key], depth + 1);
-    }
-  };
-
-  searchBracket(data);
-  return names;
+async function fetchScoreboard(league, yyyymmdd) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/tennis/${league}/scoreboard?dates=${yyyymmdd}`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } });
+  if (!res.ok) return null;
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('json')) return null;
+  return res.json();
 }
 
 module.exports = async function handler(req, res) {
-  const { slug, season } = req.query || {};
-  if (!slug) {
-    return res.status(400).json({ error: 'Missing required query param: slug' });
-  }
+  const { slug, season, slots: slotsParam, tour } = req.query || {};
+  if (!slug) return res.status(400).json({ error: 'Missing required query param: slug' });
+
+  const conf = TOURNEYS[slug];
+  if (!conf) return res.status(400).json({ error: `Unsupported tournament slug: ${slug}` });
 
   const year = season || String(new Date().getFullYear());
-  const headers = { 'User-Agent': BROWSER_UA, Accept: 'application/json, text/html' };
+  const slots = Math.max(2, Number(slotsParam) || 16);
+  const league = tour === 'wta' ? 'wta' : 'atp';
+  const groupingName = tour === 'wta' ? /women's singles/i : /men's singles/i;
 
-  // ── Attempt 1: ESPN JSON bracket API ─────────────────────────────────────
   try {
-    const apiUrl =
-      `https://site.api.espn.com/apis/site/v2/sports/tennis/${encodeURIComponent(slug)}/bracket?season=${year}`;
-    const apiRes = await fetch(apiUrl, { headers });
-    const ct = apiRes.headers.get('content-type') || '';
-
-    if (apiRes.ok && ct.includes('application/json')) {
-      const data = await apiRes.json();
-      // Pull player names from the JSON structure
-      const names = [];
-      const rounds = data?.bracket?.rounds || data?.rounds || [];
-      for (const round of rounds) {
-        const matchups = round.matchups || round.matches || [];
-        for (const mu of matchups) {
-          for (const c of (mu.competitors || [])) {
-            const name = c?.athlete?.displayName || c?.displayName || '';
-            if (name && !/^(tbd|bye)/i.test(name)) names.push(name);
-          }
-        }
-        if (names.length >= 4) break;
-      }
-      if (names.length > 0) {
-        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
-        return res.status(200).json({ players: names });
-      }
-    }
-  } catch (_) { /* fall through to page scrape */ }
-
-  // ── Attempt 2: Scrape the bracket page HTML ───────────────────────────────
-  try {
-    const pageUrl =
-      `https://www.espn.com/tennis/${encodeURIComponent(slug)}/bracket/_/season/${year}`;
-    const pageRes = await fetch(pageUrl, {
-      headers: { ...headers, Accept: 'text/html' },
-      redirect: 'follow',
-    });
-    const html = await pageRes.text();
-
-    const players = extractPlayersFromHtml(html);
-    if (players.length > 0) {
-      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
-      return res.status(200).json({ players });
+    let event = null;
+    for (const mmdd of conf.probes) {
+      const data = await fetchScoreboard(league, `${year}${mmdd}`);
+      const ev = data?.events?.find(e => conf.namePattern.test(e.name || ''));
+      if (ev && ev.groupings?.length) { event = ev; break; }
     }
 
-    // Couldn't find player data in the page — bracket may not be published yet
-    return res.status(404).json({
-      error:
-        'Bracket data not found on ESPN. The draw may not have been published ' +
-        'yet, or ESPN may have changed their page structure.',
-    });
+    if (!event) {
+      return res.status(404).json({
+        error: `Couldn't find ${slug} ${year} on ESPN. The draw may not be published yet.`,
+      });
+    }
+
+    const grouping = event.groupings.find(g => groupingName.test(g.grouping?.displayName || ''));
+    if (!grouping || !grouping.competitions?.length) {
+      return res.status(404).json({ error: 'Singles draw not found in ESPN data.' });
+    }
+
+    // Exclude qualifying; find the main-draw round with slots/2 matches
+    // (e.g. slots=16 → the 8-match round of 16).
+    const mainDraw = grouping.competitions.filter(c => !/qualifying/i.test(c.round?.displayName || ''));
+    const targetMatches = slots / 2;
+    const byRound = new Map();
+    for (const c of mainDraw) {
+      const key = c.round?.displayName || '?';
+      if (!byRound.has(key)) byRound.set(key, []);
+      byRound.get(key).push(c);
+    }
+
+    let roundComps = null;
+    for (const comps of byRound.values()) {
+      if (comps.length === targetMatches) { roundComps = comps; break; }
+    }
+    if (!roundComps) {
+      return res.status(404).json({
+        error: `Couldn't find a round with ${targetMatches} matches in the ESPN draw.`,
+      });
+    }
+
+    // Draw order: matches by date/id, competitors by their order field.
+    roundComps.sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+    const players = [];
+    for (const comp of roundComps) {
+      const comps = [...(comp.competitors || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+      for (const c of comps) {
+        const name = c?.athlete?.displayName || c?.athlete?.fullName || '';
+        players.push(name && !/^tbd$/i.test(name.trim()) ? name.trim() : 'TBD');
+      }
+    }
+
+    if (players.every(p => p === 'TBD')) {
+      return res.status(404).json({
+        error: 'That round has no decided players yet — the tournament hasn\'t progressed that far.',
+      });
+    }
+
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+    return res.status(200).json({ players });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

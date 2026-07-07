@@ -1,17 +1,16 @@
-// Clip image to a circle, biased toward the upper portion so faces show.
+// Clip image to a circle using the same crop as the app's player photos:
+// CSS object-fit: cover with object-position: top center — scale to cover the
+// square, center horizontally, align the image's TOP edge with the circle top.
 function drawCircularPhoto(ctx, img, cx, cy, radius, dimmed = false) {
   ctx.save();
   if (dimmed) ctx.globalAlpha = 0.45;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.clip();
-  const aspect = img.width / img.height;
-  let sw = radius * 2, sh = radius * 2;
-  if (aspect > 1) sw = sh * aspect;
-  else sh = sw / aspect;
-  // Shift image down so the face (upper ~25% of portrait) lands near circle center
-  const faceShift = sh * 0.25;
-  ctx.drawImage(img, cx - sw / 2, cy - sh / 2 + faceShift, sw, sh);
+  const box = radius * 2;
+  const scale = Math.max(box / img.width, box / img.height);
+  const sw = img.width * scale, sh = img.height * scale;
+  ctx.drawImage(img, cx - sw / 2, cy - radius, sw, sh);
   ctx.restore();
 }
 

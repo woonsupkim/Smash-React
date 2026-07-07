@@ -1,26 +1,4 @@
 {
-  "sinne": {
-    "country": "ITA",
-    "age": 24,
-    "yearRecord": {
-      "hard": {
-        "w": 19,
-        "l": 2
-      },
-      "clay": {
-        "w": 18,
-        "l": 1
-      },
-      "grass": {
-        "w": 3,
-        "l": 0
-      }
-    },
-    "recentForm": {
-      "w": 9,
-      "l": 1
-    }
-  },
   "alcar": {
     "country": "ESP",
     "age": 23,
@@ -43,87 +21,21 @@
       "l": 3
     }
   },
-  "zvere": {
-    "country": "GER",
-    "age": 29,
-    "yearRecord": {
-      "hard": {
-        "w": 15,
-        "l": 5
-      },
-      "clay": {
-        "w": 20,
-        "l": 4
-      },
-      "grass": {
-        "w": 5,
-        "l": 1
-      }
-    },
-    "recentForm": {
-      "w": 9,
-      "l": 1
-    }
-  },
-  "auger": {
-    "country": "CAN",
-    "age": 25,
-    "yearRecord": {
-      "hard": {
-        "w": 15,
-        "l": 6
-      },
-      "clay": {
-        "w": 8,
-        "l": 5
-      },
-      "grass": {
-        "w": 6,
-        "l": 2
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-    }
-  },
-  "shelt": {
-    "country": "USA",
-    "age": 23,
-    "yearRecord": {
-      "hard": {
-        "w": 11,
-        "l": 4
-      },
-      "clay": {
-        "w": 8,
-        "l": 5
-      },
-      "grass": {
-        "w": 6,
-        "l": 2
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-    }
-  },
-  "demin": {
-    "country": "AUS",
+  "cerun": {
+    "country": "ARG",
     "age": 27,
     "yearRecord": {
       "hard": {
-        "w": 12,
-        "l": 5
+        "w": 7,
+        "l": 4
       },
       "clay": {
-        "w": 7,
-        "l": 6
+        "w": 15,
+        "l": 8
       },
       "grass": {
-        "w": 7,
-        "l": 2
+        "w": 5,
+        "l": 0
       }
     },
     "recentForm": {
@@ -131,26 +43,48 @@
       "l": 3
     }
   },
-  "medve": {
-    "country": "RUS",
-    "age": 30,
+  "cobol": {
+    "country": "ITA",
+    "age": 24,
     "yearRecord": {
       "hard": {
-        "w": 19,
-        "l": 5
+        "w": 9,
+        "l": 7
       },
       "clay": {
-        "w": 5,
-        "l": 4
+        "w": 14,
+        "l": 6
       },
       "grass": {
-        "w": 6,
-        "l": 3
+        "w": 0,
+        "l": 1
       }
     },
     "recentForm": {
       "w": 8,
       "l": 2
+    }
+  },
+  "dimit": {
+    "country": null,
+    "age": 35,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
     }
   },
   "djoko": {
@@ -166,15 +100,13 @@
         "l": 2
       },
       "grass": {
-        "w": 3,
+        "w": 0,
         "l": 0
       }
     },
     "recentForm": {
       "w": 7,
       "l": 3
-<<<<<<< Updated upstream
-=======
     }
   },
   "drap": {
@@ -219,7 +151,6 @@
     "recentForm": {
       "w": 7,
       "l": 3
->>>>>>> Stashed changes
     }
   },
   "fritz": {
@@ -235,51 +166,26 @@
         "l": 2
       },
       "grass": {
-        "w": 9,
+        "w": 7,
         "l": 2
       }
     },
     "recentForm": {
       "w": 8,
       "l": 2
-<<<<<<< Updated upstream
     }
   },
-  "cobol": {
-    "country": "ITA",
-    "age": 24,
+  "humbe": {
+    "country": "FRA",
+    "age": 27,
     "yearRecord": {
       "hard": {
-        "w": 9,
-        "l": 7
-      },
-      "clay": {
-        "w": 14,
-        "l": 6
-      },
-      "grass": {
-        "w": 2,
-        "l": 1
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-=======
->>>>>>> Stashed changes
-    }
-  },
-  "bubli": {
-    "country": "KAZ",
-    "age": 29,
-    "yearRecord": {
-      "hard": {
-        "w": 13,
-        "l": 6
+        "w": 11,
+        "l": 9
       },
       "clay": {
         "w": 5,
-        "l": 6
+        "l": 5
       },
       "grass": {
         "w": 8,
@@ -309,10 +215,6 @@
       }
     },
     "recentForm": {
-<<<<<<< Updated upstream
-      "w": 6,
-      "l": 4
-=======
       "w": 5,
       "l": 5
     }
@@ -337,7 +239,6 @@
     "recentForm": {
       "w": 5,
       "l": 5
->>>>>>> Stashed changes
     }
   },
   "lehec": {
@@ -353,7 +254,7 @@
         "l": 4
       },
       "grass": {
-        "w": 5,
+        "w": 3,
         "l": 2
       }
     },
@@ -362,20 +263,42 @@
       "l": 4
     }
   },
-  "ruble": {
-    "country": "RUS",
-    "age": 28,
+  "macha": {
+    "country": "CZE",
+    "age": 25,
     "yearRecord": {
       "hard": {
-        "w": 10,
-        "l": 6
+        "w": 8,
+        "l": 5
       },
       "clay": {
-        "w": 11,
+        "w": 6,
         "l": 5
       },
       "grass": {
         "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 6,
+      "l": 4
+    }
+  },
+  "medve": {
+    "country": "RUS",
+    "age": 30,
+    "yearRecord": {
+      "hard": {
+        "w": 19,
+        "l": 5
+      },
+      "clay": {
+        "w": 5,
+        "l": 4
+      },
+      "grass": {
+        "w": 4,
         "l": 2
       }
     },
@@ -384,17 +307,17 @@
       "l": 4
     }
   },
-  "ruud": {
-    "country": "NOR",
-    "age": 27,
+  "mensi": {
+    "country": "CZE",
+    "age": 20,
     "yearRecord": {
       "hard": {
-        "w": 7,
-        "l": 7
+        "w": 15,
+        "l": 6
       },
       "clay": {
-        "w": 16,
-        "l": 5
+        "w": 8,
+        "l": 4
       },
       "grass": {
         "w": 0,
@@ -406,8 +329,6 @@
       "l": 4
     }
   },
-<<<<<<< Updated upstream
-=======
   "demin": {
     "country": "AUS",
     "age": 27,
@@ -430,7 +351,6 @@
       "l": 3
     }
   },
->>>>>>> Stashed changes
   "muset": {
     "country": "ITA",
     "age": 24,
@@ -453,21 +373,65 @@
       "l": 4
     }
   },
-  "mensi": {
-    "country": "CZE",
-    "age": 20,
+  "paul": {
+    "country": "USA",
+    "age": 29,
     "yearRecord": {
       "hard": {
-        "w": 15,
-        "l": 6
+        "w": 14,
+        "l": 7
       },
       "clay": {
-        "w": 8,
+        "w": 12,
         "l": 4
       },
       "grass": {
-        "w": 1,
-        "l": 2
+        "w": 4,
+        "l": 1
+      }
+    },
+    "recentForm": {
+      "w": 7,
+      "l": 3
+    }
+  },
+  "popyr": {
+    "country": null,
+    "age": 26,
+    "yearRecord": {
+      "hard": {
+        "w": 0,
+        "l": 0
+      },
+      "clay": {
+        "w": 0,
+        "l": 0
+      },
+      "grass": {
+        "w": 0,
+        "l": 0
+      }
+    },
+    "recentForm": {
+      "w": 0,
+      "l": 0
+    }
+  },
+  "ruble": {
+    "country": "RUS",
+    "age": 28,
+    "yearRecord": {
+      "hard": {
+        "w": 10,
+        "l": 6
+      },
+      "clay": {
+        "w": 11,
+        "l": 5
+      },
+      "grass": {
+        "w": 0,
+        "l": 1
       }
     },
     "recentForm": {
@@ -475,8 +439,6 @@
       "l": 4
     }
   },
-<<<<<<< Updated upstream
-=======
   "rune": {
     "country": "DEN",
     "age": 23,
@@ -675,7 +637,6 @@
       "l": 5
     }
   },
->>>>>>> Stashed changes
   "darde": {
     "country": "ITA",
     "age": 24,
@@ -690,41 +651,12 @@
       },
       "grass": {
         "w": 1,
-<<<<<<< Updated upstream
-        "l": 2
-=======
         "l": 1
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
       "w": 5,
       "l": 5
-<<<<<<< Updated upstream
-    }
-  },
-  "khach": {
-    "country": "RUS",
-    "age": 30,
-    "yearRecord": {
-      "hard": {
-        "w": 7,
-        "l": 7
-      },
-      "clay": {
-        "w": 7,
-        "l": 6
-      },
-      "grass": {
-        "w": 2,
-        "l": 1
-      }
-    },
-    "recentForm": {
-      "w": 6,
-      "l": 4
-=======
->>>>>>> Stashed changes
     }
   },
   "tien": {
@@ -740,8 +672,8 @@
         "l": 4
       },
       "grass": {
-        "w": 2,
-        "l": 2
+        "w": 1,
+        "l": 1
       }
     },
     "recentForm": {
@@ -771,28 +703,6 @@
       "l": 3
     }
   },
-  "fils": {
-    "country": "FRA",
-    "age": 22,
-    "yearRecord": {
-      "hard": {
-        "w": 13,
-        "l": 5
-      },
-      "clay": {
-        "w": 9,
-        "l": 2
-      },
-      "grass": {
-        "w": 1,
-        "l": 1
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-    }
-  },
   "fokin": {
     "country": "ESP",
     "age": 27,
@@ -806,22 +716,13 @@
         "l": 4
       },
       "grass": {
-<<<<<<< Updated upstream
-        "w": 9,
-=======
         "w": 6,
->>>>>>> Stashed changes
         "l": 2
       }
     },
     "recentForm": {
-<<<<<<< Updated upstream
-      "w": 9,
-      "l": 1
-=======
       "w": 8,
       "l": 2
->>>>>>> Stashed changes
     }
   },
   "jodar": {
@@ -837,8 +738,8 @@
         "l": 4
       },
       "grass": {
-        "w": 2,
-        "l": 1
+        "w": 0,
+        "l": 0
       }
     },
     "recentForm": {
@@ -859,8 +760,8 @@
         "l": 6
       },
       "grass": {
-        "w": 2,
-        "l": 3
+        "w": 0,
+        "l": 2
       }
     },
     "recentForm": {
@@ -881,84 +782,13 @@
         "l": 7
       },
       "grass": {
-        "w": 2,
-        "l": 2
+        "w": 0,
+        "l": 1
       }
     },
     "recentForm": {
       "w": 6,
       "l": 4
-    }
-  },
-  "tiafo": {
-    "country": "USA",
-    "age": 28,
-    "yearRecord": {
-      "hard": {
-        "w": 15,
-        "l": 7
-      },
-      "clay": {
-        "w": 7,
-        "l": 4
-      },
-      "grass": {
-        "w": 9,
-        "l": 1
-      }
-    },
-    "recentForm": {
-<<<<<<< Updated upstream
-      "w": 9,
-      "l": 1
-    }
-  },
-  "cerun": {
-    "country": "ARG",
-    "age": 27,
-    "yearRecord": {
-      "hard": {
-        "w": 7,
-        "l": 4
-      },
-      "clay": {
-        "w": 15,
-        "l": 8
-      },
-      "grass": {
-        "w": 5,
-        "l": 1
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-    }
-  },
-  "paul": {
-    "country": "USA",
-    "age": 29,
-    "yearRecord": {
-      "hard": {
-        "w": 14,
-        "l": 7
-      },
-      "clay": {
-        "w": 12,
-        "l": 4
-      },
-      "grass": {
-        "w": 6,
-        "l": 2
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
-=======
-      "w": 6,
-      "l": 4
->>>>>>> Stashed changes
     }
   },
   "norri": {
@@ -975,7 +805,7 @@
       },
       "grass": {
         "w": 0,
-        "l": 2
+        "l": 1
       }
     },
     "recentForm": {
@@ -997,18 +827,12 @@
       },
       "grass": {
         "w": 0,
-<<<<<<< Updated upstream
-        "l": 3
-=======
         "l": 2
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
       "w": 3,
       "l": 7
-<<<<<<< Updated upstream
-=======
     }
   },
   "auger": {
@@ -1031,7 +855,6 @@
     "recentForm": {
       "w": 7,
       "l": 3
->>>>>>> Stashed changes
     }
   },
   "tabil": {
@@ -1048,11 +871,7 @@
       },
       "grass": {
         "w": 0,
-<<<<<<< Updated upstream
-        "l": 3
-=======
         "l": 2
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
@@ -1073,35 +892,13 @@
         "l": 5
       },
       "grass": {
-        "w": 4,
-        "l": 2
+        "w": 3,
+        "l": 1
       }
     },
     "recentForm": {
       "w": 6,
       "l": 4
-    }
-  },
-  "humbe": {
-    "country": "FRA",
-    "age": 28,
-    "yearRecord": {
-      "hard": {
-        "w": 11,
-        "l": 9
-      },
-      "clay": {
-        "w": 5,
-        "l": 5
-      },
-      "grass": {
-        "w": 8,
-        "l": 4
-      }
-    },
-    "recentForm": {
-      "w": 7,
-      "l": 3
     }
   },
   "arnal": {
@@ -1118,11 +915,7 @@
       },
       "grass": {
         "w": 2,
-<<<<<<< Updated upstream
-        "l": 2
-=======
         "l": 1
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
@@ -1143,13 +936,8 @@
         "l": 10
       },
       "grass": {
-<<<<<<< Updated upstream
-        "w": 3,
-        "l": 3
-=======
         "w": 2,
         "l": 2
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
@@ -1171,11 +959,7 @@
       },
       "grass": {
         "w": 1,
-<<<<<<< Updated upstream
-        "l": 4
-=======
         "l": 3
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
@@ -1197,7 +981,7 @@
       },
       "grass": {
         "w": 0,
-        "l": 1
+        "l": 0
       }
     },
     "recentForm": {
@@ -1219,7 +1003,7 @@
       },
       "grass": {
         "w": 0,
-        "l": 1
+        "l": 0
       }
     },
     "recentForm": {
@@ -1241,7 +1025,7 @@
       },
       "grass": {
         "w": 0,
-        "l": 2
+        "l": 1
       }
     },
     "recentForm": {
@@ -1251,7 +1035,7 @@
   },
   "griek": {
     "country": "NED",
-    "age": 30,
+    "age": 29,
     "yearRecord": {
       "hard": {
         "w": 7,
@@ -1263,7 +1047,7 @@
       },
       "grass": {
         "w": 1,
-        "l": 3
+        "l": 2
       }
     },
     "recentForm": {
@@ -1285,34 +1069,12 @@
       },
       "grass": {
         "w": 1,
-        "l": 3
+        "l": 2
       }
     },
     "recentForm": {
       "w": 3,
       "l": 7
-    }
-  },
-  "macha": {
-    "country": "CZE",
-    "age": 25,
-    "yearRecord": {
-      "hard": {
-        "w": 8,
-        "l": 5
-      },
-      "clay": {
-        "w": 6,
-        "l": 5
-      },
-      "grass": {
-        "w": 0,
-        "l": 0
-      }
-    },
-    "recentForm": {
-      "w": 6,
-      "l": 4
     }
   },
   "clar": {
@@ -1328,22 +1090,18 @@
         "l": 6
       },
       "grass": {
-<<<<<<< Updated upstream
-        "w": 2,
-=======
         "w": 0,
->>>>>>> Stashed changes
         "l": 2
       }
     },
     "recentForm": {
-      "w": 5,
-      "l": 5
+      "w": 4,
+      "l": 6
     }
   },
   "manna": {
     "country": "FRA",
-    "age": 38,
+    "age": 37,
     "yearRecord": {
       "hard": {
         "w": 7,
@@ -1354,8 +1112,8 @@
         "l": 8
       },
       "grass": {
-        "w": 5,
-        "l": 4
+        "w": 4,
+        "l": 3
       }
     },
     "recentForm": {
@@ -1377,11 +1135,7 @@
       },
       "grass": {
         "w": 2,
-<<<<<<< Updated upstream
-        "l": 2
-=======
         "l": 1
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
@@ -1403,7 +1157,7 @@
       },
       "grass": {
         "w": 2,
-        "l": 3
+        "l": 2
       }
     },
     "recentForm": {
@@ -1424,8 +1178,8 @@
         "l": 3
       },
       "grass": {
-        "w": 9,
-        "l": 3
+        "w": 8,
+        "l": 2
       }
     },
     "recentForm": {
@@ -1446,11 +1200,7 @@
         "l": 7
       },
       "grass": {
-<<<<<<< Updated upstream
-        "w": 7,
-=======
         "w": 5,
->>>>>>> Stashed changes
         "l": 2
       }
     },
@@ -1472,7 +1222,7 @@
         "l": 10
       },
       "grass": {
-        "w": 2,
+        "w": 0,
         "l": 0
       }
     },
@@ -1495,9 +1245,6 @@
       },
       "grass": {
         "w": 2,
-<<<<<<< Updated upstream
-        "l": 3
-=======
         "l": 2
       }
     },
@@ -2555,12 +2302,11 @@
       "grass": {
         "w": 4,
         "l": 1
->>>>>>> Stashed changes
       }
     },
     "recentForm": {
-      "w": 6,
-      "l": 4
+      "w": 7,
+      "l": 3
     }
   }
 }
