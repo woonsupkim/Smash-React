@@ -123,3 +123,25 @@ export function confidenceLabel(prob, lower, upper) {
   if (width > WIDE_CI_THRESHOLD) label += ' (uncertain — wide range)';
   return label;
 }
+
+/**
+ * Flags sample-size reliability issues that should surface as visible warnings
+ * in the UI rather than buried in CI text.
+ *
+ * - 'coinflip': the 95% CI straddles 50%, meaning the simulated "winner"
+ *   could easily be the true loser with more trials. Classic small-n artifact:
+ *   a player who wins 6/10 sims might win <50% of 1000 sims.
+ * - 'wide': CI doesn't cross 50% but is still wide enough to warrant caution.
+ * - null: result is reliable.
+ *
+ * @param {number} wins  — simulated wins for the leading player
+ * @param {number} losses — simulated losses for the leading player
+ * @returns {'coinflip'|'wide'|null}
+ */
+export function sampleSizeFlag(wins, losses) {
+  if (wins + losses < 1) return null;
+  const { lower, upper } = credibleInterval(wins, losses);
+  if (lower < 0.5 && upper > 0.5) return 'coinflip';
+  if (upper - lower > WIDE_CI_THRESHOLD) return 'wide';
+  return null;
+}

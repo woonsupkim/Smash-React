@@ -160,6 +160,42 @@
   margin-top: 0.2rem;
 }
 
+.adv-flag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  margin: 0.3rem 0 0.2rem;
+}
+.adv-flag--warn {
+  background: rgba(255, 160, 0, 0.15);
+  border: 1px solid rgba(255, 160, 0, 0.5);
+  color: #ffa000;
+}
+.adv-flag--caution {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #bbb;
+}
+.adv-flag--confident {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.45);
+  color: #81c784;
+}
+.adv-flag--underdog {
+  background: rgba(100, 160, 255, 0.12);
+  border: 1px solid rgba(100, 160, 255, 0.4);
+  color: #7eb8ff;
+}
+
+.adv-confidence-label {
+  font-size: 0.72rem;
+  color: #ddd;
+  margin-top: 0.1rem;
+}
+
 .adv-legend {
   display: flex;
   justify-content: center;
@@ -202,6 +238,96 @@
   flex: 1 1 240px;
   max-width: 320px;
   text-align: left;
+}
+
+/* ── Share ─────────────────────────────────────────────────────────────── */
+.adv-share-row {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.adv-share-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 0.3rem 0.85rem;
+  transition: background 0.15s;
+}
+.adv-share-btn:hover { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.4); }
+
+/* Full-screen dim overlay */
+.adv-share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+.adv-share-modal {
+  position: relative;
+  background: #111118;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  padding: 1.25rem;
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+
+.adv-share-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.adv-share-close:hover { color: #fff; }
+
+.adv-share-preview {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.adv-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.adv-share-action-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.adv-share-action-btn:hover { background: rgba(255,255,255,0.18); color: #fff !important; }
+
+.adv-share-twitter { background: rgba(0,0,0,0.4) !important; border-color: rgba(255,255,255,0.25) !important; }
+.adv-share-whatsapp { background: rgba(37,211,102,0.15) !important; border-color: rgba(37,211,102,0.4) !important; }
+
+.adv-share-hint {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+  margin: 0;
 }
 
 @media (max-width: 700px) {

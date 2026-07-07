@@ -113,6 +113,102 @@ function buildConnectorPath(feeders, outputs, width) {
 
 const DEFAULT_TOURNAMENT = 'smash_us.csv';
 
+// Map ESPN URL tournament slug → our CSV value
+const ESPN_SLUG_TO_CSV = {
+  'wimbledon': 'smash_wb.csv',
+  'french-open': 'smash_fr.csv',
+  'us-open': 'smash_us.csv',
+};
+
+function parseEspnUrl(url) {
+  const m = url.trim().match(/espn\.com\/tennis\/([^/?#]+)\/bracket(?:.*\/season\/(\d+))?/);
+  if (!m) return null;
+  return { slug: m[1], season: m[2] || String(new Date().getFullYear()) };
+}
+
+function normalizeName(name) {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z\s'-]/g, '')
+    .trim();
+}
+
+// Returns a player from pool whose name best matches the ESPN display name,
+// or null if no reasonable match is found.
+function matchPlayerByName(espnName, pool) {
+  if (!espnName) return null;
+  const norm = normalizeName(espnName);
+  const parts = norm.split(/\s+/);
+  const last = parts[parts.length - 1];
+
+  // 1. Full normalized name match
+  let hit = pool.find(p => normalizeName(p.name) === norm);
+  if (hit) return hit;
+
+  // 2. Last name match (most reliable for tennis since last names are unique)
+  const lastMatches = pool.filter(p => {
+    const pParts = normalizeName(p.name).split(/\s+/);
+    return pParts[pParts.length - 1] === last;
+  });
+  if (lastMatches.length === 1) return lastMatches[0];
+
+  // 3. If multiple share a last name, try first-initial match
+  if (lastMatches.length > 1 && parts.length > 1) {
+    const firstInit = parts[0][0];
+    const initMatch = lastMatches.find(p => normalizeName(p.name)[0] === firstInit);
+    if (initMatch) return initMatch;
+  }
+
+  return null;
+}
+
+// Walk ESPN's bracket JSON (which varies by season/tournament) and extract
+// an ordered list of player display names for the target round size.
+function parseEspnBracket(data, targetSlots) {
+  // ESPN bracket APIs use several different shapes over the years.
+  // Try the most common patterns.
+  const bracket = data?.bracket || data;
+  const rounds = bracket?.rounds || bracket?.matchups || [];
+
+  const names = [];
+
+  for (const round of rounds) {
+    const matchups = round.matchups || round.matches || round.competitions || [];
+    const roundNames = [];
+    for (const mu of matchups) {
+      const comps = mu.competitors || mu.players || [];
+      for (const c of comps) {
+        const name = c?.athlete?.displayName
+          || c?.player?.displayName
+          || c?.displayName
+          || c?.name
+          || '';
+        if (name && !name.toLowerCase().includes('tbd') && !name.toLowerCase().includes('bye')) {
+          roundNames.push(name);
+        }
+      }
+    }
+    // Pick the round whose size matches the target (or the closest ≥ target)
+    if (roundNames.length >= targetSlots) {
+      names.push(...roundNames);
+      break;
+    }
+  }
+
+  // Fallback: try a flat players/athletes list at the top level
+  if (names.length === 0) {
+    const flat = data?.players || data?.athletes || data?.bracket?.players || [];
+    for (const p of flat) {
+      const name = p?.displayName || p?.name || '';
+      if (name) names.push(name);
+    }
+  }
+
+  return names.slice(0, targetSlots);
+}
+
 export default function DreamBrackets({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
@@ -136,6 +232,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [slots, setSlots] = useState(Array(stageConfig.slots).fill(null));
   const [playersPool, setPlayersPool] = useState([]);
   const [simsPerMatch, setSimsPerMatch] = useState(DEFAULT_SIMS_PER_MATCHUP);
+  const [isImporting, setIsImporting] = useState(false);
   // heavy-recency-weighted stats (7-day half-life) instead of the default
   // 60-day-calibrated CSV — see data-pipeline/computeStats.js "upset" suffix
   const [upsetMode, setUpsetMode] = useState(false);
@@ -287,6 +384,95 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const handleReset = () => resetBracketState(stageConfig.slots);
 
+  const handleEspnImport = async () => {
+    const { value: url } = await Swal.fire({
+      title: 'Import ESPN Bracket',
+      input: 'text',
+      inputPlaceholder: 'https://www.espn.com/tennis/wimbledon/bracket/_/season/2026',
+      inputLabel: 'Paste the ESPN bracket link',
+      showCancelButton: true,
+      confirmButtonText: 'Import',
+      background: '#1a1a1a',
+      color: '#fff',
+      inputAttributes: { autocomplete: 'off' },
+      customClass: { input: 'swal-dark-input' },
+    });
+    if (!url) return;
+
+    const parsed = parseEspnUrl(url);
+    if (!parsed) {
+      Swal.fire({ icon: 'error', title: 'Invalid URL', text: 'Paste a link like: https://www.espn.com/tennis/wimbledon/bracket/_/season/2026', background: '#1a1a1a', color: '#fff' });
+      return;
+    }
+
+    const csvFile = ESPN_SLUG_TO_CSV[parsed.slug];
+    if (!csvFile) {
+      Swal.fire({ icon: 'error', title: 'Unsupported tournament', text: `"${parsed.slug}" is not supported. Try wimbledon, french-open, or us-open.`, background: '#1a1a1a', color: '#fff' });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      // Route through our own serverless proxy (/api/espn-bracket) so the
+      // fetch goes server-side — ESPN blocks direct browser requests (CORS).
+      const apiUrl = `/api/espn-bracket?slug=${encodeURIComponent(parsed.slug)}&season=${parsed.season}`;
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error(`ESPN returned ${res.status}`);
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+
+      // Proxy returns { players: string[] } — use directly if present,
+      // otherwise fall back to the generic bracket parser for older shapes.
+      const espnNames = json.players
+        ? json.players.slice(0, stageConfig.slots)
+        : parseEspnBracket(json, stageConfig.slots);
+      if (!espnNames || espnNames.length === 0) {
+        throw new Error('Bracket data not available yet — check back closer to the tournament.');
+      }
+
+      // Ensure the right tournament CSV is loaded before matching
+      const targetPool = csvFile === tournament ? playersPool : await new Promise((resolve) => {
+        Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + csvFile, {
+          header: true, download: true,
+          complete: ({ data: rows }) => {
+            resolve(rows.filter(r => Number(r.us_rd) === 2).map(r => ({
+              ...r,
+              probabilities: [Number(r.p1), Number(r.p2), Number(r.p3), Number(r.p4), Number(r.p5), Number(r.p6) || 0],
+            })));
+          }
+        });
+      });
+
+      const matched = espnNames.map(name => matchPlayerByName(name, targetPool));
+      const matchedCount = matched.filter(Boolean).length;
+
+      if (matchedCount === 0) {
+        throw new Error('Could not match any players to our roster. The bracket may not have seeded players yet.');
+      }
+
+      if (csvFile !== tournament) setTournament(csvFile);
+      setSlots(matched);
+      setRounds([]);
+      setProgress(0);
+
+      if (matchedCount < espnNames.length) {
+        const missing = espnNames.filter((n, i) => !matched[i]);
+        Swal.fire({
+          icon: 'warning',
+          title: `Imported ${matchedCount}/${espnNames.length} players`,
+          html: `Could not match: <br/><em>${missing.join(', ')}</em><br/><br/>Fill in the remaining slots manually.`,
+          background: '#1a1a1a', color: '#fff',
+        });
+      } else {
+        Swal.fire({ icon: 'success', title: `Imported ${matchedCount} players`, timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#fff' });
+      }
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Import failed', text: err.message, background: '#1a1a1a', color: '#fff' });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const selectStyles = {
     option: (base, state) => ({
       ...base,
@@ -414,6 +600,15 @@ export default function DreamBrackets({ tour = 'atp' }) {
               onChange={() => setUpsetMode(v => !v)}
               disabled={isRunning}
             />
+            <Button
+              variant="outline-light"
+              style={{ borderColor: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}
+              onClick={handleEspnImport}
+              disabled={isRunning || isImporting}
+              title="Paste an ESPN bracket link to auto-fill players"
+            >
+              {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : '📋 ESPN'}
+            </Button>
             <Button
               variant="secondary"
               onClick={handleReset}

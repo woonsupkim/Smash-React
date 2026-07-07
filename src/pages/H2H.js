@@ -436,6 +436,8 @@ export default function H2H({ tour = 'atp' }) {
           onSimulate={handleSimulate}
           onWatchMatch={handleWatchMatch}
           bestOf={bestOf}
+          tournamentLabel={config.label}
+          surfaceLabel={config.surfaceLabel}
         />
       </div>
     </div>

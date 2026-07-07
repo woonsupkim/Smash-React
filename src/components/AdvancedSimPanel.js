@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button, Form, Spinner, ProgressBar } from 'react-bootstrap';
 import {
   ResponsiveContainer,
@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { credibleInterval, confidenceLabel } from '../credibleInterval';
+import { generateShareCard } from '../utils/generateShareCard';
 import { countryFlagUrl } from './countryFlags';
 import Scoreboard, { deriveLiveScoreboardState } from './Scoreboard';
 import './AdvancedSimPanel.css';
@@ -62,10 +63,84 @@ export default function AdvancedSimPanel({
   colorBText = '#fff',
   simulateButtonColor,
   simulateButtonTextColor,
+  tournamentLabel = '',
+  surfaceLabel = '',
 }) {
   const simColor = simulateButtonColor || colorA;
   const simColorText = simulateButtonTextColor || colorAText;
   const [open, setOpen] = useState(defaultOpen);
+  const [shareUrl, setShareUrl] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (!batchResult) return;
+    setIsGenerating(true);
+    try {
+      const totalW = batchResult.matchWins[0] + batchResult.matchWins[1];
+      const favIdx = batchResult.matchWins[0] >= batchResult.matchWins[1] ? 0 : 1;
+      const favProb = totalW ? batchResult.matchWins[favIdx] / totalW : 0.5;
+      const underdogProb = 1 - favProb;
+      const underdogPlayer = favIdx === 0 ? playerB : playerA;
+
+      // P(underdog wins >5 of 10) via binomial
+      const binom10 = (() => {
+        if (underdogProb <= 0) return 0;
+        const p = underdogProb, n = 10;
+        let prob = 0;
+        for (let k = 6; k <= n; k++) {
+          let logC = 0;
+          for (let i = 0; i < k; i++) logC += Math.log(n - i) - Math.log(i + 1);
+          prob += Math.exp(logC + k * Math.log(p) + (n - k) * Math.log(1 - p));
+        }
+        return Math.min(prob, 1);
+      })();
+
+      const confidence = {
+        type: favProb >= 0.70 ? 'high' : favProb < 0.60 ? 'low' : null,
+        underdog: binom10 >= 0.10,
+        underdogName: underdogPlayer?.name || '',
+        underdogPct: Math.round(binom10 * 100),
+      };
+
+      const canvas = await generateShareCard({
+        playerA, playerB,
+        winnerName: favIdx === 0 ? playerA.name : playerB.name,
+        colorA, colorB,
+        imageSrcA: getPlayerImageSrc(playerA),
+        imageSrcB: getPlayerImageSrc(playerB),
+        flagSrcA: countryFlagUrl(playerA.country),
+        flagSrcB: countryFlagUrl(playerB.country),
+        confidence,
+        tournamentLabel, surfaceLabel,
+        simCount,
+      });
+      setShareUrl(canvas.toDataURL('image/png'));
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [batchResult, playerA, playerB, colorA, colorB, getPlayerImageSrc, tournamentLabel, surfaceLabel, simCount]);
+
+  const handleDownload = () => {
+    if (!shareUrl) return;
+    const a = document.createElement('a');
+    a.href = shareUrl;
+    a.download = `smash-${(playerA?.name||'A').replace(/\s+/g,'-')}-vs-${(playerB?.name||'B').replace(/\s+/g,'-')}.png`;
+    a.click();
+  };
+
+  const handleNativeShare = async () => {
+    if (!shareUrl || !navigator.share) return;
+    try {
+      const blob = await (await fetch(shareUrl)).blob();
+      const file = new File([blob], 'smash-prediction.png', { type: 'image/png' });
+      await navigator.share({ files: [file], title: 'SMASH! Match Prediction' });
+    } catch (_) { /* user cancelled */ }
+  };
+
+  const shareTotalW = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
+  const shareText = batchResult && playerA && playerB && shareTotalW
+    ? encodeURIComponent(`${playerA.name} ${Math.round(batchResult.matchWins[0]/shareTotalW*100)}% vs ${playerB.name} ${Math.round(batchResult.matchWins[1]/shareTotalW*100)}% — simulated on SMASH!`)
+    : '';
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
 
@@ -265,14 +340,47 @@ export default function AdvancedSimPanel({
                   {(() => {
                     const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
                     const favProb = favoredWins / totalWins;
+                    const underdogProb = 1 - favProb;
                     const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
+
+                    // P(underdog wins >5 of 10 trial matches) via binomial
+                    // — flags when, in a short run, the underdog could plausibly
+                    // come out ahead despite losing the full simulation.
+                    const binom10 = (() => {
+                      if (underdogProb <= 0) return 0;
+                      const p = underdogProb, n = 10;
+                      let prob = 0;
+                      // C(n,k) * p^k * (1-p)^(n-k) for k = 6..10
+                      for (let k = 6; k <= n; k++) {
+                        let logC = 0;
+                        for (let i = 0; i < k; i++) logC += Math.log(n - i) - Math.log(i + 1);
+                        prob += Math.exp(logC + k * Math.log(p) + (n - k) * Math.log(1 - p));
+                      }
+                      return Math.min(prob, 1);
+                    })();
+
                     return (
                       <div className="adv-ci-caption">
                         <div className="adv-ci-range">
                           <span>95% CI: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
                           <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
                         </div>
-                        {confidenceLabel(favProb, favLower, favUpper)}
+
+                        {/* Confidence badge — based on win rate, not sample size */}
+                        {favProb >= 0.70 ? (
+                          <div className="adv-flag adv-flag--confident">✓ High confidence</div>
+                        ) : favProb < 0.60 ? (
+                          <div className="adv-flag adv-flag--warn">⚠ Low confidence — toss-up matchup</div>
+                        ) : null}
+
+                        {/* Underdog flag — binomial P(underdog wins >5 of 10 games) */}
+                        {binom10 >= 0.10 && (
+                          <div className="adv-flag adv-flag--underdog">
+                            ⚡ Underdog alert — {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
+                          </div>
+                        )}
+
+                        <div className="adv-confidence-label">{confidenceLabel(favProb, favLower, favUpper)}</div>
                         {underdogCompetitiveness && (
                           <div className="adv-underdog-caption">
                             {underdogCompetitiveness.name} takes a set {underdogCompetitiveness.pct}% of their losses
@@ -300,6 +408,7 @@ export default function AdvancedSimPanel({
                         itemStyle={{ color: '#ddd' }}
                         labelFormatter={(label) => `Final score: ${label}`}
                         formatter={(value, name) => [`${value}% of all simulations`, name]}
+                        wrapperStyle={{ transform: 'translateX(100px) translateY(-55px)', pointerEvents: 'none' }}
                       />
                       <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={9}/>
                       <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={9}/>
@@ -307,9 +416,55 @@ export default function AdvancedSimPanel({
                   </ResponsiveContainer>
                   {renderFixedLegend()}
                 </div>
+              {/* Share button — bottom-right of results row */}
+              <div className="adv-share-row">
+                <Button
+                  size="sm"
+                  className="adv-share-btn"
+                  onClick={handleShare}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? 'Generating…' : '↗ Share Prediction'}
+                </Button>
+              </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Share card modal */}
+          {shareUrl && (
+            <div className="adv-share-overlay" onClick={() => setShareUrl(null)}>
+              <div className="adv-share-modal" onClick={e => e.stopPropagation()}>
+                <button className="adv-share-close" onClick={() => setShareUrl(null)}>✕</button>
+                <img src={shareUrl} alt="Share card preview" className="adv-share-preview" />
+                <div className="adv-share-actions">
+                  <Button size="sm" className="adv-share-action-btn" onClick={handleDownload}>
+                    ↓ Save Image
+                  </Button>
+                  {navigator.share && (
+                    <Button size="sm" className="adv-share-action-btn" onClick={handleNativeShare}>
+                      ↗ Share…
+                    </Button>
+                  )}
+                  <a
+                    className="btn btn-sm adv-share-action-btn adv-share-twitter"
+                    href={`https://twitter.com/intent/tweet?text=${shareText}`}
+                    target="_blank" rel="noopener noreferrer"
+                  >
+                    𝕏 Post
+                  </a>
+                  <a
+                    className="btn btn-sm adv-share-action-btn adv-share-whatsapp"
+                    href={`https://wa.me/?text=${shareText}`}
+                    target="_blank" rel="noopener noreferrer"
+                  >
+                    WhatsApp
+                  </a>
+                </div>
+                <p className="adv-share-hint">Save the image, then attach it when you post.</p>
+              </div>
+            </div>
+          )}
 
           {showWatch && (
             <div className="watch-match-board">
