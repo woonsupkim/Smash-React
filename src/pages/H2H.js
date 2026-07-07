@@ -438,6 +438,8 @@ export default function H2H({ tour = 'atp' }) {
           bestOf={bestOf}
           tournamentLabel={config.label}
           surfaceLabel={config.surfaceLabel}
+          surfaceKey={config.surfaceKey}
+          h2hData={h2hData}
         />
       </div>
     </div>

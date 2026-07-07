@@ -65,6 +65,8 @@ export default function AdvancedSimPanel({
   simulateButtonTextColor,
   tournamentLabel = '',
   surfaceLabel = '',
+  surfaceKey = 'hard', // 'hard' | 'clay' | 'grass' — themes the share card
+  h2hData = null,      // pairwise career head-to-head map from h2h.json
 }) {
   const simColor = simulateButtonColor || colorA;
   const simColorText = simulateButtonTextColor || colorAText;
@@ -80,7 +82,6 @@ export default function AdvancedSimPanel({
       const favIdx = batchResult.matchWins[0] >= batchResult.matchWins[1] ? 0 : 1;
       const favProb = totalW ? batchResult.matchWins[favIdx] / totalW : 0.5;
       const underdogProb = 1 - favProb;
-      const underdogPlayer = favIdx === 0 ? playerB : playerA;
 
       // P(underdog wins >5 of 10) via binomial
       const binom10 = (() => {
@@ -95,22 +96,39 @@ export default function AdvancedSimPanel({
         return Math.min(prob, 1);
       })();
 
-      const confidence = {
-        type: favProb >= 0.70 ? 'high' : favProb < 0.60 ? 'low' : null,
-        underdog: binom10 >= 0.10,
-        underdogName: underdogPlayer?.name || '',
-        underdogPct: Math.round(binom10 * 100),
-      };
+      // Winner's most likely scoreline, e.g. "3–1"
+      const tSets = Math.ceil(bestOf / 2);
+      const dist = batchResult.lostInWins[favIdx].slice(0, tSets);
+      let maxI = 0;
+      for (let i = 1; i < dist.length; i++) if ((dist[i] || 0) > (dist[maxI] || 0)) maxI = i;
+      const scoreline = `${tSets}–${maxI}`;
+
+      // Career head-to-head from h2h.json (same lookup as MatchHero)
+      const h2hRecord = (() => {
+        if (!h2hData) return null;
+        const [idA, idB] = [playerA.id, playerB.id].sort();
+        const rec = h2hData[`${idA}_${idB}`];
+        if (!rec) return null;
+        const aIsFirst = idA === playerA.id;
+        return {
+          winsA: aIsFirst ? rec.winsA : rec.winsB,
+          winsB: aIsFirst ? rec.winsB : rec.winsA,
+        };
+      })();
 
       const canvas = await generateShareCard({
         playerA, playerB,
         winnerName: favIdx === 0 ? playerA.name : playerB.name,
+        favShare: favProb,
+        scoreline,
+        h2hRecord,
+        binom10,
         colorA, colorB,
         imageSrcA: getPlayerImageSrc(playerA),
         imageSrcB: getPlayerImageSrc(playerB),
         flagSrcA: countryFlagUrl(playerA.country),
         flagSrcB: countryFlagUrl(playerB.country),
-        confidence,
+        surfaceKey,
         tournamentLabel, surfaceLabel,
         simCount,
       });
@@ -118,7 +136,7 @@ export default function AdvancedSimPanel({
     } finally {
       setIsGenerating(false);
     }
-  }, [batchResult, playerA, playerB, colorA, colorB, getPlayerImageSrc, tournamentLabel, surfaceLabel, simCount]);
+  }, [batchResult, playerA, playerB, colorA, colorB, getPlayerImageSrc, tournamentLabel, surfaceLabel, surfaceKey, h2hData, bestOf, simCount]);
 
   const handleDownload = () => {
     if (!shareUrl) return;
@@ -139,7 +157,11 @@ export default function AdvancedSimPanel({
 
   const shareTotalW = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
   const shareText = batchResult && playerA && playerB && shareTotalW
-    ? encodeURIComponent(`${playerA.name} ${Math.round(batchResult.matchWins[0]/shareTotalW*100)}% vs ${playerB.name} ${Math.round(batchResult.matchWins[1]/shareTotalW*100)}% — simulated on SMASH!`)
+    ? encodeURIComponent(
+        `My sim says ${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerA.name : playerB.name} beats ` +
+        `${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerB.name : playerA.name} — ` +
+        `${simCount.toLocaleString()} matches simulated on SMASH! ⚡ ${window.location.origin}`
+      )
     : '';
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
