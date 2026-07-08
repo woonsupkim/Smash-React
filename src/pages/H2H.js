@@ -101,6 +101,8 @@ export default function H2H({ tour = 'atp' }) {
   const [upsetMode, setUpsetMode]         = useState(false);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
+  const prevDataDirRef                    = useRef(dataDir);
+  const poolDirRef                        = useRef(dataDir); // which tour's CSV the current pool came from
 
   // Reload whenever the surface (tournament) or tour changes. Player picks
   // are kept and remapped to their row in the new pool by id (rather than
@@ -108,11 +110,22 @@ export default function H2H({ tour = 'atp' }) {
   // the matchup shifts across Clay/Grass/Hard. Any previous simulation
   // result is surface-specific, so it's cleared here too.
   useEffect(() => {
+    // Switching TOUR (not surface) clears both picks immediately — ATP and
+    // WTA ids never overlap, so remapping is impossible, and letting stale
+    // players linger for even one render fires spurious effects (e.g. the
+    // upset-stats seeding looking them up in the other tour's CSV).
+    if (prevDataDirRef.current !== dataDir) {
+      prevDataDirRef.current = dataDir;
+      setPlayerA(null);
+      setPlayerB(null);
+      setUpsetMode(false);
+    }
     Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile, {
       header: true,
       download: true,
       complete: ({ data }) => {
         const newPool = data.filter(r => Number(r.us_rd) === 2);
+        poolDirRef.current = dataDir;
         setPlayers(newPool);
         setPlayerA(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
         setPlayerB(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
@@ -135,6 +148,9 @@ export default function H2H({ tour = 'atp' }) {
   // one-time notice) if a player has too few recent matches on this surface.
   useEffect(() => {
     if (!playerA && !playerB) return;
+    // Mid-tour-switch: current picks belong to the OTHER tour's pool — skip;
+    // this effect re-runs (and early-returns) once the picks are cleared.
+    if (poolDirRef.current !== dataDir) return;
     const seedNormal = (player) => Object.fromEntries(STAT_KEYS.map(([k]) => [k, (player[k] || 0) * 100]));
 
     if (!upsetMode) {
@@ -155,7 +171,7 @@ export default function H2H({ tour = 'atp' }) {
           Swal.fire({
             icon: 'info',
             title: 'Not enough recent data',
-            text: 'One or both players have too few recent matches on this surface for an upset scenario — using their normal stats instead.'
+            text: 'One or both players have too few recent matches on this surface for an upset scenario, so their normal stats are used instead.'
           });
         }
       }
@@ -407,6 +423,10 @@ export default function H2H({ tour = 'atp' }) {
           accentTextColor={config.accentTextColor}
           h2hData={h2hData}
           getPlayerImageSrc={getPlayerImageSrc}
+          statsA={statsA}
+          statsB={statsB}
+          upsetMode={upsetMode}
+          setUpsetMode={setUpsetMode}
         />
 
         <AdvancedSimPanel

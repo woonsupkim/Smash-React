@@ -131,7 +131,9 @@ function normalizeName(name) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z\s'-]/g, '')
+    .replace(/[-–]/g, ' ') // "Auger-Aliassime" (ESPN) matches "Auger Aliassime" (roster)
+    .replace(/[^a-z\s']/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 

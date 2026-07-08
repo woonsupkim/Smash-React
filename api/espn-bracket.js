@@ -83,24 +83,57 @@ module.exports = async function handler(req, res) {
       byRound.get(key).push(c);
     }
 
-    let roundComps = null;
-    for (const comps of byRound.values()) {
-      if (comps.length === targetMatches) { roundComps = comps; break; }
-    }
-    if (!roundComps) {
+    // Rounds sorted from Final (1 match) down to the biggest round.
+    const roundsBySize = [...byRound.values()].sort((a, b) => a.length - b.length);
+    if (!roundsBySize.some(r => r.length === targetMatches)) {
       return res.status(404).json({
         error: `Couldn't find a round with ${targetMatches} matches in the ESPN draw.`,
       });
     }
 
-    // Draw order: matches by date/id, competitors by their order field.
-    roundComps.sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+    const sortedComps = (m) =>
+      [...(m.competitors || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const compName = (c) => (c?.athlete?.displayName || c?.athlete?.fullName || '').trim();
+
+    // Neither ESPN match ids nor dates follow draw order — but each match's
+    // players reappear in the NEXT round, so true bracket order can be
+    // reconstructed by chaining feeders: the two matches that produced the
+    // players of next-round match k belong in slots 2k and 2k+1.
+    const orderRound = (current, orderedNext) => {
+      if (!orderedNext) return current;
+      const used = new Set();
+      const slots = new Array(current.length).fill(null);
+      orderedNext.forEach((nm, k) => {
+        sortedComps(nm).forEach((c, j) => {
+          const name = compName(c);
+          if (!name || /^tbd$/i.test(name)) return;
+          const feeder = current.find(m =>
+            !used.has(m.id) && sortedComps(m).some(x => compName(x) === name));
+          if (feeder && 2 * k + j < slots.length) {
+            slots[2 * k + j] = feeder;
+            used.add(feeder.id);
+          }
+        });
+      });
+      // Matches not yet placed (their next-round slot is still TBD) keep
+      // their relative order in the remaining gaps.
+      const rest = current.filter(m => !used.has(m.id));
+      for (let i = 0; i < slots.length; i++) if (!slots[i]) slots[i] = rest.shift();
+      return slots;
+    };
+
+    let ordered = null;
+    let roundComps = null;
+    for (const round of roundsBySize) {
+      ordered = orderRound(round, ordered);
+      if (round.length === targetMatches) { roundComps = ordered; break; }
+    }
+
     const players = [];
     for (const comp of roundComps) {
-      const comps = [...(comp.competitors || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
-      for (const c of comps) {
-        const name = c?.athlete?.displayName || c?.athlete?.fullName || '';
-        players.push(name && !/^tbd$/i.test(name.trim()) ? name.trim() : 'TBD');
+      for (const c of sortedComps(comp)) {
+        const name = compName(c);
+        players.push(name && !/^tbd$/i.test(name) ? name : 'TBD');
       }
     }
 

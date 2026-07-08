@@ -70,7 +70,7 @@ function pickVerdict({ favShare, straightSets, binom10 }) {
   if (binom10 >= 0.25) return { headline: 'UPSET BREWING 🚨', tagline: 'Don\'t blink.' };
   if (favShare >= 0.85) return { headline: 'TOTAL DOMINATION', tagline: 'It\'s not even close. 😤' };
   if (straightSets) return { headline: 'STRAIGHT-SETS STATEMENT', tagline: 'No sets dropped. No mercy. 🧹' };
-  return { headline: 'CLEAR FAVORITE', tagline: 'The computer has spoken. 🎾' };
+  return { headline: 'CLEAR FAVORITE', tagline: 'The stats don\'t lie. 🎾' };
 }
 
 // Confetti burst on the winner's half — celebratory, cheap to draw.
@@ -391,7 +391,7 @@ export async function generateShareCard({
 
   ctx.font = 'bold 17px Arial, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText(`⚡ SMASH! Simulator${host ? ` · ${host}` : ''} — run your own sim`, W / 2, 614);
+  ctx.fillText(`⚡ SMASH! Simulator${host ? ` · ${host}` : ''} · run your own sim`, W / 2, 614);
 
   return canvas;
 }

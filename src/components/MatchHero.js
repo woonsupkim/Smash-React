@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { simulateMatch, simulateBatch } from '../simulator';
 import { STAT_KEYS } from './AdvancedSimPanel';
@@ -35,27 +35,42 @@ export default function MatchHero({
   accentTextColor = '#fff',
   h2hData,
   getPlayerImageSrc,
+  statsA = null,   // seeded slider stats (0-100 per key) — already reflect Upset Scenario
+  statsB = null,
+  upsetMode = false,
+  setUpsetMode = null,
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const bothPicked = !!(playerA && playerB);
 
-  // Picking either player resets the previous roll — otherwise a stale
-  // scoreline from the old matchup stays on screen next to the new pair.
+  // Prefer the page-seeded stats (which flip to heavy-recency values when
+  // Upset Scenario is on) over the raw CSV row, so the probability bar and
+  // Simulate Match respond to the toggle.
+  const statsReady = (s) => s && STAT_KEYS.some(([k]) => s[k] > 0);
+  const probsA = statsReady(statsA) ? STAT_KEYS.map(([k]) => (statsA[k] || 0) / 100) : (playerA ? probsFromRow(playerA) : null);
+  const probsB = statsReady(statsB) ? STAT_KEYS.map(([k]) => (statsB[k] || 0) / 100) : (playerB ? probsFromRow(playerB) : null);
+  const probsKeyA = probsA ? probsA.join(',') : '';
+  const probsKeyB = probsB ? probsB.join(',') : '';
+
+  // Picking either player (or changing the underlying stats, e.g. toggling
+  // Upset Scenario) resets the previous roll — a stale scoreline from the
+  // old stats shouldn't linger.
   useEffect(() => {
     setScoreline(null);
     setIsRolling(false);
-  }, [playerA?.id, playerB?.id]);
+  }, [playerA?.id, playerB?.id, probsKeyA, probsKeyB]);
 
   // Model's estimated win probability (500-trial average) — this is a
   // statistical estimate, not a guarantee, which is why a single
   // "Simulate Match" roll below can still go the other way, especially
   // when the percentages are close together.
   const winProb = useMemo(() => {
-    if (!bothPicked) return 0.5;
-    const res = simulateBatch(probsFromRow(playerA), probsFromRow(playerB), QUICK_ESTIMATE_SIMS, bestOf);
+    if (!bothPicked || !probsA || !probsB) return 0.5;
+    const res = simulateBatch(probsA, probsB, QUICK_ESTIMATE_SIMS, bestOf);
     return res.matchWins[0] / QUICK_ESTIMATE_SIMS;
-  }, [playerA, playerB, bothPicked, bestOf]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bothPicked, probsKeyA, probsKeyB, bestOf]);
 
   const favoredIsA = winProb >= 0.5;
   const pctA = Math.round(winProb * 100);
@@ -91,7 +106,7 @@ export default function MatchHero({
   const rollMatch = () => {
     setIsRolling(true);
     setTimeout(() => {
-      const res = simulateMatch(probsFromRow(playerA), probsFromRow(playerB), bestOf);
+      const res = simulateMatch(probsA, probsB, bestOf);
       setScoreline(res);
       setIsRolling(false);
     }, 250);
@@ -134,6 +149,17 @@ export default function MatchHero({
           {bothPicked ? (
             <>
               <div className="match-hero-vs">VS</div>
+              {setUpsetMode && (
+                <Form.Check
+                  type="switch"
+                  id="hero-upset-toggle"
+                  className="match-hero-upset-toggle"
+                  label="Upset Scenario"
+                  checked={upsetMode}
+                  onChange={() => setUpsetMode(v => !v)}
+                  disabled={isRolling}
+                />
+              )}
               <OverlayTrigger
                 placement="top"
                 overlay={

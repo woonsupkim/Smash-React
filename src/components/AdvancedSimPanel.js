@@ -155,14 +155,29 @@ export default function AdvancedSimPanel({
     } catch (_) { /* user cancelled */ }
   };
 
-  const shareTotalW = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
-  const shareText = batchResult && playerA && playerB && shareTotalW
-    ? encodeURIComponent(
-        `My sim says ${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerA.name : playerB.name} beats ` +
-        `${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerB.name : playerA.name} — ` +
-        `${simCount.toLocaleString()} matches simulated on SMASH! ⚡ ${window.location.origin}`
-      )
+  const shareCaption = batchResult && playerA && playerB
+    ? `My sim says ${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerA.name : playerB.name} beats ` +
+      `${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerB.name : playerA.name}. ` +
+      `${simCount.toLocaleString()} matches simulated on SMASH! ⚡ ${window.location.origin}`
     : '';
+
+  // Instagram has no web share intent — on mobile the native share sheet
+  // lists it as a target; on desktop we save the image, copy the caption,
+  // and open Instagram so the user can attach it to a post/story.
+  const handleInstagram = async () => {
+    if (!shareUrl) return;
+    try {
+      const blob = await (await fetch(shareUrl)).blob();
+      const file = new File([blob], 'smash-prediction.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareCaption });
+        return;
+      }
+    } catch (_) { /* fall through to manual flow */ }
+    handleDownload();
+    try { await navigator.clipboard.writeText(shareCaption); } catch (_) { /* ignore */ }
+    window.open('https://www.instagram.com', '_blank', 'noopener');
+  };
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
 
@@ -468,22 +483,21 @@ export default function AdvancedSimPanel({
                       ↗ Share…
                     </Button>
                   )}
-                  <a
-                    className="btn btn-sm adv-share-action-btn adv-share-twitter"
-                    href={`https://twitter.com/intent/tweet?text=${shareText}`}
-                    target="_blank" rel="noopener noreferrer"
-                  >
-                    𝕏 Post
-                  </a>
-                  <a
-                    className="btn btn-sm adv-share-action-btn adv-share-whatsapp"
-                    href={`https://wa.me/?text=${shareText}`}
-                    target="_blank" rel="noopener noreferrer"
-                  >
-                    WhatsApp
-                  </a>
+                  <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleInstagram}>
+                    📸 Instagram
+                  </Button>
                 </div>
-                <p className="adv-share-hint">Save the image, then attach it when you post.</p>
+                <p className="adv-share-hint">
+                  Instagram saves the image and copies the caption, then attach it to your post.
+                  {' '}Made with{' '}
+                  <a
+                    className="adv-share-link"
+                    href={window.location.origin}
+                    target="_blank" rel="noopener noreferrer"
+                  >
+                    {window.location.host}
+                  </a>
+                </p>
               </div>
             </div>
           )}
