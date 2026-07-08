@@ -46,56 +46,6 @@ clar,Jaume Antoni Munar Clar,Jaume,Antoni Munar Clar,44,2,0.63,0.91,0.30,0.45,0.
 majch,Kamil Majchrzak,Kamil,Majchrzak,45,2,0.63,0.95,0.29,0.47,0.37,0.12,POL,30,7,8,7,3,0
 miche,Alex Michelsen,Alex,Michelsen,46,2,0.67,0.91,0.28,0.46,0.38,0.11,USA,21,12,7,4,6,0
 quinn,Ethan Quinn,Ethan,Quinn,47,2,0.62,0.90,0.29,0.42,0.38,0.16,USA,,11,7,6,4,0
-borge,Nuno Borges,Nuno,Borges,48,2,0.65,0.91,0.26,0.44,0.38,0.11,POR,,7,8,5,5,0
+borge,Nuno Borges,Nuno,Borges,48,2,0.65,0.91,0.26,0.44,0.38,0.11,POR,,7,10,5,5,0
 macha,Tomas Machac,Tomas,Machac,49,2,0.62,0.91,0.28,0.44,0.39,0.12,CZE,25,8,5,6,4,0
 kecma,Miomir Kecmanovic,Miomir,Kecmanovic,50,2,0.61,0.92,0.26,0.47,0.38,0.12,SRB,26,8,10,6,4,0
-berre,Matteo Berrettini,Matteo,Berrettini,51,2,0.67,0.94,0.27,0.40,0.39,0.21,ITA,30,3,2,7,3,0
-atman,Terence Atmane,Terence,Atmane,52,2,0.59,0.89,0.27,0.45,0.40,0.18,FRA,,7,9,2,8,0
-maroz,Fabian Marozsan,Fabian,Marozsan,53,2,0.65,0.92,0.28,0.45,0.38,0.10,HUN,,6,7,5,5,0
-zands,Botic Van De Zandschulp,Botic,Van De Zandschulp,54,2,0.62,0.86,0.29,0.45,0.39,0.15,NED,,6,7,4,6,0
-tiran,Thiago Agustin Tirante,Thiago,Agustin Tirante,55,2,0.59,0.92,0.31,0.43,0.39,0.20,ARG,,5,5,5,5,0
-hanfm,Yannick Hanfmann,Yannick,Hanfmann,56,2,0.65,0.94,0.29,0.43,0.39,0.17,GER,,3,3,4,6,0
-baez,Sebastian Baez,Sebastian,Baez,57,2,0.74,0.91,0.29,0.47,0.34,0.04,ARG,,10,4,6,4,0
-griek,Tallon Griekspoor,Tallon,Griekspoor,58,2,0.65,0.89,0.22,0.41,0.40,0.18,NED,29,7,6,3,7,0
-carab,Camilo Ugo Carabelli,Camilo,Ugo Carabelli,59,2,0.59,0.91,0.24,0.43,0.35,0.08,ARG,,2,5,4,6,0
-landa,Martin Landaluce,Martin,Landaluce,60,2,0.64,0.86,0.30,0.46,0.39,0.10,ESP,,12,8,5,5,0
-altma,Daniel Altmaier,Daniel,Altmaier,61,2,0.62,0.91,0.24,0.42,0.35,0.16,GER,,0,6,4,6,0
-cilic,Marin Cilic,Marin,Cilic,62,2,0.57,0.90,0.23,0.47,0.41,0.26,CRO,37,8,6,4,6,0
-korda,Sebastian Korda,Sebastian,Korda,63,2,0.61,0.92,0.30,0.46,0.40,0.20,USA,,12,6,8,2,0
-kopri,Vit Kopriva,Vit,Kopriva,64,2,0.60,0.86,0.30,0.47,0.36,0.09,CZE,,6,5,4,6,0
-burru,Roman Andres Burruchaga,Roman,Andres Burruchaga,65,2,0.60,0.88,0.32,0.50,0.37,0.07,ARG,,2,4,3,7,0
-svajd,Zachary Svajda,Zachary,Svajda,66,2,0.60,0.93,0.30,0.47,0.39,0.14,USA,,12,6,5,5,0
-bellu,Mattia Bellucci,Mattia,Bellucci,67,2,0.62,0.90,0.30,0.45,0.38,0.14,ITA,,9,9,5,5,0
-medje,Hamad Medjedovic,Hamad,Medjedovic,68,2,0.64,0.88,0.27,0.43,0.39,0.19,SRB,,6,5,5,5,0
-soneg,Lorenzo Sonego,Lorenzo,Sonego,69,2,0.66,0.92,0.27,0.41,0.38,0.13,ITA,,2,2,5,5,0
-kovac,Aleksandar Kovacevic,Aleksandar,Kovacevic,70,2,0.61,0.90,0.25,0.41,0.40,0.22,USA,,9,10,3,7,0
-carre,Pablo Carreno-Busta,Pablo,Carreno-Busta,71,2,0.66,0.94,0.28,0.49,0.37,0.07,ESP,,8,7,7,3,0
-valle,Adolfo Daniel Vallejo,Adolfo,Daniel Vallejo,72,2,0.62,0.87,0.34,0.47,0.35,0.06,PAR,,2,1,5,5,0
-jong,Jesper De Jong,Jesper,De Jong,73,2,0.58,0.90,0.28,0.46,0.37,0.15,NED,,0,6,7,3,0
-struf,Jan-Lennard Struff,Jan-Lennard,Struff,74,2,0.60,0.90,0.27,0.45,0.39,0.19,GER,,5,9,7,3,0
-royer,Valentin Royer,Valentin,Royer,75,2,0.63,0.92,0.27,0.44,0.38,0.13,FRA,,2,10,3,7,0
-fucso,Marton Fucsovics,Marton,Fucsovics,76,2,0.61,0.90,0.31,0.47,0.40,0.10,HUN,,6,7,3,7,0
-rune,Holger Rune,Holger,Rune,77,2,0.62,0.90,0.29,0.45,0.41,0.14,DEN,23,0,0,7,3,0
-cazau,Arthur Cazaux,Arthur,Cazaux,78,2,0.59,0.94,0.30,0.45,0.38,0.19,FRA,,3,2,5,5,0
-duckw,James Duckworth,James,Duckworth,79,2,0.58,0.91,0.27,0.44,0.40,0.18,AUS,,4,8,3,7,0
-assch,Luca Van Assche,Luca,Van Assche,80,2,0.63,0.89,0.32,0.50,0.38,0.09,FRA,,18,6,7,3,0
-brook,Jenson Brooksby,Jenson,Brooksby,81,2,0.64,0.92,0.28,0.47,0.36,0.07,USA,,4,7,4,6,0
-hijik,Rinky Hijikata,Rinky,Hijikata,82,2,0.60,0.91,0.30,0.46,0.37,0.10,AUS,,13,8,6,4,0
-perri,Giovanni Mpetshi Perricard,Giovanni,Mpetshi Perricard,83,2,0.68,0.86,0.22,0.31,0.42,0.29,FRA,,7,9,4,6,0
-aguil,Daniel Merida Aguilar,Daniel,Merida Aguilar,84,2,0.66,0.88,0.35,0.46,0.36,0.07,ESP,,4,4,5,5,0
-walto,Adam Walton,Adam,Walton,85,2,0.63,0.93,0.28,0.44,0.39,0.15,AUS,,10,10,7,3,0
-nava,Emilio Nava,Emilio,Nava,86,2,0.64,0.89,0.28,0.40,0.38,0.18,USA,,4,6,6,4,0
-tsits,Stefanos Tsitsipas,Stefanos,Tsitsipas,87,2,0.62,0.91,0.27,0.42,0.42,0.16,GRE,,9,7,3,7,0
-diall,Gabriel Diallo,Gabriel,Diallo,88,2,0.68,0.89,0.28,0.42,0.38,0.17,CAN,,4,7,3,7,0
-prizm,Dino Prizmic,Dino,Prizmic,89,2,0.61,0.89,0.31,0.47,0.40,0.10,CRO,,5,3,6,4,0
-shima,Sho Shimabukuro,Sho,Shimabukuro,90,2,0.57,0.91,0.32,0.43,0.39,0.15,JPN,,12,7,6,4,0
-comes,Francisco Comesana,Francisco,Comesana,91,2,0.62,0.89,0.26,0.44,0.36,0.18,ARG,,2,5,6,4,0
-giron,Marcos Giron,Marcos,Giron,92,2,0.62,0.95,0.28,0.46,0.38,0.11,USA,,12,8,4,6,0
-bonzi,Benjamin Bonzi,Benjamin,Bonzi,93,2,0.63,0.92,0.27,0.46,0.39,0.12,FRA,,14,9,6,4,0
-trung,Marco Trungelliti,Marco,Trungelliti,94,2,0.58,0.87,0.28,0.46,0.35,0.11,ARG,,2,3,4,6,0
-halys,Quentin Halys,Quentin,Halys,95,2,0.61,0.89,0.26,0.42,0.40,0.24,FRA,,16,11,4,6,0
-hurka,Hubert Hurkacz,Hubert,Hurkacz,96,2,0.64,0.94,0.25,0.40,0.39,0.26,POL,29,5,8,5,5,0
-spizz,Eliot Spizzirri,Eliot,Spizzirri,97,2,0.68,0.93,0.32,0.47,0.38,0.11,USA,,7,4,6,4,0
-faria,Jaime Faria,Jaime,Faria,98,2,0.58,0.87,0.32,0.45,0.38,0.14,POR,,5,2,7,3,0
-shevc,Alexander Shevchenko,Alexander,Shevchenko,99,2,0.62,0.92,0.27,0.42,0.37,0.13,KAZ,,11,11,5,5,0
-choin,Jan Choinski,Jan,Choinski,100,2,0.65,0.94,0.27,0.42,0.36,0.11,GBR,,3,5,7,3,0

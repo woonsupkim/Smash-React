@@ -14,6 +14,8 @@ import {
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
 import { credibleInterval } from '../credibleInterval';
+import { generateBracketShareCard } from '../utils/generateBracketShareCard';
+import { countryFlagUrl } from '../components/countryFlags';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
@@ -38,9 +40,9 @@ const BLANK_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(
 );
 
 const TOURNAMENTS = [
-  { value: 'smash_fr.csv', label: 'French Open', logo: logoRG, bgImage: bgClay, accentVar: '--accent-fr-a' },
-  { value: 'smash_wb.csv', label: 'Wimbledon', logo: logoWB, bgImage: bgGrass, accentVar: '--accent-wb-a' },
-  { value: 'smash_us.csv', label: 'US Open', logo: logoUS, bgImage: bgHard, accentVar: '--accent-us-a' },
+  { value: 'smash_fr.csv', label: 'French Open', logo: logoRG, bgImage: bgClay, accentVar: '--accent-fr-a', surfaceKey: 'clay' },
+  { value: 'smash_wb.csv', label: 'Wimbledon', logo: logoWB, bgImage: bgGrass, accentVar: '--accent-wb-a', surfaceKey: 'grass' },
+  { value: 'smash_us.csv', label: 'US Open', logo: logoUS, bgImage: bgHard, accentVar: '--accent-us-a', surfaceKey: 'hard' },
 ];
 
 // Each stage's slot count, plus the round labels from that starting point
@@ -255,9 +257,81 @@ export default function DreamBrackets({ tour = 'atp' }) {
   // round's winners, ending with a single champion in the last round.
   const [rounds, setRounds] = useState([]);
 
+  const [shareUrl, setShareUrl] = useState(null);
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+
+  // Completed bracket: the last rounds entry is a single champion.
+  const champion = rounds.length > 1 && rounds[rounds.length - 1]?.length === 1
+    ? rounds[rounds.length - 1][0]
+    : null;
+  const runnerUp = champion && rounds[rounds.length - 2]?.length === 2
+    ? rounds[rounds.length - 2].find(p => p && p.id !== champion.id) || null
+    : null;
+
+  const handleShareBracket = async () => {
+    if (!champion) return;
+    setIsGeneratingShare(true);
+    try {
+      const canvas = await generateBracketShareCard({
+        champion,
+        runnerUp,
+        imageSrc: getPlayerImageSrc(champion),
+        runnerUpImageSrc: runnerUp ? getPlayerImageSrc(runnerUp) : null,
+        flagSrc: countryFlagUrl(champion.country),
+        runnerUpFlagSrc: runnerUp ? countryFlagUrl(runnerUp.country) : null,
+        surfaceKey: tournamentConfig.surfaceKey,
+        tournamentLabel: tournamentConfig.label,
+        stageLabel: stageConfig.label,
+        slotCount: stageConfig.slots,
+        simsPerMatch,
+        upsetMode,
+      });
+      setShareUrl(canvas.toDataURL('image/png'));
+    } finally {
+      setIsGeneratingShare(false);
+    }
+  };
+
+  const handleShareDownload = () => {
+    if (!shareUrl) return;
+    const a = document.createElement('a');
+    a.href = shareUrl;
+    a.download = `smash-bracket-${(champion?.name || 'champion').replace(/\s+/g, '-')}.png`;
+    a.click();
+  };
+
+  const shareCaption = champion
+    ? `My simulated ${tournamentConfig.label} bracket crowns ${champion.name} champion! Built on SMASH! ⚡ ${window.location.origin}`
+    : '';
+
+  const handleShareNative = async () => {
+    if (!shareUrl || !navigator.share) return;
+    try {
+      const blob = await (await fetch(shareUrl)).blob();
+      const file = new File([blob], 'smash-bracket.png', { type: 'image/png' });
+      await navigator.share({ files: [file], text: shareCaption });
+    } catch (_) { /* user cancelled */ }
+  };
+
+  const handleShareInstagram = async () => {
+    if (!shareUrl) return;
+    try {
+      const blob = await (await fetch(shareUrl)).blob();
+      const file = new File([blob], 'smash-bracket.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareCaption });
+        return;
+      }
+    } catch (_) { /* fall through to manual flow */ }
+    handleShareDownload();
+    try { await navigator.clipboard.writeText(shareCaption); } catch (_) { /* ignore */ }
+    window.open('https://www.instagram.com', '_blank', 'noopener');
+  };
+
   const resetBracketState = (slotCount) => {
     setSlots(Array(slotCount).fill(null));
     setRounds([]);
+    setShareUrl(null);
     setProgress(0);
     setIsRunning(false);
   };
@@ -687,8 +761,51 @@ export default function DreamBrackets({ tour = 'atp' }) {
             >
               Reset
             </Button>
+            {champion && (
+              <Button
+                className="adv-share-btn"
+                onClick={handleShareBracket}
+                disabled={isGeneratingShare}
+              >
+                {isGeneratingShare ? 'Generating…' : '↗ Share Bracket'}
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Bracket share card modal */}
+        {shareUrl && (
+          <div className="adv-share-overlay" onClick={() => setShareUrl(null)}>
+            <div className="adv-share-modal" onClick={e => e.stopPropagation()}>
+              <button className="adv-share-close" onClick={() => setShareUrl(null)}>✕</button>
+              <img src={shareUrl} alt="Bracket share card preview" className="adv-share-preview" />
+              <div className="adv-share-actions">
+                <Button size="sm" className="adv-share-action-btn" onClick={handleShareDownload}>
+                  ↓ Save Image
+                </Button>
+                {navigator.share && (
+                  <Button size="sm" className="adv-share-action-btn" onClick={handleShareNative}>
+                    ↗ Share…
+                  </Button>
+                )}
+                <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleShareInstagram}>
+                  📸 Instagram
+                </Button>
+              </div>
+              <p className="adv-share-hint">
+                Instagram saves the image and copies the caption, then attach it to your post.
+                {' '}Made with{' '}
+                <a
+                  className="adv-share-link"
+                  href={window.location.origin}
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  {window.location.host}
+                </a>
+              </p>
+            </div>
+          </div>
+        )}
 
         {isRunning && (
           <ProgressBar

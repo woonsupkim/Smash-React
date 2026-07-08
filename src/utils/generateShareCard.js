@@ -1,7 +1,9 @@
+// Shared canvas helpers — also used by generateBracketShareCard.js.
+
 // Clip image to a circle using the same crop as the app's player photos:
 // CSS object-fit: cover with object-position: top center — scale to cover the
 // square, center horizontally, align the image's TOP edge with the circle top.
-function drawCircularPhoto(ctx, img, cx, cy, radius, dimmed = false) {
+export function drawCircularPhoto(ctx, img, cx, cy, radius, dimmed = false) {
   ctx.save();
   if (dimmed) ctx.globalAlpha = 0.55;
   ctx.beginPath();
@@ -14,7 +16,7 @@ function drawCircularPhoto(ctx, img, cx, cy, radius, dimmed = false) {
   ctx.restore();
 }
 
-async function loadImg(src) {
+export async function loadImg(src) {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -24,16 +26,16 @@ async function loadImg(src) {
   });
 }
 
-function hexToRgb(hex) {
+export function hexToRgb(hex) {
   const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
   return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : [255, 255, 255];
 }
 
-function truncate(str, max = 20) {
+export function truncate(str, max = 20) {
   return str && str.length > max ? str.slice(0, max - 1) + '…' : (str || '');
 }
 
-function roundRectPath(ctx, x, y, w, h, r) {
+export function roundRectPath(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -47,7 +49,7 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function drawFlag(ctx, flagImg, x, y, w, h) {
+export function drawFlag(ctx, flagImg, x, y, w, h) {
   if (!flagImg) return;
   ctx.save();
   roundRectPath(ctx, x, y, w, h, 3);
@@ -57,7 +59,7 @@ function drawFlag(ctx, flagImg, x, y, w, h) {
 }
 
 // Court-inspired palettes per surface — instantly recognizable per Slam.
-const SURFACE_THEMES = {
+export const SURFACE_THEMES = {
   clay:  { bgTop: '#54200f', bgBottom: '#2e0f06', court: '#8a3c22' },
   grass: { bgTop: '#14351f', bgBottom: '#091d10', court: '#26543a' },
   hard:  { bgTop: '#0e2856', bgBottom: '#071531', court: '#1a447e' },
@@ -75,7 +77,7 @@ function pickVerdict({ favShare, straightSets, binom10 }) {
 
 // Confetti burst on the winner's half — celebratory, cheap to draw.
 // Simple LCG so the same matchup renders the same card every time.
-function drawConfetti(ctx, side, color, seedStr, W, H) {
+export function drawConfetti(ctx, side, color, seedStr, W, H) {
   let seed = 7;
   for (const ch of seedStr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
   const rand = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
