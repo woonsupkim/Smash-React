@@ -11,6 +11,7 @@
     "bootstrap": "^5.3.7",
     "framer-motion": "^12.23.0",
     "gh-pages": "^6.3.0",
+    "lucide-react": "^1.23.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
@@ -48,7 +49,8 @@
     "fetch-profiles-women": "node data-pipeline/fetchProfiles.js wta",
     "compute-matchup-facts-women": "node data-pipeline/computeMatchupFacts.js wta",
     "backtest-women": "node data-pipeline/backtest.js \"\" \"\" wta",
-    "refresh-stats-women": "npm run fetch-stats-women && npm run fetch-surfaces-women && npm run fetch-profiles-women && npm run compute-stats-women && npm run compute-matchup-facts-women && npm run build-stats-csv-women"
+    "refresh-stats-women": "npm run fetch-stats-women && npm run fetch-surfaces-women && npm run fetch-profiles-women && npm run compute-stats-women && npm run compute-matchup-facts-women && npm run build-stats-csv-women",
+    "build-track-record": "node data-pipeline/buildTrackRecord.js"
   },
   "eslintConfig": {
     "extends": [

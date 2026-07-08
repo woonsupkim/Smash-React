@@ -40,6 +40,7 @@ export default function MatchHero({
   upsetMode = false,
   setUpsetMode = null,
   upsetDisabledReason = null, // non-null disables the toggle, shown on hover
+  poolLoading = false, // roster CSV still parsing — show skeleton placeholders
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -144,7 +145,7 @@ export default function MatchHero({
       </div>
 
       <div className="match-hero-main">
-        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} />
+        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} poolLoading={poolLoading} />
 
         <div className="match-hero-center">
           {bothPicked ? (
@@ -248,7 +249,7 @@ export default function MatchHero({
           )}
         </div>
 
-        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" selector={selectorB} />
+        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" selector={selectorB} poolLoading={poolLoading} />
       </div>
 
       {bothPicked && (
@@ -269,7 +270,7 @@ export default function MatchHero({
   );
 }
 
-function PlayerCol({ player, getPlayerImageSrc, align, selector }) {
+function PlayerCol({ player, getPlayerImageSrc, align, selector, poolLoading }) {
   const flagUrl = player ? countryFlagUrl(player.country) : null;
   return (
     <div className={`match-hero-player ${align}`}>
@@ -289,7 +290,7 @@ function PlayerCol({ player, getPlayerImageSrc, align, selector }) {
           </div>
         </>
       ) : (
-        <div className="match-hero-photo match-hero-photo-placeholder" />
+        <div className={`match-hero-photo match-hero-photo-placeholder${poolLoading ? ' skeleton' : ''}`} />
       )}
     </div>
   );

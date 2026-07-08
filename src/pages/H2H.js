@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
-import Swal from 'sweetalert2';
 import { Button, Form } from 'react-bootstrap';
+import { toast } from '../components/ui/Toast';
+import AppModal from '../components/ui/AppModal';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
@@ -181,10 +182,10 @@ export default function H2H({ tour = 'atp' }) {
         if (playerA) setStatsA(rowA ? Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowA[k]) || 0) * 100])) : seedNormal(playerA));
         if (playerB) setStatsB(rowB ? Object.fromEntries(STAT_KEYS.map(([k]) => [k, (Number(rowB[k]) || 0) * 100])) : seedNormal(playerB));
         if ((playerA && !rowA) || (playerB && !rowB)) {
-          Swal.fire({
-            icon: 'info',
+          toast({
+            type: 'info',
             title: 'Not enough recent data',
-            text: 'One or both players have too few recent matches on this surface for an upset scenario, so their normal stats are used instead.'
+            message: 'One or both players have too few recent matches on this surface for an upset scenario, so their normal stats are used instead.',
           });
         }
       }
@@ -213,65 +214,41 @@ export default function H2H({ tour = 'atp' }) {
     setProgress(0);
   }, [playerA?.id, playerB?.id]);
 
-  const handleAddPlayer = async who => {
-    const htmlFields = `
-      <input id="swal-name" class="swal2-input" placeholder="Name">
-      ${STAT_KEYS.map(
-        ([key,label]) => `
-          <label style="color:#444;margin:4px 0">${label}: <span id="swal-${key}-val">50%</span></label>
-          <input id="swal-${key}" type="range" min="0" max="100" value="50"
-            class="swal2-range"
-            oninput="document.getElementById('swal-${key}-val').innerText = this.value + '%';">
-        `
-      ).join('')}
-      <input type="file" id="swal-file" class="swal2-file" accept="image/*">
-    `;
-    const { value: form } = await Swal.fire({
-      title: 'Add New Player',
-      html: htmlFields,
-      focusConfirm: false,
-      showCancelButton: true,
-      preConfirm: () => {
-        const name = document.getElementById('swal-name').value;
-        if (!name) {
-          Swal.showValidationMessage('Name is required');
-          return;
-        }
-        const stats = {};
-        STAT_KEYS.forEach(([key]) => {
-          stats[key] = +document.getElementById(`swal-${key}`).value;
-        });
-        const file = document.getElementById('swal-file').files[0] || null;
-        return { name, stats, file };
-      }
-    });
-    if (!form) return;
+  // Add-player modal state (replaces the old SweetAlert HTML form)
+  const [addPlayerFor, setAddPlayerFor] = useState(null); // 'A' | 'B' | null
+  const [addForm, setAddForm] = useState({ name: '', stats: Object.fromEntries(STAT_KEYS.map(([k]) => [k, 50])), file: null });
 
+  const handleAddPlayer = (who) => {
+    setAddForm({ name: '', stats: Object.fromEntries(STAT_KEYS.map(([k]) => [k, 50])), file: null });
+    setAddPlayerFor(who);
+  };
+
+  const confirmAddPlayer = async () => {
+    if (!addForm.name.trim()) return;
     let imageSrc = null;
-    if (form.file) {
+    if (addForm.file) {
       imageSrc = await new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = e => resolve(e.target.result);
-        reader.readAsDataURL(form.file);
+        reader.readAsDataURL(addForm.file);
       });
     }
-
-    const newId = `custom-${Date.now()}`;
     const newPlayer = {
-      id: newId,
-      name: form.name,
-      p1: form.stats.p1 / 100,
-      p2: form.stats.p2 / 100,
-      p3: form.stats.p3 / 100,
-      p4: form.stats.p4 / 100,
-      p5: form.stats.p5 / 100,
-      p6: form.stats.p6 / 100,
+      id: `custom-${Date.now()}`,
+      name: addForm.name.trim(),
+      p1: addForm.stats.p1 / 100,
+      p2: addForm.stats.p2 / 100,
+      p3: addForm.stats.p3 / 100,
+      p4: addForm.stats.p4 / 100,
+      p5: addForm.stats.p5 / 100,
+      p6: addForm.stats.p6 / 100,
       imageSrc,
       us_rd: 2
     };
     setPlayers(prev => [newPlayer, ...prev]);
-    if (who === 'A') setPlayerA(newPlayer);
+    if (addPlayerFor === 'A') setPlayerA(newPlayer);
     else setPlayerB(newPlayer);
+    setAddPlayerFor(null);
   };
 
   const runBatch = (pA, pB, n) => {
@@ -307,11 +284,10 @@ export default function H2H({ tour = 'atp' }) {
     step();
   };
 
-  const showPlayerError = () => Swal.fire({
-    icon: 'error',
-    title: 'No Players Selected',
-    text: 'Please pick both Player A and Player B!',
-    confirmButtonColor: '#3085d6'
+  const showPlayerError = () => toast({
+    type: 'warning',
+    title: 'No players selected',
+    message: 'Pick both Player A and Player B first.',
   });
 
   // Only one result view shows at a time — running a batch sim clears any
@@ -450,6 +426,7 @@ export default function H2H({ tour = 'atp' }) {
           accentTextColor={config.accentTextColor}
           h2hData={h2hData}
           getPlayerImageSrc={getPlayerImageSrc}
+          poolLoading={players.length === 0}
           statsA={statsA}
           statsB={statsB}
           upsetMode={upsetMode}
@@ -490,6 +467,46 @@ export default function H2H({ tour = 'atp' }) {
           surfaceKey={config.surfaceKey}
           h2hData={h2hData}
         />
+
+        <AppModal
+          show={!!addPlayerFor}
+          onHide={() => setAddPlayerFor(null)}
+          title="Add custom player"
+          confirmText="Add player"
+          onConfirm={confirmAddPlayer}
+          confirmDisabled={!addForm.name.trim()}
+        >
+          <Form.Group className="mb-3">
+            <Form.Label>Name</Form.Label>
+            <Form.Control
+              value={addForm.name}
+              onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Player name"
+              autoFocus
+            />
+          </Form.Group>
+          {STAT_KEYS.map(([key, label]) => (
+            <Form.Group className="mb-2" key={key}>
+              <Form.Label className="d-flex justify-content-between">
+                <span>{label}</span>
+                <span>{addForm.stats[key]}%</span>
+              </Form.Label>
+              <Form.Range
+                min={0} max={100}
+                value={addForm.stats[key]}
+                onChange={e => setAddForm(f => ({ ...f, stats: { ...f.stats, [key]: +e.target.value } }))}
+              />
+            </Form.Group>
+          ))}
+          <Form.Group>
+            <Form.Label>Photo (optional)</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/*"
+              onChange={e => setAddForm(f => ({ ...f, file: e.target.files[0] || null }))}
+            />
+          </Form.Group>
+        </AppModal>
       </div>
     </div>
   );

@@ -1,0 +1,59 @@
+.app-modal {
+  background: #16181d;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  color: var(--text-2);
+}
+
+.app-modal .modal-header {
+  border-bottom: 1px solid var(--border-1);
+  padding: 0.9rem 1.1rem;
+}
+
+.app-modal-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+.app-modal .modal-body { padding: 1.1rem; }
+
+.app-modal .modal-footer {
+  border-top: 1px solid var(--border-1);
+  padding: 0.7rem 1.1rem;
+}
+
+.app-modal-cancel {
+  border-color: var(--border-2);
+  color: var(--text-2);
+}
+.app-modal-cancel:hover { color: var(--text-1); border-color: var(--text-3); background: var(--surface-2); }
+
+.app-modal-confirm {
+  background: var(--accent-brand);
+  border-color: var(--accent-brand);
+  color: #10130a;
+  font-weight: 700;
+}
+.app-modal-confirm:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent-brand); border-color: var(--accent-brand); color: #10130a; }
+.app-modal-confirm:disabled { opacity: 0.5; }
+
+.app-modal input.form-control,
+.app-modal .form-control {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
+  border-radius: var(--radius-sm);
+}
+.app-modal .form-control:focus {
+  background: var(--surface-3);
+  border-color: var(--accent-brand);
+  color: var(--text-1);
+  box-shadow: none;
+}
+.app-modal .form-label { color: var(--text-2); font-size: 0.85rem; }
+
+.app-modal-backdrop { background: rgba(0, 0, 0, 0.7); }

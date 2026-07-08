@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
-import Swal from 'sweetalert2';
+import { ClipboardList, Share2, Download, Camera as InstagramIcon, X } from 'lucide-react';
+import { toast } from '../components/ui/Toast';
+import AppModal from '../components/ui/AppModal';
 import {
   Button,
   Form,
@@ -421,11 +423,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
   // fill every slot with a random, non-duplicate set of players from the pool
   const handleRandomizeAll = () => {
     if (playersPool.length < slots.length) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Not enough players',
-        text: `Need at least ${slots.length} players in the pool to randomize this bracket.`
-      });
+      toast({ type: 'warning', title: 'Not enough players', message: `Need at least ${slots.length} players in the pool to randomize this bracket.` });
       return;
     }
     const shuffled = [...playersPool].sort(() => Math.random() - 0.5);
@@ -447,11 +445,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
   // core bracket simulation
   const runDreamBracket = () => {
     if (slots.some(s => s === null)) {
-      Swal.fire({
-        icon: 'error',
-        title: `Fill all ${slots.length} spots`,
-        text: `Please pick a player for each ${stageConfig.label} slot.`
-      });
+      toast({ type: 'warning', title: `Fill all ${slots.length} spots`, message: `Pick a player for each ${stageConfig.label} slot.` });
       return;
     }
 
@@ -517,33 +511,30 @@ export default function DreamBrackets({ tour = 'atp' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tour]);
 
-  const handleEspnImport = async () => {
-    const { value: url } = await Swal.fire({
-      title: 'Import ESPN Bracket',
-      input: 'text',
-      inputPlaceholder: 'https://www.espn.com/tennis/wimbledon/bracket/_/season/2026',
-      inputLabel: 'Paste the ESPN bracket link',
-      showCancelButton: true,
-      confirmButtonText: 'Import',
-      background: '#1a1a1a',
-      color: '#fff',
-      inputAttributes: { autocomplete: 'off' },
-      customClass: { input: 'swal-dark-input' },
-    });
-    if (!url) return;
-    runEspnImport(url);
+  const [espnModalOpen, setEspnModalOpen] = useState(false);
+  const [espnUrl, setEspnUrl] = useState('');
+
+  const handleEspnImport = () => {
+    setEspnUrl('');
+    setEspnModalOpen(true);
+  };
+
+  const confirmEspnImport = () => {
+    if (!espnUrl.trim()) return;
+    setEspnModalOpen(false);
+    runEspnImport(espnUrl.trim());
   };
 
   const runEspnImport = async (url) => {
     const parsed = parseEspnUrl(url);
     if (!parsed) {
-      Swal.fire({ icon: 'error', title: 'Invalid URL', text: 'Paste a link like: https://www.espn.com/tennis/wimbledon/bracket/_/season/2026', background: '#1a1a1a', color: '#fff' });
+      toast({ type: 'error', title: 'Invalid URL', message: 'Paste a link like: https://www.espn.com/tennis/wimbledon/bracket/_/season/2026' });
       return;
     }
 
     const csvFile = ESPN_SLUG_TO_CSV[parsed.slug];
     if (!csvFile) {
-      Swal.fire({ icon: 'error', title: 'Unsupported tournament', text: `"${parsed.slug}" is not supported. Try wimbledon, french-open, or us-open.`, background: '#1a1a1a', color: '#fff' });
+      toast({ type: 'error', title: 'Unsupported tournament', message: `"${parsed.slug}" is not supported. Try wimbledon, french-open, or us-open.` });
       return;
     }
 
@@ -605,17 +596,17 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
       if (matchedCount < espnNames.length) {
         const missing = espnNames.filter((n, i) => !matched[i]);
-        Swal.fire({
-          icon: 'warning',
+        toast({
+          type: 'warning',
           title: `Imported ${matchedCount}/${espnNames.length} players`,
-          html: `Could not match: <br/><em>${missing.join(', ')}</em><br/><br/>Fill in the remaining slots manually.`,
-          background: '#1a1a1a', color: '#fff',
+          message: `Could not match: ${missing.join(', ')}. Fill in the remaining slots manually.`,
+          duration: 8000,
         });
       } else {
-        Swal.fire({ icon: 'success', title: `Imported ${matchedCount} players`, timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#fff' });
+        toast({ type: 'success', title: `Imported ${matchedCount} players`, message: 'Bracket filled from the ESPN draw.' });
       }
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Import failed', text: err.message, background: '#1a1a1a', color: '#fff' });
+      toast({ type: 'error', title: 'Import failed', message: err.message, duration: 7000 });
     } finally {
       setIsImporting(false);
     }
@@ -770,7 +761,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
               disabled={isRunning || isImporting}
               title="Paste an ESPN bracket link to auto-fill players"
             >
-              {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : '📋 ESPN'}
+              {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : <><ClipboardList size={15} style={{ marginRight: 5, verticalAlign: -2 }} />ESPN</>}
             </Button>
             <Button
               variant="secondary"
@@ -785,29 +776,50 @@ export default function DreamBrackets({ tour = 'atp' }) {
                 onClick={handleShareBracket}
                 disabled={isGeneratingShare}
               >
-                {isGeneratingShare ? 'Generating…' : '↗ Share Bracket'}
+                {isGeneratingShare ? 'Generating…' : <><Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share Bracket</>}
               </Button>
             )}
           </div>
         </div>
 
+        <AppModal
+          show={espnModalOpen}
+          onHide={() => setEspnModalOpen(false)}
+          title="Import ESPN bracket"
+          confirmText="Import"
+          onConfirm={confirmEspnImport}
+          confirmDisabled={!espnUrl.trim()}
+        >
+          <Form.Group>
+            <Form.Label>Paste the ESPN bracket link</Form.Label>
+            <Form.Control
+              value={espnUrl}
+              onChange={e => setEspnUrl(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') confirmEspnImport(); }}
+              placeholder="https://www.espn.com/tennis/wimbledon/bracket/_/season/2026"
+              autoFocus
+              autoComplete="off"
+            />
+          </Form.Group>
+        </AppModal>
+
         {/* Bracket share card modal */}
         {shareUrl && (
           <div className="adv-share-overlay" onClick={() => setShareUrl(null)}>
             <div className="adv-share-modal" onClick={e => e.stopPropagation()}>
-              <button className="adv-share-close" onClick={() => setShareUrl(null)}>✕</button>
+              <button className="adv-share-close" aria-label="Close" onClick={() => setShareUrl(null)}><X size={18} /></button>
               <img src={shareUrl} alt="Bracket share card preview" className="adv-share-preview" />
               <div className="adv-share-actions">
                 <Button size="sm" className="adv-share-action-btn" onClick={handleShareDownload}>
-                  ↓ Save Image
+                  <Download size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Save Image
                 </Button>
                 {navigator.share && (
                   <Button size="sm" className="adv-share-action-btn" onClick={handleShareNative}>
-                    ↗ Share…
+                    <Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share…
                   </Button>
                 )}
                 <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleShareInstagram}>
-                  📸 Instagram
+                  <InstagramIcon size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Instagram
                 </Button>
               </div>
               <p className="adv-share-hint">

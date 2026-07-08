@@ -1,0 +1,251 @@
+.track-bg {
+  background: linear-gradient(180deg, #0d1117 0%, #090b10 100%);
+}
+
+.track-overlay {
+  background: none;
+  padding: 90px 20px 60px;
+  min-height: 100vh;
+}
+
+.track-page {
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.track-header { text-align: center; margin-bottom: 1.5rem; }
+
+.track-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  margin: 0.25rem 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.track-sub {
+  color: var(--text-3);
+  font-size: 0.95rem;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+.track-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.track-seg {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.track-seg-btn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+}
+.track-seg-btn:hover { color: var(--text-1); }
+.track-seg-btn.active {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+/* ── Summary cards ────────────────────────────────────────────────────── */
+.track-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.track-stat-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  text-align: center;
+}
+
+.track-stat-value {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.track-stat-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-top: 0.35rem;
+}
+
+.track-stat-sub {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 0.1rem;
+}
+
+/* ── Calibration ──────────────────────────────────────────────────────── */
+.track-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.6rem;
+}
+
+.track-calibration {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.track-cal-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.track-cal-bucket { text-align: center; }
+
+.track-cal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 90px;
+  margin-bottom: 0.4rem;
+  justify-content: center;
+}
+
+.track-cal-bar {
+  width: 18px;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+}
+.track-cal-bar.expected { background: var(--surface-3); border: 1px solid var(--border-2); }
+.track-cal-bar.actual { background: var(--accent-positive); }
+
+.track-cal-rate {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+.track-cal-label { font-size: 0.72rem; color: var(--text-2); }
+.track-cal-n { font-size: 0.66rem; color: var(--text-3); }
+
+.track-cal-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-left: auto;
+  align-self: center;
+}
+.track-cal-legend .dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 2px;
+  margin-right: 5px;
+}
+.track-cal-legend .dot.expected { background: var(--surface-3); border: 1px solid var(--border-2); }
+.track-cal-legend .dot.actual { background: var(--accent-positive); }
+
+/* ── Match log ────────────────────────────────────────────────────────── */
+.track-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 250px;
+  gap: 1rem;
+  align-items: center;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.45rem;
+}
+.track-row.miss { border-left: 3px solid var(--accent-negative); }
+.track-row:not(.miss) { border-left: 3px solid var(--accent-positive); }
+
+.track-row-meta { display: flex; flex-direction: column; gap: 0.1rem; }
+.track-row-tourney { font-size: 0.72rem; font-weight: 700; }
+.track-row-round { font-size: 0.7rem; color: var(--text-3); }
+
+.track-row-matchup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--text-2);
+}
+.track-player { display: inline-flex; align-items: center; gap: 0.35rem; }
+.track-player img { width: 16px; height: 11px; border-radius: 2px; object-fit: cover; }
+.track-player.won { color: var(--text-1); font-weight: 700; }
+.track-vs { color: var(--text-3); font-size: 0.75rem; }
+.track-score {
+  color: var(--text-3);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.25rem;
+}
+
+.track-row-model { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.track-prob-bar {
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.track-prob-fill { height: 100%; border-radius: 3px; }
+.track-prob-fill.hit { background: var(--accent-positive); }
+.track-prob-fill.miss { background: var(--accent-negative); }
+
+.track-verdict { font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.track-verdict.hit { color: var(--accent-positive); }
+.track-verdict.miss { color: var(--accent-negative); }
+
+.track-empty {
+  color: var(--text-3);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.track-footnote {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* ── Skeletons ────────────────────────────────────────────────────────── */
+.track-skeletons { display: flex; flex-direction: column; gap: 0.5rem; }
+.track-skel-card { height: 110px; border-radius: var(--radius-lg); }
+.track-skel-row { height: 58px; border-radius: var(--radius-md); }
+
+@media (max-width: 700px) {
+  .track-row { grid-template-columns: 1fr; gap: 0.4rem; }
+}

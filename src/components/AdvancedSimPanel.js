@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button, Form, Spinner, ProgressBar, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import {
   ResponsiveContainer,
@@ -12,6 +12,7 @@ import {
   YAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Share2, Download, Camera as InstagramIcon, X, Check, AlertTriangle, Zap } from 'lucide-react';
 import { credibleInterval, confidenceLabel } from '../credibleInterval';
 import { generateShareCard } from '../utils/generateShareCard';
 import { countryFlagUrl } from './countryFlags';
@@ -74,6 +75,7 @@ export default function AdvancedSimPanel({
   const [open, setOpen] = useState(defaultOpen);
   const [shareUrl, setShareUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const resultsRef = useRef(null);
 
   const handleShare = useCallback(async () => {
     if (!batchResult) return;
@@ -229,6 +231,14 @@ export default function AdvancedSimPanel({
     return { name: underdogName, pct: favoredWins ? Math.round(tookSet / favoredWins * 100) : 0 };
   })();
 
+  // Results render below the fold — bring them into view when a run lands
+  const hasBatch = !!(batchResult && showResults && liveLog.length === 0);
+  useEffect(() => {
+    if (hasBatch && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [hasBatch]);
+
   const renderFixedLegend = () => (
     <ul className="adv-legend">
       <li><span style={{ backgroundColor:VS_COLORS[0] }}/>{playerA.name}</li>
@@ -342,6 +352,7 @@ export default function AdvancedSimPanel({
           <AnimatePresence>
             {showBatch && (
               <motion.div
+                ref={resultsRef}
                 className="adv-results-row"
                 initial={{ opacity:0 }}
                 animate={{ opacity:1 }}
@@ -421,15 +432,15 @@ export default function AdvancedSimPanel({
 
                         {/* Confidence badge — based on win rate, not sample size */}
                         {favProb >= 0.70 ? (
-                          <div className="adv-flag adv-flag--confident">✓ High confidence</div>
+                          <div className="adv-flag adv-flag--confident"><Check size={12} style={{ verticalAlign: -2, marginRight: 3 }} />High confidence</div>
                         ) : favProb < 0.60 ? (
-                          <div className="adv-flag adv-flag--warn">⚠ Low confidence — toss-up matchup</div>
+                          <div className="adv-flag adv-flag--warn"><AlertTriangle size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Low confidence · toss-up matchup</div>
                         ) : null}
 
                         {/* Underdog flag — binomial P(underdog wins >5 of 10 games) */}
                         {binom10 >= 0.10 && (
                           <div className="adv-flag adv-flag--underdog">
-                            ⚡ Underdog alert — {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
+                            <Zap size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Underdog alert · {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
                           </div>
                         )}
 
@@ -477,7 +488,7 @@ export default function AdvancedSimPanel({
                   onClick={handleShare}
                   disabled={isGenerating}
                 >
-                  {isGenerating ? 'Generating…' : '↗ Share Prediction'}
+                  {isGenerating ? 'Generating…' : <><Share2 size={14} style={{ marginRight: 6, verticalAlign: -2 }} />Share Prediction</>}
                 </Button>
               </div>
               </motion.div>
@@ -488,19 +499,19 @@ export default function AdvancedSimPanel({
           {shareUrl && (
             <div className="adv-share-overlay" onClick={() => setShareUrl(null)}>
               <div className="adv-share-modal" onClick={e => e.stopPropagation()}>
-                <button className="adv-share-close" onClick={() => setShareUrl(null)}>✕</button>
+                <button className="adv-share-close" aria-label="Close" onClick={() => setShareUrl(null)}><X size={18} /></button>
                 <img src={shareUrl} alt="Share card preview" className="adv-share-preview" />
                 <div className="adv-share-actions">
                   <Button size="sm" className="adv-share-action-btn" onClick={handleDownload}>
-                    ↓ Save Image
+                    <Download size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Save Image
                   </Button>
                   {navigator.share && (
                     <Button size="sm" className="adv-share-action-btn" onClick={handleNativeShare}>
-                      ↗ Share…
+                      <Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share…
                     </Button>
                   )}
                   <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleInstagram}>
-                    📸 Instagram
+                    <InstagramIcon size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Instagram
                   </Button>
                 </div>
                 <p className="adv-share-hint">
@@ -535,6 +546,7 @@ export default function AdvancedSimPanel({
             </div>
           )}
 
+          <div className="adv-section-label">Fine-tune stats · drag to explore what-ifs</div>
           <div className="adv-sliders-row">
             <div className="sim-col">
               {STAT_KEYS.map(([k,label],i)=>(

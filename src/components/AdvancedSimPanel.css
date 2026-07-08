@@ -227,6 +227,16 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
+.adv-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
 .adv-sliders-row {
   display: flex;
   flex-wrap: wrap;

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
-import Swal from 'sweetalert2';
+import { toast } from '../components/ui/Toast';
+import AppModal from '../components/ui/AppModal';
 import logoHome from '../assets/ball.png';
 import { playSwoosh, playSmack, playServeWhoosh } from '../utils/introSounds';
 import './Home.css';
@@ -53,27 +54,28 @@ export default function Home({ tour = 'atp' }) {
     return () => { clearTimeout(tid); clearTimeout(entryTid); clearTimeout(travelSwooshTid); clearTimeout(smackTid); };
   }, [showIntro]);
 
-  const handleUpdateData = async () => {
-    const { value: password } = await Swal.fire({
-      title: 'Admin password',
-      input: 'password',
-      inputPlaceholder: 'Password',
-      showCancelButton: true,
-      confirmButtonText: 'Trigger refresh',
-    });
-    if (!password) return;
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
 
+  const handleUpdateData = () => {
+    setAdminPassword('');
+    setAdminModalOpen(true);
+  };
+
+  const confirmUpdateData = async () => {
+    if (!adminPassword) return;
+    setAdminModalOpen(false);
     try {
       const res = await fetch('/api/trigger-refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: adminPassword }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Refresh failed');
-      Swal.fire({ icon: 'success', title: 'Refresh triggered', text: data.message });
+      toast({ type: 'success', title: 'Refresh triggered', message: data.message });
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Could not trigger refresh', text: err.message });
+      toast({ type: 'error', title: 'Could not trigger refresh', message: err.message });
     }
   };
 
@@ -172,6 +174,27 @@ export default function Home({ tour = 'atp' }) {
           )}
         </div>
       </motion.div>
+
+      <AppModal
+        show={adminModalOpen}
+        onHide={() => setAdminModalOpen(false)}
+        title="Admin: refresh data"
+        confirmText="Trigger refresh"
+        onConfirm={confirmUpdateData}
+        confirmDisabled={!adminPassword}
+      >
+        <Form.Group>
+          <Form.Label>Admin password</Form.Label>
+          <Form.Control
+            type="password"
+            value={adminPassword}
+            onChange={e => setAdminPassword(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') confirmUpdateData(); }}
+            placeholder="Password"
+            autoFocus
+          />
+        </Form.Group>
+      </AppModal>
     </div>
   );
 }

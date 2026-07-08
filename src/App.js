@@ -5,8 +5,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation,
 import Home from './pages/Home';
 import H2H from './pages/H2H';
 import DreamBrackets from './pages/DreamBrackets';
+import TrackRecord from './pages/TrackRecord';
 
 import GATracker from './components/GATracker'; // <-- added this line
+import { ToastHost } from './components/ui/Toast';
 import { Analytics } from '@vercel/analytics/react';
 import { motion } from 'framer-motion';
 
@@ -18,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Home' },
   { to: '/h2h?surface=hard', label: 'H2H' },
   { to: '/dream-brackets', label: 'Brackets' },
+  { to: '/track-record', label: 'Track Record' },
   // { to: '/about', label: 'About Us' }
 ];
 
@@ -115,6 +118,7 @@ function App() {
     <Router>
       <GATracker /> {/* <-- Google Analytics route change tracker */}
       <Analytics /> {/* <-- Vercel Web Analytics */}
+      <ToastHost />
       <NavBar />
 
       <main className="page-content">
@@ -126,6 +130,11 @@ function App() {
           <Route path="/women" element={<Home tour="wta" />} />
           <Route path="/women/h2h" element={<H2H tour="wta" />} />
           <Route path="/women/dream-brackets" element={<DreamBrackets tour="wta" />} />
+
+          {/* Track record covers both tours internally (ATP/WTA filter on
+              the page itself); the /women mirror keeps nav links working */}
+          <Route path="/track-record" element={<TrackRecord />} />
+          <Route path="/women/track-record" element={<TrackRecord />} />
 
           {/* Pre-merge URLs — redirect rather than 404 for any existing
               bookmarks/links to the old per-tournament pages. */}
