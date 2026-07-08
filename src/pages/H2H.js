@@ -99,6 +99,9 @@ export default function H2H({ tour = 'atp' }) {
   // 60-day-calibrated CSV — toggling this re-seeds the sliders, it doesn't
   // run a simulation by itself.
   const [upsetMode, setUpsetMode]         = useState(false);
+  // ids with enough recent same-surface matches for real upset stats
+  // (upset_ok=1 in the _upset.csv) — the toggle is disabled for anyone else.
+  const [upsetOkIds, setUpsetOkIds]       = useState(null);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
   const prevDataDirRef                    = useRef(dataDir);
@@ -135,6 +138,16 @@ export default function H2H({ tour = 'atp' }) {
       .then(r => r.json())
       .then(setH2hData)
       .catch(() => setH2hData({}));
+    // Which players have real upset stats on this surface (upset_ok=1)
+    setUpsetOkIds(null);
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile.replace('.csv', '_upset.csv'), {
+      header: true,
+      download: true,
+      complete: ({ data }) => {
+        setUpsetOkIds(new Set(data.filter(r => r.id && Number(r.upset_ok) === 1).map(r => r.id)));
+      },
+      error: () => setUpsetOkIds(new Set()),
+    });
     setBatchResult(null);
     setLiveLog([]);
     setIsWatching(false);
@@ -349,6 +362,20 @@ export default function H2H({ tour = 'atp' }) {
     advance();
   };
 
+  // Reason the Upset Scenario toggle is disabled (null = available). Only
+  // players with enough recent same-surface matches (upset_ok=1) can use it.
+  const upsetDisabledReason = (() => {
+    if (!playerA || !playerB || !upsetOkIds) return null;
+    const lacking = [playerA, playerB].filter(p => !upsetOkIds.has(p.id)).map(p => p.name);
+    if (lacking.length === 0) return null;
+    return `${lacking.join(' and ')} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent ${config.surfaceLabel.toLowerCase()} matches for an upset scenario.`;
+  })();
+
+  // If a player switch makes upset mode unavailable, snap it back off.
+  useEffect(() => {
+    if (upsetMode && upsetDisabledReason) setUpsetMode(false);
+  }, [upsetMode, upsetDisabledReason]);
+
   const buildOptions = (excludeId) => [
     { value:'add', label:'+ Add Player' },
     ...players.filter(p => p.id !== excludeId).map(p => ({ value:p.id, label:p.name, data:p }))
@@ -427,6 +454,7 @@ export default function H2H({ tour = 'atp' }) {
           statsB={statsB}
           upsetMode={upsetMode}
           setUpsetMode={setUpsetMode}
+          upsetDisabledReason={upsetDisabledReason}
         />
 
         <AdvancedSimPanel
@@ -453,6 +481,7 @@ export default function H2H({ tour = 'atp' }) {
           isWatching={isWatching}
           upsetMode={upsetMode}
           setUpsetMode={setUpsetMode}
+          upsetDisabledReason={upsetDisabledReason}
           onSimulate={handleSimulate}
           onWatchMatch={handleWatchMatch}
           bestOf={bestOf}

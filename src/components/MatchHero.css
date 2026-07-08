@@ -125,6 +125,20 @@
   font-size: 0.85rem;
 }
 
+/* Disabled state: the wrapper span receives the hover for the tooltip while
+   the inert switch underneath ignores pointer events. Block display keeps it
+   on its own centered line (inline-block would let the next element — e.g.
+   the "Modeled win probability" label — flow up beside it). */
+.upset-toggle-disabled-wrap {
+  display: block;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.upset-toggle-disabled-wrap .form-check { pointer-events: none; }
+
 .match-hero-bar-label-top {
   font-size: 0.7rem;
   text-transform: uppercase;

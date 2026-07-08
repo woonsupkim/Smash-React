@@ -39,6 +39,7 @@ export default function MatchHero({
   statsB = null,
   upsetMode = false,
   setUpsetMode = null,
+  upsetDisabledReason = null, // non-null disables the toggle, shown on hover
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -150,15 +151,33 @@ export default function MatchHero({
             <>
               <div className="match-hero-vs">VS</div>
               {setUpsetMode && (
-                <Form.Check
-                  type="switch"
-                  id="hero-upset-toggle"
-                  className="match-hero-upset-toggle"
-                  label="Upset Scenario"
-                  checked={upsetMode}
-                  onChange={() => setUpsetMode(v => !v)}
-                  disabled={isRolling}
-                />
+                upsetDisabledReason ? (
+                  // Disabled inputs swallow mouse events, so the tooltip
+                  // hangs off a wrapper span and the switch itself gets
+                  // pointer-events: none.
+                  <OverlayTrigger placement="top" overlay={<Tooltip>{upsetDisabledReason}</Tooltip>}>
+                    <span className="match-hero-upset-toggle upset-toggle-disabled-wrap">
+                      <Form.Check
+                        type="switch"
+                        id="hero-upset-toggle"
+                        label="Upset Scenario"
+                        checked={false}
+                        onChange={() => {}}
+                        disabled
+                      />
+                    </span>
+                  </OverlayTrigger>
+                ) : (
+                  <Form.Check
+                    type="switch"
+                    id="hero-upset-toggle"
+                    className="match-hero-upset-toggle"
+                    label="Upset Scenario"
+                    checked={upsetMode}
+                    onChange={() => setUpsetMode(v => !v)}
+                    disabled={isRolling}
+                  />
+                )
               )}
               <OverlayTrigger
                 placement="top"

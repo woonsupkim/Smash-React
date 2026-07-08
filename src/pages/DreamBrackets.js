@@ -7,7 +7,9 @@ import {
   Button,
   Form,
   Spinner,
-  ProgressBar
+  ProgressBar,
+  OverlayTrigger,
+  Tooltip
 } from 'react-bootstrap';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
@@ -243,6 +245,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
   // heavy-recency-weighted stats (7-day half-life) instead of the default
   // 60-day-calibrated CSV — see data-pipeline/computeStats.js "upset" suffix
   const [upsetMode, setUpsetMode] = useState(false);
+  // ids with real upset stats on this tournament's surface (upset_ok=1) —
+  // the toggle is disabled when any picked player lacks recent data.
+  const [upsetOkIds, setUpsetOkIds] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -291,6 +296,37 @@ export default function DreamBrackets({ tour = 'atp' }) {
       }
     });
   }, [tournament, upsetMode, dataDir]);
+
+  // Track which players have real upset stats for the selected tournament.
+  useEffect(() => {
+    setUpsetOkIds(null);
+    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + tournament.replace('.csv', '_upset.csv'), {
+      header: true,
+      download: true,
+      complete: ({ data }) => {
+        setUpsetOkIds(new Set(data.filter(r => r.id && Number(r.upset_ok) === 1).map(r => r.id)));
+      },
+      error: () => setUpsetOkIds(new Set()),
+    });
+  }, [tournament, dataDir]);
+
+  // Reason the Upset Scenario toggle is disabled (null = available).
+  const upsetDisabledReason = (() => {
+    if (!upsetOkIds) return null;
+    if (upsetOkIds.size === 0) {
+      return 'No players have enough recent matches on this surface for an upset scenario.';
+    }
+    const lacking = slots.filter(Boolean).filter(p => !upsetOkIds.has(p.id)).map(p => p.name);
+    if (lacking.length === 0) return null;
+    const shown = lacking.slice(0, 3).join(', ');
+    const extra = lacking.length > 3 ? ` and ${lacking.length - 3} more` : '';
+    return `${shown}${extra} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent matches on this surface for an upset scenario.`;
+  })();
+
+  // If picks change and make upset mode unavailable, snap it back off.
+  useEffect(() => {
+    if (upsetMode && upsetDisabledReason) setUpsetMode(false);
+  }, [upsetMode, upsetDisabledReason]);
 
   // switching the starting stage changes the slot count — reset picks/results
   const handleStageChange = (value) => {
@@ -611,15 +647,30 @@ export default function DreamBrackets({ tour = 'atp' }) {
             >
               Random
             </Button>
-            <Form.Check
-              type="switch"
-              id="upset-mode-toggle"
-              className="upset-toggle-switch"
-              label="Upset Scenario"
-              checked={upsetMode}
-              onChange={() => setUpsetMode(v => !v)}
-              disabled={isRunning}
-            />
+            {upsetDisabledReason ? (
+              <OverlayTrigger placement="top" overlay={<Tooltip>{upsetDisabledReason}</Tooltip>}>
+                <span className="upset-toggle-switch upset-toggle-disabled-wrap">
+                  <Form.Check
+                    type="switch"
+                    id="upset-mode-toggle"
+                    label="Upset Scenario"
+                    checked={false}
+                    onChange={() => {}}
+                    disabled
+                  />
+                </span>
+              </OverlayTrigger>
+            ) : (
+              <Form.Check
+                type="switch"
+                id="upset-mode-toggle"
+                className="upset-toggle-switch"
+                label="Upset Scenario"
+                checked={upsetMode}
+                onChange={() => setUpsetMode(v => !v)}
+                disabled={isRunning}
+              />
+            )}
             <Button
               variant="outline-light"
               style={{ borderColor: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}

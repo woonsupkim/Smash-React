@@ -47,7 +47,11 @@ function main() {
       ? path.join(PUBLIC_DATA_DIR, file.replace('.csv', `${suffix}.csv`))
       : templatePath;
     const { data: rows, meta } = Papa.parse(fs.readFileSync(templatePath, 'utf8'), { header: true });
-    const fields = meta.fields.includes('p6') ? meta.fields : [...meta.fields, 'p6'];
+    let fields = meta.fields.includes('p6') ? meta.fields : [...meta.fields, 'p6'];
+    // Upset variants flag which players actually had enough recent-surface
+    // data (the rest keep normal stats) — the UI disables the Upset Scenario
+    // toggle for players with upset_ok=0 instead of silently doing nothing.
+    if (suffix && !fields.includes('upset_ok')) fields = [...fields, 'upset_ok'];
 
     let updated = 0;
     let missing = 0;
@@ -57,10 +61,10 @@ function main() {
         missing++;
         // p6 is a new column — give rows with no surface-specific data yet
         // a neutral fallback instead of leaving it blank.
-        return { ...row, p6: row.p6 || '0.05' };
+        return { ...row, p6: row.p6 || '0.05', ...(suffix ? { upset_ok: 0 } : {}) };
       }
       updated++;
-      return { ...row, p1: stat.p1, p2: stat.p2, p3: stat.p3, p4: stat.p4, p5: stat.p5, p6: stat.p6 };
+      return { ...row, p1: stat.p1, p2: stat.p2, p3: stat.p3, p4: stat.p4, p5: stat.p5, p6: stat.p6, ...(suffix ? { upset_ok: 1 } : {}) };
     });
 
     fs.writeFileSync(csvPath, Papa.unparse({ fields, data: merged }));

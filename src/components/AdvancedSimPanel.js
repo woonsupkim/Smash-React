@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Form, Spinner, ProgressBar } from 'react-bootstrap';
+import { Button, Form, Spinner, ProgressBar, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import {
   ResponsiveContainer,
   PieChart,
@@ -53,6 +53,7 @@ export default function AdvancedSimPanel({
   isWatching,
   upsetMode,
   setUpsetMode,
+  upsetDisabledReason = null, // non-null disables the toggle, shown on hover
   onSimulate,
   onWatchMatch,
   bestOf = 5, // 5 (ATP Grand Slam) or 3 (WTA Grand Slam)
@@ -313,15 +314,30 @@ export default function AdvancedSimPanel({
             </div>
           </div>
 
-          <Form.Check
-            type="switch"
-            id="upset-mode-toggle"
-            className="upset-toggle-switch"
-            label="Upset Scenario"
-            checked={upsetMode}
-            onChange={() => setUpsetMode(v => !v)}
-            disabled={isRunning||isWatching}
-          />
+          {upsetDisabledReason ? (
+            <OverlayTrigger placement="top" overlay={<Tooltip>{upsetDisabledReason}</Tooltip>}>
+              <span className="upset-toggle-switch upset-toggle-disabled-wrap">
+                <Form.Check
+                  type="switch"
+                  id="upset-mode-toggle"
+                  label="Upset Scenario"
+                  checked={false}
+                  onChange={() => {}}
+                  disabled
+                />
+              </span>
+            </OverlayTrigger>
+          ) : (
+            <Form.Check
+              type="switch"
+              id="upset-mode-toggle"
+              className="upset-toggle-switch"
+              label="Upset Scenario"
+              checked={upsetMode}
+              onChange={() => setUpsetMode(v => !v)}
+              disabled={isRunning||isWatching}
+            />
+          )}
 
           <AnimatePresence>
             {showBatch && (
