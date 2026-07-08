@@ -42,16 +42,15 @@ export default function Home({ tour = 'atp' }) {
 
   useEffect(() => {
     if (!showIntro) return;
-    // Swoosh as the ball springs in; hold on the fully-revealed logo+title
-    // for a beat, then the logo morphs into the nav's home button (0.7s
-    // layout animation) — the smack lands when it hits the top corner.
-    const swooshTid = setTimeout(playSwoosh, 100);
+    // Air-cutting swoosh as the ball spins in; hold on the fully-revealed
+    // logo+title for a beat, then the logo morphs into the nav's home button
+    // (0.7s layout animation) — an airy serve-flight whoosh covers the
+    // travel, capped by the smack when it hits the top corner.
+    const entryTid = setTimeout(playSwoosh, 100);
     const tid = setTimeout(() => setShowIntro(false), 2200);
-    // Airy serve-flight whoosh covers the ball's travel to the top corner
-    // (0.7s morph), capped by the serve-impact puck right as it lands.
     const travelSwooshTid = setTimeout(playServeWhoosh, 2200);
     const smackTid = setTimeout(playSmack, 2200 + 650);
-    return () => { clearTimeout(tid); clearTimeout(swooshTid); clearTimeout(travelSwooshTid); clearTimeout(smackTid); };
+    return () => { clearTimeout(tid); clearTimeout(entryTid); clearTimeout(travelSwooshTid); clearTimeout(smackTid); };
   }, [showIntro]);
 
   const handleUpdateData = async () => {
@@ -161,7 +160,7 @@ export default function Home({ tour = 'atp' }) {
         </div>
 
         <div className="home-footer">
-          <span className="trust-signal">Powered by real {isWta ? 'WTA' : 'ATP'} match data, not made-up numbers.</span>
+          <span className="trust-signal">Powered by real match data</span>
           <button type="button" className="update-data-link" onClick={handleUpdateData}>
             Update Data
           </button>

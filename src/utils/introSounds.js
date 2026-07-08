@@ -61,44 +61,30 @@ export function playSmack() {
     if (!ac || ac.state !== 'running') return;
     const t = ac.currentTime;
 
-    // Dominant "thock": a hard-struck damped tone — this is the BALL, the
-    // solid pitched core of a racket hit (pure noise sounds like a whiff).
-    const thock = ac.createOscillator();
-    thock.type = 'triangle';
-    thock.frequency.setValueAtTime(340, t);
-    thock.frequency.exponentialRampToValueAtTime(150, t + 0.07);
-    const thockGain = ac.createGain();
-    thockGain.gain.setValueAtTime(0.95, t);
-    thockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
-    thock.connect(thockGain).connect(ac.destination);
-    thock.start(t);
-    thock.stop(t + 0.11);
+    // Original crack + thump: a sharp high-frequency noise crack plus a
+    // low sine thump that pitch-drops, both with fast decays.
+    const crack = ac.createBufferSource();
+    crack.buffer = noiseBuffer(ac, 0.12);
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 1800;
+    const crackGain = ac.createGain();
+    crackGain.gain.setValueAtTime(0.5, t);
+    crackGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    crack.connect(hp).connect(crackGain).connect(ac.destination);
+    crack.start(t);
+    crack.stop(t + 0.12);
 
-    // Very short contact click on top — the string-bed snap at impact
-    const click = ac.createBufferSource();
-    click.buffer = noiseBuffer(ac, 0.03);
-    const bp = ac.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 900;
-    bp.Q.value = 1.0;
-    const clickGain = ac.createGain();
-    clickGain.gain.setValueAtTime(0.55, t);
-    clickGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-    click.connect(bp).connect(clickGain).connect(ac.destination);
-    click.start(t);
-    click.stop(t + 0.03);
-
-    // Low thump underneath for the body of the hit
     const thump = ac.createOscillator();
     thump.type = 'sine';
-    thump.frequency.setValueAtTime(110, t);
-    thump.frequency.exponentialRampToValueAtTime(55, t + 0.09);
+    thump.frequency.setValueAtTime(190, t);
+    thump.frequency.exponentialRampToValueAtTime(55, t + 0.12);
     const thumpGain = ac.createGain();
-    thumpGain.gain.setValueAtTime(0.55, t);
-    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    thumpGain.gain.setValueAtTime(0.45, t);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
     thump.connect(thumpGain).connect(ac.destination);
     thump.start(t);
-    thump.stop(t + 0.13);
+    thump.stop(t + 0.15);
   } catch (_) { /* audio unavailable — stay silent */ }
 }
 
