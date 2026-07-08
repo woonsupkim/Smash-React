@@ -52,37 +52,69 @@ export function playSwoosh() {
   } catch (_) { /* audio unavailable — stay silent */ }
 }
 
-// Racket smack: a sharp high-frequency noise crack plus a low "thump"
-// oscillator that pitch-drops, both with fast decays.
+// Serve impact: the airy "puck" of a big first serve (or a billiard ball
+// click with body) — a dull broadband thud, no ringing tones. Built from a
+// very short noise burst rolled off above ~1 kHz plus a fast low thump.
 export function playSmack() {
   try {
     const ac = getCtx();
     if (!ac || ac.state !== 'running') return;
     const t = ac.currentTime;
 
-    // crack
-    const src = ac.createBufferSource();
-    src.buffer = noiseBuffer(ac, 0.12);
-    const hp = ac.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 1800;
-    const crackGain = ac.createGain();
-    crackGain.gain.setValueAtTime(0.5, t);
-    crackGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    src.connect(hp).connect(crackGain).connect(ac.destination);
-    src.start(t);
-    src.stop(t + 0.12);
+    // airy puck: broadband noise, lowpassed so it thuds instead of cracks
+    const puck = ac.createBufferSource();
+    puck.buffer = noiseBuffer(ac, 0.09);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.6;
+    lp.frequency.setValueAtTime(1200, t);
+    lp.frequency.exponentialRampToValueAtTime(350, t + 0.06);
+    const puckGain = ac.createGain();
+    puckGain.gain.setValueAtTime(1.3, t);
+    puckGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    puck.connect(lp).connect(puckGain).connect(ac.destination);
+    puck.start(t);
+    puck.stop(t + 0.09);
 
-    // thump
-    const osc = ac.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(190, t);
-    osc.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    // low thump underneath for the "body" of the hit
+    const thump = ac.createOscillator();
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(130, t);
+    thump.frequency.exponentialRampToValueAtTime(65, t + 0.08);
     const thumpGain = ac.createGain();
-    thumpGain.gain.setValueAtTime(0.45, t);
-    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-    osc.connect(thumpGain).connect(ac.destination);
-    osc.start(t);
-    osc.stop(t + 0.15);
+    thumpGain.gain.setValueAtTime(0.5, t);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    thump.connect(thumpGain).connect(ac.destination);
+    thump.start(t);
+    thump.stop(t + 0.12);
+  } catch (_) { /* audio unavailable — stay silent */ }
+}
+
+// Ball-in-flight whoosh: the soft airy rush of a served ball crossing the
+// court — breathier and less "cutting" than the intro swoosh: gently
+// lowpassed noise that starts bright and fades away as it travels.
+export function playServeWhoosh() {
+  try {
+    const ac = getCtx();
+    if (!ac || ac.state !== 'running') return;
+    const t = ac.currentTime;
+
+    const src = ac.createBufferSource();
+    src.buffer = noiseBuffer(ac, 0.7);
+
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.5;
+    lp.frequency.setValueAtTime(2400, t);
+    lp.frequency.exponentialRampToValueAtTime(500, t + 0.6);
+
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+
+    src.connect(lp).connect(gain).connect(ac.destination);
+    src.start(t);
+    src.stop(t + 0.7);
   } catch (_) { /* audio unavailable — stay silent */ }
 }

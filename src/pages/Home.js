@@ -6,7 +6,7 @@ import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import logoHome from '../assets/ball.png';
-import { playSwoosh, playSmack } from '../utils/introSounds';
+import { playSwoosh, playSmack, playServeWhoosh } from '../utils/introSounds';
 import './Home.css';
 
 const SURFACES = [
@@ -47,8 +47,11 @@ export default function Home({ tour = 'atp' }) {
     // layout animation) — the smack lands when it hits the top corner.
     const swooshTid = setTimeout(playSwoosh, 100);
     const tid = setTimeout(() => setShowIntro(false), 2200);
+    // Airy serve-flight whoosh covers the ball's travel to the top corner
+    // (0.7s morph), capped by the serve-impact puck right as it lands.
+    const travelSwooshTid = setTimeout(playServeWhoosh, 2200);
     const smackTid = setTimeout(playSmack, 2200 + 650);
-    return () => { clearTimeout(tid); clearTimeout(swooshTid); clearTimeout(smackTid); };
+    return () => { clearTimeout(tid); clearTimeout(swooshTid); clearTimeout(travelSwooshTid); clearTimeout(smackTid); };
   }, [showIntro]);
 
   const handleUpdateData = async () => {
