@@ -121,9 +121,14 @@ const ESPN_SLUG_TO_CSV = {
 };
 
 function parseEspnUrl(url) {
-  const m = url.trim().match(/espn\.com\/tennis\/([^/?#]+)\/bracket(?:.*\/season\/(\d+))?/);
+  const trimmed = url.trim();
+  const m = trimmed.match(/espn\.com\/tennis\/([^/?#]+)\/bracket/);
   if (!m) return null;
-  return { slug: m[1], season: m[2] || String(new Date().getFullYear()) };
+  const season = trimmed.match(/\/season\/(\d+)/)?.[1] || String(new Date().getFullYear());
+  // ESPN puts /competitionType/2/ in the URL for the women's singles draw;
+  // no competitionType (or 1) is the men's draw.
+  const compType = trimmed.match(/\/competitionType\/(\d+)/)?.[1] || '1';
+  return { slug: m[1], season, urlTour: compType === '2' ? 'wta' : 'atp' };
 }
 
 function normalizeName(name) {
@@ -410,6 +415,19 @@ export default function DreamBrackets({ tour = 'atp' }) {
     const csvFile = ESPN_SLUG_TO_CSV[parsed.slug];
     if (!csvFile) {
       Swal.fire({ icon: 'error', title: 'Unsupported tournament', text: `"${parsed.slug}" is not supported. Try wimbledon, french-open, or us-open.`, background: '#1a1a1a', color: '#fff' });
+      return;
+    }
+
+    // The link encodes which draw it is (competitionType/2 = women's) —
+    // importing a women's draw into the ATP bracket (or vice versa) would
+    // match zero players, so route the user to the right tour first.
+    if (parsed.urlTour !== tour) {
+      Swal.fire({
+        icon: 'info',
+        title: parsed.urlTour === 'wta' ? "That's a women's draw" : "That's a men's draw",
+        text: `This ESPN link is the ${parsed.urlTour === 'wta' ? "women's" : "men's"} bracket. Switch to ${parsed.urlTour.toUpperCase()} with the toggle in the navbar, then import it again.`,
+        background: '#1a1a1a', color: '#fff',
+      });
       return;
     }
 

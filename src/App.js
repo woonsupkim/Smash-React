@@ -39,7 +39,9 @@ function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const isWomen = location.pathname.startsWith('/women');
-  const menPath = isWomen ? (location.pathname.replace(/^\/women/, '') || '/') : location.pathname;
+  // Keep the query string when mirroring the path, so tour-switching on
+  // /h2h?surface=grass lands on /women/h2h?surface=grass (same tournament).
+  const menPath = (isWomen ? (location.pathname.replace(/^\/women/, '') || '/') : location.pathname) + location.search;
   const womenPath = withTour(menPath, true);
 
   // NavLink's default isActive match ignores the query string, so "Clay",

@@ -6,6 +6,7 @@ import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
 import logoHome from '../assets/ball.png';
+import { playSwoosh, playSmack } from '../utils/introSounds';
 import './Home.css';
 
 const SURFACES = [
@@ -41,10 +42,13 @@ export default function Home({ tour = 'atp' }) {
 
   useEffect(() => {
     if (!showIntro) return;
-    // Hold on the fully-revealed logo+title for a beat before the logo
-    // morphs into the nav's home button and the rest of the page fades in.
+    // Swoosh as the ball springs in; hold on the fully-revealed logo+title
+    // for a beat, then the logo morphs into the nav's home button (0.7s
+    // layout animation) — the smack lands when it hits the top corner.
+    const swooshTid = setTimeout(playSwoosh, 100);
     const tid = setTimeout(() => setShowIntro(false), 2200);
-    return () => clearTimeout(tid);
+    const smackTid = setTimeout(playSmack, 2200 + 650);
+    return () => { clearTimeout(tid); clearTimeout(swooshTid); clearTimeout(smackTid); };
   }, [showIntro]);
 
   const handleUpdateData = async () => {
