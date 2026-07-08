@@ -1,20 +1,20 @@
 id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5,p6,country,age,year_w,year_l,recent_w,recent_l
-sabal,Aryna Sabalenka,Aryna,Sabalenka,1,2,0.64,0.89,0.38,0.51,0.42,0.08,BLR,28,8,3,8,2
+sabal,Aryna Sabalenka,Aryna,Sabalenka,1,2,0.64,0.89,0.38,0.51,0.43,0.08,BLR,28,8,3,8,2
 rybak,Elena Rybakina,Elena,Rybakina,2,2,0.58,0.92,0.37,0.48,0.43,0.13,KAZ,27,10,3,6,4
 swiat,Iga Swiatek,Iga,Swiatek,3,2,0.63,0.89,0.41,0.57,0.44,0.04,POL,25,9,4,7,3
 pegul,Jessica Pegula,Jessica,Pegula,4,2,0.61,0.93,0.41,0.48,0.41,0.06,USA,32,9,3,7,3
-andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.63,0.88,0.42,0.54,0.42,0.05,RUS,19,22,3,8,2
+andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.63,0.88,0.42,0.54,0.43,0.05,RUS,19,22,3,8,2
 anisi,Amanda Anisimova,Amanda,Anisimova,6,2,0.63,0.82,0.41,0.52,0.42,0.07,USA,24,2,1,7,3
 gauff,Cori Gauff,Cori,Gauff,7,2,0.63,0.81,0.46,0.54,0.41,0.05,USA,22,10,4,7,3
 svito,Elina Svitolina,Elina,Svitolina,8,2,0.63,0.95,0.40,0.54,0.39,0.06,UKR,31,13,3,7,3
 mboko,Victoria Mboko,Victoria,Mboko,9,2,0.63,0.82,0.42,0.49,0.41,0.06,CAN,19,5,3,5,5
 nosko,Linda Noskova,Linda,Noskova,10,2,0.59,0.82,0.34,0.48,0.41,0.12,CZE,21,6,4,7,3
-mucho,Karolina Muchova,Karolina,Muchova,11,2,0.65,0.92,0.38,0.47,0.38,0.07,CZE,29,6,3,8,2
+mucho,Karolina Muchova,Karolina,Muchova,11,2,0.65,0.92,0.38,0.47,0.39,0.07,CZE,29,6,3,8,2
 benci,Belinda Bencic,Belinda,Bencic,12,2,0.65,0.86,0.36,0.51,0.41,0.05,SUI,29,8,4,7,3
-kosty,Marta Kostyuk,Marta,Kostyuk,13,2,0.60,0.87,0.43,0.54,0.40,0.06,UKR,24,17,1,9,1
-paoli,Jasmine Paolini,Jasmine,Paolini,14,2,0.69,0.92,0.42,0.49,0.38,0.02,ITA,30,4,4,5,5
-osaka,Naomi Osaka,Naomi,Osaka,15,2,0.57,0.89,0.37,0.46,0.41,0.12,JPN,28,7,3,8,2
-shnai,Diana Shnaider,Diana,Shnaider,16,2,0.65,0.89,0.42,0.51,0.40,0.02,RUS,22,10,5,6,4
+kosty,Marta Kostyuk,Marta,Kostyuk,13,2,0.60,0.87,0.43,0.54,0.41,0.06,UKR,24,17,1,9,1
+paoli,Jasmine Paolini,Jasmine,Paolini,14,2,0.69,0.92,0.42,0.49,0.39,0.02,ITA,30,4,4,5,5
+osaka,Naomi Osaka,Naomi,Osaka,15,2,0.57,0.89,0.37,0.46,0.42,0.12,JPN,28,7,3,8,2
+shnai,Diana Shnaider,Diana,Shnaider,16,2,0.65,0.89,0.42,0.51,0.41,0.02,RUS,22,10,5,6,4
 jovic,Iva Jovic,Iva,Jovic,17,2,0.61,0.91,0.41,0.51,0.40,0.04,USA,18,8,7,8,2
 cirst,Sorana Cirstea,Sorana,Cirstea,18,2,0.60,0.94,0.40,0.51,0.41,0.07,,36,0,0,0,0
 alexa,Ekaterina Alexandrova,Ekaterina,Alexandrova,19,2,0.57,0.83,0.38,0.48,0.40,0.10,,31,0,0,0,0
