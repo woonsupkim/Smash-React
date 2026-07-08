@@ -1,5 +1,6 @@
 // src/pages/DreamBrackets.js
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import Swal from 'sweetalert2';
@@ -221,6 +222,7 @@ function parseEspnBracket(data, targetSlots) {
 }
 
 export default function DreamBrackets({ tour = 'atp' }) {
+  const navigate = useNavigate();
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
   const dataDir = isWta ? '/data/women' : '/data';
@@ -501,6 +503,17 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const handleReset = () => resetBracketState(stageConfig.slots);
 
+  // Resume an ESPN import that started on the other tour's brackets page —
+  // runEspnImport stashes the link and navigates here when the URL's draw
+  // (men's/women's) doesn't match the page it was pasted on.
+  useEffect(() => {
+    const pending = sessionStorage.getItem('smash-espn-import');
+    if (!pending) return;
+    sessionStorage.removeItem('smash-espn-import');
+    runEspnImport(pending);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleEspnImport = async () => {
     const { value: url } = await Swal.fire({
       title: 'Import ESPN Bracket',
@@ -515,7 +528,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
       customClass: { input: 'swal-dark-input' },
     });
     if (!url) return;
+    runEspnImport(url);
+  };
 
+  const runEspnImport = async (url) => {
     const parsed = parseEspnUrl(url);
     if (!parsed) {
       Swal.fire({ icon: 'error', title: 'Invalid URL', text: 'Paste a link like: https://www.espn.com/tennis/wimbledon/bracket/_/season/2026', background: '#1a1a1a', color: '#fff' });
@@ -528,16 +544,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
       return;
     }
 
-    // The link encodes which draw it is (competitionType/2 = women's) —
-    // importing a women's draw into the ATP bracket (or vice versa) would
-    // match zero players, so route the user to the right tour first.
+    // The link encodes which draw it is (competitionType/2 = women's).
+    // If it doesn't match the current tour, hop to the mirrored brackets
+    // page and let its mount effect resume this same import there.
     if (parsed.urlTour !== tour) {
-      Swal.fire({
-        icon: 'info',
-        title: parsed.urlTour === 'wta' ? "That's a women's draw" : "That's a men's draw",
-        text: `This ESPN link is the ${parsed.urlTour === 'wta' ? "women's" : "men's"} bracket. Switch to ${parsed.urlTour.toUpperCase()} with the toggle in the navbar, then import it again.`,
-        background: '#1a1a1a', color: '#fff',
-      });
+      sessionStorage.setItem('smash-espn-import', url);
+      navigate(parsed.urlTour === 'wta' ? '/women/dream-brackets' : '/dream-brackets');
       return;
     }
 
@@ -560,8 +572,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
         throw new Error('Bracket data not available yet — check back closer to the tournament.');
       }
 
-      // Ensure the right tournament CSV is loaded before matching
-      const targetPool = csvFile === tournament ? playersPool : await new Promise((resolve) => {
+      // Ensure the right tournament CSV is loaded before matching. Also
+      // parse explicitly when playersPool hasn't loaded yet (e.g. this
+      // import was resumed immediately on mount after a tour switch).
+      const targetPool = csvFile === tournament && playersPool.length > 0 ? playersPool : await new Promise((resolve) => {
         Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + csvFile, {
           header: true, download: true,
           complete: ({ data: rows }) => {

@@ -61,32 +61,44 @@ export function playSmack() {
     if (!ac || ac.state !== 'running') return;
     const t = ac.currentTime;
 
-    // airy puck: broadband noise, lowpassed so it thuds instead of cracks
-    const puck = ac.createBufferSource();
-    puck.buffer = noiseBuffer(ac, 0.09);
-    const lp = ac.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.Q.value = 0.6;
-    lp.frequency.setValueAtTime(1200, t);
-    lp.frequency.exponentialRampToValueAtTime(350, t + 0.06);
-    const puckGain = ac.createGain();
-    puckGain.gain.setValueAtTime(1.3, t);
-    puckGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-    puck.connect(lp).connect(puckGain).connect(ac.destination);
-    puck.start(t);
-    puck.stop(t + 0.09);
+    // Dominant "thock": a hard-struck damped tone — this is the BALL, the
+    // solid pitched core of a racket hit (pure noise sounds like a whiff).
+    const thock = ac.createOscillator();
+    thock.type = 'triangle';
+    thock.frequency.setValueAtTime(340, t);
+    thock.frequency.exponentialRampToValueAtTime(150, t + 0.07);
+    const thockGain = ac.createGain();
+    thockGain.gain.setValueAtTime(0.95, t);
+    thockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.10);
+    thock.connect(thockGain).connect(ac.destination);
+    thock.start(t);
+    thock.stop(t + 0.11);
 
-    // low thump underneath for the "body" of the hit
+    // Very short contact click on top — the string-bed snap at impact
+    const click = ac.createBufferSource();
+    click.buffer = noiseBuffer(ac, 0.03);
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 900;
+    bp.Q.value = 1.0;
+    const clickGain = ac.createGain();
+    clickGain.gain.setValueAtTime(0.55, t);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    click.connect(bp).connect(clickGain).connect(ac.destination);
+    click.start(t);
+    click.stop(t + 0.03);
+
+    // Low thump underneath for the body of the hit
     const thump = ac.createOscillator();
     thump.type = 'sine';
-    thump.frequency.setValueAtTime(130, t);
-    thump.frequency.exponentialRampToValueAtTime(65, t + 0.08);
+    thump.frequency.setValueAtTime(110, t);
+    thump.frequency.exponentialRampToValueAtTime(55, t + 0.09);
     const thumpGain = ac.createGain();
-    thumpGain.gain.setValueAtTime(0.5, t);
-    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    thumpGain.gain.setValueAtTime(0.55, t);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
     thump.connect(thumpGain).connect(ac.destination);
     thump.start(t);
-    thump.stop(t + 0.12);
+    thump.stop(t + 0.13);
   } catch (_) { /* audio unavailable — stay silent */ }
 }
 
