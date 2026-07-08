@@ -505,14 +505,17 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   // Resume an ESPN import that started on the other tour's brackets page —
   // runEspnImport stashes the link and navigates here when the URL's draw
-  // (men's/women's) doesn't match the page it was pasted on.
+  // (men's/women's) doesn't match the page it was pasted on. Keyed on `tour`
+  // (not mount): React reuses this component instance across the ATP/WTA
+  // routes, so switching tours changes the prop without remounting.
   useEffect(() => {
     const pending = sessionStorage.getItem('smash-espn-import');
     if (!pending) return;
+    if (parseEspnUrl(pending)?.urlTour !== tour) return; // not our tour yet
     sessionStorage.removeItem('smash-espn-import');
     runEspnImport(pending);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tour]);
 
   const handleEspnImport = async () => {
     const { value: url } = await Swal.fire({
@@ -572,10 +575,11 @@ export default function DreamBrackets({ tour = 'atp' }) {
         throw new Error('Bracket data not available yet — check back closer to the tournament.');
       }
 
-      // Ensure the right tournament CSV is loaded before matching. Also
-      // parse explicitly when playersPool hasn't loaded yet (e.g. this
-      // import was resumed immediately on mount after a tour switch).
-      const targetPool = csvFile === tournament && playersPool.length > 0 ? playersPool : await new Promise((resolve) => {
+      // Always parse the roster fresh from this tour's dataDir instead of
+      // using playersPool state — when this import resumes right after a
+      // tour switch, playersPool may still hold the OTHER tour's players
+      // (the reload effect races this one), which would match zero names.
+      const targetPool = await new Promise((resolve) => {
         Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + csvFile, {
           header: true, download: true,
           complete: ({ data: rows }) => {
