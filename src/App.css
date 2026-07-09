@@ -70,6 +70,14 @@
   --page-pad-top: 2.5rem;
 }
 
+/* Always reserve the vertical scrollbar track so centered page content
+   never shifts horizontally when navigating between a short page (no
+   scrollbar) and a tall one — this is what made the header appear to "jump"
+   when moving to/from Track Record. */
+html {
+  overflow-y: scroll;
+}
+
 body {
   font-family: var(--font-ui);
   background-color: #111;

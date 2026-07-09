@@ -20,6 +20,11 @@ const SURFACES = [
 // this one Home component shared between both tours instead of forking it.
 const withTourPrefix = (path, isWta) => (isWta ? `/women${path}` : path);
 
+// Module-level flag: the ball-drop intro (and its sounds) plays once per
+// full page load. It survives SPA navigation (so returning to Home from
+// another page does NOT replay it) but resets on a real browser refresh.
+let introHasPlayed = false;
+
 function formatDate(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -29,10 +34,9 @@ export default function Home({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const dataDir = isWta ? '/data/women' : '/data';
   const [refreshMeta, setRefreshMeta] = useState(null);
-  // Plays every time this component mounts — i.e. every time the user lands
-  // on the Home page (including navigating back to it from elsewhere in the
-  // app), not just once per browser session.
-  const [showIntro, setShowIntro] = useState(true);
+  // Only on the very first Home mount of a page load — not when navigating
+  // back to Home later in the session (see introHasPlayed above).
+  const [showIntro, setShowIntro] = useState(!introHasPlayed);
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + dataDir + '/refresh-meta.json')
@@ -43,6 +47,7 @@ export default function Home({ tour = 'atp' }) {
 
   useEffect(() => {
     if (!showIntro) return;
+    introHasPlayed = true; // don't replay on subsequent Home mounts this session
     // Air-cutting swoosh as the ball spins in; hold on the fully-revealed
     // logo+title for a beat, then the logo morphs into the nav's home button
     // (0.7s layout animation) — an airy serve-flight whoosh covers the
