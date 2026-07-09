@@ -64,6 +64,10 @@
      feel), Inter for UI and body */
   --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --font-ui: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Consistent gap between the fixed navbar and each page's header, so the
+     header lands in the same place on every page when navigating. */
+  --page-pad-top: 2.5rem;
 }
 
 body {
@@ -217,7 +221,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
 .overlay {
   background-color: rgba(0, 0, 0, 0.82);
   min-height: calc(100vh - 70px);
-  padding: 2rem 1.5rem;
+  padding: var(--page-pad-top) 1.5rem 3rem;
 }
 
 /* Shared card/button polish, reused across Home/tournament/bracket pages */

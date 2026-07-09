@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
-import { ClipboardList, Share2, Download, Camera as InstagramIcon, X } from 'lucide-react';
+import { ClipboardList, Share2, Download, X } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
 import AppModal from '../components/ui/AppModal';
 import {
@@ -315,21 +315,6 @@ export default function DreamBrackets({ tour = 'atp' }) {
       const file = new File([blob], 'smash-bracket.png', { type: 'image/png' });
       await navigator.share({ files: [file], text: shareCaption });
     } catch (_) { /* user cancelled */ }
-  };
-
-  const handleShareInstagram = async () => {
-    if (!shareUrl) return;
-    try {
-      const blob = await (await fetch(shareUrl)).blob();
-      const file = new File([blob], 'smash-bracket.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareCaption });
-        return;
-      }
-    } catch (_) { /* fall through to manual flow */ }
-    handleShareDownload();
-    try { await navigator.clipboard.writeText(shareCaption); } catch (_) { /* ignore */ }
-    window.open('https://www.instagram.com', '_blank', 'noopener');
   };
 
   const resetBracketState = (slotCount) => {
@@ -818,12 +803,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
                     <Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share…
                   </Button>
                 )}
-                <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleShareInstagram}>
-                  <InstagramIcon size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Instagram
-                </Button>
               </div>
               <p className="adv-share-hint">
-                Instagram saves the image and copies the caption, then attach it to your post.
+                Save the image and share it anywhere.
                 {' '}Made with{' '}
                 <a
                   className="adv-share-link"

@@ -9,7 +9,7 @@
 }
 
 .home-hero {
-  padding: 5rem 2rem 4rem;
+  padding: var(--page-pad-top) 2rem 4rem;
   max-width: 900px;
 }
 
@@ -230,6 +230,6 @@
 }
 
 @media (max-width: 576px) {
-  .home-hero { padding: 3.5rem 1.25rem 2.5rem; }
+  .home-hero { padding: var(--page-pad-top) 1.25rem 2.5rem; }
   .surface-tile { flex: 1 1 100%; }
 }

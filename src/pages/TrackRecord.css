@@ -4,8 +4,8 @@
 
 .track-overlay {
   background: none;
-  padding: 90px 20px 60px;
-  min-height: 100vh;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+  min-height: calc(100vh - 70px);
 }
 
 .track-page {

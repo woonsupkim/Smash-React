@@ -3,9 +3,8 @@
 .bracket-overlay {
   background-color: rgba(0, 0, 0, 0.78);
   min-height: calc(100vh - 70px);
-  padding: 2rem;
+  padding: var(--page-pad-top) 1.5rem 3rem;
   color: #fff;
-  font-family: Arial, sans-serif;
 }
 
 .dream-brackets-page h3 {
@@ -273,7 +272,7 @@
 /* Mobile: turn the multi-column bracket into a deliberate horizontal swipe,
    one round per snap-point, instead of letting it silently overflow. */
 @media (max-width: 768px) {
-  .bracket-overlay { padding: 1.25rem; }
+  .bracket-overlay { padding: var(--page-pad-top) 1.25rem 2.5rem; }
   .dream-brackets-page .btn { min-width: 130px; }
   .dream-brackets-page .progress { max-width: 100%; }
 
