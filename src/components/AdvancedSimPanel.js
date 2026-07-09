@@ -12,7 +12,7 @@ import {
   YAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Download, Camera as InstagramIcon, X, Check, AlertTriangle, Zap } from 'lucide-react';
+import { Share2, Download, X, Check, AlertTriangle, Zap } from 'lucide-react';
 import { credibleInterval, confidenceLabel } from '../credibleInterval';
 import { generateShareCard } from '../utils/generateShareCard';
 import { countryFlagUrl } from './countryFlags';
@@ -158,29 +158,6 @@ export default function AdvancedSimPanel({
     } catch (_) { /* user cancelled */ }
   };
 
-  const shareCaption = batchResult && playerA && playerB
-    ? `My sim says ${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerA.name : playerB.name} beats ` +
-      `${batchResult.matchWins[0] >= batchResult.matchWins[1] ? playerB.name : playerA.name}. ` +
-      `${simCount.toLocaleString()} matches simulated on SMASH! ⚡ ${window.location.origin}`
-    : '';
-
-  // Instagram has no web share intent — on mobile the native share sheet
-  // lists it as a target; on desktop we save the image, copy the caption,
-  // and open Instagram so the user can attach it to a post/story.
-  const handleInstagram = async () => {
-    if (!shareUrl) return;
-    try {
-      const blob = await (await fetch(shareUrl)).blob();
-      const file = new File([blob], 'smash-prediction.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareCaption });
-        return;
-      }
-    } catch (_) { /* fall through to manual flow */ }
-    handleDownload();
-    try { await navigator.clipboard.writeText(shareCaption); } catch (_) { /* ignore */ }
-    window.open('https://www.instagram.com', '_blank', 'noopener');
-  };
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
 
@@ -510,12 +487,9 @@ export default function AdvancedSimPanel({
                       <Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share…
                     </Button>
                   )}
-                  <Button size="sm" className="adv-share-action-btn adv-share-instagram" onClick={handleInstagram}>
-                    <InstagramIcon size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Instagram
-                  </Button>
                 </div>
                 <p className="adv-share-hint">
-                  Instagram saves the image and copies the caption, then attach it to your post.
+                  Save the image and share it anywhere.
                   {' '}Made with{' '}
                   <a
                     className="adv-share-link"

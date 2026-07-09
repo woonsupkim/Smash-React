@@ -126,7 +126,7 @@
   font-size: 0.85rem;
   letter-spacing: .08em;
   margin-bottom: 1rem;
-  color: #ddd;
+  color: var(--text-2);
 }
 
 /* Height is set inline (per-stage, computed in JS) — this just establishes
@@ -155,7 +155,7 @@
   padding: 0.35rem 0.4rem;
   border-radius: 6px;
   text-align: left;
-  color: #eee;
+  color: var(--text-2);
   font-size: 0.92rem;
 }
 
@@ -185,7 +185,7 @@
 }
 
 .competitor.placeholder {
-  color: #888;
+  color: var(--text-3);
   justify-content: center;
 }
 
@@ -198,7 +198,7 @@
    low sim counts (honest about uncertainty), tight at high sim counts. */
 .bracket-ci-tag {
   font-size: 0.62rem;
-  color: #999;
+  color: var(--text-3);
   white-space: nowrap;
   margin-top: 0.1rem;
 }
@@ -206,7 +206,7 @@
 .bracket-vs {
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-  color: #888;
+  color: var(--text-3);
   text-align: center;
   margin: 0.1rem 0;
 }

@@ -79,7 +79,7 @@
 
 .adv-player-meta {
   font-size: 0.85rem;
-  color: #ccc;
+  color: var(--text-2);
   margin-top: 0.15rem;
 }
 
@@ -135,14 +135,14 @@
 
 .adv-scoreline-caption {
   font-size: 0.75rem;
-  color: #ddd;
+  color: var(--text-2);
   margin-bottom: 0.4rem;
   text-align: center;
 }
 
 .adv-ci-caption {
   font-size: 0.75rem;
-  color: #ddd;
+  color: var(--text-2);
   margin-top: 0.3rem;
 }
 
@@ -150,13 +150,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.68rem;
-  color: #aaa;
+  color: var(--text-3);
   margin-bottom: 0.3rem;
 }
 
 .adv-underdog-caption {
   font-size: 0.68rem;
-  color: #999;
+  color: var(--text-3);
   margin-top: 0.2rem;
 }
 
@@ -177,7 +177,7 @@
 .adv-flag--caution {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #bbb;
+  color: var(--text-3);
 }
 .adv-flag--confident {
   background: rgba(76, 175, 80, 0.15);
@@ -192,7 +192,7 @@
 
 .adv-confidence-label {
   font-size: 0.72rem;
-  color: #ddd;
+  color: var(--text-2);
   margin-top: 0.1rem;
 }
 
@@ -204,7 +204,7 @@
   padding: 0;
   margin: 0.3rem 0 0;
   font-size: 0.72rem;
-  color: #ccc;
+  color: var(--text-2);
 }
 .adv-legend li {
   display: flex;
@@ -330,11 +330,6 @@
   border-radius: 4px;
 }
 .adv-share-action-btn:hover { background: rgba(255,255,255,0.18); color: #fff !important; }
-
-.adv-share-instagram {
-  background: linear-gradient(45deg, rgba(131,58,180,0.35), rgba(225,48,108,0.35), rgba(252,175,69,0.35)) !important;
-  border-color: rgba(225,48,108,0.5) !important;
-}
 
 .adv-share-hint {
   font-size: 0.7rem;

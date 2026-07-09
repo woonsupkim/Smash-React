@@ -1,8 +1,8 @@
 .scoreboard {
   border-collapse: collapse;
   margin: 0 auto;
-  background: rgba(255,255,255,0.04);
-  border-radius: 10px;
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -10,8 +10,9 @@
   padding: 0.5rem 0.75rem;
   text-align: center;
   font-size: 0.95rem;
-  color: #ddd;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border-1);
+  font-variant-numeric: tabular-nums;
 }
 
 .scoreboard tr:last-child td {
@@ -21,13 +22,13 @@
 .sb-name {
   text-align: left;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-1);
   min-width: 110px;
   white-space: nowrap;
 }
 
 .sb-check {
-  color: #4ade80;
+  color: var(--accent-positive);
   margin-left: 0.4rem;
 }
 
@@ -46,21 +47,32 @@
 
 .sb-set-won {
   font-weight: 700;
-  color: #fff;
+  color: var(--text-1);
 }
 
 .sb-set-lost {
-  color: #999;
+  color: var(--text-3);
+}
+
+/* Tie-break loser's point count, shown as a small superscript next to the
+   losing side's game count (e.g. 7 – 6⁴), the standard broadcast notation. */
+.sb-tb {
+  font-size: 0.6em;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-left: 1px;
+  vertical-align: super;
+  line-height: 0;
 }
 
 .sb-live {
   font-weight: 700;
-  color: #fff;
-  background: rgba(255,255,255,0.06);
+  color: var(--text-1);
+  background: var(--surface-2);
 }
 
 .sb-points {
   font-weight: 600;
   color: #f2c14e;
-  background: rgba(255,255,255,0.06);
+  background: var(--surface-2);
 }

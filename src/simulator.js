@@ -54,7 +54,7 @@ function simulateGame(srvProb, rtnProb) {
  * @param {number[]} probA - probabilities for player A
  * @param {number[]} probB - probabilities for player B
  * @param {0|1} initialServer - 0 if A serves first, 1 if B serves first
- * @returns {0|1} 0 if player A wins tie-break, 1 if player B wins
+ * @returns {{winner: 0|1, pointsA: number, pointsB: number}}
  */
 function simulateTiebreak(probA, probB, initialServer) {
   let scoreA = 0;
@@ -82,18 +82,21 @@ function simulateTiebreak(probA, probB, initialServer) {
     point++;
     // Check for tie-break win: at least 7 points and 2-point margin
     if ((scoreA >= 7 || scoreB >= 7) && Math.abs(scoreA - scoreB) >= 2) {
-      return scoreA > scoreB ? 0 : 1;
+      return { winner: scoreA > scoreB ? 0 : 1, pointsA: scoreA, pointsB: scoreB };
     }
   }
 }
 
 /**
  * Simulates a single set, with a tie-break at 6-6 (first to 7 by 2).
- * Returns [gamesA, gamesB].
+ * Returns [gamesA, gamesB, tbLoserPoints] — the third element is the
+ * tie-break loser's point count for 7-6 sets, or null when no tie-break
+ * was played (so the scoreboard can render e.g. 7-6⁴).
  */
 function simulateSet(probA, probB) {
   let gamesA = 0;
   let gamesB = 0;
+  let tbLoserPoints = null;
   // Randomize initial server each set
   let server = Math.random() < 0.5 ? 0 : 1;
 
@@ -118,13 +121,14 @@ function simulateSet(probA, probB) {
     }
     // Tie-break at 6-6
     if (gamesA === 6 && gamesB === 6) {
-      const tbWinner = simulateTiebreak(probA, probB, server);
-      if (tbWinner === 0) gamesA++; else gamesB++;
+      const tb = simulateTiebreak(probA, probB, server);
+      if (tb.winner === 0) gamesA++; else gamesB++;
+      tbLoserPoints = tb.winner === 0 ? tb.pointsB : tb.pointsA;
       break;
     }
   }
 
-  return [gamesA, gamesB];
+  return [gamesA, gamesB, tbLoserPoints];
 }
 
 /**
@@ -138,8 +142,8 @@ export function simulateMatch(probA, probB, bestOf = 5) {
   const setScores = [];
 
   for (let i = 0; i < maxSets && Math.max(...setsWon) < targetSets; i++) {
-    const [ga, gb] = simulateSet(probA, probB);
-    setScores.push([ga, gb]);
+    const [ga, gb, tbLoserPoints] = simulateSet(probA, probB);
+    setScores.push([ga, gb, tbLoserPoints]);
     if (ga > gb) setsWon[0]++; else setsWon[1]++;
   }
 
@@ -229,13 +233,14 @@ export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {}
       if (games[0] === 6 && games[1] === 6) {
         // Tie-break event
         yield { type: 'tiebreak_start', set: currentSet+1, games: [...games], playerA: playerInfo.A, playerB: playerInfo.B };
-        const tbWinner = simulateTiebreak(probA, probB, server);
-        if (tbWinner === 0) games[0]++; else games[1]++;
-        yield { type: 'tiebreak_end', set: currentSet+1, games: [...games], tiebreakWinner: tbWinner, playerA: playerInfo.A, playerB: playerInfo.B };
+        const tb = simulateTiebreak(probA, probB, server);
+        if (tb.winner === 0) games[0]++; else games[1]++;
+        const tbLoserPoints = tb.winner === 0 ? tb.pointsB : tb.pointsA;
+        yield { type: 'tiebreak_end', set: currentSet+1, games: [...games], tiebreakWinner: tb.winner, tiebreakPoints: [tb.pointsA, tb.pointsB], playerA: playerInfo.A, playerB: playerInfo.B };
         // conclude set
         const setWinner = games[0] > games[1] ? 0 : 1;
         setsWon[setWinner]++;
-        setScores.push([...games]);
+        setScores.push([games[0], games[1], tbLoserPoints]);
         yield { type: 'set', set: currentSet+1, setsWon: [...setsWon], setScores: [...setScores], setWinner, playerA: playerInfo.A, playerB: playerInfo.B };
         currentSet++;
         games = [0,0];

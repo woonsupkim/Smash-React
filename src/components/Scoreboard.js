@@ -93,8 +93,10 @@ export default function Scoreboard({
             {flagA && <img src={flagA} alt={countryA} className="sb-flag" />}
             {nameA}{winner === 'A' && <span className="sb-check">✓</span>}
           </td>
-          {completedSets.map(([a, b], i) => (
-            <td key={i} className={a > b ? 'sb-set-won' : 'sb-set-lost'}>{a}</td>
+          {completedSets.map(([a, b, tb], i) => (
+            <td key={i} className={a > b ? 'sb-set-won' : 'sb-set-lost'}>
+              {a}{tb != null && a < b && <sup className="sb-tb">{tb}</sup>}
+            </td>
           ))}
           {liveGames && <td className="sb-live">{liveGames[0]}</td>}
           {points && <td className="sb-points">{isTiebreak ? livePoints[0] : points[0]}</td>}
@@ -104,8 +106,10 @@ export default function Scoreboard({
             {flagB && <img src={flagB} alt={countryB} className="sb-flag" />}
             {nameB}{winner === 'B' && <span className="sb-check">✓</span>}
           </td>
-          {completedSets.map(([a, b], i) => (
-            <td key={i} className={b > a ? 'sb-set-won' : 'sb-set-lost'}>{b}</td>
+          {completedSets.map(([a, b, tb], i) => (
+            <td key={i} className={b > a ? 'sb-set-won' : 'sb-set-lost'}>
+              {b}{tb != null && b < a && <sup className="sb-tb">{tb}</sup>}
+            </td>
           ))}
           {liveGames && <td className="sb-live">{liveGames[1]}</td>}
           {points && <td className="sb-points">{isTiebreak ? livePoints[1] : points[1]}</td>}
