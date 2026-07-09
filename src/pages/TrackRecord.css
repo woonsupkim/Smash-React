@@ -228,6 +228,64 @@
 .track-verdict.hit { color: var(--accent-positive); }
 .track-verdict.miss { color: var(--accent-negative); }
 
+/* ── Model comparison ─────────────────────────────────────────────────── */
+.track-models {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.track-model-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+.track-model-card.best { border-color: var(--accent-positive); }
+
+.track-model-name {
+  font-weight: 700;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.track-model-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0d2117;
+  background: var(--accent-positive);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.track-model-desc { font-size: 0.72rem; color: var(--text-3); margin-bottom: 0.6rem; }
+
+.track-model-metrics { display: flex; gap: 1.5rem; }
+.track-model-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.1;
+}
+.track-model-metric-label { font-size: 0.66rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.track-model-note {
+  font-size: 0.74rem;
+  color: var(--text-3);
+  margin-top: 0.8rem;
+  line-height: 1.45;
+}
+
+.track-verdict-alt { font-size: 0.68rem; color: var(--text-3); }
+.track-verdict-alt.hit { color: var(--accent-positive); opacity: 0.75; }
+.track-verdict-alt.miss { color: var(--text-3); }
+
 .track-empty {
   color: var(--text-3);
   text-align: center;

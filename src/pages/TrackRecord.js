@@ -10,7 +10,7 @@ import { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import './TrackRecord.css';
 
-const SIMS = 300;
+const SIMS = 1000;
 
 const TOURNEYS = {
   fr: { label: 'French Open', csv: 'smash_fr.csv', accent: '#e8694a' },
@@ -38,49 +38,82 @@ export default function TrackRecord() {
   const [results, setResults] = useState(null); // evaluated matches
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load the match log + both tours' surface CSVs, then re-simulate every
-  // matchup once. ~200 matches x 300 sims runs in a couple of seconds.
+  // Load the match log + both tours' surface CSVs (normal AND upset
+  // variants), then score three predictors against every real result:
+  //   1. season model  — recency-decayed surface stats (the default sim)
+  //   2. upset model   — 7-day heavy-recency stats where available
+  //   3. rank baseline — "higher-ranked player wins", no simulation at all
+  // Evaluation runs in chunks (yielding to the event loop) so ~430 batches
+  // of 1000 sims don't freeze the page.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const csv = (dir, file) => loadCsv(process.env.PUBLIC_URL + dir + '/' + file);
       const [track, ...pools] = await Promise.all([
         fetch(process.env.PUBLIC_URL + '/data/track_record.json').then((r) => r.json()).catch(() => ({ matches: [] })),
-        loadCsv(process.env.PUBLIC_URL + '/data/smash_fr.csv'),
-        loadCsv(process.env.PUBLIC_URL + '/data/smash_wb.csv'),
-        loadCsv(process.env.PUBLIC_URL + '/data/women/smash_fr.csv'),
-        loadCsv(process.env.PUBLIC_URL + '/data/women/smash_wb.csv'),
+        csv('/data', 'smash_fr.csv'), csv('/data', 'smash_wb.csv'),
+        csv('/data/women', 'smash_fr.csv'), csv('/data/women', 'smash_wb.csv'),
+        csv('/data', 'smash_fr_upset.csv'), csv('/data', 'smash_wb_upset.csv'),
+        csv('/data/women', 'smash_fr_upset.csv'), csv('/data/women', 'smash_wb_upset.csv'),
       ]);
       if (cancelled) return;
 
-      const poolBy = {
-        'atp-fr': pools[0], 'atp-wb': pools[1],
-        'wta-fr': pools[2], 'wta-wb': pools[3],
+      const toMap = (rows) => new Map(rows.map((r) => [r.id, r]));
+      const rowLookup = {
+        'atp-fr': toMap(pools[0]), 'atp-wb': toMap(pools[1]),
+        'wta-fr': toMap(pools[2]), 'wta-wb': toMap(pools[3]),
       };
-      const rowLookup = {};
-      for (const [k, rows] of Object.entries(poolBy)) {
-        rowLookup[k] = new Map(rows.map((r) => [r.id, r]));
-      }
+      const upsetLookup = {
+        'atp-fr': toMap(pools[4]), 'atp-wb': toMap(pools[5]),
+        'wta-fr': toMap(pools[6]), 'wta-wb': toMap(pools[7]),
+      };
 
+      const matches = track.matches || [];
       const evaluated = [];
-      for (const m of track.matches || []) {
-        const lookup = rowLookup[`${m.tour}-${m.tourney}`];
-        const rowA = lookup?.get(m.p1);
-        const rowB = lookup?.get(m.p2);
+      for (let i = 0; i < matches.length; i++) {
+        const m = matches[i];
+        const key = `${m.tour}-${m.tourney}`;
+        const rowA = rowLookup[key]?.get(m.p1);
+        const rowB = rowLookup[key]?.get(m.p2);
         if (!rowA || !rowB || !m.winner) continue;
         const bestOf = m.tour === 'wta' ? 3 : 5;
+        const p1Won = m.winner === m.p1;
+
+        // 1. season model
         const res = simulateBatch(probsFromRow(rowA), probsFromRow(rowB), SIMS, bestOf);
         const probP1 = res.matchWins[0] / SIMS;
         const favorite = probP1 >= 0.5 ? m.p1 : m.p2;
         const favProb = probP1 >= 0.5 ? probP1 : 1 - probP1;
+
+        // 2. upset model (rows without enough recent data carry the normal
+        // stats, so this is "the upset toggle as deployed")
+        const upA = upsetLookup[key]?.get(m.p1) || rowA;
+        const upB = upsetLookup[key]?.get(m.p2) || rowB;
+        const upRes = simulateBatch(probsFromRow(upA), probsFromRow(upB), SIMS, bestOf);
+        const upsetProbP1 = upRes.matchWins[0] / SIMS;
+        const upsetFavorite = upsetProbP1 >= 0.5 ? m.p1 : m.p2;
+
+        // 3. rank baseline — lower us_seed number = higher-ranked
+        const rankA = Number(rowA.us_seed) || 999;
+        const rankB = Number(rowB.us_seed) || 999;
+        const rankPick = rankA <= rankB ? m.p1 : m.p2;
+
         evaluated.push({
           ...m,
-          probP1,
-          favorite,
-          favProb,
+          probP1, favorite, favProb,
           correct: favorite === m.winner,
+          upsetProbP1, upsetFavorite,
+          upsetCorrect: upsetFavorite === m.winner,
+          rankPick,
+          rankCorrect: rankPick === m.winner,
+          p1Won,
           countryA: rowA.country,
           countryB: rowB.country,
         });
+
+        // Yield every 15 matches so the skeleton keeps animating
+        if (i % 15 === 14) await new Promise((r) => setTimeout(r, 0));
+        if (cancelled) return;
       }
       if (!cancelled) {
         setResults(evaluated);
@@ -104,6 +137,28 @@ export default function TrackRecord() {
       return { n, correct, acc: n ? Math.round((correct / n) * 100) : 0 };
     };
     const cur = compute(filtered);
+
+    // Model comparison: accuracy + Brier score per predictor.
+    // Brier = mean (p − outcome)², p = P(player 1 wins). Lower is better;
+    // 0.250 is "always say 50%", a deterministic pick scores its miss rate.
+    const brier = (probOf) => {
+      if (!filtered.length) return null;
+      const sum = filtered.reduce((acc, m) => {
+        const p = probOf(m);
+        const y = m.p1Won ? 1 : 0;
+        return acc + (p - y) ** 2;
+      }, 0);
+      return sum / filtered.length;
+    };
+    const accOf = (correctKey) => {
+      if (!filtered.length) return 0;
+      return Math.round((filtered.filter((m) => m[correctKey]).length / filtered.length) * 100);
+    };
+    const models = [
+      { key: 'season', label: 'Season model', desc: 'Recency-weighted surface stats', acc: cur.acc, brier: brier((m) => m.probP1) },
+      { key: 'upset', label: 'Upset model', desc: '7-day hot-form stats', acc: accOf('upsetCorrect'), brier: brier((m) => m.upsetProbP1) },
+      { key: 'rank', label: 'Rank baseline', desc: 'Higher-ranked player wins', acc: accOf('rankCorrect'), brier: brier((m) => (m.rankPick === m.p1 ? 1 : 0)) },
+    ];
     // Calibration buckets on the favorite's modeled probability
     const buckets = [
       { label: '50–60%', lo: 0.5, hi: 0.6 },
@@ -115,7 +170,7 @@ export default function TrackRecord() {
       const won = inB.filter((m) => m.correct).length;
       return { ...b, n: inB.length, rate: inB.length ? Math.round((won / inB.length) * 100) : null };
     });
-    return { ...cur, buckets };
+    return { ...cur, buckets, models };
   }, [filtered]);
 
   const perTourney = useMemo(() => {
@@ -179,6 +234,9 @@ export default function TrackRecord() {
                   <div className="track-stat-value">{stats.acc}%</div>
                   <div className="track-stat-label">Correct picks</div>
                   <div className="track-stat-sub">{stats.correct} of {stats.n} matches</div>
+                  {stats.models?.[0]?.brier != null && (
+                    <div className="track-stat-sub">Brier {stats.models[0].brier.toFixed(3)}</div>
+                  )}
                 </div>
                 {perTourney.map((t) => (
                   <div className="track-stat-card" key={t.key}>
@@ -187,6 +245,39 @@ export default function TrackRecord() {
                     <div className="track-stat-sub">{t.n} matches</div>
                   </div>
                 ))}
+              </div>
+
+              <div className="track-calibration">
+                <div className="track-section-label">Model comparison — three ways to pick these {stats.n} matches</div>
+                <div className="track-models">
+                  {(() => {
+                    const best = Math.min(...stats.models.filter(m => m.brier != null).map(m => m.brier));
+                    return stats.models.map((mo) => (
+                      <div className={`track-model-card${mo.brier === best ? ' best' : ''}`} key={mo.key}>
+                        <div className="track-model-name">
+                          {mo.label}
+                          {mo.brier === best && <span className="track-model-badge">Best</span>}
+                        </div>
+                        <div className="track-model-desc">{mo.desc}</div>
+                        <div className="track-model-metrics">
+                          <div>
+                            <div className="track-model-value">{mo.acc}%</div>
+                            <div className="track-model-metric-label">Accuracy</div>
+                          </div>
+                          <div>
+                            <div className="track-model-value">{mo.brier == null ? '—' : mo.brier.toFixed(3)}</div>
+                            <div className="track-model-metric-label">Brier score</div>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+                <div className="track-model-note">
+                  Brier score = average squared error of the stated probability, so it rewards being
+                  right <em>and</em> honest about uncertainty. Lower is better: 0.250 is always saying
+                  50%, and a deterministic pick (the rank baseline) scores exactly its miss rate.
+                </div>
               </div>
 
               <div className="track-calibration">
@@ -252,6 +343,11 @@ export default function TrackRecord() {
                             ? `✓ Called it · ${favName.split(' ').pop()} ${Math.round(m.favProb * 100)}%`
                             : `✗ Upset · had ${favName.split(' ').pop()} ${Math.round(m.favProb * 100)}%`}
                         </span>
+                        {m.upsetFavorite !== m.favorite && (
+                          <span className={`track-verdict-alt ${m.upsetCorrect ? 'hit' : 'miss'}`}>
+                            Upset model disagreed: picked {(m.upsetFavorite === m.p1 ? m.name1 : m.name2).split(' ').pop()} {m.upsetCorrect ? '✓' : '✗'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
