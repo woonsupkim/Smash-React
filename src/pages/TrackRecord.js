@@ -21,6 +21,7 @@ export default function TrackRecord() {
   const [tour, setTour] = useState('atp');
   const [surface, setSurface] = useState('all');
   const [data, setData] = useState(null);
+  const [predictions, setPredictions] = useState(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   useEffect(() => {
@@ -28,7 +29,18 @@ export default function TrackRecord() {
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData({ matches: [] }));
+    fetch(process.env.PUBLIC_URL + '/data/predictions.json')
+      .then((r) => r.json())
+      .then(setPredictions)
+      .catch(() => setPredictions({ predictions: [] }));
   }, []);
+
+  const forward = useMemo(() => {
+    const list = (predictions?.predictions || []).filter((p) => p.tour === tour);
+    const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
+    const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+    return { pending, decided, correct: decided.filter((p) => p.correct).length };
+  }, [predictions, tour]);
 
   // Reset pagination whenever the filters change
   useEffect(() => { setVisible(PAGE_SIZE); }, [tour, surface]);
@@ -47,7 +59,7 @@ export default function TrackRecord() {
     // Per-surface accuracy (for the whole tour, ignoring the surface filter)
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
       const list = (data?.matches || []).filter((m) => m.tour === tour && m.surface === s);
-      const acc = list.length ? Math.round((list.filter((m) => m.correct).length / list.length) * 100) : 0;
+      const acc = list.length ? Math.round((list.filter((m) => m.blendCorrect).length / list.length) * 100) : 0;
       return { key: s, ...SURFACES[s], n: list.length, acc };
     });
 
@@ -58,15 +70,19 @@ export default function TrackRecord() {
       { label: '70–85%', lo: 0.7, hi: 0.85, mid: 77 },
       { label: '85%+', lo: 0.85, hi: 1.01, mid: 92 },
     ].map((b) => {
-      const inB = filtered.filter((m) => m.favProb >= b.lo && m.favProb < b.hi);
-      const won = inB.filter((m) => m.correct).length;
+      // Calibrate on the blended probability the app actually shows
+      const blendFav = (m) => (m.blendProbP1 >= 0.5 ? m.blendProbP1 : 1 - m.blendProbP1);
+      const inB = filtered.filter((m) => blendFav(m) >= b.lo && blendFav(m) < b.hi);
+      const won = inB.filter((m) => m.blendCorrect).length;
       return { ...b, n: inB.length, rate: inB.length ? Math.round((won / inB.length) * 100) : null };
     });
 
     return {
       n,
       correct: filtered.filter((m) => m.correct).length,
+      blendCorrect: filtered.filter((m) => m.blendCorrect).length,
       season: pct('correct'),
+      blend: pct('blendCorrect'),
       upset: pct('upsetCorrect'),
       rank: pct('rankCorrect'),
       perSurface,
@@ -107,6 +123,42 @@ export default function TrackRecord() {
             </div>
           </div>
 
+          {/* Forward record — predictions LOCKED before the match was played.
+              This is the leak-free, honest scoreboard (the retrospective below
+              re-simulates finished matches). */}
+          {(forward.pending.length > 0 || forward.decided.length > 0) && (
+            <div className="track-panel track-forward">
+              <div className="track-forward-head">
+                <div className="track-section-label" style={{ margin: 0 }}>🔒 Locked predictions · called before play</div>
+                {forward.decided.length > 0 && (
+                  <div className="track-forward-record">
+                    {Math.round((forward.correct / forward.decided.length) * 100)}% · {forward.correct}/{forward.decided.length} verified
+                  </div>
+                )}
+              </div>
+              {forward.pending.map((p) => (
+                <div className="track-forward-row pending" key={p.id}>
+                  <span className="track-forward-status">⏳ Upcoming</span>
+                  <span className="track-forward-match">{p.name1} vs {p.name2}</span>
+                  <span className="track-forward-call">Backing {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                </div>
+              ))}
+              {forward.decided.slice(0, 5).map((p) => (
+                <div className={`track-forward-row ${p.correct ? 'hit' : 'miss'}`} key={p.id}>
+                  <span className="track-forward-status">{p.correct ? '✓' : '✗'}</span>
+                  <span className="track-forward-match">{p.name1} vs {p.name2}</span>
+                  <span className="track-forward-call">Called {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                </div>
+              ))}
+              {forward.pending.length > 0 && forward.decided.length === 0 && (
+                <div className="track-note" style={{ marginTop: '0.6rem' }}>
+                  These picks are locked now and graded automatically when the results come in — a
+                  true forward test with no hindsight.
+                </div>
+              )}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="track-skeletons">
               <div className="skeleton track-skel-hero" />
@@ -117,10 +169,10 @@ export default function TrackRecord() {
             <>
               {/* Headline: how often the model calls the winner */}
               <div className="track-hero-stat">
-                <div className="track-hero-value">{stats.season}%</div>
+                <div className="track-hero-value">{stats.blend}%</div>
                 <div className="track-hero-detail">
                   <div className="track-hero-label">of winners called correctly</div>
-                  <div className="track-hero-sub">{stats.correct} of {stats.n} matches · {tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
+                  <div className="track-hero-sub">{stats.blendCorrect} of {stats.n} matches · {tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                 </div>
               </div>
 
@@ -142,12 +194,13 @@ export default function TrackRecord() {
 
               {/* Model comparison — accuracy only (Brier removed for clarity) */}
               <div className="track-panel">
-                <div className="track-section-label">How the pick is made — three approaches, same matches</div>
+                <div className="track-section-label">How the pick is made — four approaches, same matches</div>
                 <div className="track-compare">
                   {[
-                    { label: 'Season model', desc: 'Full recency-weighted stats', acc: stats.season, primary: true },
-                    { label: 'Upset model', desc: 'Last-few-weeks hot form', acc: stats.upset },
+                    { label: 'Sim + form rating', desc: 'What the live app uses', acc: stats.blend, primary: true },
+                    { label: 'Season model', desc: 'Point simulation only', acc: stats.season },
                     { label: 'Higher rank wins', desc: 'Simple baseline, no sim', acc: stats.rank },
+                    { label: 'Upset model', desc: 'Last-few-weeks hot form', acc: stats.upset },
                   ].map((mo) => (
                     <div className={`track-compare-row${mo.primary ? ' primary' : ''}`} key={mo.label}>
                       <div className="track-compare-name">
@@ -162,9 +215,11 @@ export default function TrackRecord() {
                   ))}
                 </div>
                 <div className="track-note">
-                  The simulation lands within a point or two of simply backing the higher-ranked
-                  player — a strong baseline. Its edge is the <em>probability</em> behind each call,
-                  which is where calibration matters.
+                  The live app blends the point simulation with a surface <em>form rating</em> (an
+                  Elo built from each player's recent results). The blend uses each player's rating
+                  as it stood <em>before</em> the match, so it's a fair test — unlike the rank
+                  baseline, which is flattered by using today's rankings that already know these
+                  outcomes.
                 </div>
               </div>
 
@@ -200,9 +255,10 @@ export default function TrackRecord() {
                   const lName = winnerIsP1 ? m.name2 : m.name1;
                   const wFlag = countryFlagUrl(winnerIsP1 ? m.country1 : m.country2);
                   const lFlag = countryFlagUrl(winnerIsP1 ? m.country2 : m.country1);
-                  const favName = (m.favorite === m.p1 ? m.name1 : m.name2).split(' ').pop();
+                  const blendFavProb = m.blendProbP1 >= 0.5 ? m.blendProbP1 : 1 - m.blendProbP1;
+                  const favName = (m.blendFavorite === m.p1 ? m.name1 : m.name2).split(' ').pop();
                   return (
-                    <div className={`track-row${m.correct ? '' : ' miss'}`} key={m.id}>
+                    <div className={`track-row${m.blendCorrect ? '' : ' miss'}`} key={m.id}>
                       <div className="track-row-meta">
                         <span className="track-row-surface" style={{ color: SURFACES[m.surface].accent }}>
                           {SURFACES[m.surface].label}
@@ -220,8 +276,8 @@ export default function TrackRecord() {
                         <span className="track-score">{m.score}</span>
                       </div>
                       <div className="track-row-model">
-                        <span className={`track-verdict ${m.correct ? 'hit' : 'miss'}`}>
-                          {m.correct ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(m.favProb * 100)}%
+                        <span className={`track-verdict ${m.blendCorrect ? 'hit' : 'miss'}`}>
+                          {m.blendCorrect ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(blendFavProb * 100)}%
                         </span>
                       </div>
                     </div>

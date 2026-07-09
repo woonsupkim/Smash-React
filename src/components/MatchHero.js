@@ -41,6 +41,7 @@ export default function MatchHero({
   setUpsetMode = null,
   upsetDisabledReason = null, // non-null disables the toggle, shown on hover
   poolLoading = false, // roster CSV still parsing — show skeleton placeholders
+  eloData = null,     // { id: {all,hard,clay,grass} } — surface form ratings
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -74,8 +75,25 @@ export default function MatchHero({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bothPicked, probsKeyA, probsKeyB, bestOf]);
 
-  const favoredIsA = winProb >= 0.5;
-  const pctA = Math.round(winProb * 100);
+  // Surface Elo win probability from the players' form ratings (see
+  // data-pipeline/eloCore.js). Blended into the headline number the same way
+  // the retrospective on the Track Record page measures — but NOT in Upset
+  // Scenario mode, where the whole point is the raw hot-form simulation.
+  const ELO_WEIGHT = 0.4;
+  const eloProb = useMemo(() => {
+    if (!bothPicked || !eloData) return null;
+    const rA = eloData[playerA.id], rB = eloData[playerB.id];
+    if (!rA || !rB) return null;
+    const pred = (r) => 0.5 * r.all + 0.5 * (r[surfaceKey] ?? r.all);
+    return 1 / (1 + Math.pow(10, (pred(rB) - pred(rA)) / 400));
+  }, [bothPicked, playerA, playerB, eloData, surfaceKey]);
+
+  const displayProb = (eloProb != null && !upsetMode)
+    ? ELO_WEIGHT * eloProb + (1 - ELO_WEIGHT) * winProb
+    : winProb;
+
+  const favoredIsA = displayProb >= 0.5;
+  const pctA = Math.round(displayProb * 100);
   const pctB = 100 - pctA;
 
   const h2h = useMemo(() => {
@@ -94,7 +112,7 @@ export default function MatchHero({
   const yearRecord = (player) => {
     const w = player.year_w, l = player.year_l;
     if (w === undefined || w === '' || l === undefined || l === '') return null;
-    return `${w}-${l}`;
+    return `${w}–${l}`; // en-dash, consistent with scorelines/CIs
   };
 
   // Recent form (last 10 matches, any surface) is a per-player fact — unlike
@@ -102,7 +120,7 @@ export default function MatchHero({
   const recentForm = (player) => {
     const w = player.recent_w, l = player.recent_l;
     if (w === undefined || w === '' || l === undefined || l === '') return null;
-    return `${w}-${l}`;
+    return `${w}–${l}`; // en-dash, consistent with scorelines/CIs
   };
 
   const rollMatch = () => {
@@ -184,8 +202,9 @@ export default function MatchHero({
                 placement="top"
                 overlay={
                   <Tooltip>
-                    Average outcome of {QUICK_ESTIMATE_SIMS} simulated matches using each player's
-                    serve/return stats. A statistical estimate, not a guarantee.
+                    {eloProb != null && !upsetMode
+                      ? `A blend of ${QUICK_ESTIMATE_SIMS} simulated matches (serve/return stats) and each player's surface form rating. A statistical estimate, not a guarantee.`
+                      : `Average outcome of ${QUICK_ESTIMATE_SIMS} simulated matches using each player's serve/return stats. A statistical estimate, not a guarantee.`}
                   </Tooltip>
                 }
               >

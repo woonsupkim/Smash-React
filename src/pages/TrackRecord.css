@@ -150,6 +150,40 @@
 }
 .track-note em { color: var(--text-2); font-style: italic; }
 
+/* ── Forward predictions (locked before play) ─────────────────────────── */
+.track-forward { border-color: rgba(245, 197, 66, 0.35); }
+
+.track-forward-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.track-forward-record {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-positive);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.track-forward-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-1);
+  font-size: 0.85rem;
+}
+.track-forward-row:last-of-type { border-bottom: none; }
+.track-forward-status { font-size: 0.78rem; color: var(--text-3); }
+.track-forward-row.hit .track-forward-status { color: var(--accent-positive); }
+.track-forward-row.miss .track-forward-status { color: var(--accent-negative); }
+.track-forward-match { color: var(--text-1); font-weight: 600; }
+.track-forward-call { color: var(--text-3); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+
 /* ── Model comparison (accuracy bars) ─────────────────────────────────── */
 .track-compare { display: flex; flex-direction: column; gap: 0.7rem; }
 

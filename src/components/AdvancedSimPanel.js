@@ -28,6 +28,15 @@ export const STAT_KEYS = [
   ['p6', 'Ace Rate']
 ];
 
+// Grouped for the slider drawer so twelve controls read as three labeled
+// categories instead of one undifferentiated wall.
+const STAT_LABELS = Object.fromEntries(STAT_KEYS);
+const STAT_SECTIONS = [
+  { label: 'Serve', keys: ['p1', 'p2', 'p6'] },
+  { label: 'Return', keys: ['p3', 'p4'] },
+  { label: 'Rally', keys: ['p5'] },
+];
+
 /**
  * Detailed slider/chart panel, collapsed by default under the MatchHero.
  * All simulation logic/state lives in the page (H2H.js, DreamBrackets.js)
@@ -75,6 +84,7 @@ export default function AdvancedSimPanel({
   const [open, setOpen] = useState(defaultOpen);
   const [shareUrl, setShareUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [slidersOpen, setSlidersOpen] = useState(false);
   const resultsRef = useRef(null);
 
   const handleShare = useCallback(async () => {
@@ -520,50 +530,47 @@ export default function AdvancedSimPanel({
             </div>
           )}
 
-          <div className="adv-section-label">Fine-tune stats · drag to explore what-ifs</div>
-          <div className="adv-sliders-row">
-            <div className="sim-col">
-              {STAT_KEYS.map(([k,label],i)=>(
-                <motion.div
-                  key={k}
-                  className="mb-2"
-                  initial={{ x:-20, opacity:0 }}
-                  animate={{ x:0, opacity:1 }}
-                  transition={{ delay:0.05+i*0.03, duration:0.25 }}
-                >
-                  <Form.Label className="text-white">
-                    {label}: {Math.round(statsA[k]||0)}%
-                  </Form.Label>
-                  <Form.Range
-                    min={0} max={100}
-                    value={statsA[k]||0}
-                    onChange={e => setStatsA({ ...statsA, [k]: +e.target.value })}
-                    disabled={isRunning||isWatching}
-                  />
-                </motion.div>
-              ))}
-            </div>
-            <div className="sim-col">
-              {STAT_KEYS.map(([k,label],i)=>(
-                <motion.div
-                  key={k}
-                  className="mb-2"
-                  initial={{ x:20, opacity:0 }}
-                  animate={{ x:0, opacity:1 }}
-                  transition={{ delay:0.05+i*0.03, duration:0.25 }}
-                >
-                  <Form.Label className="text-white">
-                    {label}: {Math.round(statsB[k]||0)}%
-                  </Form.Label>
-                  <Form.Range
-                    min={0} max={100}
-                    value={statsB[k]||0}
-                    onChange={e => setStatsB({ ...statsB, [k]: +e.target.value })}
-                    disabled={isRunning||isWatching}
-                  />
-                </motion.div>
-              ))}
-            </div>
+          {/* Sliders are a secondary "what-if" tool, not a peer of the
+              charts — tuck them in a collapsed drawer so the results stay
+              the hero of the panel. */}
+          <div className="adv-sliders-drawer">
+            <button
+              type="button"
+              className="adv-sliders-toggle"
+              onClick={() => setSlidersOpen(o => !o)}
+              aria-expanded={slidersOpen}
+            >
+              {slidersOpen ? '▾' : '▸'} Adjust player stats
+              <span className="adv-sliders-hint">drag to explore what-ifs</span>
+            </button>
+            {slidersOpen && (
+              <div className="adv-sliders-row">
+                {[[statsA, setStatsA], [statsB, setStatsB]].map(([stats, setStats], col) => (
+                  <div className="sim-col" key={col}>
+                    <div className="sim-col-name">{col === 0 ? playerA.name : playerB.name}</div>
+                    {STAT_SECTIONS.map(section => (
+                      <div className="sim-section" key={section.label}>
+                        <div className="sim-section-label">{section.label}</div>
+                        {section.keys.map(k => (
+                          <div className="sim-slider" key={k}>
+                            <Form.Label className="sim-slider-label">
+                              <span>{STAT_LABELS[k]}</span>
+                              <span className="sim-slider-val">{Math.round(stats[k]||0)}%</span>
+                            </Form.Label>
+                            <Form.Range
+                              min={0} max={100}
+                              value={stats[k]||0}
+                              onChange={e => setStats({ ...stats, [k]: +e.target.value })}
+                              disabled={isRunning||isWatching}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

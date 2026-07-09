@@ -96,6 +96,7 @@ export default function H2H({ tour = 'atp' }) {
   const [liveLog, setLiveLog]             = useState([]);
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
+  const [eloData, setEloData]             = useState(null);
   // heavy-recency-weighted stats (7-day half-life) instead of the default
   // 60-day-calibrated CSV — toggling this re-seeds the sliders, it doesn't
   // run a simulation by itself.
@@ -139,6 +140,10 @@ export default function H2H({ tour = 'atp' }) {
       .then(r => r.json())
       .then(setH2hData)
       .catch(() => setH2hData({}));
+    fetch(process.env.PUBLIC_URL + dataDir + '/elo.json')
+      .then(r => r.json())
+      .then(setEloData)
+      .catch(() => setEloData({}));
     // Which players have real upset stats on this surface (upset_ok=1)
     setUpsetOkIds(null);
     Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile.replace('.csv', '_upset.csv'), {
@@ -425,6 +430,7 @@ export default function H2H({ tour = 'atp' }) {
           accentColor={config.accentColor}
           accentTextColor={config.accentTextColor}
           h2hData={h2hData}
+          eloData={eloData}
           getPlayerImageSrc={getPlayerImageSrc}
           poolLoading={players.length === 0}
           statsA={statsA}

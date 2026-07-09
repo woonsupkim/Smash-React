@@ -61,6 +61,23 @@ jobs:
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
 
+      # Surface Elo form ratings (both tours) — the live H2H blends these
+      # with the point simulation.
+      - name: Compute Elo form ratings
+        run: npm run compute-elo
+
+      # Must run LAST — it re-simulates every completed 2026 match using the
+      # freshly-rebuilt surface + upset CSVs and the newly-fetched match
+      # caches (and replays Elo), so the Track Record page picks up new
+      # results automatically.
+      - name: Rebuild Track Record (precomputed predictions)
+        run: npm run build-track-record
+
+      # Forward test: grade any locked predictions whose results have landed,
+      # then lock new ones for upcoming matches.
+      - name: Update forward predictions
+        run: npm run build-predictions
+
       - name: Commit refreshed data
         run: |
           git config user.name "smash-data-bot"

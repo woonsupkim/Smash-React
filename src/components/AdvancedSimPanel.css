@@ -237,17 +237,84 @@
   margin-bottom: 0.75rem;
 }
 
+/* ── Stats drawer ──────────────────────────────────────────────────────── */
+.adv-sliders-drawer {
+  margin-top: 0.5rem;
+}
+
+.adv-sliders-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border-1);
+  padding: 0.75rem 0.25rem 0;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.adv-sliders-toggle:hover { color: var(--text-1); }
+.adv-sliders-hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+}
+
 .adv-sliders-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 2rem;
+  margin-top: 1rem;
 }
 
 .adv-sliders-row .sim-col {
   flex: 1 1 240px;
   max-width: 320px;
   text-align: left;
+}
+
+.sim-col-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.sim-section { margin-bottom: 0.9rem; }
+
+.sim-section-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.35rem;
+}
+
+.sim-slider { margin-bottom: 0.5rem; }
+
+.sim-slider-label {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  margin-bottom: 0.1rem;
+}
+.sim-slider-val {
+  color: var(--text-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Share ─────────────────────────────────────────────────────────────── */

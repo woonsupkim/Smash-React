@@ -50,7 +50,9 @@
     "compute-matchup-facts-women": "node data-pipeline/computeMatchupFacts.js wta",
     "backtest-women": "node data-pipeline/backtest.js \"\" \"\" wta",
     "refresh-stats-women": "npm run fetch-stats-women && npm run fetch-surfaces-women && npm run fetch-profiles-women && npm run compute-stats-women && npm run compute-matchup-facts-women && npm run build-stats-csv-women",
-    "build-track-record": "node data-pipeline/buildTrackRecord.js"
+    "build-track-record": "node data-pipeline/buildTrackRecord.js",
+    "compute-elo": "node data-pipeline/computeElo.js",
+    "build-predictions": "node data-pipeline/buildPredictions.js"
   },
   "eslintConfig": {
     "extends": [
