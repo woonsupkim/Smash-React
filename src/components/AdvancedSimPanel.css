@@ -43,6 +43,25 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
+/* Section heading for the merged (always-visible) simulation panel. */
+.adv-panel-heading {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.adv-controls-centered {
+  margin: 0 auto 1.25rem;
+  max-width: 380px;
+}
+
 .adv-player-col {
   flex: 0 1 auto;
   min-width: 220px;

@@ -1,0 +1,16 @@
+{
+  "_comment": "Prediction-engine weights, tuned per tour x surface on the 2026 backtest (see data-pipeline/buildTrackRecord.js log). Each match's SMASH probability = ws*simProb + we*eloProb + wr*rankProb. rankProb(p1) = 1/(1+10^((log10(rankA)-log10(rankB))*rankScale)).",
+  "rankScale": 2,
+  "weights": {
+    "atp": {
+      "hard":  { "ws": 0.0, "we": 1.0, "wr": 0.0 },
+      "clay":  { "ws": 0.1, "we": 0.0, "wr": 0.9 },
+      "grass": { "ws": 0.9, "we": 0.1, "wr": 0.0 }
+    },
+    "wta": {
+      "hard":  { "ws": 0.7, "we": 0.3, "wr": 0.0 },
+      "clay":  { "ws": 0.8, "we": 0.0, "wr": 0.2 },
+      "grass": { "ws": 0.9, "we": 0.0, "wr": 0.1 }
+    }
+  }
+}

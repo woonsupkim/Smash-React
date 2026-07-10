@@ -81,7 +81,6 @@ export default function AdvancedSimPanel({
 }) {
   const simColor = simulateButtonColor || colorA;
   const simColorText = simulateButtonTextColor || colorAText;
-  const [open, setOpen] = useState(defaultOpen);
   const [shareUrl, setShareUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [slidersOpen, setSlidersOpen] = useState(false);
@@ -241,30 +240,9 @@ export default function AdvancedSimPanel({
 
   return (
     <div className="advanced-sim-panel mt-4">
-      <Button
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        className="advanced-toggle"
-      >
-        {open ? '▾ Hide Advanced Controls' : '▸ Advanced Controls'}
-      </Button>
-
-      {open && (
-        <div className="advanced-panel-card mt-3">
-          <div className="adv-header">
-            <div className="adv-player-col">
-              <img src={getPlayerImageSrc(playerA)} alt={playerA.name} className="adv-player-photo" />
-              <div className="adv-player-name">
-                {countryFlagUrl(playerA.country) && <img src={countryFlagUrl(playerA.country)} alt={playerA.country} className="adv-player-flag" />}
-                {playerA.name}
-              </div>
-              <div className="adv-player-meta">
-                {playerA.us_seed != null && playerA.us_seed !== '' && <span>Rank {playerA.us_seed}</span>}
-                {playerA.age && <span> &middot; Age {playerA.age}</span>}
-              </div>
-            </div>
-
-            <div className="adv-controls-col">
+        <div className="advanced-panel-card">
+          <div className="adv-panel-heading">Detailed simulation</div>
+          <div className="adv-controls-col adv-controls-centered">
               <Form.Group controlId="simCount" className="mb-2">
                 <Form.Label className="text-white">Simulations</Form.Label>
                 <Form.Select
@@ -296,19 +274,6 @@ export default function AdvancedSimPanel({
               </div>
 
               {isRunning && <ProgressBar now={progress} label={`${progress}%`} variant="success" className="mb-2"/>}
-            </div>
-
-            <div className="adv-player-col">
-              <img src={getPlayerImageSrc(playerB)} alt={playerB.name} className="adv-player-photo" />
-              <div className="adv-player-name">
-                {countryFlagUrl(playerB.country) && <img src={countryFlagUrl(playerB.country)} alt={playerB.country} className="adv-player-flag" />}
-                {playerB.name}
-              </div>
-              <div className="adv-player-meta">
-                {playerB.us_seed != null && playerB.us_seed !== '' && <span>Rank {playerB.us_seed}</span>}
-                {playerB.age && <span> &middot; Age {playerB.age}</span>}
-              </div>
-            </div>
           </div>
 
           {upsetDisabledReason ? (
@@ -573,7 +538,6 @@ export default function AdvancedSimPanel({
             )}
           </div>
         </div>
-      )}
     </div>
   );
 }

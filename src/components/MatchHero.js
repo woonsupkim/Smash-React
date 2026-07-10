@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { simulateMatch, simulateBatch } from '../simulator';
 import { STAT_KEYS } from './AdvancedSimPanel';
 import { countryFlagUrl } from './countryFlags';
+import { engineProbs, eloProb as eloProbFn, ENGINES } from '../engines';
 import Scoreboard from './Scoreboard';
 import './MatchHero.css';
 
+const ENGINE_LABEL = Object.fromEntries(ENGINES.map((e) => [e.id, e.label]));
 const MUTED_COLOR = '#8a8f98';
 const QUICK_ESTIMATE_SIMS = 500;
 
@@ -42,6 +44,9 @@ export default function MatchHero({
   upsetDisabledReason = null, // non-null disables the toggle, shown on hover
   poolLoading = false, // roster CSV still parsing — show skeleton placeholders
   eloData = null,     // { id: {all,hard,clay,grass} } — surface form ratings
+  tour = 'atp',       // 'atp' | 'wta' — selects the tuned engine weights
+  engine = 'smash',   // which prediction engine drives the headline number
+  setEngine = null,   // enables the engine selector when provided
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -75,22 +80,20 @@ export default function MatchHero({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bothPicked, probsKeyA, probsKeyB, bestOf]);
 
-  // Surface Elo win probability from the players' form ratings (see
-  // data-pipeline/eloCore.js). Blended into the headline number the same way
-  // the retrospective on the Track Record page measures — but NOT in Upset
-  // Scenario mode, where the whole point is the raw hot-form simulation.
-  const ELO_WEIGHT = 0.4;
-  const eloProb = useMemo(() => {
-    if (!bothPicked || !eloData) return null;
-    const rA = eloData[playerA.id], rB = eloData[playerB.id];
-    if (!rA || !rB) return null;
-    const pred = (r) => 0.5 * r.all + 0.5 * (r[surfaceKey] ?? r.all);
-    return 1 / (1 + Math.pow(10, (pred(rB) - pred(rA)) / 400));
-  }, [bothPicked, playerA, playerB, eloData, surfaceKey]);
-
-  const displayProb = (eloProb != null && !upsetMode)
-    ? ELO_WEIGHT * eloProb + (1 - ELO_WEIGHT) * winProb
-    : winProb;
+  // Selected prediction engine's P(A wins). In Upset Scenario mode we always
+  // show the raw hot-form simulation (blending would defeat the purpose).
+  const displayProb = useMemo(() => {
+    if (!bothPicked) return 0.5;
+    if (upsetMode || engine === 'sim') return winProb;
+    const elo = eloData ? eloProbFn(eloData[playerA.id], eloData[playerB.id], surfaceKey) : null;
+    const probs = engineProbs(
+      { sim: winProb, elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
+      tour, surfaceKey
+    );
+    const v = probs[engine];
+    return v == null ? winProb : v;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bothPicked, winProb, eloData, playerA, playerB, surfaceKey, tour, engine, upsetMode]);
 
   const favoredIsA = displayProb >= 0.5;
   const pctA = Math.round(displayProb * 100);
@@ -202,9 +205,9 @@ export default function MatchHero({
                 placement="top"
                 overlay={
                   <Tooltip>
-                    {eloProb != null && !upsetMode
-                      ? `A blend of ${QUICK_ESTIMATE_SIMS} simulated matches (serve/return stats) and each player's surface form rating. A statistical estimate, not a guarantee.`
-                      : `Average outcome of ${QUICK_ESTIMATE_SIMS} simulated matches using each player's serve/return stats. A statistical estimate, not a guarantee.`}
+                    {upsetMode
+                      ? `Average outcome of ${QUICK_ESTIMATE_SIMS} simulated matches on hot-form stats. A statistical estimate, not a guarantee.`
+                      : `From the ${ENGINE_LABEL[engine] || 'SMASH'} engine — a statistical estimate, not a guarantee. Switch engines below.`}
                   </Tooltip>
                 }
               >
@@ -230,6 +233,22 @@ export default function MatchHero({
                 <span style={{ color: favoredIsA ? accentColor : MUTED_COLOR, fontWeight: favoredIsA ? 700 : 400 }}>{pctA}%</span>
                 <span style={{ color: !favoredIsA ? accentColor : MUTED_COLOR, fontWeight: !favoredIsA ? 700 : 400 }}>{pctB}%</span>
               </div>
+
+              {setEngine && !upsetMode && (
+                <div className="match-hero-engines" role="group" aria-label="Prediction engine">
+                  {ENGINES.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      title={e.desc}
+                      className={`match-hero-engine-btn${engine === e.id ? ' active' : ''}`}
+                      onClick={() => setEngine(e.id)}
+                    >
+                      {e.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <Button
                 className="mt-3"

@@ -15,9 +15,9 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { buildTimeline, predElo, expected } = require('./eloCore');
+const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
 const SIMS = 1000;
-const ELO_WEIGHT = 0.4; // blend: ELO_WEIGHT*elo + (1-ELO_WEIGHT)*sim (tuned across both tours)
 
 // ── Simulation core (mirrors src/simulator.js) ────────────────────────────
 function simPoint(srv, rtn) {
@@ -160,7 +160,7 @@ function evaluate(ctx, rec) {
   const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;
   const rankPick = rankA <= rankB ? p1 : p2;
 
-  // 4. sim + Elo blend (leak-free pre-match ratings)
+  // 4. Elo model (leak-free pre-match ratings)
   const pe = preElo.get(id);
   let eloProbP1 = 0.5;
   if (pe) {
@@ -168,8 +168,15 @@ function evaluate(ctx, rec) {
     const p2Elo = pe.winnerId === p1Id ? pe.le : pe.we;
     eloProbP1 = expected(p1Elo, p2Elo);
   }
-  const blendProbP1 = ELO_WEIGHT * eloProbP1 + (1 - ELO_WEIGHT) * probP1;
-  const blendFavorite = blendProbP1 >= 0.5 ? p1 : p2;
+  const eloFavorite = eloProbP1 >= 0.5 ? p1 : p2;
+
+  // 5. Ranking-implied probability (continuous version of the baseline)
+  const rankProbP1 = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
+
+  // 6. SMASH model — per tour x surface blend of sim + Elo + ranking
+  const w = (ENGINE.weights[tour] && ENGINE.weights[tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
+  const smashProbP1 = w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1;
+  const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
 
   const r3 = (x) => Math.round(x * 1000) / 1000;
   return {
@@ -180,19 +187,35 @@ function evaluate(ctx, rec) {
     winner, score: m.result || '',
     probP1: r3(probP1), favorite, favProb: r3(favProb), correct: favorite === winner,
     upsetProbP1: r3(upsetProbP1), upsetFavorite, upsetCorrect: upsetFavorite === winner,
-    eloProbP1: r3(eloProbP1),
-    blendProbP1: r3(blendProbP1), blendFavorite, blendCorrect: blendFavorite === winner,
+    eloProbP1: r3(eloProbP1), eloCorrect: eloFavorite === winner,
+    rankProbP1: r3(rankProbP1),
+    smashProbP1: r3(smashProbP1), smashFavorite, smashCorrect: smashFavorite === winner,
     rankPick, rankCorrect: rankPick === winner,
+    rankA, rankB,
     p1Won: winner === p1,
   };
 }
+
+// Incremental by default: reuse predictions already in track_record.json and
+// only simulate matches we haven't scored yet. This keeps a nightly refresh
+// fast (just the handful of new results) and turns each stored prediction into
+// a locked one rather than a retroactively re-simulated one. Set FULL=1 to
+// re-simulate everything (e.g. after changing the model or its weights).
+const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json');
+const forceFull = process.env.FULL === '1';
+const existing = (!forceFull && fs.existsSync(outPath))
+  ? new Map(JSON.parse(fs.readFileSync(outPath, 'utf8')).matches.map((m) => [m.id, m]))
+  : new Map();
 
 const all = [];
 for (const tour of ['atp', 'wta']) {
   const ctx = loadTour(tour);
   const recs = [...ctx.evalMatches.values()];
-  process.stdout.write(`Simulating ${recs.length} ${tour.toUpperCase()} matches (${SIMS} sims each)…\n`);
-  for (const r of recs) all.push(evaluate(ctx, r));
+  const fresh = recs.filter((r) => !existing.has(r.id));
+  process.stdout.write(`${tour.toUpperCase()}: ${recs.length} matches, ${fresh.length} new to simulate…\n`);
+  for (const r of recs) {
+    all.push(existing.has(r.id) ? existing.get(r.id) : evaluate(ctx, r));
+  }
 }
 all.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -200,9 +223,12 @@ all.sort((a, b) => new Date(a.date) - new Date(b.date));
 for (const tour of ['atp', 'wta']) {
   const ms = all.filter((m) => m.tour === tour);
   const acc = (k) => (ms.length ? Math.round((ms.filter((m) => m[k]).length / ms.length) * 100) : 0);
-  console.log(`${tour.toUpperCase()} n=${ms.length} | season ${acc('correct')}% | blend ${acc('blendCorrect')}% | rank ${acc('rankCorrect')}% | upset ${acc('upsetCorrect')}%`);
+  console.log(`${tour.toUpperCase()} n=${ms.length} | SMASH ${acc('smashCorrect')}% | sim ${acc('correct')}% | elo ${acc('eloCorrect')}% | rank ${acc('rankCorrect')}% | upset ${acc('upsetCorrect')}%`);
+  for (const s of ['hard', 'clay', 'grass']) {
+    const sm = ms.filter((m) => m.surface === s);
+    if (sm.length) console.log(`   ${s} n=${sm.length} | SMASH ${Math.round(100 * sm.filter((m) => m.smashCorrect).length / sm.length)}% | rank ${Math.round(100 * sm.filter((m) => m.rankCorrect).length / sm.length)}%`);
+  }
 }
 
-const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json');
-fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, eloWeight: ELO_WEIGHT, matches: all }));
+fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, matches: all }));
 console.log(`Wrote ${all.length} matches to ${outPath}`);

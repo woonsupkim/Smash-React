@@ -110,27 +110,41 @@ function predict(ctx, a, b, surface) {
   return probA;
 }
 
+let fetchFailures = 0;
+
 async function fetchSchedule(league, yyyymmdd) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/tennis/${league}/scoreboard?dates=${yyyymmdd}`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA, Accept: 'application/json' } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const out = [];
-    for (const ev of data.events || []) {
-      for (const g of ev.groupings || []) {
-        const isWta = /women/i.test(g.grouping?.displayName || '');
-        if ((league === 'wta') !== isWta) continue;
-        for (const c of g.competitions || []) {
-          if (!/scheduled/i.test(c.status?.type?.name || '')) continue;
-          const names = (c.competitors || []).map((x) => x?.athlete?.displayName).filter(Boolean);
-          if (names.length !== 2) continue;
-          out.push({ id: String(c.id), date: c.date, eventName: ev.name, names });
+  // Retry a couple of times — a swallowed transient failure once cost us the
+  // Wimbledon women's final (the WTA fetch hiccupped and silently returned []).
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA, Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const out = [];
+      for (const ev of data.events || []) {
+        for (const g of ev.groupings || []) {
+          const isWta = /women/i.test(g.grouping?.displayName || '');
+          if ((league === 'wta') !== isWta) continue;
+          for (const c of g.competitions || []) {
+            if (!/scheduled/i.test(c.status?.type?.name || '')) continue;
+            const names = (c.competitors || []).map((x) => x?.athlete?.displayName).filter(Boolean);
+            if (names.length !== 2) continue;
+            out.push({ id: String(c.id), date: c.date, eventName: ev.name, names });
+          }
         }
       }
+      return out;
+    } catch (err) {
+      if (attempt === 2) {
+        fetchFailures++;
+        console.warn(`  ! ${league} ${yyyymmdd} schedule fetch failed: ${err.message}`);
+        return [];
+      }
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
     }
-    return out;
-  } catch { return []; }
+  }
+  return [];
 }
 
 function ymd(d) {
@@ -140,7 +154,17 @@ function ymd(d) {
 async function run() {
   const outPath = path.join(__dirname, '..', 'public', 'data', 'predictions.json');
   const store = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : { predictions: [] };
-  const byId = new Map(store.predictions.map((p) => [p.id, p]));
+
+  // Collapse any pre-existing duplicates (same tour + pair + day), preferring
+  // a decided entry over a still-pending one.
+  const loadKey = (p) => `${p.tour}|${[p.p1, p.p2].sort().join('_')}|${new Date(p.date).toISOString().slice(0, 10)}`;
+  const dedup = new Map();
+  for (const p of store.predictions) {
+    const k = loadKey(p);
+    const prev = dedup.get(k);
+    if (!prev || (prev.status === 'pending' && p.status !== 'pending')) dedup.set(k, p);
+  }
+  store.predictions = [...dedup.values()];
 
   const ctxByTour = { atp: loadTour('atp'), wta: loadTour('wta') };
 
@@ -166,6 +190,13 @@ async function run() {
   }
 
   // ── 2. Seed new upcoming predictions ────────────────────────────────────
+  // Dedupe by matchup identity (tour + player pair + day), NOT the ESPN
+  // competition id — ESPN reassigns that id between runs, which would
+  // otherwise lock the same match twice.
+  const dayKey = (tour, p1, p2, date) =>
+    `${tour}|${[p1, p2].sort().join('_')}|${new Date(date).toISOString().slice(0, 10)}`;
+  const seen = new Set(store.predictions.map((p) => dayKey(p.tour, p.p1, p.p2, p.date)));
+
   let added = 0;
   const today = new Date();
   for (const league of ['atp', 'wta']) {
@@ -174,25 +205,25 @@ async function run() {
       const d = new Date(today); d.setDate(d.getDate() + i);
       const games = await fetchSchedule(league, ymd(d));
       for (const g of games) {
-        if (byId.has(g.id)) continue;
         const a = matchRoster(g.names[0], ctx.roster);
         const b = matchRoster(g.names[1], ctx.roster);
         if (!a || !b || a.id === b.id) continue;
+        const key = dayKey(league, a.id, b.id, g.date);
+        if (seen.has(key)) continue;
         const surface = surfaceFromEventName(g.eventName);
         const probA = predict(ctx, a, b, surface);
         if (probA == null) continue;
         const favorite = probA >= 0.5 ? a.id : b.id;
         const favProb = probA >= 0.5 ? probA : 1 - probA;
-        const rec = {
+        store.predictions.push({
           id: g.id, tour: league, surface, event: g.eventName, date: g.date,
           p1: a.id, p2: b.id, name1: a.name, name2: b.name,
           probP1: Math.round(probA * 1000) / 1000,
           favorite, favName: favorite === a.id ? a.name : b.name,
           favProb: Math.round(favProb * 1000) / 1000,
           status: 'pending', lockedAt: new Date().toISOString(),
-        };
-        store.predictions.push(rec);
-        byId.set(g.id, rec);
+        });
+        seen.add(key);
         added++;
       }
     }
@@ -206,6 +237,7 @@ async function run() {
   const decided = store.predictions.filter((p) => p.status !== 'pending');
   const wins = decided.filter((p) => p.correct).length;
   console.log(`Graded ${graded}, added ${added}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
+  if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries — some upcoming matches may be missing this run.`);
 }
 
 run();

@@ -97,6 +97,7 @@ export default function H2H({ tour = 'atp' }) {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
+  const [engine, setEngine]               = useState('smash');
   // heavy-recency-weighted stats (7-day half-life) instead of the default
   // 60-day-calibrated CSV — toggling this re-seeds the sliders, it doesn't
   // run a simulation by itself.
@@ -431,6 +432,9 @@ export default function H2H({ tour = 'atp' }) {
           accentTextColor={config.accentTextColor}
           h2hData={h2hData}
           eloData={eloData}
+          tour={tour}
+          engine={engine}
+          setEngine={setEngine}
           getPlayerImageSrc={getPlayerImageSrc}
           poolLoading={players.length === 0}
           statsA={statsA}

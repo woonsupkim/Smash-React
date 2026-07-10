@@ -166,6 +166,31 @@
   justify-content: space-between;
   font-size: 1.1rem;
   margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-hero-engines {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.85rem;
+}
+.match-hero-engine-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.6rem;
+  cursor: pointer;
+}
+.match-hero-engine-btn:hover { color: var(--text-1); }
+.match-hero-engine-btn.active {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-color: var(--border-2);
 }
 
 .match-hero-scoreline {
