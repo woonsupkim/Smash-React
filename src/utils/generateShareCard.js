@@ -160,37 +160,39 @@ export async function generateShareCard({
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Stylized court markings, subtle, behind everything
+  // Minimal court reference: a single subtle net line + baseline, not a busy
+  // clip-art court - keeps the card premium and text-forward.
   ctx.save();
-  ctx.globalAlpha = 0.22;
-  const courtX = 150, courtY = 140, courtW = W - 300, courtH = 420;
-  ctx.fillStyle = theme.court;
-  ctx.fillRect(courtX, courtY, courtW, courtH);
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(courtX, courtY, courtW, courtH);
-  // singles sidelines
-  ctx.strokeRect(courtX + 70, courtY, courtW - 140, courtH);
-  // net (center vertical) + service lines + center service line
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(W / 2, courtY); ctx.lineTo(W / 2, courtY + courtH);
-  ctx.moveTo(W / 2 - 190, courtY); ctx.lineTo(W / 2 - 190, courtY + courtH);
-  ctx.moveTo(W / 2 + 190, courtY); ctx.lineTo(W / 2 + 190, courtY + courtH);
-  ctx.moveTo(W / 2 - 190, courtY + courtH / 2); ctx.lineTo(W / 2 + 190, courtY + courtH / 2);
+  ctx.moveTo(W / 2, 150); ctx.lineTo(W / 2, H - 96); // net
   ctx.stroke();
   ctx.restore();
 
-  // Winner-side glow wash
+  // Winner-side radial glow - soft, premium, draws the eye to the pick.
   const [wr, wg, wb] = hexToRgb(winnerColor);
-  const glow = ctx.createLinearGradient(isWinnerA ? 0 : W, 0, isWinnerA ? W / 2 : W / 2, 0);
-  glow.addColorStop(0, `rgba(${wr},${wg},${wb},0.28)`);
-  glow.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(isWinnerA ? 0 : W / 2, 0, W / 2, H);
-
-  // Dark scrim so text pops over court lines
-  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  const gx = isWinnerA ? 220 : W - 220;
+  const rGlow = ctx.createRadialGradient(gx, 300, 40, gx, 300, 520);
+  rGlow.addColorStop(0, `rgba(${wr},${wg},${wb},0.34)`);
+  rGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rGlow;
   ctx.fillRect(0, 0, W, H);
+
+  // Gentle top-to-bottom scrim so text always pops.
+  const scrim = ctx.createLinearGradient(0, 0, 0, H);
+  scrim.addColorStop(0, 'rgba(0,0,0,0.32)');
+  scrim.addColorStop(0.5, 'rgba(0,0,0,0.12)');
+  scrim.addColorStop(1, 'rgba(0,0,0,0.42)');
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, W, H);
+
+  // Accent hairline along the very top - brand signature.
+  ctx.fillStyle = winnerColor;
+  ctx.globalAlpha = 0.9;
+  ctx.fillRect(0, 0, W, 5);
+  ctx.globalAlpha = 1;
 
   // ── Load images ───────────────────────────────────────────────────────────
   const [imgA, imgB, flagA, flagB] = await Promise.all([
@@ -200,32 +202,35 @@ export async function generateShareCard({
     flagSrcB ? loadImg(flagSrcB) : Promise.resolve(null),
   ]);
 
-  // ── Top: tournament label + verdict headline ─────────────────────────────
-  ctx.textAlign = 'center';
+  // ── Top brand row: wordmark left, tournament right ───────────────────────
   ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.font = '800 22px Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('⚡ SMASH!', 40, 50);
 
-  ctx.font = '600 20px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(
-    [tournamentLabel, surfaceLabel].filter(Boolean).join(' · ').toUpperCase(),
-    W / 2, 46
-  );
+  const meta = [tournamentLabel, surfaceLabel].filter(Boolean).join(' · ').toUpperCase();
+  if (meta) {
+    ctx.textAlign = 'right';
+    ctx.font = '600 18px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(meta, W - 40, 49);
+  }
 
+  // ── Verdict headline (the shareable hook) ────────────────────────────────
+  ctx.textAlign = 'center';
   const straightSets = !!scoreline && /–0$/.test(scoreline);
   const verdict = pickVerdict({ favShare, straightSets, binom10 });
   ctx.font = 'bold 58px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
   ctx.shadowBlur = 12;
-  ctx.fillText(verdict.headline, W / 2, 108);
+  ctx.fillText(verdict.headline, W / 2, 116);
   ctx.shadowBlur = 0;
 
   ctx.font = 'italic 600 23px Arial, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.72)';
-  ctx.fillText(verdict.tagline, W / 2, 142);
-
-  // Confetti behind the winner's photo
-  drawConfetti(ctx, isWinnerA ? 'left' : 'right', winnerColor, winnerName, W, H);
+  ctx.fillText(verdict.tagline, W / 2, 150);
 
   // ── Photos ────────────────────────────────────────────────────────────────
   const photoR = 100;
@@ -259,20 +264,23 @@ export async function generateShareCard({
   drawSide(imgA, photoXA, colorA, isWinnerA, colorA);
   drawSide(imgB, photoXB, colorB, !isWinnerA, colorB);
 
-  // WINS ribbon overlapping the winner's photo bottom
+  // "PROJECTED WINNER" pill overlapping the winner's photo bottom
   const ribbonCx = isWinnerA ? photoXA : photoXB;
   const ribbonColor = winnerColor === '#fff200' || winnerColor === '#FFD700' ? '#c8a800' : winnerColor;
   ctx.save();
-  roundRectPath(ctx, ribbonCx - 55, photoY + photoR - 18, 110, 34, 17);
+  ctx.font = 'bold 14px Arial, sans-serif';
+  const pillText = 'PROJECTED WINNER';
+  const pillW = ctx.measureText(pillText).width + 28;
+  roundRectPath(ctx, ribbonCx - pillW / 2, photoY + photoR - 16, pillW, 32, 16);
   ctx.fillStyle = ribbonColor;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.font = 'bold 16px Arial, sans-serif';
   ctx.fillStyle = '#fff';
   ctx.textBaseline = 'middle';
-  ctx.fillText('WINS', ribbonCx, photoY + photoR);
+  ctx.textAlign = 'center';
+  ctx.fillText(pillText, ribbonCx, photoY + photoR + 1);
   ctx.restore();
 
   // Center stage: the predicted scoreline, big - the "final score" of the sim
@@ -353,6 +361,19 @@ export async function generateShareCard({
   ctx.fillStyle = '#fff';
   ctx.fillRect(split - 1.5, barY - 4, 3, barH + 8);
 
+  // Win-probability labels at each end of the bar.
+  const pctA = Math.round((isWinnerA ? favShare : 1 - favShare) * 100);
+  ctx.font = 'bold 20px Arial, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = isWinnerA ? '#fff' : 'rgba(255,255,255,0.5)';
+  ctx.fillText(`${pctA}%`, barX - 52, barY + barH / 2);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = !isWinnerA ? '#fff' : 'rgba(255,255,255,0.5)';
+  ctx.fillText(`${100 - pctA}%`, barX + barW + 52, barY + barH / 2);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+
   // ── Chips row - just the confidence call, colored ─────────────────────────
   const chips = [];
   if (favShare < 0.60) {
@@ -385,15 +406,15 @@ export async function generateShareCard({
     cxPos += cw + chipGap;
   }
 
-  // ── Footer: sims + branding + link ────────────────────────────────────────
+  // ── Footer: credibility line + link ───────────────────────────────────────
   const host = (typeof window !== 'undefined' && window.location?.host) || '';
   ctx.font = '15px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillText(`Based on ${simCount.toLocaleString()} simulated matches`, W / 2, 588);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillText(`${simCount.toLocaleString()} simulated matches · calibrated model, graded in public`, W / 2, 590);
 
   ctx.font = 'bold 17px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText(`⚡ SMASH! Simulator${host ? ` · ${host}` : ''} · run your own sim`, W / 2, 614);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(`Run your own${host ? ` · ${host}` : ''}`, W / 2, 615);
 
   return canvas;
 }

@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import H2H from './pages/H2H';
 import DreamBrackets from './pages/DreamBrackets';
 import TrackRecord from './pages/TrackRecord';
+import Methodology from './pages/Methodology';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import { ToastHost } from './components/ui/Toast';
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { to: '/h2h?surface=hard', label: 'H2H' },
   { to: '/dream-brackets', label: 'Brackets' },
   { to: '/track-record', label: 'Track Record' },
+  { to: '/methodology', label: 'Methodology' },
   // { to: '/about', label: 'About Us' }
 ];
 
@@ -135,6 +137,10 @@ function App() {
               the page itself); the /women mirror keeps nav links working */}
           <Route path="/track-record" element={<TrackRecord />} />
           <Route path="/women/track-record" element={<TrackRecord />} />
+
+          {/* Methodology is tour-agnostic; the /women mirror keeps nav links working */}
+          <Route path="/methodology" element={<Methodology />} />
+          <Route path="/women/methodology" element={<Methodology />} />
 
           {/* Pre-merge URLs - redirect rather than 404 for any existing
               bookmarks/links to the old per-tournament pages. */}

@@ -30,10 +30,41 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Wilson 95% interval — same as the Track Record / Methodology headline, so
+// the home proof band shows the identical honest number.
+function wilsonHalf(k, n) {
+  if (!n) return 0;
+  const z = 1.96, p = k / n, z2 = z * z, denom = 1 + z2 / n;
+  const half = (z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / denom;
+  return Math.round(half * 100);
+}
+
 export default function Home({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const dataDir = isWta ? '/data/women' : '/data';
   const [refreshMeta, setRefreshMeta] = useState(null);
+  const [proof, setProof] = useState(null);
+
+  // Live proof stats from the graded track record — the credibility engine
+  // that separates this from a "form with a number".
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/track_record.json')
+      .then((r) => r.json())
+      .then((d) => {
+        const ms = d.matches || [];
+        const n = ms.length;
+        const k = ms.filter((m) => m.smashCorrect).length;
+        const odds = ms.filter((m) => m.oddCorrect != null);
+        setProof({
+          n,
+          acc: n ? Math.round((k / n) * 100) : 0,
+          ciHalf: wilsonHalf(k, n),
+          smashOnOdds: odds.length ? Math.round((odds.filter((m) => m.smashCorrect).length / odds.length) * 100) : null,
+          marketAcc: odds.length ? Math.round((odds.filter((m) => m.oddCorrect).length / odds.length) * 100) : null,
+        });
+      })
+      .catch(() => setProof(null));
+  }, []);
   // Only on the very first Home mount of a page load - not when navigating
   // back to Home later in the session (see introHasPlayed above).
   const [showIntro, setShowIntro] = useState(!introHasPlayed);
@@ -138,11 +169,11 @@ export default function Home({ tour = 'atp' }) {
         transition={{ duration: 1, delay: showIntro ? 1.9 : 0 }}
       >
         <div className="home-hero">
-          <div className="eyebrow">GRAND SLAM MATCH ENGINE{isWta ? ' · WTA' : ''}</div>
+          <div className="eyebrow">GRAND SLAM PREDICTION ENGINE{isWta ? ' · WTA' : ''}</div>
           <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
           <p className="sub-title">
-            Pick any two players, choose a surface, and run the matchup.<br/>
-            Build full draws and crown a champion.
+            Pick two players, choose a surface, and run a real point-by-point
+            Monte Carlo matchup — the same model we grade in public, match after match.
           </p>
 
           <div className="d-flex flex-wrap gap-3 hero-ctas">
@@ -153,6 +184,30 @@ export default function Home({ tour = 'atp' }) {
               Build a Bracket
             </Button>
           </div>
+
+          {/* Proof band: the moat, front and center. Links straight to the
+              graded record so the headline number is one click from its receipts. */}
+          {proof && proof.n > 0 && (
+            <Link to={withTourPrefix('/track-record', isWta)} className="home-proof">
+              <div className="home-proof-stats">
+                <div className="home-proof-item">
+                  <span className="hp-val">{proof.acc}%<span className="hp-ci"> ±{proof.ciHalf}</span></span>
+                  <span className="hp-cap">winners called correctly</span>
+                </div>
+                <div className="home-proof-item">
+                  <span className="hp-val">{proof.n.toLocaleString()}</span>
+                  <span className="hp-cap">matches graded in public</span>
+                </div>
+                {proof.marketAcc != null && (
+                  <div className="home-proof-item">
+                    <span className="hp-val">{proof.smashOnOdds}<small>%</small> <span className="hp-vs">vs {proof.marketAcc}%</span></span>
+                    <span className="hp-cap">us vs the betting market</span>
+                  </div>
+                )}
+              </div>
+              <span className="home-proof-cta">See the track record →</span>
+            </Link>
+          )}
         </div>
 
         <div className="surface-strip">
@@ -167,7 +222,9 @@ export default function Home({ tour = 'atp' }) {
         </div>
 
         <div className="home-footer">
-          <span className="trust-signal">Powered by real match data</span>
+          <span className="trust-signal">
+            Real ATP &amp; WTA match data · calibrated probabilities · <Link to="/methodology" className="trust-method-link">how it works</Link>
+          </span>
           <button type="button" className="update-data-link" onClick={handleUpdateData}>
             Update Data
           </button>

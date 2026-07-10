@@ -42,8 +42,65 @@
 }
 
 .hero-ctas {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.75rem;
 }
+
+/* Proof band — the credibility moat, one click from its receipts. */
+.home-proof {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  max-width: 640px;
+  padding: 1.1rem 1.35rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-left: 3px solid var(--accent-brand);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.home-proof:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.25);
+  border-left-color: var(--accent-brand);
+}
+.home-proof-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.75rem;
+  flex: 1 1 auto;
+}
+.home-proof-item {
+  display: flex;
+  flex-direction: column;
+}
+.hp-val {
+  font-family: var(--font-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hp-val small { font-size: 0.9rem; }
+.hp-ci { font-size: 0.85rem; color: var(--accent-brand); font-weight: 700; }
+.hp-vs { font-size: 0.85rem; color: var(--text-3); font-weight: 600; }
+.hp-cap {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-top: 0.3rem;
+}
+.home-proof-cta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-brand);
+  white-space: nowrap;
+}
+.trust-method-link { color: var(--accent-brand); text-decoration: none; }
+.trust-method-link:hover { text-decoration: underline; }
 
 .cta-primary,
 .cta-secondary {

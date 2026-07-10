@@ -6,6 +6,7 @@
 // Carlo sim), so this page just reads track_record.json and renders - no
 // client-side simulation, instant load.
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { countryFlagUrl } from '../components/countryFlags';
 import './TrackRecord.css';
 
@@ -16,6 +17,17 @@ const SURFACES = {
 };
 
 const PAGE_SIZE = 10;
+
+// Wilson 95% score interval for a binomial proportion — defends the headline
+// accuracy against "that's just luck" by showing the sampling uncertainty.
+function wilson(k, n) {
+  if (!n) return { lo: 0, hi: 0, mid: 0 };
+  const z = 1.96, p = k / n, z2 = z * z;
+  const denom = 1 + z2 / n;
+  const center = (p + z2 / (2 * n)) / denom;
+  const half = (z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / denom;
+  return { lo: center - half, hi: center + half, mid: p };
+}
 
 // Parse an ATP/WTA score string ("7-6(4) 3-6 6-3") into per-set games, from
 // the match winner's perspective. tb = tiebreak loser's points (superscript).
@@ -123,6 +135,23 @@ export default function TrackRecord() {
     const oddList = filtered.filter((m) => m.oddCorrect != null);
     const oddAcc = oddList.length ? Math.round((oddList.filter((m) => m.oddCorrect).length / oddList.length) * 100) : null;
 
+    // Head-to-head vs the market on the SAME odds-carrying matches, plus how
+    // often we were right when we disagreed with the market ("beat the line").
+    const smashOnOdds = oddList.length ? Math.round((oddList.filter((m) => m.smashCorrect).length / oddList.length) * 100) : null;
+    const disagree = oddList.filter((m) => m.smashFavorite !== m.oddFav);
+    const market = {
+      n: oddList.length,
+      marketAcc: oddAcc,
+      smashAcc: smashOnOdds,
+      disagreeN: disagree.length,
+      disagreeWin: disagree.length ? Math.round((disagree.filter((m) => m.smashCorrect).length / disagree.length) * 100) : null,
+    };
+
+    // 95% Wilson interval on the headline (Smart Blend) accuracy.
+    const smashK = filtered.filter((m) => m.smashCorrect).length;
+    const ci = wilson(smashK, n);
+    const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
+
     return {
       n,
       correct: filtered.filter((m) => m.correct).length,
@@ -135,6 +164,8 @@ export default function TrackRecord() {
       engines,
       bestEngine,
       oddAcc,
+      market,
+      ciHalf,
       perSurface,
       buckets,
     };
@@ -142,6 +173,19 @@ export default function TrackRecord() {
 
   const isLoading = !data;
   const shown = filtered.slice(0, visible);
+
+  // Freshness indicator — invisible when healthy, loud when the data is stale
+  // (enterprise = nobody ever sees February rankings in July).
+  const refreshedAt = data?.generatedAt ? new Date(data.generatedAt) : null;
+  const staleDays = refreshedAt ? (Date.now() - refreshedAt.getTime()) / 864e5 : null;
+  const isStale = staleDays != null && staleDays > 3;
+  const refreshedLabel = (() => {
+    if (!refreshedAt) return null;
+    const h = (Date.now() - refreshedAt.getTime()) / 36e5;
+    if (h < 1) return 'just now';
+    if (h < 24) return `${Math.round(h)}h ago`;
+    return `${Math.round(h / 24)}d ago`;
+  })();
 
   return (
     <div className="page-background track-bg">
@@ -154,11 +198,20 @@ export default function TrackRecord() {
               Every completed 2026 tour match between two ranked players, scored
               against the real result. No cherry-picking. Every match counts.
             </p>
+            <div className="track-header-meta">
+              <Link className="track-method-link" to="/methodology">How it works →</Link>
+              {refreshedLabel && (
+                <span className={`track-refreshed${isStale ? ' stale' : ''}`}>
+                  <span className="track-refreshed-dot" />
+                  {isStale ? 'Data may be stale · last refreshed ' : 'Data refreshed '}{refreshedLabel}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="track-controls">
             <div className="track-seg" role="group" aria-label="Tour">
-              {[['atp', 'ATP'], ['wta', 'WTA'], ['all', 'Both']].map(([t, label]) => (
+              {[['all', 'Both'], ['atp', 'ATP'], ['wta', 'WTA']].map(([t, label]) => (
                 <button key={t} type="button" className={`track-seg-btn${tour === t ? ' active' : ''}`} onClick={() => setTour(t)}>
                   {label}
                 </button>
@@ -223,8 +276,41 @@ export default function TrackRecord() {
                 <div className="track-hero-detail">
                   <div className="track-hero-label">of winners called correctly</div>
                   <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
+                  {stats.n > 0 && (
+                    <div className="track-hero-ci">±{stats.ciHalf}% at 95% confidence — the range this accuracy would fall in on fresh matches, not luck.</div>
+                  )}
                 </div>
               </div>
+
+              {/* Versus the betting market — the most credible claim in sports
+                  prediction. Only shown when odds-carrying matches exist. */}
+              {stats.market.n > 0 && (
+                <div className="track-panel track-market">
+                  <div className="track-section-label">Versus the betting market · {stats.market.n} matches with odds</div>
+                  <div className="track-market-row">
+                    <div className="track-market-cell">
+                      <div className="track-market-val">{stats.market.smashAcc}%</div>
+                      <div className="track-market-cap">Smart Blend</div>
+                    </div>
+                    <div className="track-market-vs">vs</div>
+                    <div className="track-market-cell">
+                      <div className="track-market-val">{stats.market.marketAcc}%</div>
+                      <div className="track-market-cap">Bookmaker favorite</div>
+                    </div>
+                    {stats.market.disagreeWin != null && (
+                      <div className="track-market-disagree">
+                        When we disagreed with the market, we were right{' '}
+                        <strong>{stats.market.disagreeWin}%</strong> of the time
+                        <span className="track-market-disagree-n"> ({stats.market.disagreeN} picks)</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="track-note">
+                    Same matches, graded the same way. Beating the closing line is the hardest
+                    test in sports prediction — the market already prices in everything public.
+                  </div>
+                </div>
+              )}
 
               {/* Per-surface accuracy */}
               <div className="track-surface-row">

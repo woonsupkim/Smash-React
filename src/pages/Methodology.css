@@ -1,0 +1,144 @@
+.method-bg {
+  background: linear-gradient(180deg, #0d1117 0%, #090b10 100%);
+}
+.method-overlay {
+  background: none;
+  padding: var(--page-pad-top) 1.5rem 3.5rem;
+  min-height: calc(100vh - 70px);
+}
+.method-page {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--text-2);
+}
+
+.method-header { text-align: center; margin-bottom: 1.75rem; }
+.method-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin: 0.25rem 0 0.6rem;
+}
+.method-sub {
+  color: var(--text-3);
+  font-size: 0.98rem;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.55;
+}
+
+/* Live headline numbers */
+.method-headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+.method-headline-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 150px;
+  text-align: center;
+}
+.method-headline-val {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--accent-positive);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.method-headline-val small { font-size: 0.95rem; color: var(--text-2); font-weight: 600; }
+.method-headline-cap {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-top: 0.35rem;
+}
+
+.method-section { margin-bottom: 2rem; }
+.method-section h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-1);
+}
+.method-section p {
+  font-size: 0.94rem;
+  line-height: 1.6;
+  margin-bottom: 0.85rem;
+}
+.method-section strong { color: var(--text-1); }
+.method-section a { color: var(--accent-positive); }
+
+/* Calibration mini-chart (mirrors the Track Record reliability bars) */
+.method-calib { margin-top: 0.5rem; }
+.method-calib-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 78px 34px;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+.method-calib-said { font-size: 0.78rem; color: var(--text-3); }
+.method-calib-track {
+  position: relative;
+  height: 12px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.method-calib-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3ba776, #4fd39a);
+  border-radius: 6px;
+}
+.method-calib-ideal {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 16px;
+  background: var(--text-1);
+  opacity: 0.55;
+}
+.method-calib-actual { font-size: 0.78rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.method-calib-n { font-size: 0.72rem; color: var(--text-3); text-align: right; }
+
+.method-limits {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.method-limits li {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.method-footer { text-align: center; margin-top: 2.5rem; }
+.method-cta {
+  display: inline-block;
+  background: var(--accent-positive);
+  color: #06130d;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+.method-cta:hover { filter: brightness(1.08); }
+
+@media (max-width: 576px) {
+  .method-calib-row { grid-template-columns: 72px 1fr 60px 26px; }
+}

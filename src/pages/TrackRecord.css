@@ -94,6 +94,93 @@
   margin-top: 0.2rem;
 }
 
+.track-hero-ci {
+  font-size: 0.74rem;
+  color: var(--text-2);
+  margin-top: 0.35rem;
+  max-width: 40ch;
+}
+
+/* ── Header meta: methodology link + freshness chip ───────────────────── */
+.track-header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+}
+.track-method-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-positive);
+  text-decoration: none;
+}
+.track-method-link:hover { text-decoration: underline; }
+.track-refreshed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+.track-refreshed-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-positive);
+  box-shadow: 0 0 6px var(--accent-positive);
+}
+.track-refreshed.stale { color: var(--accent-negative); font-weight: 600; }
+.track-refreshed.stale .track-refreshed-dot {
+  background: var(--accent-negative);
+  box-shadow: 0 0 6px var(--accent-negative);
+  animation: track-pulse 1.2s ease-in-out infinite;
+}
+@keyframes track-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── Versus the betting market ────────────────────────────────────────── */
+.track-market-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin-bottom: 0.85rem;
+}
+.track-market-cell { text-align: center; }
+.track-market-val {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+.track-market-cell:first-child .track-market-val { color: var(--accent-positive); }
+.track-market-cap {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  margin-top: 0.25rem;
+}
+.track-market-vs {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.track-market-disagree {
+  flex: 1 1 220px;
+  min-width: 200px;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border-1);
+}
+.track-market-disagree strong { color: var(--accent-positive); }
+.track-market-disagree-n { color: var(--text-3); }
+
 /* ── Per-surface cards ────────────────────────────────────────────────── */
 .track-surface-row {
   display: grid;

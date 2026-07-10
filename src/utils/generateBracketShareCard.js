@@ -90,10 +90,22 @@ export async function generateBracketShareCard({
   // Golden center glow behind the champion
   const [gr, gg, gb] = hexToRgb(GOLD);
   const glow = ctx.createRadialGradient(W / 2, 270, 40, W / 2, 270, 380);
-  glow.addColorStop(0, `rgba(${gr},${gg},${gb},0.22)`);
+  glow.addColorStop(0, `rgba(${gr},${gg},${gb},0.26)`);
   glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
+
+  // Gentle scrim + gold top hairline (matches the H2H card's signature).
+  const scrim = ctx.createLinearGradient(0, 0, 0, H);
+  scrim.addColorStop(0, 'rgba(0,0,0,0.32)');
+  scrim.addColorStop(0.5, 'rgba(0,0,0,0.10)');
+  scrim.addColorStop(1, 'rgba(0,0,0,0.42)');
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = GOLD;
+  ctx.globalAlpha = 0.9;
+  ctx.fillRect(0, 0, W, 5);
+  ctx.globalAlpha = 1;
 
   // ── Load images ───────────────────────────────────────────────────────────
   const [img, flag, ruImg, ruFlag] = await Promise.all([
@@ -107,14 +119,20 @@ export async function generateBracketShareCard({
   drawConfetti(ctx, 'left', GOLD, champion.name, W, H);
   drawConfetti(ctx, 'right', GOLD, champion.name.split('').reverse().join(''), W, H);
 
-  ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
 
-  // ── Top: tournament + headline ────────────────────────────────────────────
-  ctx.font = '600 20px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(`${tournamentLabel.toUpperCase()} · DREAM BRACKET`, W / 2, 46);
+  // ── Top brand row: wordmark left, tournament right ───────────────────────
+  ctx.textAlign = 'left';
+  ctx.font = '800 22px Arial, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('⚡ SMASH!', 40, 50);
+  ctx.textAlign = 'right';
+  ctx.font = '600 18px Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText(`${tournamentLabel.toUpperCase()} · DREAM BRACKET`, W - 40, 49);
 
+  // ── Headline ──────────────────────────────────────────────────────────────
+  ctx.textAlign = 'center';
   ctx.font = 'bold 54px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
@@ -249,12 +267,12 @@ export async function generateBracketShareCard({
   // ── Footer ────────────────────────────────────────────────────────────────
   const host = (typeof window !== 'undefined' && window.location?.host) || '';
   ctx.font = '15px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillText('Every round decided by Monte Carlo simulation', W / 2, 588);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillText('Every round decided by Monte Carlo simulation · calibrated model, graded in public', W / 2, 590);
 
   ctx.font = 'bold 17px Arial, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText(`⚡ SMASH! Simulator${host ? ` · ${host}` : ''} · build your own bracket`, W / 2, 614);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(`Build your own${host ? ` · ${host}` : ''}`, W / 2, 615);
 
   return canvas;
 }
