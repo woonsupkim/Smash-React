@@ -98,12 +98,11 @@ export default function H2H({ tour = 'atp' }) {
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
   const [engine, setEngine]               = useState('smash');
-  // heavy-recency-weighted stats (7-day half-life) instead of the default
-  // 60-day-calibrated CSV — toggling this re-seeds the sliders, it doesn't
-  // run a simulation by itself.
-  const [upsetMode, setUpsetMode]         = useState(false);
+  // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
+  // instead of the season CSV — selecting it re-seeds the sliders.
+  const upsetMode = engine === 'upset';
   // ids with enough recent same-surface matches for real upset stats
-  // (upset_ok=1 in the _upset.csv) — the toggle is disabled for anyone else.
+  // (upset_ok=1 in the _upset.csv) — the Hot Streak engine is disabled for anyone else.
   const [upsetOkIds, setUpsetOkIds]       = useState(null);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
@@ -124,7 +123,7 @@ export default function H2H({ tour = 'atp' }) {
       prevDataDirRef.current = dataDir;
       setPlayerA(null);
       setPlayerB(null);
-      setUpsetMode(false);
+      setEngine('smash');
     }
     Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile, {
       header: true,
@@ -344,19 +343,20 @@ export default function H2H({ tour = 'atp' }) {
     advance();
   };
 
-  // Reason the Upset Scenario toggle is disabled (null = available). Only
+  // Reason the Hot Streak engine is unavailable (null = available). Only
   // players with enough recent same-surface matches (upset_ok=1) can use it.
   const upsetDisabledReason = (() => {
     if (!playerA || !playerB || !upsetOkIds) return null;
     const lacking = [playerA, playerB].filter(p => !upsetOkIds.has(p.id)).map(p => p.name);
     if (lacking.length === 0) return null;
-    return `${lacking.join(' and ')} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent ${config.surfaceLabel.toLowerCase()} matches for an upset scenario.`;
+    return `${lacking.join(' and ')} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent ${config.surfaceLabel.toLowerCase()} matches for a hot-streak read.`;
   })();
+  const engineDisabled = upsetDisabledReason ? { upset: upsetDisabledReason } : {};
 
-  // If a player switch makes upset mode unavailable, snap it back off.
+  // If a player switch makes the Hot Streak engine unavailable, fall back.
   useEffect(() => {
-    if (upsetMode && upsetDisabledReason) setUpsetMode(false);
-  }, [upsetMode, upsetDisabledReason]);
+    if (engine === 'upset' && upsetDisabledReason) setEngine('smash');
+  }, [engine, upsetDisabledReason]);
 
   const buildOptions = (excludeId) => [
     { value:'add', label:'+ Add Player' },
@@ -386,6 +386,7 @@ export default function H2H({ tour = 'atp' }) {
           <option value="hard">US Open · Hard</option>
         </Form.Select>
 
+        <div className="h2h-artifact">
         <MatchHero
           title={`${config.label}${isWta ? " Women's" : ''} · ${config.surfaceLabel}`}
           logo={config.logo}
@@ -435,13 +436,11 @@ export default function H2H({ tour = 'atp' }) {
           tour={tour}
           engine={engine}
           setEngine={setEngine}
+          engineDisabled={engineDisabled}
           getPlayerImageSrc={getPlayerImageSrc}
           poolLoading={players.length === 0}
           statsA={statsA}
           statsB={statsB}
-          upsetMode={upsetMode}
-          setUpsetMode={setUpsetMode}
-          upsetDisabledReason={upsetDisabledReason}
         />
 
         <AdvancedSimPanel
@@ -466,9 +465,7 @@ export default function H2H({ tour = 'atp' }) {
           showResults={showResults}
           liveLog={liveLog}
           isWatching={isWatching}
-          upsetMode={upsetMode}
-          setUpsetMode={setUpsetMode}
-          upsetDisabledReason={upsetDisabledReason}
+          engine={engine}
           onSimulate={handleSimulate}
           onWatchMatch={handleWatchMatch}
           bestOf={bestOf}
@@ -477,6 +474,7 @@ export default function H2H({ tour = 'atp' }) {
           surfaceKey={config.surfaceKey}
           h2hData={h2hData}
         />
+        </div>
 
         <AppModal
           show={!!addPlayerFor}

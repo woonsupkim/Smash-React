@@ -40,6 +40,12 @@ function normSurface(raw) {
   return null;
 }
 
+// Forward predictions are locked only for Grand Slams — that's where the
+// roster's top players actually meet, and it keeps the forward record focused.
+function isGrandSlam(name) {
+  return /wimbledon|roland garros|french open|us open|australian open/i.test(name || '');
+}
+
 // Best-effort surface from an ESPN event name (schedule doesn't expose it
 // directly). Falls back to hard, the most common surface.
 function surfaceFromEventName(name) {
@@ -205,6 +211,7 @@ async function run() {
       const d = new Date(today); d.setDate(d.getDate() + i);
       const games = await fetchSchedule(league, ymd(d));
       for (const g of games) {
+        if (!isGrandSlam(g.eventName)) continue; // Slams only
         const a = matchRoster(g.names[0], ctx.roster);
         const b = matchRoster(g.names[1], ctx.roster);
         if (!a || !b || a.id === b.id) continue;

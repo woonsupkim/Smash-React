@@ -8,6 +8,35 @@
   box-shadow: 0 8px 30px rgba(0,0,0,0.35);
 }
 
+/* H2H merges the hero and the detailed simulation into a single card so they
+   read as one artifact rather than two stacked panels. */
+.h2h-artifact {
+  max-width: 1080px;
+  margin: 0 auto 1.5rem;
+  background: rgba(10, 10, 14, 0.82);
+  border: 1px solid var(--border-1);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.h2h-artifact .match-hero {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  max-width: none;
+}
+.h2h-artifact .advanced-sim-panel { margin-top: 0 !important; }
+.h2h-artifact .advanced-panel-card {
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  max-width: none;
+  border-top: 1px solid var(--border-1);
+}
+
 /* Same large broadcast-style title used to live outside the card as its
    own element — now part of the card itself, sized up since it's the page's
    primary heading. */

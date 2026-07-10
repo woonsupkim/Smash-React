@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Button, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { simulateMatch, simulateBatch } from '../simulator';
 import { STAT_KEYS } from './AdvancedSimPanel';
 import { countryFlagUrl } from './countryFlags';
-import { engineProbs, eloProb as eloProbFn, ENGINES } from '../engines';
+import { pickEngineProb, eloProb as eloProbFn, ENGINE_LABELS } from '../engines';
+import EngineSelector from './ui/EngineSelector';
 import Scoreboard from './Scoreboard';
 import './MatchHero.css';
-
-const ENGINE_LABEL = Object.fromEntries(ENGINES.map((e) => [e.id, e.label]));
 const MUTED_COLOR = '#8a8f98';
 const QUICK_ESTIMATE_SIMS = 500;
 
@@ -37,16 +36,14 @@ export default function MatchHero({
   accentTextColor = '#fff',
   h2hData,
   getPlayerImageSrc,
-  statsA = null,   // seeded slider stats (0-100 per key) — already reflect Upset Scenario
+  statsA = null,   // seeded slider stats (0-100 per key) — reflect the engine's stat source
   statsB = null,
-  upsetMode = false,
-  setUpsetMode = null,
-  upsetDisabledReason = null, // non-null disables the toggle, shown on hover
   poolLoading = false, // roster CSV still parsing — show skeleton placeholders
   eloData = null,     // { id: {all,hard,clay,grass} } — surface form ratings
   tour = 'atp',       // 'atp' | 'wta' — selects the tuned engine weights
   engine = 'smash',   // which prediction engine drives the headline number
   setEngine = null,   // enables the engine selector when provided
+  engineDisabled = {}, // { engineId: reason } — greys out that engine
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -80,20 +77,19 @@ export default function MatchHero({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bothPicked, probsKeyA, probsKeyB, bestOf]);
 
-  // Selected prediction engine's P(A wins). In Upset Scenario mode we always
-  // show the raw hot-form simulation (blending would defeat the purpose).
+  // Selected engine's P(A wins). winProb already reflects the engine's stat
+  // source (the page seeds hot-form stats for the Hot Streak engine), so the
+  // Point Sim and Hot Streak engines just use it directly; the others blend.
   const displayProb = useMemo(() => {
     if (!bothPicked) return 0.5;
-    if (upsetMode || engine === 'sim') return winProb;
     const elo = eloData ? eloProbFn(eloData[playerA.id], eloData[playerB.id], surfaceKey) : null;
-    const probs = engineProbs(
-      { sim: winProb, elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
+    return pickEngineProb(
+      engine,
+      { sim: winProb, upsetSim: winProb, elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
       tour, surfaceKey
     );
-    const v = probs[engine];
-    return v == null ? winProb : v;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bothPicked, winProb, eloData, playerA, playerB, surfaceKey, tour, engine, upsetMode]);
+  }, [bothPicked, winProb, eloData, playerA, playerB, surfaceKey, tour, engine]);
 
   const favoredIsA = displayProb >= 0.5;
   const pctA = Math.round(displayProb * 100);
@@ -172,46 +168,21 @@ export default function MatchHero({
           {bothPicked ? (
             <>
               <div className="match-hero-vs">VS</div>
-              {setUpsetMode && (
-                upsetDisabledReason ? (
-                  // Disabled inputs swallow mouse events, so the tooltip
-                  // hangs off a wrapper span and the switch itself gets
-                  // pointer-events: none.
-                  <OverlayTrigger placement="top" overlay={<Tooltip>{upsetDisabledReason}</Tooltip>}>
-                    <span className="match-hero-upset-toggle upset-toggle-disabled-wrap">
-                      <Form.Check
-                        type="switch"
-                        id="hero-upset-toggle"
-                        label="Upset Scenario"
-                        checked={false}
-                        onChange={() => {}}
-                        disabled
-                      />
-                    </span>
-                  </OverlayTrigger>
-                ) : (
-                  <Form.Check
-                    type="switch"
-                    id="hero-upset-toggle"
-                    className="match-hero-upset-toggle"
-                    label="Upset Scenario"
-                    checked={upsetMode}
-                    onChange={() => setUpsetMode(v => !v)}
-                    disabled={isRolling}
-                  />
-                )
+
+              {setEngine && (
+                <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} />
               )}
+
               <OverlayTrigger
                 placement="top"
                 overlay={
                   <Tooltip>
-                    {upsetMode
-                      ? `Average outcome of ${QUICK_ESTIMATE_SIMS} simulated matches on hot-form stats. A statistical estimate, not a guarantee.`
-                      : `From the ${ENGINE_LABEL[engine] || 'SMASH'} engine — a statistical estimate, not a guarantee. Switch engines below.`}
+                    From the {ENGINE_LABELS[engine] || 'Smart Blend'} engine — a statistical
+                    estimate, not a guarantee.
                   </Tooltip>
                 }
               >
-                <div className="match-hero-bar-label-top">Modeled win probability ⓘ</div>
+                <div className="match-hero-bar-label-top">Win probability ⓘ</div>
               </OverlayTrigger>
               <div className="match-hero-bar">
                 <div
@@ -233,22 +204,6 @@ export default function MatchHero({
                 <span style={{ color: favoredIsA ? accentColor : MUTED_COLOR, fontWeight: favoredIsA ? 700 : 400 }}>{pctA}%</span>
                 <span style={{ color: !favoredIsA ? accentColor : MUTED_COLOR, fontWeight: !favoredIsA ? 700 : 400 }}>{pctB}%</span>
               </div>
-
-              {setEngine && !upsetMode && (
-                <div className="match-hero-engines" role="group" aria-label="Prediction engine">
-                  {ENGINES.map((e) => (
-                    <button
-                      key={e.id}
-                      type="button"
-                      title={e.desc}
-                      className={`match-hero-engine-btn${engine === e.id ? ' active' : ''}`}
-                      onClick={() => setEngine(e.id)}
-                    >
-                      {e.label}
-                    </button>
-                  ))}
-                </div>
-              )}
 
               <Button
                 className="mt-3"

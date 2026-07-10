@@ -17,6 +17,37 @@ const SURFACES = {
 
 const PAGE_SIZE = 10;
 
+// Parse an ATP/WTA score string ("7-6(4) 3-6 6-3") into per-set games, from
+// the match winner's perspective. tb = tiebreak loser's points (superscript).
+function parseScore(score) {
+  if (!score) return [];
+  return score.trim().split(/\s+/).map((set) => {
+    const m = set.match(/^(\d+)-(\d+)(?:\((\d+)\))?/);
+    return m ? { w: +m[1], l: +m[2], tb: m[3] != null ? +m[3] : null } : null;
+  }).filter(Boolean);
+}
+
+// Compact broadcast-style scoreboard for a completed match.
+function MiniScore({ wName, lName, wFlag, lFlag, sets }) {
+  const cell = (games, otherGames, tb) => (
+    <>{games}{tb != null && games < otherGames && <sup className="ts-tb">{tb}</sup>}</>
+  );
+  return (
+    <table className="track-scoreboard">
+      <tbody>
+        <tr className="ts-winner">
+          <td className="ts-name">{wFlag && <img src={wFlag} alt="" />}{wName}</td>
+          {sets.map((s, i) => <td key={i} className="ts-won">{cell(s.w, s.l, s.tb)}</td>)}
+        </tr>
+        <tr>
+          <td className="ts-name">{lFlag && <img src={lFlag} alt="" />}{lName}</td>
+          {sets.map((s, i) => <td key={i} className={s.l > s.w ? 'ts-won' : 'ts-lost'}>{cell(s.l, s.w, s.tb)}</td>)}
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
 export default function TrackRecord() {
   const [tour, setTour] = useState('atp');
   const [surface, setSurface] = useState('all');
@@ -271,14 +302,7 @@ export default function TrackRecord() {
                         <span className="track-row-date">{new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <div className="track-row-matchup">
-                        <span className="track-player won">
-                          {wFlag && <img src={wFlag} alt="" />}{wName}
-                        </span>
-                        <span className="track-vs">d.</span>
-                        <span className="track-player">
-                          {lFlag && <img src={lFlag} alt="" />}{lName}
-                        </span>
-                        <span className="track-score">{m.score}</span>
+                        <MiniScore wName={wName} lName={lName} wFlag={wFlag} lFlag={lFlag} sets={parseScore(m.score)} />
                       </div>
                       <div className="track-row-model">
                         <span className={`track-verdict ${m.smashCorrect ? 'hit' : 'miss'}`}>

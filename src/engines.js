@@ -4,11 +4,14 @@
 import CONFIG from './engineConfig.json';
 
 export const ENGINES = [
-  { id: 'smash', label: 'SMASH model', desc: 'Tuned blend — most accurate' },
-  { id: 'sim', label: 'Simulation', desc: 'Point-by-point serve/return sim' },
-  { id: 'elo', label: 'Form rating', desc: 'Surface Elo from recent results' },
-  { id: 'rank', label: 'Ranking', desc: 'World-ranking implied odds' },
+  { id: 'smash', label: 'Smart Blend', tag: 'Recommended', desc: 'Our tuned mix of the models below — most accurate on the backtest.' },
+  { id: 'sim',   label: 'Point Sim',   tag: 'Play-by-play', desc: 'Plays out every point from each player\'s serve & return stats.' },
+  { id: 'elo',   label: 'Form',        tag: 'Recent results', desc: 'Surface rating (Elo) built from how each player has been playing.' },
+  { id: 'rank',  label: 'Rankings',    tag: 'World ranking', desc: 'Odds implied purely by the official world rankings.' },
+  { id: 'upset', label: 'Hot Streak',  tag: 'Last few weeks', desc: 'Point sim on red-hot recent form only — surfaces upset picks.' },
 ];
+
+export const ENGINE_LABELS = Object.fromEntries(ENGINES.map((e) => [e.id, e.label]));
 
 // Ranking-implied P(player 1 wins) from the two world ranks (lower = better).
 export function rankProb(rankA, rankB) {
@@ -36,3 +39,16 @@ export function engineProbs(feats, tour, surfaceKey) {
   const smash = w.ws * sim + w.we * eloVal + w.wr * rank;
   return { sim, elo: elo == null ? null : elo, rank, smash };
 }
+
+// The selected engine's P(player 1 wins). `feats` additionally carries
+// `upsetSim` (point sim on hot-form stats) for the 'upset' engine.
+export function pickEngineProb(engine, feats, tour, surfaceKey) {
+  if (engine === 'upset') return feats.upsetSim != null ? feats.upsetSim : feats.sim;
+  const probs = engineProbs(feats, tour, surfaceKey);
+  const v = probs[engine];
+  return v == null ? feats.sim : v;
+}
+
+// Engines whose scorelines come from the point simulation and which stat set
+// that simulation should use ('upset' = hot-form stats, otherwise normal).
+export const engineStatSource = (engine) => (engine === 'upset' ? 'upset' : 'normal');

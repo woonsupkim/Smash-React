@@ -10,12 +10,12 @@ import {
   Button,
   Form,
   Spinner,
-  ProgressBar,
-  OverlayTrigger,
-  Tooltip
+  ProgressBar
 } from 'react-bootstrap';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
+import { pickEngineProb, eloProb as eloProbFn } from '../engines';
+import EngineSelector from '../components/ui/EngineSelector';
 import { credibleInterval } from '../credibleInterval';
 import { generateBracketShareCard } from '../utils/generateBracketShareCard';
 import { countryFlagUrl } from '../components/countryFlags';
@@ -248,11 +248,15 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [playersPool, setPlayersPool] = useState([]);
   const [simsPerMatch, setSimsPerMatch] = useState(DEFAULT_SIMS_PER_MATCHUP);
   const [isImporting, setIsImporting] = useState(false);
-  // heavy-recency-weighted stats (7-day half-life) instead of the default
-  // 60-day-calibrated CSV — see data-pipeline/computeStats.js "upset" suffix
-  const [upsetMode, setUpsetMode] = useState(false);
+  // Prediction engine drives every matchup (see src/engines.js). The Hot
+  // Streak engine loads the heavy-recency 7-day CSV; the others use the
+  // season CSV and blend in Elo/ranking.
+  const [engine, setEngine] = useState('smash');
+  const [eloData, setEloData] = useState(null);
+  const upsetMode = engine === 'upset';
+  const surfaceKey = tournamentConfig.surfaceKey;
   // ids with real upset stats on this tournament's surface (upset_ok=1) —
-  // the toggle is disabled when any picked player lacks recent data.
+  // the Hot Streak engine is disabled when any picked player lacks recent data.
   const [upsetOkIds, setUpsetOkIds] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -373,6 +377,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
     });
   }, [tournament, dataDir]);
 
+  // Surface form ratings for the Elo / blend engines.
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + dataDir + '/elo.json')
+      .then(r => r.json()).then(setEloData).catch(() => setEloData({}));
+  }, [dataDir]);
+
   // Reason the Upset Scenario toggle is disabled (null = available).
   const upsetDisabledReason = (() => {
     if (!upsetOkIds) return null;
@@ -386,10 +396,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
     return `${shown}${extra} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent matches on this surface for an upset scenario.`;
   })();
 
-  // If picks change and make upset mode unavailable, snap it back off.
+  const engineDisabled = upsetDisabledReason ? { upset: upsetDisabledReason } : {};
+
+  // If picks change and make the Hot Streak engine unavailable, fall back.
   useEffect(() => {
-    if (upsetMode && upsetDisabledReason) setUpsetMode(false);
-  }, [upsetMode, upsetDisabledReason]);
+    if (engine === 'upset' && upsetDisabledReason) setEngine('smash');
+  }, [engine, upsetDisabledReason]);
 
   // switching the starting stage changes the slot count — reset picks/results
   const handleStageChange = (value) => {
@@ -439,20 +451,30 @@ export default function DreamBrackets({ tour = 'atp' }) {
     setRounds([slots]);
 
     // batch-sim winner picker for pairs
+    const bernoulliWins = (p, n) => { let w = 0; for (let k = 0; k < n; k++) if (Math.random() < p) w++; return w; };
+
     const pickWinners = (arr) => {
       const winners = [];
       for (let i = 0; i < arr.length; i += 2) {
         const A = arr[i], B = arr[i+1];
-        const { matchWins } = simulateBatch(
-          A.probabilities,
-          B.probabilities,
-          simsPerMatch,
-          bestOf
-        );
-        const aWon = matchWins[0] > matchWins[1];
+        // The point simulation always runs (it's the sim/hot-streak engine
+        // directly, and the sim component of the blends). probabilities are
+        // already the hot-form stats when the Hot Streak engine is selected.
+        const { matchWins } = simulateBatch(A.probabilities, B.probabilities, simsPerMatch, bestOf);
+        let aWins, bWins;
+        if (engine === 'sim' || engine === 'upset') {
+          aWins = matchWins[0]; bWins = matchWins[1];
+        } else {
+          const simProb = matchWins[0] / (matchWins[0] + matchWins[1]);
+          const elo = eloData ? eloProbFn(eloData[A.id], eloData[B.id], surfaceKey) : null;
+          const probA = pickEngineProb(engine, { sim: simProb, elo, rankA: A.us_seed, rankB: B.us_seed }, tour, surfaceKey);
+          aWins = bernoulliWins(probA, simsPerMatch);
+          bWins = simsPerMatch - aWins;
+        }
+        const aWon = aWins >= bWins;
         const winner = aWon ? A : B;
-        const winCount = aWon ? matchWins[0] : matchWins[1];
-        const loseCount = aWon ? matchWins[1] : matchWins[0];
+        const winCount = aWon ? aWins : bWins;
+        const loseCount = aWon ? bWins : aWins;
         const { lower, upper } = credibleInterval(winCount, loseCount);
         winners.push({ ...winner, _winProb: winCount / (winCount + loseCount), _ciLower: lower, _ciUpper: upper });
       }
@@ -715,29 +737,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
             >
               Random
             </Button>
-            {upsetDisabledReason ? (
-              <OverlayTrigger placement="top" overlay={<Tooltip>{upsetDisabledReason}</Tooltip>}>
-                <span className="upset-toggle-switch upset-toggle-disabled-wrap">
-                  <Form.Check
-                    type="switch"
-                    id="upset-mode-toggle"
-                    label="Upset Scenario"
-                    checked={false}
-                    onChange={() => {}}
-                    disabled
-                  />
-                </span>
-              </OverlayTrigger>
-            ) : (
-              <Form.Check
-                type="switch"
-                id="upset-mode-toggle"
-                className="upset-toggle-switch"
-                label="Upset Scenario"
-                checked={upsetMode}
-                onChange={() => setUpsetMode(v => !v)}
-                disabled={isRunning}
-              />
+            {!isRunning && (
+              <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} align="left" />
             )}
             <Button
               variant="outline-light"

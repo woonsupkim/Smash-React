@@ -278,19 +278,26 @@
 .track-row-surface { font-size: 0.72rem; font-weight: 700; }
 .track-row-date { font-size: 0.7rem; color: var(--text-3); }
 
-.track-row-matchup {
+.track-row-matchup { font-size: 0.86rem; color: var(--text-2); }
+
+/* Compact match scoreboard */
+.track-scoreboard { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.track-scoreboard td { padding: 0.1rem 0.4rem; text-align: center; }
+.track-scoreboard .ts-name {
+  text-align: left;
+  color: var(--text-2);
+  white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  font-size: 0.86rem;
-  color: var(--text-2);
+  gap: 0.35rem;
+  padding-left: 0;
+  min-width: 130px;
 }
-.track-player { display: inline-flex; align-items: center; gap: 0.35rem; }
-.track-player img { width: 16px; height: 11px; border-radius: 2px; object-fit: cover; }
-.track-player.won { color: var(--text-1); font-weight: 700; }
-.track-vs { color: var(--text-3); font-size: 0.75rem; }
-.track-score { color: var(--text-3); font-size: 0.75rem; font-variant-numeric: tabular-nums; margin-left: 0.25rem; }
+.track-scoreboard .ts-name img { width: 16px; height: 11px; border-radius: 2px; object-fit: cover; }
+.track-scoreboard .ts-winner .ts-name { color: var(--text-1); font-weight: 700; }
+.track-scoreboard .ts-won { color: var(--text-1); font-weight: 700; }
+.track-scoreboard .ts-lost { color: var(--text-3); }
+.ts-tb { font-size: 0.6em; vertical-align: super; margin-left: 1px; color: var(--text-3); }
 
 .track-row-model { text-align: right; }
 .track-verdict { font-size: 0.76rem; font-variant-numeric: tabular-nums; }
