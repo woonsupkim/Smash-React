@@ -4,7 +4,7 @@
 import CONFIG from './engineConfig.json';
 
 export const ENGINES = [
-  { id: 'smash', label: 'Smart Blend', tag: 'Recommended', desc: 'Our tuned mix of the models below — most accurate on the backtest.' },
+  { id: 'smash', label: 'Smart Blend', tag: 'Blended', desc: 'Our tuned mix of the models below.' },
   { id: 'sim',   label: 'Point Sim',   tag: 'Play-by-play', desc: 'Plays out every point from each player\'s serve & return stats.' },
   { id: 'elo',   label: 'Form',        tag: 'Recent results', desc: 'Surface rating (Elo) built from how each player has been playing.' },
   { id: 'rank',  label: 'Rankings',    tag: 'World ranking', desc: 'Odds implied purely by the official world rankings.' },

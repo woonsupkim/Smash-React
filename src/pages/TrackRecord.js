@@ -67,7 +67,7 @@ export default function TrackRecord() {
   }, []);
 
   const forward = useMemo(() => {
-    const list = (predictions?.predictions || []).filter((p) => p.tour === tour && (surface === 'all' || p.surface === surface));
+    const list = (predictions?.predictions || []).filter((p) => (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface));
     const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
     const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
     return { pending, decided, correct: decided.filter((p) => p.correct).length };
@@ -79,7 +79,7 @@ export default function TrackRecord() {
   const filtered = useMemo(() => {
     if (!data) return [];
     return data.matches
-      .filter((m) => m.tour === tour && (surface === 'all' || m.surface === surface))
+      .filter((m) => (tour === 'all' || m.tour === tour) && (surface === 'all' || m.surface === surface))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [data, tour, surface]);
 
@@ -89,7 +89,7 @@ export default function TrackRecord() {
 
     // Per-surface accuracy (for the whole tour, ignoring the surface filter)
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
-      const list = (data?.matches || []).filter((m) => m.tour === tour && m.surface === s);
+      const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s);
       const acc = list.length ? Math.round((list.filter((m) => m.smashCorrect).length / list.length) * 100) : 0;
       return { key: s, ...SURFACES[s], n: list.length, acc };
     });
@@ -108,15 +108,28 @@ export default function TrackRecord() {
       return { ...b, n: inB.length, rate: inB.length ? Math.round((won / inB.length) * 100) : null };
     });
 
+    const engines = {
+      smash: pct('smashCorrect'),
+      sim: pct('correct'),
+      elo: pct('eloCorrect'),
+      rank: pct('rankCorrect'),
+      upset: pct('upsetCorrect'),
+    };
+    // Best selectable engine for this filter (Smart Blend wins ties).
+    const bestEngine = ['smash', 'sim', 'elo', 'rank', 'upset']
+      .reduce((b, id) => (engines[id] > engines[b] ? id : b), 'smash');
+
     return {
       n,
       correct: filtered.filter((m) => m.correct).length,
       smashCorrect: filtered.filter((m) => m.smashCorrect).length,
-      smash: pct('smashCorrect'),
-      season: pct('correct'),
-      elo: pct('eloCorrect'),
-      upset: pct('upsetCorrect'),
-      rank: pct('rankCorrect'),
+      smash: engines.smash,
+      season: engines.sim,
+      elo: engines.elo,
+      upset: engines.upset,
+      rank: engines.rank,
+      engines,
+      bestEngine,
       perSurface,
       buckets,
     };
@@ -140,9 +153,9 @@ export default function TrackRecord() {
 
           <div className="track-controls">
             <div className="track-seg" role="group" aria-label="Tour">
-              {['atp', 'wta'].map((t) => (
+              {[['atp', 'ATP'], ['wta', 'WTA'], ['all', 'Both']].map(([t, label]) => (
                 <button key={t} type="button" className={`track-seg-btn${tour === t ? ' active' : ''}`} onClick={() => setTour(t)}>
-                  {t.toUpperCase()}
+                  {label}
                 </button>
               ))}
             </div>
@@ -204,7 +217,7 @@ export default function TrackRecord() {
                 <div className="track-hero-value">{stats.smash}%</div>
                 <div className="track-hero-detail">
                   <div className="track-hero-label">of winners called correctly</div>
-                  <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
+                  <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                 </div>
               </div>
 
@@ -224,20 +237,21 @@ export default function TrackRecord() {
                 ))}
               </div>
 
-              {/* Model comparison — accuracy only (Brier removed for clarity) */}
+              {/* Engine comparison — the best engine for this filter is highlighted */}
               <div className="track-panel">
-                <div className="track-section-label">How the pick is made — five approaches, same matches</div>
+                <div className="track-section-label">How the pick is made — {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}, same matches</div>
                 <div className="track-compare">
                   {[
-                    { label: 'SMASH model', desc: 'Tuned blend — the live default', acc: stats.smash, primary: true },
-                    { label: 'Simulation', desc: 'Point serve/return sim', acc: stats.season },
-                    { label: 'Form rating', desc: 'Surface Elo', acc: stats.elo },
-                    { label: 'Higher rank wins', desc: 'Baseline, no model', acc: stats.rank },
-                    { label: 'Upset model', desc: 'Last-few-weeks hot form', acc: stats.upset },
+                    { id: 'smash', label: 'Smart Blend', desc: 'Tuned mix of the models below', acc: stats.smash },
+                    { id: 'sim', label: 'Point Sim', desc: 'Point-by-point serve/return sim', acc: stats.season },
+                    { id: 'elo', label: 'Form', desc: 'Surface rating (Elo)', acc: stats.elo },
+                    { id: 'rank', label: 'Rankings', desc: 'World-ranking implied odds', acc: stats.rank },
+                    { id: 'upset', label: 'Hot Streak', desc: 'Last-few-weeks hot form', acc: stats.upset },
                   ].map((mo) => (
-                    <div className={`track-compare-row${mo.primary ? ' primary' : ''}`} key={mo.label}>
+                    <div className={`track-compare-row${mo.id === stats.bestEngine ? ' primary' : ''}`} key={mo.id}>
                       <div className="track-compare-name">
                         {mo.label}
+                        {mo.id === stats.bestEngine && <span className="track-compare-best">Most accurate</span>}
                         <span className="track-compare-desc">{mo.desc}</span>
                       </div>
                       <div className="track-compare-bar-wrap">
@@ -246,16 +260,26 @@ export default function TrackRecord() {
                       <div className="track-compare-acc">{mo.acc}%</div>
                     </div>
                   ))}
+
+                  {/* Baseline — deliberately set apart from the engines */}
+                  <div className="track-compare-row baseline">
+                    <div className="track-compare-name">
+                      Higher rank wins
+                      <span className="track-compare-baseline-tag">Baseline</span>
+                      <span className="track-compare-desc">Just pick the higher-ranked player</span>
+                    </div>
+                    <div className="track-compare-bar-wrap">
+                      <div className="track-compare-bar" style={{ width: `${stats.rank}%` }} />
+                    </div>
+                    <div className="track-compare-acc">{stats.rank}%</div>
+                  </div>
                 </div>
                 <div className="track-note">
-                  The SMASH model blends the point simulation, a surface <em>form rating</em> (Elo
-                  from recent results), and world ranking — with weights tuned per tour and surface,
-                  so it beats "higher rank wins" on every surface. You can switch engines on the H2H
-                  page. Note these weights are fit on this same season, so the honest read is the
-                  locked forward record above — but the Elo here uses each player's rating as it
-                  stood <em>before</em> the match, unlike the rank baseline, which is flattered by
-                  today's rankings that already know these
-                  outcomes.
+                  <em>Smart Blend</em> mixes the point simulation, a surface form rating (Elo), and
+                  world ranking — with weights tuned per tour and surface, so it beats the baseline on
+                  every surface. The <em>Rankings</em> engine makes the same picks as the baseline but
+                  as graded odds. These weights are fit on this same season, so the honest read is the
+                  locked forward record above.
                 </div>
               </div>
 

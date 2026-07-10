@@ -7,7 +7,7 @@ import { ChevronDown, Check } from 'lucide-react';
 import { ENGINES } from '../../engines';
 import './EngineSelector.css';
 
-export default function EngineSelector({ engine, setEngine, disabled = {}, align = 'center' }) {
+export default function EngineSelector({ engine, setEngine, disabled = {}, align = 'center', recommended = null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const active = ENGINES.find((e) => e.id === engine) || ENGINES[0];
@@ -23,7 +23,9 @@ export default function EngineSelector({ engine, setEngine, disabled = {}, align
       <div className="engine-selector-label">Prediction engine</div>
       <button type="button" className="engine-selector-trigger" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span className="engine-selector-current">{active.label}</span>
-        <span className="engine-selector-tag">{active.tag}</span>
+        {recommended === active.id
+          ? <span className="engine-selector-tag rec">Recommended</span>
+          : <span className="engine-selector-tag">{active.tag}</span>}
         <ChevronDown size={15} className={`engine-selector-chev${open ? ' up' : ''}`} />
       </button>
 
@@ -42,7 +44,10 @@ export default function EngineSelector({ engine, setEngine, disabled = {}, align
                 onClick={() => { if (dis) return; setEngine(e.id); setOpen(false); }}
               >
                 <div className="engine-selector-item-head">
-                  <span className="engine-selector-item-label">{e.label}</span>
+                  <span className="engine-selector-item-label">
+                    {e.label}
+                    {recommended === e.id && <span className="engine-selector-rec-badge">Recommended</span>}
+                  </span>
                   {engine === e.id && <Check size={14} />}
                 </div>
                 <div className="engine-selector-item-desc">{dis || e.desc}</div>

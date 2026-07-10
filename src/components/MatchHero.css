@@ -26,6 +26,15 @@
   margin: 0;
   max-width: none;
 }
+.match-hero-surface-select {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.match-hero-surface-select .h2h-tournament-select {
+  max-width: 300px;
+  width: 100%;
+}
 .h2h-artifact .advanced-sim-panel { margin-top: 0 !important; }
 .h2h-artifact .advanced-panel-card {
   background: none;

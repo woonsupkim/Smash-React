@@ -38,6 +38,23 @@
   border-radius: 999px;
   padding: 0.08rem 0.5rem;
 }
+.engine-selector-tag.rec {
+  color: #0d2117;
+  background: var(--accent-positive);
+  border-color: var(--accent-positive);
+  font-weight: 700;
+}
+.engine-selector-rec-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #0d2117;
+  background: var(--accent-positive);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  margin-left: 0.4rem;
+}
 .engine-selector-chev { margin-left: auto; color: var(--text-3); transition: transform 0.15s; }
 .engine-selector-chev.up { transform: rotate(180deg); }
 

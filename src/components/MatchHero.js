@@ -25,6 +25,7 @@ function probsFromRow(row) {
 export default function MatchHero({
   title,
   logo,
+  surfaceSelector = null, // tournament/surface dropdown, rendered under the title
   playerA,
   playerB,
   selectorA,
@@ -44,6 +45,7 @@ export default function MatchHero({
   engine = 'smash',   // which prediction engine drives the headline number
   setEngine = null,   // enables the engine selector when provided
   engineDisabled = {}, // { engineId: reason } — greys out that engine
+  recommendedEngine = null, // engine id to badge "Recommended" (best for surface)
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -160,6 +162,7 @@ export default function MatchHero({
       <div className="match-hero-context">
         {surfaceLabel} &middot; Best of {bestOf}
       </div>
+      {surfaceSelector && <div className="match-hero-surface-select">{surfaceSelector}</div>}
 
       <div className="match-hero-main">
         <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} poolLoading={poolLoading} />
@@ -167,18 +170,17 @@ export default function MatchHero({
         <div className="match-hero-center">
           {bothPicked ? (
             <>
-              <div className="match-hero-vs">VS</div>
-
               {setEngine && (
-                <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} />
+                <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} recommended={recommendedEngine} />
               )}
 
               <OverlayTrigger
                 placement="top"
                 overlay={
                   <Tooltip>
-                    From the {ENGINE_LABELS[engine] || 'Smart Blend'} engine — a statistical
-                    estimate, not a guarantee.
+                    From the {ENGINE_LABELS[engine] || 'Smart Blend'} engine, averaged over{' '}
+                    {QUICK_ESTIMATE_SIMS.toLocaleString()} simulated matches. A statistical estimate,
+                    not a guarantee.
                   </Tooltip>
                 }
               >
@@ -238,7 +240,7 @@ export default function MatchHero({
               </div>
             </>
           ) : (
-            <div className="match-hero-vs-placeholder">VS</div>
+            <div className="match-hero-vs-placeholder">Pick two players</div>
           )}
         </div>
 

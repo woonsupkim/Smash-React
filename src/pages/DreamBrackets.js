@@ -383,6 +383,15 @@ export default function DreamBrackets({ tour = 'atp' }) {
       .then(r => r.json()).then(setEloData).catch(() => setEloData({}));
   }, [dataDir]);
 
+  // Most accurate engine for this tour+surface (for the "Recommended" badge).
+  const [engineAcc, setEngineAcc] = useState(null);
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')
+      .then(r => r.json()).then(setEngineAcc).catch(() => setEngineAcc(null));
+  }, []);
+  const recommendedEngine = engineAcc?.[tour]?.[surfaceKey]?.best || 'smash';
+  useEffect(() => { setEngine(recommendedEngine); }, [recommendedEngine]);
+
   // Reason the Upset Scenario toggle is disabled (null = available).
   const upsetDisabledReason = (() => {
     if (!upsetOkIds) return null;
@@ -684,87 +693,53 @@ export default function DreamBrackets({ tour = 'atp' }) {
         </h3>
 
         <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>
-          <div className="bracket-select-row">
-            <Form.Select
-              className="dark-select"
-              value={tournament}
-              onChange={e => setTournament(e.target.value)}
-              disabled={isRunning}
-            >
-              {TOURNAMENTS.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </Form.Select>
-
-            <Form.Select
-              className="dark-select"
-              value={stage}
-              onChange={e => handleStageChange(e.target.value)}
-              disabled={isRunning}
-            >
-              {STAGES.map(s => (
-                <option key={s.value} value={s.value}>Start at {s.label}</option>
-              ))}
-            </Form.Select>
-
-            <Form.Select
-              className="dark-select"
-              value={simsPerMatch}
-              onChange={e => setSimsPerMatch(Number(e.target.value))}
-              disabled={isRunning}
-            >
-              {SIMS_PER_MATCHUP_OPTIONS.map(n => (
-                <option key={n} value={n}>{n} sim{n === 1 ? '' : 's'}/match</option>
-              ))}
-            </Form.Select>
+          <div className="bracket-setup">
+            <label className="bracket-field">
+              <span className="bracket-field-label">Tournament</span>
+              <Form.Select className="dark-select" value={tournament} onChange={e => setTournament(e.target.value)} disabled={isRunning}>
+                {TOURNAMENTS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </Form.Select>
+            </label>
+            <label className="bracket-field">
+              <span className="bracket-field-label">Starting round</span>
+              <Form.Select className="dark-select" value={stage} onChange={e => handleStageChange(e.target.value)} disabled={isRunning}>
+                {STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </Form.Select>
+            </label>
+            <label className="bracket-field">
+              <span className="bracket-field-label">Sims / match</span>
+              <Form.Select className="dark-select" value={simsPerMatch} onChange={e => setSimsPerMatch(Number(e.target.value))} disabled={isRunning}>
+                {SIMS_PER_MATCHUP_OPTIONS.map(n => <option key={n} value={n}>{n.toLocaleString()}</option>)}
+              </Form.Select>
+            </label>
+            {!isRunning && (
+              <div className="bracket-field">
+                <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} recommended={recommendedEngine} align="left" />
+              </div>
+            )}
           </div>
 
-          <div className="bracket-button-row">
+          <div className="bracket-actions">
             <Button
+              className="bracket-primary-btn"
               style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
               onClick={runDreamBracket}
               disabled={isRunning}
             >
-              {isRunning
-                ? <><Spinner animation="border" size="sm" /> Running…</>
-                : 'Simulate Tournament'}
+              {isRunning ? <><Spinner animation="border" size="sm" /> Running…</> : 'Simulate Tournament'}
             </Button>
-            <Button
-              variant="outline-light"
-              style={{ borderColor: 'var(--bracket-accent)' }}
-              onClick={handleRandomizeAll}
-              disabled={isRunning}
-            >
-              Random
-            </Button>
-            {!isRunning && (
-              <EngineSelector engine={engine} setEngine={setEngine} disabled={engineDisabled} align="left" />
-            )}
-            <Button
-              variant="outline-light"
-              style={{ borderColor: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}
-              onClick={handleEspnImport}
-              disabled={isRunning || isImporting}
-              title="Paste an ESPN bracket link to auto-fill players"
-            >
-              {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : <><ClipboardList size={15} style={{ marginRight: 5, verticalAlign: -2 }} />ESPN</>}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleReset}
-              disabled={isRunning}
-            >
-              Reset
-            </Button>
-            {champion && (
-              <Button
-                className="adv-share-btn"
-                onClick={handleShareBracket}
-                disabled={isGeneratingShare}
-              >
-                {isGeneratingShare ? 'Generating…' : <><Share2 size={15} style={{ marginRight: 6, verticalAlign: -2 }} />Share Bracket</>}
+            <div className="bracket-actions-secondary">
+              <Button variant="outline-light" size="sm" onClick={handleRandomizeAll} disabled={isRunning}>Random fill</Button>
+              <Button variant="outline-light" size="sm" onClick={handleEspnImport} disabled={isRunning || isImporting} title="Paste an ESPN bracket link to auto-fill players">
+                {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : <><ClipboardList size={14} style={{ marginRight: 5, verticalAlign: -2 }} />ESPN</>}
               </Button>
-            )}
+              <Button variant="outline-light" size="sm" onClick={handleReset} disabled={isRunning}>Reset</Button>
+              {champion && (
+                <Button size="sm" className="adv-share-btn" onClick={handleShareBracket} disabled={isGeneratingShare}>
+                  {isGeneratingShare ? 'Generating…' : <><Share2 size={14} style={{ marginRight: 6, verticalAlign: -2 }} />Share</>}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

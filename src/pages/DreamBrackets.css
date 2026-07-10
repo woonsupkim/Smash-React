@@ -31,14 +31,64 @@
 }
 
 .bracket-controls-panel {
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
   border-top: 3px solid var(--accent, #fff);
-  padding: 1rem 1.25rem;
+  padding: 1.1rem 1.25rem;
   max-width: 1080px;
   margin-left: auto;
   margin-right: auto;
 }
+
+/* Setup row: labeled configuration selects + engine picker */
+.bracket-setup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: flex-end;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-1);
+}
+.bracket-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 160px;
+  min-width: 150px;
+  text-align: left;
+}
+.bracket-field-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.bracket-field .form-select { width: 100%; }
+.bracket-field .engine-selector { min-width: 0; width: 100%; }
+
+/* Actions: one prominent primary + a row of small utilities */
+.bracket-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.bracket-primary-btn {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-md);
+  padding: 0.55rem 1.5rem;
+}
+.bracket-actions-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+.bracket-actions-secondary .btn { border-radius: var(--radius-sm); }
 
 .upset-toggle-switch {
   display: flex;

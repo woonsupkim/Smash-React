@@ -232,3 +232,31 @@ for (const tour of ['atp', 'wta']) {
 
 fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, matches: all }));
 console.log(`Wrote ${all.length} matches to ${outPath}`);
+
+// ── Engine accuracy summary (per tour x surface, + "all") ─────────────────
+// Both the Track Record page and the H2H "Recommended" tag read this to know
+// which engine is most accurate for a given tour/surface.
+const ENGINE_FIELD = { smash: 'smashCorrect', sim: 'correct', elo: 'eloCorrect', rank: 'rankCorrect', upset: 'upsetCorrect' };
+function summarize(list) {
+  if (!list.length) return null;
+  const out = { n: list.length };
+  for (const [id, field] of Object.entries(ENGINE_FIELD)) {
+    out[id] = Math.round((list.filter((m) => m[field]).length / list.length) * 100);
+  }
+  // Best selectable engine (Smart Blend wins ties — it's the deployed default).
+  const order = ['smash', 'sim', 'elo', 'rank', 'upset'];
+  out.best = order.reduce((b, id) => (out[id] > out[b] ? id : b), 'smash');
+  return out;
+}
+const accuracy = {};
+for (const tour of ['atp', 'wta', 'all']) {
+  accuracy[tour] = {};
+  for (const surface of ['hard', 'clay', 'grass', 'all']) {
+    const list = all.filter((m) => (tour === 'all' || m.tour === tour) && (surface === 'all' || m.surface === surface));
+    const s = summarize(list);
+    if (s) accuracy[tour][surface] = s;
+  }
+}
+const accPath = path.join(__dirname, '..', 'public', 'data', 'engine_accuracy.json');
+fs.writeFileSync(accPath, JSON.stringify(accuracy));
+console.log(`Wrote engine accuracy summary to ${accPath}`);

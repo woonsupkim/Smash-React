@@ -98,6 +98,7 @@ export default function H2H({ tour = 'atp' }) {
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
   const [engine, setEngine]               = useState('smash');
+  const [engineAcc, setEngineAcc]         = useState(null);
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
   // instead of the season CSV — selecting it re-seeds the sliders.
   const upsetMode = engine === 'upset';
@@ -200,6 +201,16 @@ export default function H2H({ tour = 'atp' }) {
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
   }, []);
+
+  // Which engine is most accurate for this tour+surface (from the backtest) —
+  // drives the "Recommended" badge, and becomes the default when the surface
+  // changes (the user can still switch).
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')
+      .then(r => r.json()).then(setEngineAcc).catch(() => setEngineAcc(null));
+  }, []);
+  const recommendedEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
+  useEffect(() => { setEngine(recommendedEngine); }, [recommendedEngine]);
 
   useEffect(() => {
     if (!batchResult) return;
@@ -343,6 +354,23 @@ export default function H2H({ tour = 'atp' }) {
     advance();
   };
 
+  // Auto-run the detailed batch simulation once both players are picked (and
+  // their stats have seeded), and whenever the matchup, engine, or surface
+  // changes — so results are ready without clicking. Manual slider tweaks
+  // don't re-trigger it (the key is unchanged); use the button to re-run.
+  const autoRunKeyRef = useRef(null);
+  useEffect(() => {
+    if (!playerA || !playerB || isWatching || isRunning) return;
+    const readyA = STAT_KEYS.some(([k]) => (statsA[k] || 0) > 0);
+    const readyB = STAT_KEYS.some(([k]) => (statsB[k] || 0) > 0);
+    if (!readyA || !readyB) return;
+    const key = `${playerA.id}|${playerB.id}|${engine}|${config.csvFile}`;
+    if (autoRunKeyRef.current === key) return;
+    autoRunKeyRef.current = key;
+    handleSimulate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerA, playerB, statsA, statsB, engine, config.csvFile, isWatching]);
+
   // Reason the Hot Streak engine is unavailable (null = available). Only
   // players with enough recent same-surface matches (upset_ok=1) can use it.
   const upsetDisabledReason = (() => {
@@ -375,21 +403,22 @@ export default function H2H({ tour = 'atp' }) {
   return (
     <div className={`page-background ${config.bgClass}`}>
       <div className="overlay text-center">
-        <Form.Select
-          className="dark-select h2h-tournament-select"
-          value={surface}
-          onChange={e => handleSurfaceChange(e.target.value)}
-          disabled={isRunning||isWatching}
-        >
-          <option value="clay">French Open · Clay</option>
-          <option value="grass">Wimbledon · Grass</option>
-          <option value="hard">US Open · Hard</option>
-        </Form.Select>
-
         <div className="h2h-artifact">
         <MatchHero
           title={`${config.label}${isWta ? " Women's" : ''} · ${config.surfaceLabel}`}
           logo={config.logo}
+          surfaceSelector={
+            <Form.Select
+              className="dark-select h2h-tournament-select"
+              value={surface}
+              onChange={e => handleSurfaceChange(e.target.value)}
+              disabled={isRunning||isWatching}
+            >
+              <option value="clay">French Open · Clay</option>
+              <option value="grass">Wimbledon · Grass</option>
+              <option value="hard">US Open · Hard</option>
+            </Form.Select>
+          }
           playerA={playerA}
           playerB={playerB}
           selectorA={
@@ -437,6 +466,7 @@ export default function H2H({ tour = 'atp' }) {
           engine={engine}
           setEngine={setEngine}
           engineDisabled={engineDisabled}
+          recommendedEngine={recommendedEngine}
           getPlayerImageSrc={getPlayerImageSrc}
           poolLoading={players.length === 0}
           statsA={statsA}

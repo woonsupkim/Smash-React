@@ -204,6 +204,42 @@
 .track-compare-row.primary .track-compare-name { color: var(--text-1); }
 .track-compare-desc { font-size: 0.68rem; color: var(--text-3); font-weight: 400; }
 
+.track-compare-best {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0d2117;
+  background: var(--accent-positive);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  width: fit-content;
+  margin: 0.1rem 0;
+}
+
+/* Baseline set apart from the engines */
+.track-compare-row.baseline {
+  margin-top: 0.5rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--border-2);
+  opacity: 0.85;
+}
+.track-compare-row.baseline .track-compare-bar { background: repeating-linear-gradient(45deg, #566173, #566173 4px, #45505f 4px, #45505f 8px); }
+.track-compare-baseline-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border: 1px dashed var(--border-2);
+  border-radius: 999px;
+  padding: 0.05rem 0.4rem;
+  width: fit-content;
+  margin: 0.1rem 0;
+}
+
 .track-compare-bar-wrap {
   height: 22px;
   background: var(--surface-3);
@@ -280,20 +316,20 @@
 
 .track-row-matchup { font-size: 0.86rem; color: var(--text-2); }
 
-/* Compact match scoreboard */
-.track-scoreboard { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.track-scoreboard td { padding: 0.1rem 0.4rem; text-align: center; }
+/* Compact match scoreboard — fixed name column so every match's set scores
+   line up in the same columns, clear of the longest roster name. */
+.track-scoreboard { border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
+.track-scoreboard td { padding: 0.1rem 0; text-align: center; width: 26px; }
 .track-scoreboard .ts-name {
   text-align: left;
   color: var(--text-2);
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding-left: 0;
-  min-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 0.75rem;
+  width: 200px;
 }
-.track-scoreboard .ts-name img { width: 16px; height: 11px; border-radius: 2px; object-fit: cover; }
+.track-scoreboard .ts-name img { width: 16px; height: 11px; border-radius: 2px; object-fit: cover; margin-right: 0.35rem; vertical-align: -1px; }
 .track-scoreboard .ts-winner .ts-name { color: var(--text-1); font-weight: 700; }
 .track-scoreboard .ts-won { color: var(--text-1); font-weight: 700; }
 .track-scoreboard .ts-lost { color: var(--text-3); }
