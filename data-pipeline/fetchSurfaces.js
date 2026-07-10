@@ -17,7 +17,7 @@ const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
 
 if (!API_KEY) {
-  console.error('Missing RAPIDAPI_KEY — set it in .env (see .env.example).');
+  console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
   process.exit(1);
 }
 
@@ -55,7 +55,7 @@ async function main() {
       cache[String(id)] = data?.court?.name || 'Unknown';
       console.log(`  tournament ${id}: ${cache[String(id)]}`);
     } catch (err) {
-      // Don't cache failures (e.g. rate limiting) as "Unknown" — that would
+      // Don't cache failures (e.g. rate limiting) as "Unknown" - that would
       // permanently skip retrying them on the next run. Just leave them out
       // of the cache so they're picked up again next time.
       console.warn(`  tournament ${id}: failed (${err.message}), will retry next run`);

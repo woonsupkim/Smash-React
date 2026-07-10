@@ -40,7 +40,7 @@ const STAT_SECTIONS = [
 /**
  * Detailed slider/chart panel, collapsed by default under the MatchHero.
  * All simulation logic/state lives in the page (H2H.js, DreamBrackets.js)
- * and is passed in as props — this component is purely presentational.
+ * and is passed in as props - this component is purely presentational.
  * Only one result view shows at a time: a batch "Simulate Matches" run
  * clears any in-progress Watch Match state, and vice versa (enforced by the
  * page-level handlers that own batchResult/liveLog).
@@ -62,6 +62,7 @@ export default function AdvancedSimPanel({
   liveLog,
   isWatching,
   engine = 'smash',   // labels the detailed sim to match the selected engine
+  engineWinProbA = null, // authoritative engine P(A wins) from the shared batch - pie/headline render this so it matches the MatchHero number exactly
   onSimulate,
   onWatchMatch,
   bestOf = 5, // 5 (ATP Grand Slam) or 3 (WTA Grand Slam)
@@ -74,7 +75,7 @@ export default function AdvancedSimPanel({
   simulateButtonTextColor,
   tournamentLabel = '',
   surfaceLabel = '',
-  surfaceKey = 'hard', // 'hard' | 'clay' | 'grass' — themes the share card
+  surfaceKey = 'hard', // 'hard' | 'clay' | 'grass' - themes the share card
   h2hData = null,      // pairwise career head-to-head map from h2h.json
 }) {
   const simColor = simulateButtonColor || colorA;
@@ -168,22 +169,31 @@ export default function AdvancedSimPanel({
   const VS_COLORS = [colorA, colorB];
   const SETBAR_COLORS = [colorB, colorA];
 
-  const pieData = batchResult
-    ? [
-        { name: playerA.name, value: batchResult.matchWins[0] },
-        { name: playerB.name, value: batchResult.matchWins[1] }
-      ]
-    : [];
-
   const totalWins = batchResult ? (batchResult.matchWins[0] + batchResult.matchWins[1]) : 0;
   const pct = v => totalWins ? Math.round((v / totalWins) * 100) : 0;
+
+  // Headline win probability: the selected engine's number (passed from the
+  // page, derived from this same batch) when available, else the raw point-sim
+  // share. Rendering this in the pie keeps it identical to the MatchHero
+  // headline above - no more "the top number and the pie disagree".
+  const rawProbA = totalWins ? batchResult.matchWins[0] / totalWins : 0;
+  const dispProbA = batchResult ? (engineWinProbA != null ? engineWinProbA : rawProbA) : 0;
+  const dispPctA = Math.round(dispProbA * 100);
+  const dispPctB = 100 - dispPctA;
+
+  const pieData = batchResult
+    ? [
+        { name: playerA.name, value: dispPctA },
+        { name: playerB.name, value: dispPctB }
+      ]
+    : [];
 
   // e.g. bestOf=5 -> targetSets=3 -> ['3–0','3–1','3–2']; bestOf=3 -> ['2–0','2–1'].
   const targetSets = Math.ceil(bestOf / 2);
   const scorelineLabels = Array.from({ length: targetSets }, (_, i) => `${targetSets}–${i}`);
 
   // Likelihood of each exact set outcome across ALL simulations (not just
-  // conditional on that player winning) — every bar's % is out of totalWins
+  // conditional on that player winning) - every bar's % is out of totalWins
   // (= total completed sims), so all bars together sum to ~100%.
   const barData = batchResult
     ? scorelineLabels.map((lbl,i)=>({
@@ -193,7 +203,7 @@ export default function AdvancedSimPanel({
       }))
     : [];
 
-  const favoredIdx = batchResult ? (batchResult.matchWins[0] >= batchResult.matchWins[1] ? 0 : 1) : null;
+  const favoredIdx = batchResult ? (dispProbA >= 0.5 ? 0 : 1) : null;
   const favoredName = favoredIdx === 0 ? playerA?.name : playerB?.name;
   const underdogName = favoredIdx === 0 ? playerB?.name : playerA?.name;
   const favoredWins = batchResult ? batchResult.matchWins[favoredIdx] : 0;
@@ -215,7 +225,7 @@ export default function AdvancedSimPanel({
     return { name: underdogName, pct: favoredWins ? Math.round(tookSet / favoredWins * 100) : 0 };
   })();
 
-  // Results render below the fold — bring them into view when a run lands
+  // Results render below the fold - bring them into view when a run lands
   const hasBatch = !!(batchResult && showResults && liveLog.length === 0);
   useEffect(() => {
     if (hasBatch && resultsRef.current) {
@@ -303,7 +313,7 @@ export default function AdvancedSimPanel({
                         contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, maxWidth: 190 }}
                         labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: 4, whiteSpace: 'normal' }}
                         itemStyle={{ color: '#ddd', whiteSpace: 'normal' }}
-                        formatter={(v,n)=>([`${pct(v)}% win probability (${v} of ${totalWins} simulations)`, n])}
+                        formatter={(v,n)=>([`${v}% win probability (${totalWins.toLocaleString()} simulations)`, n])}
                         wrapperStyle={{ transform: 'translateX(-90px)', pointerEvents: 'none' }}
                       />
                       <text
@@ -316,24 +326,26 @@ export default function AdvancedSimPanel({
                         x="8%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[0]} fontSize={16} fontWeight="bold"
                       >
-                        {pct(batchResult.matchWins[0])}%
+                        {dispPctA}%
                       </text>
                       <text
                         x="92%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill={VS_COLORS[1]} fontSize={16} fontWeight="bold"
                       >
-                        {pct(batchResult.matchWins[1])}%
+                        {dispPctB}%
                       </text>
                     </PieChart>
                   </ResponsiveContainer>
                   {(() => {
                     const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
-                    const favProb = favoredWins / totalWins;
+                    // Confidence framing follows the headline (engine) probability,
+                    // not the raw point-sim share, so the badges agree with the pie.
+                    const favProb = favoredIdx === 0 ? dispProbA : 1 - dispProbA;
                     const underdogProb = 1 - favProb;
                     const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
 
                     // P(underdog wins >5 of 10 trial matches) via binomial
-                    // — flags when, in a short run, the underdog could plausibly
+                    // - flags when, in a short run, the underdog could plausibly
                     // come out ahead despite losing the full simulation.
                     const binom10 = (() => {
                       if (underdogProb <= 0) return 0;
@@ -355,14 +367,14 @@ export default function AdvancedSimPanel({
                           <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
                         </div>
 
-                        {/* Confidence badge — based on win rate, not sample size */}
+                        {/* Confidence badge - based on win rate, not sample size */}
                         {favProb >= 0.70 ? (
                           <div className="adv-flag adv-flag--confident"><Check size={12} style={{ verticalAlign: -2, marginRight: 3 }} />High confidence</div>
                         ) : favProb < 0.60 ? (
                           <div className="adv-flag adv-flag--warn"><AlertTriangle size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Low confidence · toss-up matchup</div>
                         ) : null}
 
-                        {/* Underdog flag — binomial P(underdog wins >5 of 10 games) */}
+                        {/* Underdog flag - binomial P(underdog wins >5 of 10 games) */}
                         {binom10 >= 0.10 && (
                           <div className="adv-flag adv-flag--underdog">
                             <Zap size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Underdog alert · {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
@@ -405,7 +417,7 @@ export default function AdvancedSimPanel({
                   </ResponsiveContainer>
                   {renderFixedLegend()}
                 </div>
-              {/* Share button — bottom-right of results row */}
+              {/* Share button - bottom-right of results row */}
               <div className="adv-share-row">
                 <Button
                   size="sm"
@@ -469,7 +481,7 @@ export default function AdvancedSimPanel({
           )}
 
           {/* Sliders are a secondary "what-if" tool, not a peer of the
-              charts — tuck them in a collapsed drawer so the results stay
+              charts - tuck them in a collapsed drawer so the results stay
               the hero of the panel. */}
           <div className="adv-sliders-drawer">
             <button

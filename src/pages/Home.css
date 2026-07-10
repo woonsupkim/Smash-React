@@ -22,7 +22,7 @@
   text-transform: uppercase;
 }
 
-/* Condensed, ultra-bold, all-caps hero headline — broadcast/ESPN energy. */
+/* Condensed, ultra-bold, all-caps hero headline - broadcast/ESPN energy. */
 .main-title {
   font-size: clamp(2.4rem, 6.5vw, 4.2rem);
   font-weight: 900;
@@ -79,7 +79,7 @@
   color: #fff !important;
 }
 
-/* Full-bleed surface strip — edge-to-edge color blocks, not floating cards. */
+/* Full-bleed surface strip - edge-to-edge color blocks, not floating cards. */
 .surface-strip {
   display: flex;
   flex-wrap: wrap;
@@ -179,9 +179,9 @@
 }
 
 /* One-time intro overlay, similar in spirit to a sports broadcast's logo
-   sting — plays once per browser session then fades to reveal the page.
+   sting - plays once per browser session then fades to reveal the page.
    z-index sits BELOW the navbar (Bootstrap's fixed-top is ~1030) so the
-   real nav logo stays visible the whole time — that's the landing target
+   real nav logo stays visible the whole time - that's the landing target
    the big intro logo morphs into via the shared layoutId. */
 .home-intro {
   position: fixed;
@@ -192,7 +192,7 @@
 
 /* Logo and title rows share the exact same horizontal centerline (left:0;
    right:0; display:flex; justify-content:center) and split the vertical
-   center between them with a fixed gap — plain CSS transforms on the ROW,
+   center between them with a fixed gap - plain CSS transforms on the ROW,
    never on the animated motion element itself, so framer-motion's own
    scale/rotate animation on the child never gets clobbered by a competing
    inline transform. */

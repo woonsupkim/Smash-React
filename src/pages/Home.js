@@ -16,7 +16,7 @@ const SURFACES = [
   { to: '/h2h?surface=hard',  label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
 ];
 
-// /women/* mirrors every men's route 1:1 (see App.js) — prefixing here keeps
+// /women/* mirrors every men's route 1:1 (see App.js) - prefixing here keeps
 // this one Home component shared between both tours instead of forking it.
 const withTourPrefix = (path, isWta) => (isWta ? `/women${path}` : path);
 
@@ -34,7 +34,7 @@ export default function Home({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const dataDir = isWta ? '/data/women' : '/data';
   const [refreshMeta, setRefreshMeta] = useState(null);
-  // Only on the very first Home mount of a page load — not when navigating
+  // Only on the very first Home mount of a page load - not when navigating
   // back to Home later in the session (see introHasPlayed above).
   const [showIntro, setShowIntro] = useState(!introHasPlayed);
 
@@ -50,7 +50,7 @@ export default function Home({ tour = 'atp' }) {
     introHasPlayed = true; // don't replay on subsequent Home mounts this session
     // Air-cutting swoosh as the ball spins in; hold on the fully-revealed
     // logo+title for a beat, then the logo morphs into the nav's home button
-    // (0.7s layout animation) — an airy serve-flight whoosh covers the
+    // (0.7s layout animation) - an airy serve-flight whoosh covers the
     // travel, capped by the smack when it hits the top corner.
     const entryTid = setTimeout(playSwoosh, 100);
     const tid = setTimeout(() => setShowIntro(false), 2200);
@@ -99,7 +99,7 @@ export default function Home({ tour = 'atp' }) {
 
       {/* Logo and title each live in their own plain (non-animated) fixed
           row so they share one exact horizontal centerline and a fixed gap
-          — the motion components inside only animate scale/rotate/opacity,
+          - the motion components inside only animate scale/rotate/opacity,
           never position, so nothing fights the row's own centering. The
           logo is kept out of .home-intro's own fade (above) so it can morph
           into the nav's home button (same layoutId) instead of fading. */}

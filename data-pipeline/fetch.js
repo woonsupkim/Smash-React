@@ -19,7 +19,7 @@ const PAGE_SIZE = 50;
 const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
 
 if (!API_KEY) {
-  console.error('Missing RAPIDAPI_KEY — set it in .env (see .env.example).');
+  console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
   process.exit(1);
 }
 

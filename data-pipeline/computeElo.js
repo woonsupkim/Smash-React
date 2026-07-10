@@ -1,5 +1,5 @@
 /**
- * Writes public/data/elo.json (and women/elo.json) — current surface-aware
+ * Writes public/data/elo.json (and women/elo.json) - current surface-aware
  * Elo ratings for each roster player, computed from the full cached match
  * history. The live H2H page blends these with the point simulation.
  *
@@ -19,7 +19,7 @@ function normSurface(raw) {
 }
 
 // All completed matches from the cache (roster and non-roster opponents
-// alike — a player's rating should reflect every match they played).
+// alike - a player's rating should reflect every match they played).
 function collectMatches(RAW, surfaces) {
   const seen = new Map();
   for (const f of fs.readdirSync(RAW).filter((f) => f.endsWith('.json') && !/surfaces|map|profiles/.test(f))) {

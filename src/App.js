@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   // { to: '/about', label: 'About Us' }
 ];
 
-// Prefixes a men's-side path with /women, or strips it back off — the single
+// Prefixes a men's-side path with /women, or strips it back off - the single
 // source of truth both the nav links and the toggle use for "which tour am I
 // on" is the current URL itself (isWomen), so every link the navbar renders
 // stays on whichever tour you're already viewing until you explicitly hit
@@ -50,7 +50,7 @@ function NavBar() {
   // NavLink's default isActive match ignores the query string, so "Clay",
   // "Grass", and "Hard" (all pointing at /h2h with a different ?surface=)
   // would otherwise all light up together regardless of which one is
-  // actually selected — compare the query string too for items that have one.
+  // actually selected - compare the query string too for items that have one.
   const isLinkActive = (to) => {
     const [toPath, toQuery] = to.split('?');
     if (location.pathname !== toPath) return false;
@@ -136,7 +136,7 @@ function App() {
           <Route path="/track-record" element={<TrackRecord />} />
           <Route path="/women/track-record" element={<TrackRecord />} />
 
-          {/* Pre-merge URLs — redirect rather than 404 for any existing
+          {/* Pre-merge URLs - redirect rather than 404 for any existing
               bookmarks/links to the old per-tournament pages. */}
           <Route path="/french-open" element={<Navigate to="/h2h?surface=clay" replace />} />
           <Route path="/wimbledon" element={<Navigate to="/h2h?surface=grass" replace />} />

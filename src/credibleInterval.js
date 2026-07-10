@@ -1,6 +1,6 @@
 /**
  * Bayesian credible interval for a win-rate estimate, treating each
- * simulated match as a Bernoulli trial — same idea as estimating pi from
+ * simulated match as a Bernoulli trial - same idea as estimating pi from
  * Monte Carlo points-in-circle. Posterior is Beta(1+wins, 1+losses) under
  * a uniform Beta(1,1) prior; no library dependency, just the standard
  * regularized-incomplete-beta + bisection-inverse numerics (Numerical
@@ -66,7 +66,7 @@ function betainc(x, a, b) {
   return 1 - (bt * betacf(1 - x, b, a)) / b;
 }
 
-// Inverse of I_x(a, b) via bisection — slower than Newton but can't diverge,
+// Inverse of I_x(a, b) via bisection - slower than Newton but can't diverge,
 // and this only ever runs a handful of times per simulation, not per point.
 function betaInv(p, a, b) {
   let lo = 0, hi = 1;
@@ -95,7 +95,7 @@ export function credibleInterval(wins, losses, level = 0.95) {
 }
 
 // Width above which the interval is wide enough (relative to a few hundred
-// sims) that the point estimate shouldn't be read with much confidence —
+// sims) that the point estimate shouldn't be read with much confidence -
 // e.g. a 70% estimate from 20 sims (wide CI) reads very differently from a
 // 70% estimate from 2000 sims (narrow CI), even though the number is the same.
 const WIDE_CI_THRESHOLD = 0.15;
@@ -103,7 +103,7 @@ const WIDE_CI_THRESHOLD = 0.15;
 /**
  * Plain-language read on a win probability, bucketed FiveThirtyEight-style,
  * with an "(uncertain)" flag when the credible interval is wide relative to
- * the bucket — i.e. the label reflects both the estimate AND how much to
+ * the bucket - i.e. the label reflects both the estimate AND how much to
  * trust it.
  * @param {number} prob - win probability for either side, in [0, 1]
  * @param {number} lower - that side's 95% CI lower bound
@@ -120,7 +120,7 @@ export function confidenceLabel(prob, lower, upper) {
   else label = 'Near-certain';
 
   const width = upper - lower;
-  if (width > WIDE_CI_THRESHOLD) label += ' (uncertain — wide range)';
+  if (width > WIDE_CI_THRESHOLD) label += ' (uncertain - wide range)';
   return label;
 }
 
@@ -134,8 +134,8 @@ export function confidenceLabel(prob, lower, upper) {
  * - 'wide': CI doesn't cross 50% but is still wide enough to warrant caution.
  * - null: result is reliable.
  *
- * @param {number} wins  — simulated wins for the leading player
- * @param {number} losses — simulated losses for the leading player
+ * @param {number} wins  - simulated wins for the leading player
+ * @param {number} losses - simulated losses for the leading player
  * @returns {'coinflip'|'wide'|null}
  */
 export function sampleSizeFlag(wins, losses) {

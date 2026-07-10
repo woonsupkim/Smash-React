@@ -31,21 +31,22 @@ export default function MatchHero({
   selectorA,
   selectorB,
   surfaceLabel,
-  surfaceKey, // 'hard' | 'clay' | 'grass' — matches year_w/year_l on the row
+  surfaceKey, // 'hard' | 'clay' | 'grass' - matches year_w/year_l on the row
   bestOf = 5, // 5 (ATP Grand Slam) or 3 (WTA Grand Slam)
   accentColor,
   accentTextColor = '#fff',
   h2hData,
   getPlayerImageSrc,
-  statsA = null,   // seeded slider stats (0-100 per key) — reflect the engine's stat source
+  statsA = null,   // seeded slider stats (0-100 per key) - reflect the engine's stat source
   statsB = null,
-  poolLoading = false, // roster CSV still parsing — show skeleton placeholders
-  eloData = null,     // { id: {all,hard,clay,grass} } — surface form ratings
-  tour = 'atp',       // 'atp' | 'wta' — selects the tuned engine weights
+  poolLoading = false, // roster CSV still parsing - show skeleton placeholders
+  eloData = null,     // { id: {all,hard,clay,grass} } - surface form ratings
+  tour = 'atp',       // 'atp' | 'wta' - selects the tuned engine weights
   engine = 'smash',   // which prediction engine drives the headline number
   setEngine = null,   // enables the engine selector when provided
-  engineDisabled = {}, // { engineId: reason } — greys out that engine
+  engineDisabled = {}, // { engineId: reason } - greys out that engine
   recommendedEngine = null, // engine id to badge "Recommended" (best for surface)
+  winProbOverride = null, // authoritative engine P(A wins) from the page's shared batch - keeps the headline identical to the detailed panel
 }) {
   const [scoreline, setScoreline] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
@@ -61,14 +62,14 @@ export default function MatchHero({
   const probsKeyB = probsB ? probsB.join(',') : '';
 
   // Picking either player (or changing the underlying stats, e.g. toggling
-  // Upset Scenario) resets the previous roll — a stale scoreline from the
+  // Upset Scenario) resets the previous roll - a stale scoreline from the
   // old stats shouldn't linger.
   useEffect(() => {
     setScoreline(null);
     setIsRolling(false);
   }, [playerA?.id, playerB?.id, probsKeyA, probsKeyB]);
 
-  // Model's estimated win probability (500-trial average) — this is a
+  // Model's estimated win probability (500-trial average) - this is a
   // statistical estimate, not a guarantee, which is why a single
   // "Simulate Match" roll below can still go the other way, especially
   // when the percentages are close together.
@@ -84,6 +85,9 @@ export default function MatchHero({
   // Point Sim and Hot Streak engines just use it directly; the others blend.
   const displayProb = useMemo(() => {
     if (!bothPicked) return 0.5;
+    // Prefer the page's shared batch-derived engine probability so the
+    // headline and the detailed panel below show the exact same number.
+    if (winProbOverride != null) return winProbOverride;
     const elo = eloData ? eloProbFn(eloData[playerA.id], eloData[playerB.id], surfaceKey) : null;
     return pickEngineProb(
       engine,
@@ -91,7 +95,7 @@ export default function MatchHero({
       tour, surfaceKey
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bothPicked, winProb, eloData, playerA, playerB, surfaceKey, tour, engine]);
+  }, [bothPicked, winProb, eloData, playerA, playerB, surfaceKey, tour, engine, winProbOverride]);
 
   const favoredIsA = displayProb >= 0.5;
   const pctA = Math.round(displayProb * 100);
@@ -116,7 +120,7 @@ export default function MatchHero({
     return `${w}–${l}`; // en-dash, consistent with scorelines/CIs
   };
 
-  // Recent form (last 10 matches, any surface) is a per-player fact — unlike
+  // Recent form (last 10 matches, any surface) is a per-player fact - unlike
   // head-to-head, it doesn't depend on these two players having met before.
   const recentForm = (player) => {
     const w = player.recent_w, l = player.recent_l;
@@ -136,13 +140,13 @@ export default function MatchHero({
   const chips = bothPicked ? [
     {
       label: `${surfaceLabel} record (this yr)`,
-      a: yearRecord(playerA) || '—',
-      b: yearRecord(playerB) || '—',
+      a: yearRecord(playerA) || '–',
+      b: yearRecord(playerB) || '–',
     },
     {
       label: 'Recent form (last 10)',
-      a: recentForm(playerA) || '—',
-      b: recentForm(playerB) || '—',
+      a: recentForm(playerA) || '–',
+      b: recentForm(playerB) || '–',
     },
     {
       label: 'Head-to-head (career)',
@@ -165,7 +169,7 @@ export default function MatchHero({
       {surfaceSelector && <div className="match-hero-surface-select">{surfaceSelector}</div>}
 
       <div className="match-hero-main">
-        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} poolLoading={poolLoading} />
+        <PlayerCol player={playerA} getPlayerImageSrc={getPlayerImageSrc} align="left" selector={selectorA} poolLoading={poolLoading} favored={bothPicked && favoredIsA} />
 
         <div className="match-hero-center">
           {bothPicked ? (
@@ -244,7 +248,7 @@ export default function MatchHero({
           )}
         </div>
 
-        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" selector={selectorB} poolLoading={poolLoading} />
+        <PlayerCol player={playerB} getPlayerImageSrc={getPlayerImageSrc} align="right" selector={selectorB} poolLoading={poolLoading} favored={bothPicked && !favoredIsA} />
       </div>
 
       {bothPicked && (
@@ -265,14 +269,17 @@ export default function MatchHero({
   );
 }
 
-function PlayerCol({ player, getPlayerImageSrc, align, selector, poolLoading }) {
+function PlayerCol({ player, getPlayerImageSrc, align, selector, poolLoading, favored = false }) {
   const flagUrl = player ? countryFlagUrl(player.country) : null;
   return (
-    <div className={`match-hero-player ${align}`}>
+    <div className={`match-hero-player ${align}${favored ? ' favored' : ''}`}>
       {selector && <div className="match-hero-selector">{selector}</div>}
       {player ? (
         <>
-          <img src={getPlayerImageSrc(player)} alt={player.name} className="match-hero-photo" />
+          <div className="match-hero-photo-wrap">
+            <img src={getPlayerImageSrc(player)} alt={player.name} className={`match-hero-photo${favored ? ' favored' : ''}`} />
+            {favored && <span className="match-hero-fav-badge">Favored</span>}
+          </div>
           <div className="match-hero-name">
             {flagUrl
               ? <img src={flagUrl} alt={player.country} className="match-hero-flag" />

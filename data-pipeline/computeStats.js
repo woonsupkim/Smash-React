@@ -12,14 +12,14 @@
  *   p6 = this player's own ace rate given the 1st serve landed in.
  *
  * Run once per surface (Hard/Clay/Grass) since serve/return stats differ
- * meaningfully by court — US Open is Hard, French Open is Clay, Wimbledon
+ * meaningfully by court - US Open is Hard, French Open is Clay, Wimbledon
  * is Grass. Each surface gets its own output file and its own tour-average
  * baseline (a player's clay return stats should be compared against the
  * tour's clay average, not blended with hard/grass matches).
  *
  * Usage: node computeStats.js [halfLifeDays] [surface] [suffix] [tour]
- *   surface: hard | clay | grass — omit to compute all three.
- *   tour: atp (default) | wta — namespaces raw/output paths under women/.
+ *   surface: hard | clay | grass - omit to compute all three.
+ *   tour: atp (default) | wta - namespaces raw/output paths under women/.
  * Run `npm run backtest` to find/validate a good halfLifeDays value.
  */
 const fs = require('fs');
@@ -33,7 +33,7 @@ const OUTPUT_DIR = path.join(__dirname, 'output', TOUR === 'wta' ? 'women' : '')
 const ID_MAP_PATH = path.join(RAW_DIR, 'player-id-map.json');
 const SURFACES_PATH = path.join(RAW_DIR, 'tournament-surfaces.json');
 // Backtesting each surface separately (`node backtest.js <list> <surface>`)
-// scores noticeably differently per surface — a single blended half-life
+// scores noticeably differently per surface - a single blended half-life
 // (150d) was a compromise across all three. Surface-specific best Brier
 // scores: hard=270d, clay=365d, grass=270d (grass's season is short and
 // annual, so a too-short half-life decays away last year's Wimbledon
@@ -43,7 +43,7 @@ const HALF_LIFE_OVERRIDE = process.argv[2] ? Number(process.argv[2]) : null;
 const HALF_LIFE_BY_SURFACE = { hard: 270, clay: 365, grass: 270 };
 
 // Grass's short annual season means far fewer matches accumulate real
-// decay-weight than hard/clay even with a longer half-life — lower the bar
+// decay-weight than hard/clay even with a longer half-life - lower the bar
 // so grass coverage isn't gutted by the same 200-point threshold tuned for
 // the other two surfaces.
 const MIN_SVPT_BY_SURFACE = { hard: 200, clay: 200, grass: 100 };
@@ -65,7 +65,7 @@ function computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt) {
     const agg = perPlayer.get(ourId) || emptyAgg();
     for (const m of matches) {
       // "I.hard" (indoor hard) is a separate label from the API but plays
-      // the same as outdoor hard for serve/return purposes — fold it in,
+      // the same as outdoor hard for serve/return purposes - fold it in,
       // otherwise ~half of all hard-court matches are silently dropped.
       const matchSurface = surfaceMap[String(m.tournamentId)];
       const normalizedSurface = matchSurface === 'I.hard' ? 'Hard' : matchSurface;
@@ -89,11 +89,11 @@ function computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt) {
 
 function main() {
   if (!fs.existsSync(ID_MAP_PATH)) {
-    console.error('Missing data-pipeline/raw/player-id-map.json — run fetch.js first.');
+    console.error('Missing data-pipeline/raw/player-id-map.json - run fetch.js first.');
     process.exit(1);
   }
   if (!fs.existsSync(SURFACES_PATH)) {
-    console.error('Missing data-pipeline/raw/tournament-surfaces.json — run `npm run fetch-surfaces` first.');
+    console.error('Missing data-pipeline/raw/tournament-surfaces.json - run `npm run fetch-surfaces` first.');
     process.exit(1);
   }
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8')); // ourId -> apiId
@@ -109,7 +109,7 @@ function main() {
   for (const surface of surfacesToRun) {
     const halfLifeDays = HALF_LIFE_OVERRIDE ?? HALF_LIFE_BY_SURFACE[surface];
     // "upset" runs use a much shorter half-life, so few players clear the
-    // normal per-surface bar — lower it so heavy-recency mode actually
+    // normal per-surface bar - lower it so heavy-recency mode actually
     // produces usable (if noisier) stats instead of falling back for everyone.
     const minSvpt = isUpset ? 60 : MIN_SVPT_BY_SURFACE[surface];
     const rows = computeForSurface(surface, idMap, surfaceMap, halfLifeDays, minSvpt);

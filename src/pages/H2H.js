@@ -1,5 +1,5 @@
 // src/pages/H2H.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
@@ -9,6 +9,7 @@ import AppModal from '../components/ui/AppModal';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
+import { pickEngineProb, eloProb } from '../engines';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
@@ -18,7 +19,7 @@ const playerImgsByTour = {
   wta: require.context('../assets/players-women', false, /\.png$/),
 };
 
-// Dark-themed react-select styling — control + the open dropdown menu/options
+// Dark-themed react-select styling - control + the open dropdown menu/options
 // all match the app's dark surfaces instead of react-select's default white.
 const SELECT_STYLES = {
   container: b => ({...b, minWidth: 230, flex: 1}),
@@ -41,7 +42,7 @@ const SELECT_STYLES = {
 };
 
 // Everything that used to be a separate page's hardcoded constants (US
-// Open/French Open/Wimbledon) — one entry per surface, switched via the
+// Open/French Open/Wimbledon) - one entry per surface, switched via the
 // dropdown instead of three near-identical page files.
 const TOURNAMENT_CONFIGS = {
   clay: {
@@ -100,10 +101,10 @@ export default function H2H({ tour = 'atp' }) {
   const [engine, setEngine]               = useState('smash');
   const [engineAcc, setEngineAcc]         = useState(null);
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
-  // instead of the season CSV — selecting it re-seeds the sliders.
+  // instead of the season CSV - selecting it re-seeds the sliders.
   const upsetMode = engine === 'upset';
   // ids with enough recent same-surface matches for real upset stats
-  // (upset_ok=1 in the _upset.csv) — the Hot Streak engine is disabled for anyone else.
+  // (upset_ok=1 in the _upset.csv) - the Hot Streak engine is disabled for anyone else.
   const [upsetOkIds, setUpsetOkIds]       = useState(null);
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
@@ -112,11 +113,11 @@ export default function H2H({ tour = 'atp' }) {
 
   // Reload whenever the surface (tournament) or tour changes. Player picks
   // are kept and remapped to their row in the new pool by id (rather than
-  // cleared) — same player, different surface's stats, so you can see how
+  // cleared) - same player, different surface's stats, so you can see how
   // the matchup shifts across Clay/Grass/Hard. Any previous simulation
   // result is surface-specific, so it's cleared here too.
   useEffect(() => {
-    // Switching TOUR (not surface) clears both picks immediately — ATP and
+    // Switching TOUR (not surface) clears both picks immediately - ATP and
     // WTA ids never overlap, so remapping is impossible, and letting stale
     // players linger for even one render fires spurious effects (e.g. the
     // upset-stats seeding looking them up in the other tour's CSV).
@@ -163,12 +164,12 @@ export default function H2H({ tour = 'atp' }) {
   }, [config.csvFile, dataDir]);
 
   // Re-seeds both sliders whenever a player changes OR the Upset Scenario
-  // toggle flips — upset mode pulls from the heavy-recency CSV instead of
+  // toggle flips - upset mode pulls from the heavy-recency CSV instead of
   // the normal season-long one, falling back to normal stats (with a
   // one-time notice) if a player has too few recent matches on this surface.
   useEffect(() => {
     if (!playerA && !playerB) return;
-    // Mid-tour-switch: current picks belong to the OTHER tour's pool — skip;
+    // Mid-tour-switch: current picks belong to the OTHER tour's pool - skip;
     // this effect re-runs (and early-returns) once the picks are cleared.
     if (poolDirRef.current !== dataDir) return;
     const seedNormal = (player) => Object.fromEntries(STAT_KEYS.map(([k]) => [k, (player[k] || 0) * 100]));
@@ -202,7 +203,7 @@ export default function H2H({ tour = 'atp' }) {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
   }, []);
 
-  // Which engine is most accurate for this tour+surface (from the backtest) —
+  // Which engine is most accurate for this tour+surface (from the backtest) -
   // drives the "Recommended" badge, and becomes the default when the surface
   // changes (the user can still switch).
   useEffect(() => {
@@ -219,7 +220,7 @@ export default function H2H({ tour = 'atp' }) {
     return () => clearTimeout(tid);
   }, [batchResult]);
 
-  // Switching either player clears any previous result — a stale batch
+  // Switching either player clears any previous result - a stale batch
   // chart or watch-match scoreboard from the old matchup shouldn't linger.
   useEffect(() => {
     if (watchTimeoutRef.current) { clearTimeout(watchTimeoutRef.current); watchTimeoutRef.current = null; }
@@ -306,7 +307,7 @@ export default function H2H({ tour = 'atp' }) {
     message: 'Pick both Player A and Player B first.',
   });
 
-  // Only one result view shows at a time — running a batch sim clears any
+  // Only one result view shows at a time - running a batch sim clears any
   // in-progress/finished Watch Match, and vice versa (see handleWatchMatch).
   const stopWatching = () => {
     if (watchTimeoutRef.current) { clearTimeout(watchTimeoutRef.current); watchTimeoutRef.current = null; }
@@ -325,7 +326,7 @@ export default function H2H({ tour = 'atp' }) {
   };
 
   // Excludes whichever player is already picked on the OTHER side, so the
-  // same player can never be matched up against themselves — both for the
+  // same player can never be matched up against themselves - both for the
   // dropdown (the id is simply not offered as an option) and for Random.
   const randomPick = who => {
     const excludeId = who === 'A' ? playerB?.id : playerA?.id;
@@ -356,7 +357,7 @@ export default function H2H({ tour = 'atp' }) {
 
   // Auto-run the detailed batch simulation once both players are picked (and
   // their stats have seeded), and whenever the matchup, engine, or surface
-  // changes — so results are ready without clicking. Manual slider tweaks
+  // changes - so results are ready without clicking. Manual slider tweaks
   // don't re-trigger it (the key is unchanged); use the button to re-run.
   const autoRunKeyRef = useRef(null);
   useEffect(() => {
@@ -385,6 +386,23 @@ export default function H2H({ tour = 'atp' }) {
   useEffect(() => {
     if (engine === 'upset' && upsetDisabledReason) setEngine('smash');
   }, [engine, upsetDisabledReason]);
+
+  // The single authoritative win probability for this matchup: the selected
+  // engine applied to the shared 1000-sim batch. Both the MatchHero headline
+  // and the AdvancedSimPanel pie render THIS number, so the auto-populated
+  // result and the post-"Simulate Matches" result always agree.
+  const engineProbA = useMemo(() => {
+    if (!playerA || !playerB || !batchResult) return null;
+    const total = batchResult.matchWins[0] + batchResult.matchWins[1];
+    if (!total) return null;
+    const simProb = batchResult.matchWins[0] / total;
+    const elo = eloData ? eloProb(eloData[playerA.id], eloData[playerB.id], config.surfaceKey) : null;
+    return pickEngineProb(
+      engine,
+      { sim: simProb, upsetSim: simProb, elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
+      tour, config.surfaceKey
+    );
+  }, [playerA, playerB, batchResult, engine, eloData, tour, config.surfaceKey]);
 
   const buildOptions = (excludeId) => [
     { value:'add', label:'+ Add Player' },
@@ -467,6 +485,7 @@ export default function H2H({ tour = 'atp' }) {
           setEngine={setEngine}
           engineDisabled={engineDisabled}
           recommendedEngine={recommendedEngine}
+          winProbOverride={engineProbA}
           getPlayerImageSrc={getPlayerImageSrc}
           poolLoading={players.length === 0}
           statsA={statsA}
@@ -496,6 +515,7 @@ export default function H2H({ tour = 'atp' }) {
           liveLog={liveLog}
           isWatching={isWatching}
           engine={engine}
+          engineWinProbA={engineProbA}
           onSimulate={handleSimulate}
           onWatchMatch={handleWatchMatch}
           bestOf={bestOf}

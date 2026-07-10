@@ -6,14 +6,14 @@
  *      (365d, "season form") baseline gave the eventual LOSER a clear
  *      favorite probability (>=65%) at the time.
  *   2. For each short candidate half-life, score ONLY on those upset
- *      matches — does that recency window assign more probability to the
+ *      matches - does that recency window assign more probability to the
  *      eventual (upset) winner than the season-form baseline did? Lower
  *      Brier / higher avg-probability-on-actual-winner = better at
  *      "seeing the upset coming" via recent form.
  *
- * No API calls — uses cached match data already in data-pipeline/raw/.
+ * No API calls - uses cached match data already in data-pipeline/raw/.
  * Usage: node data-pipeline/backtestUpsetHalfLife.js [tour]
- *   tour: atp (default) | wta — reads from data-pipeline/raw/women/ instead.
+ *   tour: atp (default) | wta - reads from data-pipeline/raw/women/ instead.
  */
 const fs = require('fs');
 const os = require('os');
@@ -114,7 +114,7 @@ async function main() {
   console.log(`${upsetCases.length} of those were upsets per the 365-day baseline (favorite given >=${UPSET_THRESHOLD * 100}% lost).\n`);
 
   if (upsetCases.length === 0) {
-    console.log('No upset cases found — nothing to score against.');
+    console.log('No upset cases found - nothing to score against.');
     return;
   }
 

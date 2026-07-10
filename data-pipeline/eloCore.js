@@ -12,7 +12,7 @@ const BASE = 1500;
 
 const expected = (ra, rb) => 1 / (1 + Math.pow(10, (rb - ra) / 400));
 
-// K-factor shrinks as a player accumulates matches — big early swings,
+// K-factor shrinks as a player accumulates matches - big early swings,
 // stable once established.
 const kFactor = (n) => 250 / Math.pow(n + 5, 0.4);
 

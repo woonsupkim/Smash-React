@@ -2,7 +2,7 @@
  * Auto-fills missing player headshots in src/assets/players/ by looking up
  * each roster player on Wikidata (free/CC-licensed images via Wikimedia
  * Commons) and downloading their photo. Never overwrites an image that
- * already exists — only fills gaps for players who don't have one yet.
+ * already exists - only fills gaps for players who don't have one yet.
  *
  * Usage: node fetchImages.js [tour]
  *   tour: atp (default, writes to src/assets/players/) | wta (writes to
@@ -64,12 +64,12 @@ async function main() {
     return;
   }
 
-  console.log(`${missing.length} player(s) missing images — looking up on Wikidata...`);
+  console.log(`${missing.length} player(s) missing images - looking up on Wikidata...`);
   let found = 0;
   for (const [id, name] of missing) {
-    await new Promise((r) => setTimeout(r, 4500)); // be polite to Wikimedia's API — 2s used to get rate-limited after ~20 requests
+    await new Promise((r) => setTimeout(r, 4500)); // be polite to Wikimedia's API - 2s used to get rate-limited after ~20 requests
     // One retry with a much longer backoff on failure (typically a rate-limit
-    // HTML page instead of JSON, surfacing as a JSON parse error) — most
+    // HTML page instead of JSON, surfacing as a JSON parse error) - most
     // transient 429s clear within 10s, and this halves how many manual
     // re-invocations a full 50-player run needs.
     let lastErr = null;

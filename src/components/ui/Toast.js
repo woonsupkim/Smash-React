@@ -1,4 +1,4 @@
-// Lightweight toast notifications — replaces SweetAlert's screen-hijacking
+// Lightweight toast notifications - replaces SweetAlert's screen-hijacking
 // popups for transient notices. Module-level emitter so any code can call
 // toast() without prop-drilling; <ToastHost/> renders once in App.
 import React, { useState, useEffect } from 'react';

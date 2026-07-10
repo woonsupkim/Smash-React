@@ -22,11 +22,11 @@ import { countryFlagUrl } from '../components/countryFlags';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
-// Distinct from the tournament pages' own background photos — all three are
+// Distinct from the tournament pages' own background photos - all three are
 // inside-the-stadium shots, sourced from Wikimedia Commons:
-//  - clay:  Interieur Court Philippe-Chatrier, Roland Garros (2024) — CC BY-SA 4.0
-//  - grass: 2023 Wimbledon Men's singles final, Centre Court — Daniel Cooper, CC BY-SA 2.0
-//  - hard:  Arthur Ashe Stadium interior, 2005 US Open — Davidwboswell, CC BY-SA 3.0
+//  - clay:  Interieur Court Philippe-Chatrier, Roland Garros (2024) - CC BY-SA 4.0
+//  - grass: 2023 Wimbledon Men's singles final, Centre Court - Daniel Cooper, CC BY-SA 2.0
+//  - hard:  Arthur Ashe Stadium interior, 2005 US Open - Davidwboswell, CC BY-SA 3.0
 import bgClay from '../assets/bracket-clay.jpg';
 import bgGrass from '../assets/bracket-grass.jpg';
 import bgHard from '../assets/bracket-hard.jpg';
@@ -75,7 +75,7 @@ const pairUp = (arr) => {
 };
 
 // Computes the vertical center of every match box in every round, purely
-// from the bracket's shape (slot count) — independent of which players are
+// from the bracket's shape (slot count) - independent of which players are
 // picked. Round 0's matches are evenly spaced leaves; every later round's
 // match center is the midpoint of the two matches that feed it, recursing
 // up to the final. This is what lets a connector line land exactly between
@@ -255,7 +255,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [eloData, setEloData] = useState(null);
   const upsetMode = engine === 'upset';
   const surfaceKey = tournamentConfig.surfaceKey;
-  // ids with real upset stats on this tournament's surface (upset_ok=1) —
+  // ids with real upset stats on this tournament's surface (upset_ok=1) -
   // the Hot Streak engine is disabled when any picked player lacks recent data.
   const [upsetOkIds, setUpsetOkIds] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -331,8 +331,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   // Load & normalize CSV into playersPool whenever the tournament or upset
   // mode changes. The player roster (ids) is the same across all three
-  // tournament CSVs and both upset variants — only the per-surface/recency
-  // stats differ — so switching either one keeps whichever players were
+  // tournament CSVs and both upset variants - only the per-surface/recency
+  // stats differ - so switching either one keeps whichever players were
   // already picked, remapped to their row in the new pool, instead of
   // clearing the bracket. Only the slot COUNT changing (handleStageChange)
   // forces an actual reset, since old picks can't map onto a different
@@ -412,7 +412,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
     if (engine === 'upset' && upsetDisabledReason) setEngine('smash');
   }, [engine, upsetDisabledReason]);
 
-  // switching the starting stage changes the slot count — reset picks/results
+  // switching the starting stage changes the slot count - reset picks/results
   const handleStageChange = (value) => {
     setStage(value);
     const next = STAGES.find(s => s.value === value);
@@ -513,7 +513,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const handleReset = () => resetBracketState(stageConfig.slots);
 
-  // Resume an ESPN import that started on the other tour's brackets page —
+  // Resume an ESPN import that started on the other tour's brackets page -
   // runEspnImport stashes the link and navigates here when the URL's draw
   // (men's/women's) doesn't match the page it was pasted on. Keyed on `tour`
   // (not mount): React reuses this component instance across the ATP/WTA
@@ -566,24 +566,24 @@ export default function DreamBrackets({ tour = 'atp' }) {
     setIsImporting(true);
     try {
       // Route through our own serverless proxy (/api/espn-bracket) so the
-      // fetch goes server-side — ESPN blocks direct browser requests (CORS).
+      // fetch goes server-side - ESPN blocks direct browser requests (CORS).
       const apiUrl = `/api/espn-bracket?slug=${encodeURIComponent(parsed.slug)}&season=${parsed.season}&slots=${stageConfig.slots}&tour=${tour}`;
       const res = await fetch(apiUrl);
       if (!res.ok) throw new Error(`ESPN returned ${res.status}`);
       const json = await res.json();
       if (json.error) throw new Error(json.error);
 
-      // Proxy returns { players: string[] } — use directly if present,
+      // Proxy returns { players: string[] } - use directly if present,
       // otherwise fall back to the generic bracket parser for older shapes.
       const espnNames = json.players
         ? json.players.slice(0, stageConfig.slots)
         : parseEspnBracket(json, stageConfig.slots);
       if (!espnNames || espnNames.length === 0) {
-        throw new Error('Bracket data not available yet — check back closer to the tournament.');
+        throw new Error('Bracket data not available yet. Check back closer to the tournament.');
       }
 
       // Always parse the roster fresh from this tour's dataDir instead of
-      // using playersPool state — when this import resumes right after a
+      // using playersPool state - when this import resumes right after a
       // tour switch, playersPool may still hold the OTHER tour's players
       // (the reload effect races this one), which would match zero names.
       const targetPool = await new Promise((resolve) => {
@@ -672,7 +672,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
       <div className={competitorClass}>
         <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" />
         <div className="competitor-name-col">
-          <span className="competitor-name">{p ? p.name : '—'}</span>
+          <span className="competitor-name">{p ? p.name : '–'}</span>
           {ciCaption}
         </div>
         {isWinner && <span className="bracket-result-tag">✓</span>}
@@ -824,9 +824,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
                       style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: 0, right: 0, height: CHAMPION_BOX_H }}
                     >
                       {colPlayers[0] ? (
-                        <div className="competitor winner">
+                        <div className="competitor winner champion-winner">
+                          <span className="champion-crown" aria-hidden="true">👑</span>
                           <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" />
-                          <span>{colPlayers[0].name}</span>
+                          <span className="champion-name">{colPlayers[0].name}</span>
                         </div>
                       ) : (
                         <div className="competitor placeholder">TBD</div>

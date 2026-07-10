@@ -1,5 +1,5 @@
 /**
- * RESEARCH PROTOTYPE — not wired into the production pipeline or the app.
+ * RESEARCH PROTOTYPE - not wired into the production pipeline or the app.
  *
  * Tests whether weighting a player's match history by opponent quality
  * (via pre-match betting odds, ~50% coverage in cached data, currently
@@ -7,7 +7,7 @@
  * decay weighting.
  *
  * Current production model: every match contributes to a player's decayed
- * p1-p5 aggregate weighted only by how recent it was — beating a journeyman
+ * p1-p5 aggregate weighted only by how recent it was - beating a journeyman
  * and beating a top-10 player count identically.
  *
  * Prototype: multiply the recency weight by an opponent-strength factor
@@ -19,7 +19,7 @@
  * to current behavior rather than introducing bias.
  *
  * Point-simulation model is untouched (same simulateMatch from
- * src/simulator.js) — this isolates exactly one variable: the aggregation
+ * src/simulator.js) - this isolates exactly one variable: the aggregation
  * weighting scheme, for a clean comparison against production.
  *
  * Usage: node data-pipeline/prototypeOddsWeighting.js
@@ -107,7 +107,7 @@ function opponentImpliedWinProb(match, apiId) {
 
 function opponentStrengthMultiplier(match, apiId) {
   const oppWinProb = opponentImpliedWinProb(match, apiId);
-  if (oppWinProb == null) return 1.0; // no odds available — neutral, degrades to production behavior
+  if (oppWinProb == null) return 1.0; // no odds available - neutral, degrades to production behavior
   return Math.min(1.6, Math.max(0.6, 0.5 + oppWinProb));
 }
 
@@ -134,7 +134,7 @@ function computeGlobalTourAverages_production(idMap, asOfDate) {
 
 // ---- Model C: opponent-quality-weighted aggregation ----
 // Reuses the exact same addServerStats/addReturnerStats/deriveProbabilities
-// from lib/probabilities.js — only the weight fed into them differs.
+// from lib/probabilities.js - only the weight fed into them differs.
 function accumulateMatchWeighted(agg, tourTotals, match, apiId, asOfDate) {
   if (!match.date || !match.stats) return;
   const isPlayer1 = String(match.player1Id) === String(apiId);

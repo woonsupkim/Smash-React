@@ -12,7 +12,7 @@
 }
 
 /* Same translucent near-black card used by the H2H hero and Advanced
-   Controls — wraps the title, controls, and the whole bracket tree in one
+   Controls - wraps the title, controls, and the whole bracket tree in one
    continuous surface instead of a loose collection of pieces. */
 .bracket-card {
   background: rgba(10, 10, 14, 0.78);
@@ -129,7 +129,7 @@
 /* Flex container for each round. align-items: stretch makes every column
    share the row's full height (the height of the tallest column, i.e. the
    round with the most matches) instead of each column only being as tall
-   as its own content — without that, a column with just one card (e.g.
+   as its own content - without that, a column with just one card (e.g.
    Champion) would only ever be as tall as that one card and could never
    appear vertically centered relative to the rest of the bracket. */
 .bracket-row {
@@ -148,7 +148,7 @@
   flex-direction: column;
 }
 
-/* Thin strip between two columns that draws the connector SVG — its width
+/* Thin strip between two columns that draws the connector SVG - its width
    (CONNECTOR_W in DreamBrackets.js) is the entire visual gap between
    columns now, so .bracket-row itself has no extra gap of its own. Mirrors
    .bracket-col's [header][content] structure (with an invisible header
@@ -178,7 +178,7 @@
   color: var(--text-2);
 }
 
-/* Height is set inline (per-stage, computed in JS) — this just establishes
+/* Height is set inline (per-stage, computed in JS) - this just establishes
    the positioning context for the absolutely-placed match boxes inside. */
 .bracket-col-matches {
   position: relative;
@@ -243,7 +243,7 @@
   font-size: 0.85rem;
 }
 
-/* Bayesian 95% credible interval caption under a match's winner — wide at
+/* Bayesian 95% credible interval caption under a match's winner - wide at
    low sim counts (honest about uncertainty), tight at high sim counts. */
 .bracket-ci-tag {
   font-size: 0.62rem;
@@ -273,7 +273,7 @@
 
 /* Editable slot (still a player-card-like Select, just paired now). The
    result tag is an absolutely-positioned badge rather than inline content,
-   so it never adds extra height to the row — that extra height was
+   so it never adds extra height to the row - that extra height was
    overflowing the fixed MATCH_BOX_H box and overlapping the match below
    once results appeared. */
 .competitor.editable {
@@ -298,15 +298,26 @@
 
 /* Champion card now matches the same width as every other round's match
    cards (stretched left:0/right:0 to the column), instead of an intrinsic
-   max-content box — names wrap instead of forcing the box wider. */
+   max-content box - names wrap instead of forcing the box wider. */
 .champion-card {
   padding: 1rem 1rem;
   text-align: center;
+  border: 1px solid var(--bracket-accent, #4caf50);
+  box-shadow: 0 0 0 1px var(--bracket-accent, #4caf50), 0 0 26px -4px var(--bracket-accent, #4caf50);
 }
 .champion-card .competitor {
   justify-content: center;
   font-size: clamp(0.8rem, 1.3vw, 0.95rem);
 }
+.champion-card .competitor.winner { box-shadow: none; background: none; }
+
+/* Crown + name treatment so the final resolved slot reads as the payoff. */
+.champion-crown {
+  font-size: 1.05rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.champion-name { font-weight: 700; color: #fff; }
 
 /* Buttons */
 .dream-brackets-page .btn {

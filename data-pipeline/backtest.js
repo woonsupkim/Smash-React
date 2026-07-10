@@ -10,12 +10,12 @@
  * predictive, rather than just plausible-looking.
  *
  * Usage: node backtest.js [comma-separated halfLifeDays list] [surface] [tour]
- *   surface: hard | clay | grass — omit to backtest across all surfaces
+ *   surface: hard | clay | grass - omit to backtest across all surfaces
  *   combined (the original behavior). Passing a surface restricts both the
  *   test cases and the point-in-time history aggregation to matches on that
- *   surface, so e.g. grass's half-life can be tuned on its own — grass's
+ *   surface, so e.g. grass's half-life can be tuned on its own - grass's
  *   short annual season makes it behave very differently from hard/clay.
- *   tour: atp (default) | wta — reads from data-pipeline/raw/women/ instead.
+ *   tour: atp (default) | wta - reads from data-pipeline/raw/women/ instead.
  */
 const fs = require('fs');
 const os = require('os');
@@ -32,7 +32,7 @@ const DEFAULT_HALF_LIVES = [60, 90, 150, 270, 365, 540, 730];
 const SURFACE_DISPLAY = { hard: 'Hard', clay: 'Clay', grass: 'Grass' };
 
 // "I.hard" (indoor hard) is a separate API label from outdoor "Hard" but is
-// the same court surface for stats purposes — fold it in (mirrors
+// the same court surface for stats purposes - fold it in (mirrors
 // computeStats.js/computeMatchupFacts.js's normalization).
 function normalizeSurface(rawSurface) {
   return rawSurface === 'I.hard' ? 'Hard' : rawSurface;
@@ -81,7 +81,7 @@ function findTestCases(idMap, surfaceMap, wantedSurface) {
 // Point-in-time probabilities for a player: aggregate all their OTHER
 // matches (excluding the one being predicted) with decay weight relative to
 // asOfDate, so nothing from the test match itself leaks into the estimate.
-// When wantedSurface is set, only same-surface matches count — mirrors what
+// When wantedSurface is set, only same-surface matches count - mirrors what
 // computeStats.js actually does at serve time, so the backtest measures the
 // half-life that surface will really be computed with.
 function probabilitiesAsOf(ourId, excludeMatchId, asOfDate, halfLifeDays, idMap, tourAverages, surfaceMap, wantedSurface) {
@@ -110,7 +110,7 @@ async function scoreHalfLife(halfLifeDays, testCases, idMap, simulateBatch, surf
   // Tour averages only affect p3/p4 fallback + the p5 baseline (a roughly
   // constant offset shared by both sides of a matchup), so using one global
   // snapshot rather than a fresh point-in-time one per test case is a
-  // reasonable simplification — it doesn't need to be exact to compare
+  // reasonable simplification - it doesn't need to be exact to compare
   // half-life options against each other.
   const tourAverages = computeGlobalTourAverages(idMap, new Date(), halfLifeDays, surfaceMap, wantedSurface);
 
@@ -147,7 +147,7 @@ async function scoreHalfLife(halfLifeDays, testCases, idMap, simulateBatch, surf
 
 async function main() {
   if (!fs.existsSync(ID_MAP_PATH)) {
-    console.error('Missing data-pipeline/raw/player-id-map.json — run fetch.js first.');
+    console.error('Missing data-pipeline/raw/player-id-map.json - run fetch.js first.');
     process.exit(1);
   }
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8'));
@@ -157,14 +157,14 @@ async function main() {
   const surfaceArg = process.argv[3];
   const wantedSurface = surfaceArg ? SURFACE_DISPLAY[surfaceArg] : null;
   if (surfaceArg && !wantedSurface) {
-    console.error(`Unknown surface "${surfaceArg}" — expected hard, clay, or grass.`);
+    console.error(`Unknown surface "${surfaceArg}" - expected hard, clay, or grass.`);
     process.exit(1);
   }
 
   const testCases = findTestCases(idMap, surfaceMap, wantedSurface);
   console.log(`Found ${testCases.length} historical intra-roster matches to backtest against${wantedSurface ? ` (surface=${wantedSurface})` : ''}.\n`);
   if (testCases.length === 0) {
-    console.log('No matches between two roster players found — nothing to backtest.');
+    console.log('No matches between two roster players found - nothing to backtest.');
     return;
   }
 

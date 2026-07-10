@@ -316,7 +316,7 @@
 
 .track-row-matchup { font-size: 0.86rem; color: var(--text-2); }
 
-/* Compact match scoreboard — fixed name column so every match's set scores
+/* Compact match scoreboard - fixed name column so every match's set scores
    line up in the same columns, clear of the longest roster name. */
 .track-scoreboard { border-collapse: collapse; font-variant-numeric: tabular-nums; table-layout: fixed; }
 .track-scoreboard td { padding: 0.1rem 0; text-align: center; width: 26px; }
@@ -339,6 +339,16 @@
 .track-verdict { font-size: 0.76rem; font-variant-numeric: tabular-nums; }
 .track-verdict.hit { color: var(--accent-positive); }
 .track-verdict.miss { color: var(--accent-negative); }
+
+/* Predicted-vs-actual scoreline under the verdict. */
+.track-scorecompare {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.track-scorecompare.hit { color: var(--accent-positive); }
 
 .track-more {
   display: block;

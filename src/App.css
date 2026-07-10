@@ -26,12 +26,12 @@
   --color-surface-2: #262626;
   --color-text-dim: #ccc;
 
-  /* site-wide brand accent (nav, primary CTAs) — distinct from each
+  /* site-wide brand accent (nav, primary CTAs) - distinct from each
      tournament's own surface-specific accent below */
   --accent-brand: #c6ff1c;
 
   /* per-tournament accents (referenced by DreamBrackets.js and each
-     tournament page's CSS) — matches the Clay/Grass/Hard palette used on
+     tournament page's CSS) - matches the Clay/Grass/Hard palette used on
      the Home page's surface strip. */
   --accent-us-a: #5b8cff;
   --accent-us-b: #001c5c;
@@ -72,7 +72,7 @@
 
 /* Always reserve the vertical scrollbar track so centered page content
    never shifts horizontally when navigating between a short page (no
-   scrollbar) and a tall one — this is what made the header appear to "jump"
+   scrollbar) and a tall one - this is what made the header appear to "jump"
    when moving to/from Track Record. */
 html {
   overflow-y: scroll;
@@ -88,7 +88,7 @@ body {
 /* Numbers align in columns wherever they appear (records, percentages) */
 body { font-variant-numeric: tabular-nums; }
 
-/* ── Focus states — one visible treatment everywhere ─────────────────── */
+/* ── Focus states - one visible treatment everywhere ─────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent-brand);
   outline-offset: 2px;
@@ -101,7 +101,7 @@ button:focus-visible {
   box-shadow: none;
 }
 
-/* ── Skeleton shimmer — shared loading primitive ─────────────────────── */
+/* ── Skeleton shimmer - shared loading primitive ─────────────────────── */
 .skeleton {
   position: relative;
   overflow: hidden;
@@ -131,14 +131,14 @@ h2, .heading-lg {
   font-size: clamp(1.4rem, 4.5vw, 2.25rem);
 }
 
-/* Display face for all headline-level text — condensed broadcast style */
+/* Display face for all headline-level text - condensed broadcast style */
 h1, h2, h3, .heading-xl, .heading-lg,
 .main-title, .match-hero-title, .home-intro-title {
   font-family: var(--font-display);
   letter-spacing: 0.01em;
 }
 
-/* Navbar overrides — broadcast/ESPN style: near-black bar, uppercase
+/* Navbar overrides - broadcast/ESPN style: near-black bar, uppercase
    letter-spaced links, lime brand accent for the active link. */
 .navbar {
   background-color: #0a0a0a !important;
@@ -224,7 +224,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
 
-/* Dark tint over the background photo on the tournament pages — without
+/* Dark tint over the background photo on the tournament pages - without
    this the raw photo renders at full brightness behind the UI. */
 .overlay {
   background-color: rgba(0, 0, 0, 0.82);
@@ -260,7 +260,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
   padding-bottom: 40px;
 }
 
-/* Broadcast/ESPN-style page title used on the tournament pages — set
+/* Broadcast/ESPN-style page title used on the tournament pages - set
    --accent on the element to tint the underline per tournament. */
 .broadcast-title {
   display: inline-flex;
@@ -277,7 +277,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
 }
 
 /* Dark-themed native <select>, matching the translucent look of the
-   react-select player dropdowns — reused on the Advanced Controls'
+   react-select player dropdowns - reused on the Advanced Controls'
    Simulations select and all of the Dream Brackets selects. */
 .dark-select {
   background-color: rgba(255,255,255,0.08) !important;
@@ -296,7 +296,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
   color: #fff;
 }
 
-/* ATP/WTA tour switcher pill in the navbar — switches the current page to
+/* ATP/WTA tour switcher pill in the navbar - switches the current page to
    its tour-mirrored counterpart (see TourToggle in App.js) instead of
    always bouncing back to Home. */
 .tour-toggle {
@@ -327,7 +327,7 @@ h1, h2, h3, .heading-xl, .heading-lg,
   color: #111;
 }
 
-/* H2H page's tournament (surface) picker — sits above the MatchHero card,
+/* H2H page's tournament (surface) picker - sits above the MatchHero card,
    re-themes the whole page on change instead of routing to a separate page
    per surface. */
 .h2h-tournament-select {

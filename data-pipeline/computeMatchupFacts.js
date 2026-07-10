@@ -1,16 +1,16 @@
 /**
  * Computes the "broadcast graphic" facts for the new H2H hero, all from
- * data already cached in data-pipeline/raw/ — no new API calls:
+ * data already cached in data-pipeline/raw/ - no new API calls:
  *   - per-player, per-surface win-loss record for the CURRENT calendar year
  *     (merged into each smash_*.csv by buildTournamentCsv.js)
  *   - per-player "recent form" (last 10 matches, any surface)
  *   - pairwise head-to-head record for every pair of rostered players who
  *     have actually played each other (since both players' full match
  *     histories are cached, any match between two rostered players shows
- *     up in both — across either player's cache it's the same match)
+ *     up in both - across either player's cache it's the same match)
  *
  * Usage: node computeMatchupFacts.js [tour]
- *   tour: atp (default) | wta — namespaces raw/output/public paths under women/.
+ *   tour: atp (default) | wta - namespaces raw/output/public paths under women/.
  */
 const fs = require('fs');
 const path = require('path');
@@ -38,11 +38,11 @@ function didWin(match, apiId) {
 
 function main() {
   if (!fs.existsSync(ID_MAP_PATH)) {
-    console.error('Missing data-pipeline/raw/player-id-map.json — run fetch.js first.');
+    console.error('Missing data-pipeline/raw/player-id-map.json - run fetch.js first.');
     process.exit(1);
   }
   if (!fs.existsSync(SURFACES_PATH)) {
-    console.error('Missing data-pipeline/raw/tournament-surfaces.json — run fetch-surfaces first.');
+    console.error('Missing data-pipeline/raw/tournament-surfaces.json - run fetch-surfaces first.');
     process.exit(1);
   }
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8')); // ourId -> apiId
@@ -72,7 +72,7 @@ function main() {
     for (const m of matches) {
       if (new Date(m.date).getFullYear() !== currentYear) continue;
       // "I.hard" (indoor hard) is a separate API label from outdoor "Hard"
-      // but is the same court surface for stats purposes — fold it in.
+      // but is the same court surface for stats purposes - fold it in.
       const rawSurface = surfaceMap[String(m.tournamentId)];
       const surfaceDisplay = rawSurface === 'I.hard' ? 'Hard' : rawSurface;
       const surfaceKey = Object.keys(SURFACE_DISPLAY).find((k) => SURFACE_DISPLAY[k] === surfaceDisplay);
@@ -117,7 +117,7 @@ function main() {
       if (!m.id || seenMatchIds.has(m.id) || !m.match_winner) continue;
       const oppApiId = String(m.player1Id) === String(apiId) ? m.player2Id : m.player1Id;
       const oppOurId = apiToOur.get(String(oppApiId));
-      if (!oppOurId) continue; // opponent isn't in our roster — skip (can't label both sides)
+      if (!oppOurId) continue; // opponent isn't in our roster - skip (can't label both sides)
       seenMatchIds.add(m.id);
 
       const [idA, idB] = [ourId, oppOurId].sort();

@@ -7,7 +7,7 @@
  * p6 (ace rate given 1st serve in) was added after a backtested prototype
  * (data-pipeline/prototypeAceModel.js) showed splitting it out of p5
  * improves calibration (lower Brier score / log loss) versus blending ace
- * rate into the rally-win rate — an ace isn't a function of the returner's
+ * rate into the rally-win rate - an ace isn't a function of the returner's
  * skill, so lumping it into p5 made aces look like rally dominance.
  */
 const P5_BASELINE = 0.38;
@@ -40,7 +40,7 @@ function addServerStats(agg, w, side) {
   agg.firstWon += w * firstWon;
   agg.secondAttempts += w * secondAttempts;
   agg.secondWon += w * secondWon;
-  agg.aces += w * aces; // attributed entirely to 1st serve — box scores don't split aces by serve number, and 2nd-serve aces are rare enough in pro tennis to approximate as zero
+  agg.aces += w * aces; // attributed entirely to 1st serve - box scores don't split aces by serve number, and 2nd-serve aces are rare enough in pro tennis to approximate as zero
 }
 
 function addReturnerStats(agg, w, opponentSide) {
@@ -83,7 +83,7 @@ function clamp01(x) {
 
 // Derives p1-p6 from one player's aggregated sums plus tour-average rates
 // (used as a fallback when data is thin, and as the centering baseline for
-// p5 — see header comment for why p5 needs a baseline).
+// p5 - see header comment for why p5 needs a baseline).
 function deriveProbabilities(agg, tourAverages, minSvpt = 200) {
   const { r3Avg, r4Avg, tourServerWin1stNonAce, tourServerWin2nd } = tourAverages;
   if (agg.svpt < minSvpt) return null; // not enough data to trust

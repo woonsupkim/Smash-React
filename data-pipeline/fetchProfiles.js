@@ -1,7 +1,7 @@
 /**
  * Fetches birthday (-> age) for each roster player, for the H2H hero
  * ("World No. X, Age Y, ITA"). Country is already cached in match records
- * (countryAcr) so it doesn't need its own fetch — this is just the one
+ * (countryAcr) so it doesn't need its own fetch - this is just the one
  * field (age) that genuinely needs a fresh API call.
  */
 require('dotenv').config();
@@ -16,7 +16,7 @@ const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
 
 if (!API_KEY) {
-  console.error('Missing RAPIDAPI_KEY — set it in .env (see .env.example).');
+  console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
   process.exit(1);
 }
 
@@ -41,7 +41,7 @@ function ageFromBirthday(birthday) {
 
 async function main() {
   if (!fs.existsSync(ID_MAP_PATH)) {
-    console.error('Missing data-pipeline/raw/player-id-map.json — run fetch.js first.');
+    console.error('Missing data-pipeline/raw/player-id-map.json - run fetch.js first.');
     process.exit(1);
   }
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8')); // ourId -> apiId

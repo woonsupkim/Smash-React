@@ -1,7 +1,7 @@
-// Shared canvas helpers — also used by generateBracketShareCard.js.
+// Shared canvas helpers - also used by generateBracketShareCard.js.
 
 // Clip image to a circle using the same crop as the app's player photos:
-// CSS object-fit: cover with object-position: top center — scale to cover the
+// CSS object-fit: cover with object-position: top center - scale to cover the
 // square, center horizontally, align the image's TOP edge with the circle top.
 export function drawCircularPhoto(ctx, img, cx, cy, radius, dimmed = false) {
   ctx.save();
@@ -58,14 +58,14 @@ export function drawFlag(ctx, flagImg, x, y, w, h) {
   ctx.restore();
 }
 
-// Court-inspired palettes per surface — instantly recognizable per Slam.
+// Court-inspired palettes per surface - instantly recognizable per Slam.
 export const SURFACE_THEMES = {
   clay:  { bgTop: '#54200f', bgBottom: '#2e0f06', court: '#8a3c22' },
   grass: { bgTop: '#14351f', bgBottom: '#091d10', court: '#26543a' },
   hard:  { bgTop: '#0e2856', bgBottom: '#071531', court: '#1a447e' },
 };
 
-// Auto headline + tagline — the hook that makes the card feel like a hot take.
+// Auto headline + tagline - the hook that makes the card feel like a hot take.
 function pickVerdict({ favShare, straightSets, binom10 }) {
   if (favShare < 0.55) return { headline: 'COIN-FLIP CLASSIC', tagline: 'Flip a coin. Seriously. 🪙' };
   if (favShare < 0.60) return { headline: 'TOO CLOSE TO CALL', tagline: 'Somebody\'s leaving heartbroken. 💔' };
@@ -75,7 +75,7 @@ function pickVerdict({ favShare, straightSets, binom10 }) {
   return { headline: 'CLEAR FAVORITE', tagline: 'The stats don\'t lie. 🎾' };
 }
 
-// Confetti burst on the winner's half — celebratory, cheap to draw.
+// Confetti burst on the winner's half - celebratory, cheap to draw.
 // Simple LCG so the same matchup renders the same card every time.
 export function drawConfetti(ctx, side, color, seedStr, W, H) {
   let seed = 7;
@@ -108,20 +108,20 @@ export function drawConfetti(ctx, side, color, seedStr, W, H) {
  * Generates a 1200×630 share card and returns the canvas element.
  *
  * @param {object} opts
- * @param {object}  opts.playerA          — full roster row (name, last, us_seed, year_w, year_l)
+ * @param {object}  opts.playerA          - full roster row (name, last, us_seed, year_w, year_l)
  * @param {object}  opts.playerB
  * @param {string}  opts.winnerName
- * @param {number}  opts.favShare         — winner's share of sims, 0.5–1
- * @param {string}  [opts.scoreline]      — most likely scoreline, e.g. "3–1"
- * @param {{winsA:number,winsB:number}} [opts.h2hRecord] — career head-to-head (A first)
- * @param {number}  opts.binom10          — P(underdog wins >5 of 10)
+ * @param {number}  opts.favShare         - winner's share of sims, 0.5–1
+ * @param {string}  [opts.scoreline]      - most likely scoreline, e.g. "3–1"
+ * @param {{winsA:number,winsB:number}} [opts.h2hRecord] - career head-to-head (A first)
+ * @param {number}  opts.binom10          - P(underdog wins >5 of 10)
  * @param {string}  opts.colorA
  * @param {string}  opts.colorB
  * @param {string}  [opts.imageSrcA]
  * @param {string}  [opts.imageSrcB]
  * @param {string}  [opts.flagSrcA]
  * @param {string}  [opts.flagSrcB]
- * @param {string}  [opts.surfaceKey]     — 'hard' | 'clay' | 'grass'
+ * @param {string}  [opts.surfaceKey]     - 'hard' | 'clay' | 'grass'
  * @param {string}  opts.tournamentLabel
  * @param {string}  opts.surfaceLabel
  * @param {number}  opts.simCount
@@ -275,7 +275,7 @@ export async function generateShareCard({
   ctx.fillText('WINS', ribbonCx, photoY + photoR);
   ctx.restore();
 
-  // Center stage: the predicted scoreline, big — the "final score" of the sim
+  // Center stage: the predicted scoreline, big - the "final score" of the sim
   ctx.textBaseline = 'middle';
   if (scoreline) {
     ctx.font = '600 17px Arial, sans-serif';
@@ -330,7 +330,7 @@ export async function generateShareCard({
   drawNameBlock(photoXA, playerA, flagA, isWinnerA);
   drawNameBlock(photoXB, playerB, flagB, !isWinnerA);
 
-  // ── Dominance bar (no numbers — the lean says it all) ────────────────────
+  // ── Dominance bar (no numbers - the lean says it all) ────────────────────
   const barY = 462, barH = 16, barX = 240, barW = W - 480, barR = barH / 2;
   const split = barX + barW * (isWinnerA ? favShare : 1 - favShare);
 
@@ -353,7 +353,7 @@ export async function generateShareCard({
   ctx.fillStyle = '#fff';
   ctx.fillRect(split - 1.5, barY - 4, 3, barH + 8);
 
-  // ── Chips row — just the confidence call, colored ─────────────────────────
+  // ── Chips row - just the confidence call, colored ─────────────────────────
   const chips = [];
   if (favShare < 0.60) {
     chips.push({ text: '⚠ Low confidence', bg: 'rgba(255,160,0,0.20)', border: 'rgba(255,160,0,0.55)', color: '#ffb74d' });

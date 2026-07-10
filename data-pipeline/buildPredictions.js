@@ -1,5 +1,5 @@
 /**
- * Forward-test engine — public/data/predictions.json.
+ * Forward-test engine - public/data/predictions.json.
  *
  * Unlike the retrospective Track Record (which re-simulates finished matches),
  * this LOCKS a prediction for an upcoming match BEFORE it is played, then grades
@@ -19,9 +19,17 @@ const path = require('path');
 const Papa = require('papaparse');
 const { winProb } = require('./simCore');
 const { predElo, expected } = require('./eloCore');
+const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
+
+// Which engine is most accurate for each tour x surface (from the backtest).
+// Locked predictions use THAT engine, so the forward record is made with the
+// model that actually performs best on the given surface, not a fixed blend.
+const ACC = (() => {
+  const p = path.join(__dirname, '..', 'public', 'data', 'engine_accuracy.json');
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return {}; }
+})();
 
 const SIMS = 1000;
-const ELO_WEIGHT = 0.4;
 const LOOKAHEAD_DAYS = 10;
 const BROWSER_UA = 'Mozilla/5.0';
 
@@ -40,7 +48,7 @@ function normSurface(raw) {
   return null;
 }
 
-// Forward predictions are locked only for Grand Slams — that's where the
+// Forward predictions are locked only for Grand Slams - that's where the
 // roster's top players actually meet, and it keeps the forward record focused.
 function isGrandSlam(name) {
   return /wimbledon|roland garros|french open|us open|australian open/i.test(name || '');
@@ -103,24 +111,36 @@ function matchRoster(espnName, roster) {
   return lastHits.length === 1 ? lastHits[0] : null;
 }
 
-// Locked blended prediction for a matchup on a surface.
+// Locked prediction for a matchup on a surface, made with the best-performing
+// engine for this tour x surface. Returns { probA, engine } (P(a wins) plus the
+// engine used) or null if either player lacks stats on this surface.
 function predict(ctx, a, b, surface) {
   const rowA = ctx.statsBySurface[surface].get(a.id);
   const rowB = ctx.statsBySurface[surface].get(b.id);
   if (!rowA || !rowB) return null;
+
   const simP = winProb(probsFromRow(rowA), probsFromRow(rowB), SIMS, ctx.bestOf);
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
   let eloP = 0.5;
   if (eA && eB) eloP = expected(predElo(eA, surface), predElo(eB, surface));
-  const probA = ELO_WEIGHT * eloP + (1 - ELO_WEIGHT) * simP;
-  return probA;
+  const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;
+  const rankP = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
+  const w = (ENGINE.weights[ctx.tour] && ENGINE.weights[ctx.tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
+  const smashP = w.ws * simP + w.we * eloP + w.wr * rankP;
+
+  const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP };
+  // 'upset' needs hot-form stats we don't load here, so fall back to Smart
+  // Blend if that's the nominal best for the surface.
+  const best = ACC?.[ctx.tour]?.[surface]?.best;
+  const engine = probs[best] != null ? best : 'smash';
+  return { probA: probs[engine], engine };
 }
 
 let fetchFailures = 0;
 
 async function fetchSchedule(league, yyyymmdd) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/tennis/${league}/scoreboard?dates=${yyyymmdd}`;
-  // Retry a couple of times — a swallowed transient failure once cost us the
+  // Retry a couple of times - a swallowed transient failure once cost us the
   // Wimbledon women's final (the WTA fetch hiccupped and silently returned []).
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -195,9 +215,27 @@ async function run() {
     }
   }
 
+  // ── 1b. Refresh still-pending picks with the current best engine ─────────
+  // They haven't been played yet, so re-locking them with the best-performing
+  // engine for their surface (and any newly tuned weights) is still leak-free.
+  let refreshed = 0;
+  for (const p of store.predictions) {
+    if (p.status !== 'pending') continue;
+    const ctx = ctxByTour[p.tour];
+    const pred = predict(ctx, { id: p.p1, name: p.name1 }, { id: p.p2, name: p.name2 }, p.surface);
+    if (!pred) continue;
+    const { probA, engine } = pred;
+    p.probP1 = Math.round(probA * 1000) / 1000;
+    p.favorite = probA >= 0.5 ? p.p1 : p.p2;
+    p.favName = p.favorite === p.p1 ? p.name1 : p.name2;
+    p.favProb = Math.round((probA >= 0.5 ? probA : 1 - probA) * 1000) / 1000;
+    p.engine = engine;
+    refreshed++;
+  }
+
   // ── 2. Seed new upcoming predictions ────────────────────────────────────
   // Dedupe by matchup identity (tour + player pair + day), NOT the ESPN
-  // competition id — ESPN reassigns that id between runs, which would
+  // competition id - ESPN reassigns that id between runs, which would
   // otherwise lock the same match twice.
   const dayKey = (tour, p1, p2, date) =>
     `${tour}|${[p1, p2].sort().join('_')}|${new Date(date).toISOString().slice(0, 10)}`;
@@ -218,8 +256,9 @@ async function run() {
         const key = dayKey(league, a.id, b.id, g.date);
         if (seen.has(key)) continue;
         const surface = surfaceFromEventName(g.eventName);
-        const probA = predict(ctx, a, b, surface);
-        if (probA == null) continue;
+        const pred = predict(ctx, a, b, surface);
+        if (pred == null) continue;
+        const { probA, engine } = pred;
         const favorite = probA >= 0.5 ? a.id : b.id;
         const favProb = probA >= 0.5 ? probA : 1 - probA;
         store.predictions.push({
@@ -228,6 +267,7 @@ async function run() {
           probP1: Math.round(probA * 1000) / 1000,
           favorite, favName: favorite === a.id ? a.name : b.name,
           favProb: Math.round(favProb * 1000) / 1000,
+          engine,
           status: 'pending', lockedAt: new Date().toISOString(),
         });
         seen.add(key);
@@ -243,8 +283,8 @@ async function run() {
   const pending = store.predictions.filter((p) => p.status === 'pending').length;
   const decided = store.predictions.filter((p) => p.status !== 'pending');
   const wins = decided.filter((p) => p.correct).length;
-  console.log(`Graded ${graded}, added ${added}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
-  if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries — some upcoming matches may be missing this run.`);
+  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
+  if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 
 run();

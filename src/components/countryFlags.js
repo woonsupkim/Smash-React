@@ -1,7 +1,7 @@
 // ITF/ATP 3-letter country codes -> ISO 3166-1 alpha-2, used to build a
 // flag image URL (flag emoji render unreliably across OS/browser
-// combinations — e.g. plain "IT"/"ES" instead of an actual flag on some
-// Windows setups — so we use real flag images instead).
+// combinations - e.g. plain "IT"/"ES" instead of an actual flag on some
+// Windows setups - so we use real flag images instead).
 const ALPHA2 = {
   ALG: 'dz', ARG: 'ar', ARM: 'am', AUS: 'au', AUT: 'at',
   AZE: 'az', BAR: 'bb', BEL: 'be', BIH: 'ba', BLR: 'by',
@@ -23,7 +23,7 @@ const ALPHA2 = {
   VEN: 've', VIE: 'vn',
 };
 
-// flagcdn.com serves small flat PNG flags by ISO alpha-2 code — no API key,
+// flagcdn.com serves small flat PNG flags by ISO alpha-2 code - no API key,
 // no rate limit for this use case.
 export function countryFlagUrl(code) {
   if (!code) return null;

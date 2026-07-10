@@ -17,7 +17,7 @@ export function tennisPointLabel(a, b) {
 
 // Scans a stream of simulateMatchStepwise() events and derives the current
 // scoreboard state (completed sets, the set in progress, and live
-// game/tiebreak points) — used to render a live-updating scoreboard instead
+// game/tiebreak points) - used to render a live-updating scoreboard instead
 // of a line-by-line commentary feed.
 export function deriveLiveScoreboardState(events) {
   let completedSets = [];

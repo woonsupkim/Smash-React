@@ -1,13 +1,13 @@
 /**
- * Builds public/data/track_record.json — every completed 2026 tour-level
+ * Builds public/data/track_record.json - every completed 2026 tour-level
  * singles match where BOTH players are in the SMASH roster, for both tours,
  * across all surfaces. For each match we PRECOMPUTE four predictions:
- *   1. season model  — point simulation on recency-weighted surface stats
- *   2. upset model    — point simulation on 7-day hot-form stats
- *   3. rank baseline  — higher-ranked player wins
- *   4. sim + Elo blend — 50/50 blend of the season sim and a surface Elo
+ *   1. season model  - point simulation on recency-weighted surface stats
+ *   2. upset model    - point simulation on 7-day hot-form stats
+ *   3. rank baseline  - higher-ranked player wins
+ *   4. sim + Elo blend - 50/50 blend of the season sim and a surface Elo
  * The Elo uses leak-free PRE-MATCH ratings (replayed chronologically), so the
- * blend is measured honestly. The page just reads this JSON — no client sim.
+ * blend is measured honestly. The page just reads this JSON - no client sim.
  *
  * Usage: node buildTrackRecord.js
  */
@@ -63,6 +63,25 @@ function simMatch(a, b, bestOf) {
   return won[0] > won[1] ? 0 : 1;
 }
 function winProb(a, b, n, bestOf) { let w0 = 0; for (let i = 0; i < n; i++) if (simMatch(a, b, bestOf) === 0) w0++; return w0 / n; }
+
+// Like simMatch but returns [setsP1, setsP2] so we can read off the scoreline.
+function simMatchSets(a, b, bestOf) {
+  const target = Math.ceil(bestOf / 2); const won = [0, 0];
+  while (Math.max(won[0], won[1]) < target) won[simSet(a, b)]++;
+  return won;
+}
+// One pass over n sims: P(p1 wins) plus, for each winner, the distribution of
+// how many sets the LOSER took - so we can report the most likely scoreline.
+function simSummary(a, b, n, bestOf) {
+  const target = Math.ceil(bestOf / 2);
+  let w0 = 0;
+  const lossDist = [Array(target).fill(0), Array(target).fill(0)]; // [p1 won][p2's sets], [p2 won][p1's sets]
+  for (let i = 0; i < n; i++) {
+    const w = simMatchSets(a, b, bestOf);
+    if (w[0] > w[1]) { w0++; lossDist[0][w[1]]++; } else { lossDist[1][w[0]]++; }
+  }
+  return { probP1: w0 / n, target, lossDist };
+}
 
 // ── Stats + surface helpers ───────────────────────────────────────────────
 const SURFACE_CSV = { hard: 'smash_us.csv', clay: 'smash_fr.csv', grass: 'smash_wb.csv' };
@@ -145,8 +164,9 @@ function evaluate(ctx, rec) {
   const { season, upset, preElo, bestOf, tour } = ctx;
   const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB } = rec;
 
-  // 1. season model
-  const probP1 = winProb(probsFromRow(rowA), probsFromRow(rowB), SIMS, bestOf);
+  // 1. season model (one pass also yields the set-score distribution)
+  const sum = simSummary(probsFromRow(rowA), probsFromRow(rowB), SIMS, bestOf);
+  const probP1 = sum.probP1;
   const favorite = probP1 >= 0.5 ? p1 : p2;
   const favProb = probP1 >= 0.5 ? probP1 : 1 - probP1;
 
@@ -173,10 +193,27 @@ function evaluate(ctx, rec) {
   // 5. Ranking-implied probability (continuous version of the baseline)
   const rankProbP1 = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
 
-  // 6. SMASH model — per tour x surface blend of sim + Elo + ranking
+  // 6. SMASH model - per tour x surface blend of sim + Elo + ranking
   const w = (ENGINE.weights[tour] && ENGINE.weights[tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
   const smashProbP1 = w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1;
   const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
+
+  // Predicted scoreline, from the deployed pick's (Smart Blend favorite's)
+  // perspective: the most likely number of sets the loser takes in the point
+  // simulation, e.g. "3-1" (best-of-5) or "2-0" (best-of-3).
+  const favIsP1 = smashFavorite === p1;
+  const dist = sum.lossDist[favIsP1 ? 0 : 1];
+  let modal = 0; for (let i = 1; i < sum.target; i++) if (dist[i] > dist[modal]) modal = i;
+  const predScore = `${sum.target}–${modal}`;
+
+  // Bookmaker-favorite baseline: whoever the market priced shorter (lower
+  // decimal odds). Only defined for matches that actually carry odds.
+  const o1 = Number(m.odd1), o2 = Number(m.odd2);
+  let oddFav = null, oddCorrect = null;
+  if (o1 > 0 && o2 > 0 && o1 !== o2) {
+    oddFav = o1 < o2 ? p1 : p2;
+    oddCorrect = oddFav === winner;
+  }
 
   const r3 = (x) => Math.round(x * 1000) / 1000;
   return {
@@ -190,7 +227,9 @@ function evaluate(ctx, rec) {
     eloProbP1: r3(eloProbP1), eloCorrect: eloFavorite === winner,
     rankProbP1: r3(rankProbP1),
     smashProbP1: r3(smashProbP1), smashFavorite, smashCorrect: smashFavorite === winner,
+    predScore,
     rankPick, rankCorrect: rankPick === winner,
+    oddFav, oddCorrect,
     rankA, rankB,
     p1Won: winner === p1,
   };
@@ -223,7 +262,9 @@ all.sort((a, b) => new Date(a.date) - new Date(b.date));
 for (const tour of ['atp', 'wta']) {
   const ms = all.filter((m) => m.tour === tour);
   const acc = (k) => (ms.length ? Math.round((ms.filter((m) => m[k]).length / ms.length) * 100) : 0);
-  console.log(`${tour.toUpperCase()} n=${ms.length} | SMASH ${acc('smashCorrect')}% | sim ${acc('correct')}% | elo ${acc('eloCorrect')}% | rank ${acc('rankCorrect')}% | upset ${acc('upsetCorrect')}%`);
+  const odds = ms.filter((m) => m.oddCorrect != null);
+  const oddAcc = odds.length ? Math.round((odds.filter((m) => m.oddCorrect).length / odds.length) * 100) : 0;
+  console.log(`${tour.toUpperCase()} n=${ms.length} | SMASH ${acc('smashCorrect')}% | sim ${acc('correct')}% | elo ${acc('eloCorrect')}% | rank ${acc('rankCorrect')}% | upset ${acc('upsetCorrect')}% || baselines: rank ${acc('rankCorrect')}% · bookmaker ${oddAcc}% (n=${odds.length})`);
   for (const s of ['hard', 'clay', 'grass']) {
     const sm = ms.filter((m) => m.surface === s);
     if (sm.length) console.log(`   ${s} n=${sm.length} | SMASH ${Math.round(100 * sm.filter((m) => m.smashCorrect).length / sm.length)}% | rank ${Math.round(100 * sm.filter((m) => m.rankCorrect).length / sm.length)}%`);
@@ -243,7 +284,7 @@ function summarize(list) {
   for (const [id, field] of Object.entries(ENGINE_FIELD)) {
     out[id] = Math.round((list.filter((m) => m[field]).length / list.length) * 100);
   }
-  // Best selectable engine (Smart Blend wins ties — it's the deployed default).
+  // Best selectable engine (Smart Blend wins ties - it's the deployed default).
   const order = ['smash', 'sim', 'elo', 'rank', 'upset'];
   out.best = order.reduce((b, id) => (out[id] > out[b] ? id : b), 'smash');
   return out;

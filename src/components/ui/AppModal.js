@@ -1,4 +1,4 @@
-// Dark-themed modal matching the app's surfaces — replaces SweetAlert for
+// Dark-themed modal matching the app's surfaces - replaces SweetAlert for
 // anything needing input or confirmation. Thin wrapper over react-bootstrap
 // Modal so focus trapping/escape/backdrop behavior comes free.
 import React from 'react';

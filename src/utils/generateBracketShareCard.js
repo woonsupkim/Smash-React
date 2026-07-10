@@ -12,21 +12,21 @@ import {
 const GOLD = '#f5c542';
 
 /**
- * Generates a 1200×630 share card for a completed Dream Bracket — the
+ * Generates a 1200×630 share card for a completed Dream Bracket - the
  * simulated champion front and center, with the beaten finalist and the
  * bracket's shape as supporting detail.
  *
  * @param {object} opts
- * @param {object}  opts.champion        — roster row (name, last, country, us_seed)
- * @param {object}  [opts.runnerUp]      — the player beaten in the final
- * @param {string}  [opts.imageSrc]      — champion photo URL
+ * @param {object}  opts.champion        - roster row (name, last, country, us_seed)
+ * @param {object}  [opts.runnerUp]      - the player beaten in the final
+ * @param {string}  [opts.imageSrc]      - champion photo URL
  * @param {string}  [opts.runnerUpImageSrc]
- * @param {string}  [opts.flagSrc]       — champion country flag URL
+ * @param {string}  [opts.flagSrc]       - champion country flag URL
  * @param {string}  [opts.runnerUpFlagSrc]
- * @param {string}  opts.surfaceKey      — 'hard' | 'clay' | 'grass'
- * @param {string}  opts.tournamentLabel — 'Wimbledon'
- * @param {string}  opts.stageLabel      — 'Round of 16'
- * @param {number}  opts.slotCount       — 16 | 8 | 4 | 2
+ * @param {string}  opts.surfaceKey      - 'hard' | 'clay' | 'grass'
+ * @param {string}  opts.tournamentLabel - 'Wimbledon'
+ * @param {string}  opts.stageLabel      - 'Round of 16'
+ * @param {number}  opts.slotCount       - 16 | 8 | 4 | 2
  * @param {number}  opts.simsPerMatch
  * @param {boolean} [opts.upsetMode]
  * @returns {Promise<HTMLCanvasElement>}

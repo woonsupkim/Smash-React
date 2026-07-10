@@ -47,7 +47,7 @@
 }
 
 /* Same large broadcast-style title used to live outside the card as its
-   own element — now part of the card itself, sized up since it's the page's
+   own element - now part of the card itself, sized up since it's the page's
    primary heading. */
 .match-hero-title {
   display: flex;
@@ -97,6 +97,11 @@
   text-align: center;
 }
 
+.match-hero-photo-wrap {
+  position: relative;
+  display: inline-block;
+}
+
 .match-hero-photo {
   width: 150px;
   height: 150px;
@@ -104,6 +109,32 @@
   object-fit: cover;
   object-position: top center;
   border: 3px solid rgba(255,255,255,0.25);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Broadcast touch: the currently favored player's photo gets the surface
+   accent ring + glow, and a small "Favored" badge - so the pick reads at a
+   glance, and it flips live as you change players. */
+.match-hero-photo.favored {
+  border-color: var(--hero-accent, #fff);
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.06), 0 0 22px -2px var(--hero-accent, #fff);
+}
+
+.match-hero-fav-badge {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--hero-accent, #fff);
+  color: #0a0a0a;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .match-hero-photo-placeholder {
@@ -165,8 +196,8 @@
 
 /* Disabled state: the wrapper span receives the hover for the tooltip while
    the inert switch underneath ignores pointer events. Block display keeps it
-   on its own centered line (inline-block would let the next element — e.g.
-   the "Modeled win probability" label — flow up beside it). */
+   on its own centered line (inline-block would let the next element - e.g.
+   the "Modeled win probability" label - flow up beside it). */
 .upset-toggle-disabled-wrap {
   display: block;
   width: fit-content;

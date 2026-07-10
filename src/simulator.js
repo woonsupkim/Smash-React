@@ -7,7 +7,7 @@
 function simulatePoint(srv, rtn) {
   // First serve
   if (Math.random() < srv[0]) {
-    // Unreturnable ace — the point ends before the returner gets involved at
+    // Unreturnable ace - the point ends before the returner gets involved at
     // all, which is why this is checked separately from the rally win rate
     // (p5): an ace isn't a function of the returner's skill, but blending
     // it into p5 (as the original model did) made it look like one.
@@ -89,7 +89,7 @@ function simulateTiebreak(probA, probB, initialServer) {
 
 /**
  * Simulates a single set, with a tie-break at 6-6 (first to 7 by 2).
- * Returns [gamesA, gamesB, tbLoserPoints] — the third element is the
+ * Returns [gamesA, gamesB, tbLoserPoints] - the third element is the
  * tie-break loser's point count for 7-6 sets, or null when no tie-break
  * was played (so the scoreboard can render e.g. 7-6⁴).
  */
@@ -203,7 +203,7 @@ export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {}
     // index before being used as a points[]/games[] slot (otherwise, since
     // the server usually wins their own service game, every service game
     // would get incorrectly credited to whichever player happens to occupy
-    // index 0 — producing a deterministic sweep instead of a real contest).
+    // index 0 - producing a deterministic sweep instead of a real contest).
     const rawWinner = simulatePoint(
       server === 0 ? probA : probB,
       server === 0 ? probB : probA

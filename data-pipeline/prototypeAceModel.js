@@ -1,5 +1,5 @@
 /**
- * RESEARCH PROTOTYPE — not wired into the production pipeline or the app.
+ * RESEARCH PROTOTYPE - not wired into the production pipeline or the app.
  *
  * Tests whether splitting "serve won" into (a) unreturnable ace vs (b) an
  * actual rally win improves predictive accuracy, using the `aces` field
@@ -16,7 +16,7 @@
  *   Same p1-p4. Adds p6 = P(ace | 1st serve in). p5 is recomputed net of
  *   aces (using firstWon-minus-aces instead of firstWon), so it represents
  *   pure rally skill, with aces handled as a separate, opponent-independent
- *   gate in the point simulator — because an ace, by definition, doesn't
+ *   gate in the point simulator - because an ace, by definition, doesn't
  *   involve the returner's skill at all, while the old model's p5 quietly
  *   assumed every "win on serve" point was contestable.
  *
@@ -119,7 +119,7 @@ function addServerStatsWithAces(agg, w, side) {
   agg.firstWon += w * firstWon;
   agg.secondAttempts += w * secondAttempts;
   agg.secondWon += w * secondWon;
-  agg.aces += w * aces; // attributed entirely to 1st serve — a simplifying assumption for this prototype
+  agg.aces += w * aces; // attributed entirely to 1st serve - a simplifying assumption for this prototype
 }
 
 function addReturnerStatsForAceModel(agg, w, opponentSide) {

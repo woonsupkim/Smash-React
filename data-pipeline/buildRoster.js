@@ -2,11 +2,11 @@
  * Replaces the player roster in public/data/smash_*.csv with the current
  * ATP top-N singles ranking (default 50), keeping each tournament's us_rd value at 2 (the round the
  * UI currently filters/displays) and using rank position as the seed.
- * p1-p5 are left blank here — run `npm run refresh-stats` afterward to fill
+ * p1-p5 are left blank here - run `npm run refresh-stats` afterward to fill
  * them in from real match data.
  *
  * Usage: node buildRoster.js [topN] [tour]
- *   tour: atp (default) | wta — writes to public/data/women/ for wta,
+ *   tour: atp (default) | wta - writes to public/data/women/ for wta,
  *   keeping the men's roster at public/data/ untouched either way.
  */
 require('dotenv').config();
@@ -22,7 +22,7 @@ const TOP_N = Number(process.argv[2]) || 50;
 const TARGET_FILES = ['smash_us.csv', 'smash_fr.csv', 'smash_wb.csv'];
 
 if (!API_KEY) {
-  console.error('Missing RAPIDAPI_KEY — set it in .env (see .env.example).');
+  console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
   process.exit(1);
 }
 

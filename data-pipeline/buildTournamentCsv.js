@@ -3,7 +3,7 @@
  * computed separately per court surface) into the matching
  * public/data/smash_*.csv file, overwriting only p1-p6 and leaving
  * id/name/first/last/us_seed/us_rd untouched. US Open is hard, French Open
- * is clay, Wimbledon is grass — each tournament's players get stats
+ * is clay, Wimbledon is grass - each tournament's players get stats
  * computed from their matches on that specific surface, not a blended
  * all-surfaces average.
  */
@@ -32,7 +32,7 @@ function main() {
   for (const [file, surface] of Object.entries(SURFACE_BY_FILE)) {
     const statsPath = path.join(OUTPUT_DIR, `player_stats_${surface}${suffix}.csv`);
     if (!fs.existsSync(statsPath)) {
-      console.warn(`  skip ${file}: missing ${statsPath} — run computeStats.js first.`);
+      console.warn(`  skip ${file}: missing ${statsPath} - run computeStats.js first.`);
       continue;
     }
     const { data: statsRows } = Papa.parse(fs.readFileSync(statsPath, 'utf8'), { header: true });
@@ -49,7 +49,7 @@ function main() {
     const { data: rows, meta } = Papa.parse(fs.readFileSync(templatePath, 'utf8'), { header: true });
     let fields = meta.fields.includes('p6') ? meta.fields : [...meta.fields, 'p6'];
     // Upset variants flag which players actually had enough recent-surface
-    // data (the rest keep normal stats) — the UI disables the Upset Scenario
+    // data (the rest keep normal stats) - the UI disables the Upset Scenario
     // toggle for players with upset_ok=0 instead of silently doing nothing.
     if (suffix && !fields.includes('upset_ok')) fields = [...fields, 'upset_ok'];
 
@@ -59,7 +59,7 @@ function main() {
       const stat = statsById.get(row.id);
       if (!stat) {
         missing++;
-        // p6 is a new column — give rows with no surface-specific data yet
+        // p6 is a new column - give rows with no surface-specific data yet
         // a neutral fallback instead of leaving it blank.
         return { ...row, p6: row.p6 || '0.05', ...(suffix ? { upset_ok: 0 } : {}) };
       }
@@ -81,7 +81,7 @@ function main() {
 function mergePlayerFacts(OUTPUT_DIR, PUBLIC_DATA_DIR) {
   const factsPath = path.join(OUTPUT_DIR, 'player_facts.json');
   if (!fs.existsSync(factsPath)) {
-    console.warn('  skip player facts: missing output/player_facts.json — run computeMatchupFacts.js first.');
+    console.warn('  skip player facts: missing output/player_facts.json - run computeMatchupFacts.js first.');
     return;
   }
   const facts = JSON.parse(fs.readFileSync(factsPath, 'utf8'));
@@ -91,7 +91,7 @@ function mergePlayerFacts(OUTPUT_DIR, PUBLIC_DATA_DIR) {
     if (!fs.existsSync(csvPath)) continue;
     const { data: rows, meta } = Papa.parse(fs.readFileSync(csvPath, 'utf8'), { header: true });
     // recent_w/recent_l (last 10 matches, any surface) is a per-player fact,
-    // independent of who they're currently matched against — it must NOT be
+    // independent of who they're currently matched against - it must NOT be
     // sourced from the H2H pair record (h2h.json only has an entry for pairs
     // that have actually played each other, so any matchup with zero career
     // meetings would otherwise show no recent form at all, even though both

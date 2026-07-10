@@ -1,4 +1,4 @@
-// Synthesized intro sound effects (Web Audio API) — no audio files needed.
+// Synthesized intro sound effects (Web Audio API) - no audio files needed.
 //
 // Note: browsers block audio until the user has interacted with the page at
 // least once, so on a completely fresh page load the sounds may stay silent
@@ -49,11 +49,11 @@ export function playSwoosh() {
     src.connect(bp).connect(gain).connect(ac.destination);
     src.start(t);
     src.stop(t + 0.6);
-  } catch (_) { /* audio unavailable — stay silent */ }
+  } catch (_) { /* audio unavailable - stay silent */ }
 }
 
 // Serve impact: the airy "puck" of a big first serve (or a billiard ball
-// click with body) — a dull broadband thud, no ringing tones. Built from a
+// click with body) - a dull broadband thud, no ringing tones. Built from a
 // very short noise burst rolled off above ~1 kHz plus a fast low thump.
 export function playSmack() {
   try {
@@ -85,11 +85,11 @@ export function playSmack() {
     thump.connect(thumpGain).connect(ac.destination);
     thump.start(t);
     thump.stop(t + 0.15);
-  } catch (_) { /* audio unavailable — stay silent */ }
+  } catch (_) { /* audio unavailable - stay silent */ }
 }
 
 // Ball-in-flight whoosh: the soft airy rush of a served ball crossing the
-// court — breathier and less "cutting" than the intro swoosh: gently
+// court - breathier and less "cutting" than the intro swoosh: gently
 // lowpassed noise that starts bright and fades away as it travels.
 export function playServeWhoosh() {
   try {
@@ -114,5 +114,5 @@ export function playServeWhoosh() {
     src.connect(lp).connect(gain).connect(ac.destination);
     src.start(t);
     src.stop(t + 0.7);
-  } catch (_) { /* audio unavailable — stay silent */ }
+  } catch (_) { /* audio unavailable - stay silent */ }
 }
