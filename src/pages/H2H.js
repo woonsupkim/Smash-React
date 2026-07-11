@@ -12,7 +12,7 @@ import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
-import { eloProb, engineProbs } from '../engines';
+import { eloProb, engineProbs, pickEngineProb, ENGINE_LABELS } from '../engines';
 import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
@@ -103,7 +103,11 @@ export default function H2H({ tour = 'atp' }) {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
-  const [engine] = useState('smash'); // the redesigned studio centers on Smart Blend as "the model"
+  // The studio auto-selects the most accurate engine for this tour+surface
+  // (from the backtest), the same behavior the old page had. No manual picker;
+  // the "Powered by" line keeps it transparent.
+  const [engine, setEngine]               = useState('smash');
+  const [engineAcc, setEngineAcc]         = useState(null);
   const [featuredPair, setFeaturedPair]   = useState(null); // {a,b} ids of the auto-picked "matchup of the day"
   const [loadError, setLoadError]         = useState(false); // roster CSV failed to load
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
@@ -197,6 +201,15 @@ export default function H2H({ tour = 'atp' }) {
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
   }, []);
+
+  // Most accurate engine per tour+surface, from the backtest summary.
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')
+      .then((r) => r.json()).then(setEngineAcc).catch(() => setEngineAcc(null));
+  }, []);
+  const bestEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
+  const bestEngineAccPct = engineAcc?.[tour]?.[config.surfaceKey]?.[bestEngine] ?? null;
+  useEffect(() => { setEngine(bestEngine); }, [bestEngine]);
 
   // Onboarding: on the first load with nothing picked, preselect a
   // deterministic "matchup of the day" so the landing screen shows a live
@@ -395,7 +408,17 @@ export default function H2H({ tour = 'atp' }) {
     const elo = eloData ? eloProb(eloData[playerA.id], eloData[playerB.id], config.surfaceKey) : null;
     return engineProbs({ sim, elo, rankA: playerA.us_seed, rankB: playerB.us_seed }, tour, config.surfaceKey);
   }, [playerA, playerB, batchResult, eloData, tour, config.surfaceKey]);
-  const engineProbA = probs ? probs.smash : null;
+  // Headline P(A wins) from the best engine for this surface. The batch already
+  // reflects hot-form stats when that engine is 'upset' (the seeding effect
+  // swaps them in), so pickEngineProb reads the right point-sim number.
+  const engineProbA = useMemo(() => {
+    if (!probs || !playerA || !playerB) return null;
+    return pickEngineProb(
+      engine,
+      { sim: probs.sim, upsetSim: probs.sim, elo: probs.elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
+      tour, config.surfaceKey
+    );
+  }, [probs, engine, playerA, playerB, tour, config.surfaceKey]);
 
   // ── Verdict values (Smart Blend is "the model") ─────────────────────────
   const bothPicked = !!(playerA && playerB);
@@ -423,14 +446,14 @@ export default function H2H({ tour = 'atp' }) {
     const sim = probs.sim;
     const elo = probs.elo == null ? probs.sim : probs.elo;
     const rank = probs.rank;
-    const sign = probs.smash >= 0.5 ? 1 : -1;
+    const sign = favoredIsA ? 1 : -1;
     const toPts = (wt, p) => Math.round(wt * (p - 0.5) * 100 * sign * 10) / 10;
     return [
       { id: 'sim', label: 'Point simulation', pts: toPts(w.ws, sim) },
       { id: 'elo', label: 'Surface form (Elo)', pts: toPts(w.we, elo), estimated: probs.elo == null },
       { id: 'rank', label: 'World ranking', pts: toPts(w.wr, rank) },
     ];
-  }, [probs, tour, config.surfaceKey]);
+  }, [probs, favoredIsA, tour, config.surfaceKey]);
 
   // Track-record data powers the credibility line + the receipts (how the
   // model has actually done on matchups this lopsided, on this surface).
@@ -646,6 +669,10 @@ export default function H2H({ tour = 'atp' }) {
                     {scoreline && (
                       <div className="verdict-scoreline">Most likely: <strong>{favPlayer.name.split(' ').pop()}</strong> wins {scoreline} in sets</div>
                     )}
+                    <div className="verdict-powered">
+                      Powered by <strong>{ENGINE_LABELS[engine] || 'Smart Blend'}</strong>
+                      {bestEngineAccPct != null ? `, the most accurate model on ${config.surfaceLabel.toLowerCase()} (${bestEngineAccPct}% on our record)` : ''}.
+                    </div>
                     {receipts && receipts.acc != null && receipts.n >= 8 && (
                       <div className="verdict-credibility">
                         <Trophy size={14} /> On {config.surfaceLabel.toLowerCase()} matchups this lopsided, the model has called the winner{' '}
@@ -661,7 +688,11 @@ export default function H2H({ tour = 'atp' }) {
               {attribution && favPct != null && (
                 <section className="studio-card">
                   <div className="studio-card-title">Why {favPlayer.name.split(' ').pop()}</div>
-                  <p className="studio-card-sub">What pushes the Smart Blend toward each player, in probability points.</p>
+                  <p className="studio-card-sub">
+                    {engine === 'smash'
+                      ? 'What pushes the Smart Blend toward each player, in probability points.'
+                      : `How each model signal leans. The headline uses ${ENGINE_LABELS[engine]}, the most accurate model on ${config.surfaceLabel.toLowerCase()}.`}
+                  </p>
                   <div className="why-attr">
                     {attribution.map((c) => {
                       const pos = c.pts >= 0;
@@ -679,7 +710,11 @@ export default function H2H({ tour = 'atp' }) {
                       );
                     })}
                   </div>
-                  <div className="why-attr-legend">Bars right (toward {favPlayer.name.split(' ').pop()}) and left (toward {dogPlayer.name.split(' ').pop()}) sum to the {favPct}% call.</div>
+                  <div className="why-attr-legend">
+                    {engine === 'smash'
+                      ? `Bars toward ${favPlayer.name.split(' ').pop()} (right) and ${dogPlayer.name.split(' ').pop()} (left) sum to the ${favPct}% call.`
+                      : `The signals feeding our models: right leans to ${favPlayer.name.split(' ').pop()}, left to ${dogPlayer.name.split(' ').pop()}.`}
+                  </div>
 
                   {/* Stat comparison: the raw evidence */}
                   <div className="why-stats">
