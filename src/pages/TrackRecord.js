@@ -283,10 +283,16 @@ export default function TrackRecord() {
               </div>
 
               {/* Versus the betting market — the most credible claim in sports
-                  prediction. Only shown when odds-carrying matches exist. */}
+                  prediction. This is a SUBSET (only matches that carried odds),
+                  so both figures are scored on those matches, NOT on the full
+                  set behind the headline above — that's why they differ. */}
               {stats.market.n > 0 && (
                 <div className="track-panel track-market">
-                  <div className="track-section-label">Versus the betting market · {stats.market.n} matches with odds</div>
+                  <div className="track-section-label">Versus the betting market</div>
+                  <div className="track-market-scope">
+                    Scored on the {stats.market.n} of {stats.n} matches that had published odds — a
+                    different (smaller) set than the headline above, so these percentages won't match it.
+                  </div>
                   <div className="track-market-row">
                     <div className="track-market-cell">
                       <div className="track-market-val">{stats.market.smashAcc}%</div>
@@ -306,8 +312,10 @@ export default function TrackRecord() {
                     )}
                   </div>
                   <div className="track-note">
-                    Same matches, graded the same way. Beating the closing line is the hardest
-                    test in sports prediction — the market already prices in everything public.
+                    Both figures are graded on these same odds-carrying matches. Beating the closing
+                    line is the hardest test in sports prediction — the market already prices in
+                    everything public.
+                    {stats.market.n < 50 && ' Small sample on this filter, so expect it to swing — read it loosely.'}
                   </div>
                 </div>
               )}

@@ -140,6 +140,12 @@
 @keyframes track-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* ── Versus the betting market ────────────────────────────────────────── */
+.track-market-scope {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin: -0.4rem 0 0.9rem;
+  max-width: 62ch;
+}
 .track-market-row {
   display: flex;
   align-items: center;
