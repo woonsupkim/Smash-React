@@ -230,6 +230,7 @@ function evaluate(ctx, rec) {
     predScore,
     rankPick, rankCorrect: rankPick === winner,
     oddFav, oddCorrect,
+    od1: o1 > 0 ? o1 : null, od2: o2 > 0 ? o2 : null,
     rankA, rankB,
     p1Won: winner === p1,
   };

@@ -187,6 +187,83 @@
 .track-market-disagree strong { color: var(--accent-positive); }
 .track-market-disagree-n { color: var(--text-3); }
 
+/* ── Betting return ($1 per pick), diverging bars around a zero line ──── */
+.track-roi-scope {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin: -0.4rem 0 1rem;
+  max-width: 62ch;
+}
+.track-roi-row {
+  display: grid;
+  grid-template-columns: 168px 1fr 78px 58px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+.track-roi-row.best .track-roi-name { color: var(--text-1); font-weight: 700; }
+.track-roi-row.baseline { opacity: 0.92; }
+.track-roi-name {
+  font-size: 0.86rem;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.track-roi-best-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #06130d;
+  background: var(--accent-positive);
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+}
+.track-roi-track {
+  position: relative;
+  height: 14px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.track-roi-zero {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--border-2);
+}
+.track-roi-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+}
+.track-roi-fill.pos { background: var(--accent-positive); }
+.track-roi-fill.neg { background: var(--accent-negative); }
+.track-roi-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.track-roi-val.pos { color: var(--accent-positive); }
+.track-roi-val.neg { color: var(--accent-negative); }
+.track-roi-pct {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .track-roi-row { grid-template-columns: 110px 1fr 66px; }
+  .track-roi-pct { display: none; }
+}
+
 /* ── Per-surface cards ────────────────────────────────────────────────── */
 .track-surface-row {
   display: grid;

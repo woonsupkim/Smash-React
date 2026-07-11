@@ -152,6 +152,35 @@ export default function TrackRecord() {
     const ci = wilson(smashK, n);
     const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
 
+    // Betting return: stake $1 on each strategy's pick at the match's decimal
+    // odds. Win pays (odds - 1) profit; loss costs the $1 stake. Restricted to
+    // matches with two distinct prices so every strategy (including "back the
+    // bookmaker favorite") bets the exact same set. Beating the market here
+    // means clearing the vig.
+    const betList = filtered.filter((m) => m.od1 != null && m.od2 != null && m.od1 !== m.od2);
+    const roiFor = (pickOf) => {
+      let profit = 0, k = 0;
+      for (const m of betList) {
+        const pick = pickOf(m);
+        if (!pick) continue;
+        const odds = pick === m.p1 ? m.od1 : m.od2;
+        if (!(odds > 0)) continue;
+        k++;
+        profit += pick === m.winner ? odds - 1 : -1;
+      }
+      return { profit, k, roi: k ? (profit / k) * 100 : 0 };
+    };
+    const eloFav = (m) => (m.eloProbP1 >= 0.5 ? m.p1 : m.p2);
+    const returns = [
+      { id: 'smash', label: 'Smart Blend', ...roiFor((m) => m.smashFavorite) },
+      { id: 'sim', label: 'Point Sim', ...roiFor((m) => m.favorite) },
+      { id: 'elo', label: 'Form', ...roiFor(eloFav) },
+      { id: 'upset', label: 'Hot Streak', ...roiFor((m) => m.upsetFavorite) },
+      { id: 'rank', label: 'Higher rank', baseline: true, ...roiFor((m) => m.rankPick) },
+      { id: 'odd', label: 'Bookmaker favorite', baseline: true, ...roiFor((m) => m.oddFav) },
+    ];
+    const bestReturn = returns.reduce((b, r) => (r.profit > b.profit ? r : b), returns[0]);
+
     return {
       n,
       correct: filtered.filter((m) => m.correct).length,
@@ -166,6 +195,9 @@ export default function TrackRecord() {
       oddAcc,
       market,
       ciHalf,
+      returns,
+      betN: betList.length,
+      bestReturnId: bestReturn.profit > 0 ? bestReturn.id : null,
       perSurface,
       buckets,
     };
@@ -316,6 +348,44 @@ export default function TrackRecord() {
                     line is the hardest test in sports prediction - the market already prices in
                     everything public.
                     {stats.market.n < 50 && ' Small sample on this filter, so expect it to swing - read it loosely.'}
+                  </div>
+                </div>
+              )}
+
+              {/* Betting return: $1 staked on each strategy's pick */}
+              {stats.betN > 0 && (
+                <div className="track-panel track-roi">
+                  <div className="track-section-label">If you bet $1 on every pick</div>
+                  <div className="track-roi-scope">
+                    Stake $1 on each strategy's pick at the closing odds, across the {stats.betN} matches
+                    that carried odds. A win pays the odds; a loss costs the stake.
+                  </div>
+                  {(() => {
+                    const maxAbs = Math.max(1, ...stats.returns.map((r) => Math.abs(r.profit)));
+                    return stats.returns.map((r) => {
+                      const pos = r.profit >= 0;
+                      const w = (Math.abs(r.profit) / maxAbs) * 50;
+                      return (
+                        <div className={`track-roi-row${r.baseline ? ' baseline' : ''}${r.id === stats.bestReturnId ? ' best' : ''}`} key={r.id}>
+                          <div className="track-roi-name">
+                            {r.label}
+                            {r.baseline && <span className="track-compare-baseline-tag">Baseline</span>}
+                            {r.id === stats.bestReturnId && <span className="track-roi-best-tag">Best return</span>}
+                          </div>
+                          <div className="track-roi-track">
+                            <div className="track-roi-zero" />
+                            <div className={`track-roi-fill ${pos ? 'pos' : 'neg'}`} style={{ width: `${w}%`, left: pos ? '50%' : `${50 - w}%` }} />
+                          </div>
+                          <div className={`track-roi-val ${pos ? 'pos' : 'neg'}`}>{pos ? '+' : '−'}${Math.abs(r.profit).toFixed(2)}</div>
+                          <div className="track-roi-pct">{r.roi >= 0 ? '+' : '−'}{Math.abs(r.roi).toFixed(1)}%</div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div className="track-note">
+                    Net profit and return per $1 staked. Backing the bookmaker's favorite bleeds the
+                    margin over time; any strategy that stays positive is genuinely beating the closing line.
+                    {stats.betN < 50 && ' Small sample on this filter, so expect it to swing.'}
                   </div>
                 </div>
               )}

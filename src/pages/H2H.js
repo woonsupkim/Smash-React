@@ -1,19 +1,23 @@
 // src/pages/H2H.js
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
-import { Button, Form } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
+import { ArrowLeftRight, Trophy, Check, X } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
 import AppModal from '../components/ui/AppModal';
+import Chip from '../components/ui/Chip';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
-import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
+import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
-import { pickEngineProb, eloProb } from '../engines';
+import { eloProb, engineProbs } from '../engines';
+import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
+import './H2HStudio.css';
 
 const playerImgsByTour = {
   atp: require.context('../assets/players', false, /\.png$/),
@@ -99,16 +103,12 @@ export default function H2H({ tour = 'atp' }) {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
-  const [engine, setEngine]               = useState('smash');
-  const [engineAcc, setEngineAcc]         = useState(null);
+  const [engine] = useState('smash'); // the redesigned studio centers on Smart Blend as "the model"
   const [featuredPair, setFeaturedPair]   = useState(null); // {a,b} ids of the auto-picked "matchup of the day"
   const [loadError, setLoadError]         = useState(false); // roster CSV failed to load
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
   // instead of the season CSV - selecting it re-seeds the sliders.
-  const upsetMode = engine === 'upset';
-  // ids with enough recent same-surface matches for real upset stats
-  // (upset_ok=1 in the _upset.csv) - the Hot Streak engine is disabled for anyone else.
-  const [upsetOkIds, setUpsetOkIds]       = useState(null);
+  const upsetMode = engine === 'upset'; // always false in the redesign; kept so the seeding effect below reads cleanly
   const watchTimeoutRef = useRef(null);
   const batchRef                          = useRef({ completed: 0, total: 0 });
   const prevDataDirRef                    = useRef(dataDir);
@@ -128,7 +128,6 @@ export default function H2H({ tour = 'atp' }) {
       prevDataDirRef.current = dataDir;
       setPlayerA(null);
       setPlayerB(null);
-      setEngine('smash');
     }
     setLoadError(false);
     Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile, {
@@ -152,16 +151,6 @@ export default function H2H({ tour = 'atp' }) {
       .then(r => r.json())
       .then(setEloData)
       .catch(() => setEloData({}));
-    // Which players have real upset stats on this surface (upset_ok=1)
-    setUpsetOkIds(null);
-    Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile.replace('.csv', '_upset.csv'), {
-      header: true,
-      download: true,
-      complete: ({ data }) => {
-        setUpsetOkIds(new Set(data.filter(r => r.id && Number(r.upset_ok) === 1).map(r => r.id)));
-      },
-      error: () => setUpsetOkIds(new Set()),
-    });
     setBatchResult(null);
     setLiveLog([]);
     setIsWatching(false);
@@ -208,16 +197,6 @@ export default function H2H({ tour = 'atp' }) {
   useEffect(() => {
     return () => { if (watchTimeoutRef.current) clearTimeout(watchTimeoutRef.current); };
   }, []);
-
-  // Which engine is most accurate for this tour+surface (from the backtest) -
-  // drives the "Recommended" badge, and becomes the default when the surface
-  // changes (the user can still switch).
-  useEffect(() => {
-    fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')
-      .then(r => r.json()).then(setEngineAcc).catch(() => setEngineAcc(null));
-  }, []);
-  const recommendedEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
-  useEffect(() => { setEngine(recommendedEngine); }, [recommendedEngine]);
 
   // Onboarding: on the first load with nothing picked, preselect a
   // deterministic "matchup of the day" so the landing screen shows a live
@@ -403,37 +382,141 @@ export default function H2H({ tour = 'atp' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerA, playerB, statsA, statsB, engine, config.csvFile, isWatching]);
 
-  // Reason the Hot Streak engine is unavailable (null = available). Only
-  // players with enough recent same-surface matches (upset_ok=1) can use it.
-  const upsetDisabledReason = (() => {
-    if (!playerA || !playerB || !upsetOkIds) return null;
-    const lacking = [playerA, playerB].filter(p => !upsetOkIds.has(p.id)).map(p => p.name);
-    if (lacking.length === 0) return null;
-    return `${lacking.join(' and ')} ${lacking.length > 1 ? "don't" : "doesn't"} have enough recent ${config.surfaceLabel.toLowerCase()} matches for a hot-streak read.`;
-  })();
-  const engineDisabled = upsetDisabledReason ? { upset: upsetDisabledReason } : {};
-
-  // If a player switch makes the Hot Streak engine unavailable, fall back.
-  useEffect(() => {
-    if (engine === 'upset' && upsetDisabledReason) setEngine('smash');
-  }, [engine, upsetDisabledReason]);
-
-  // The single authoritative win probability for this matchup: the selected
-  // engine applied to the shared 1000-sim batch. Both the MatchHero headline
-  // and the AdvancedSimPanel pie render THIS number, so the auto-populated
-  // result and the post-"Simulate Matches" result always agree.
-  const engineProbA = useMemo(() => {
+  // All engine probabilities for this matchup, driven by the shared batch.
+  // The Verdict headline uses probs.smash (the flagship Smart Blend), and the
+  // Why panel decomposes that same number, so the headline and its explanation
+  // can never disagree. `engineProbA` (smash P(A wins)) also feeds the Explore
+  // drawer so its pie matches the Verdict exactly.
+  const probs = useMemo(() => {
     if (!playerA || !playerB || !batchResult) return null;
     const total = batchResult.matchWins[0] + batchResult.matchWins[1];
     if (!total) return null;
-    const simProb = batchResult.matchWins[0] / total;
+    const sim = batchResult.matchWins[0] / total;
     const elo = eloData ? eloProb(eloData[playerA.id], eloData[playerB.id], config.surfaceKey) : null;
-    return pickEngineProb(
-      engine,
-      { sim: simProb, upsetSim: simProb, elo, rankA: playerA.us_seed, rankB: playerB.us_seed },
-      tour, config.surfaceKey
-    );
-  }, [playerA, playerB, batchResult, engine, eloData, tour, config.surfaceKey]);
+    return engineProbs({ sim, elo, rankA: playerA.us_seed, rankB: playerB.us_seed }, tour, config.surfaceKey);
+  }, [playerA, playerB, batchResult, eloData, tour, config.surfaceKey]);
+  const engineProbA = probs ? probs.smash : null;
+
+  // ── Verdict values (Smart Blend is "the model") ─────────────────────────
+  const bothPicked = !!(playerA && playerB);
+  const probA = engineProbA; // smash P(A wins), or null until the batch lands
+  const favoredIsA = probA != null ? probA >= 0.5 : true;
+  const favPlayer = favoredIsA ? playerA : playerB;
+  const dogPlayer = favoredIsA ? playerB : playerA;
+  const favPct = probA != null ? Math.round(Math.max(probA, 1 - probA) * 100) : null;
+
+  const scoreline = useMemo(() => {
+    if (!batchResult || probA == null) return null;
+    const favIdx = favoredIsA ? 0 : 1;
+    const target = Math.ceil(bestOf / 2);
+    const dist = batchResult.lostInWins[favIdx].slice(0, target);
+    let maxI = 0;
+    for (let i = 1; i < dist.length; i++) if ((dist[i] || 0) > (dist[maxI] || 0)) maxI = i;
+    return `${target}–${maxI}`;
+  }, [batchResult, probA, favoredIsA, bestOf]);
+
+  // How the Smart Blend adds up: each component's signed push toward the
+  // favored player, in probability points (they sum to favPct - 50).
+  const attribution = useMemo(() => {
+    if (!probs) return null;
+    const w = (CONFIG.weights[tour] && CONFIG.weights[tour][config.surfaceKey]) || { ws: 0.5, we: 0.5, wr: 0 };
+    const sim = probs.sim;
+    const elo = probs.elo == null ? probs.sim : probs.elo;
+    const rank = probs.rank;
+    const sign = probs.smash >= 0.5 ? 1 : -1;
+    const toPts = (wt, p) => Math.round(wt * (p - 0.5) * 100 * sign * 10) / 10;
+    return [
+      { id: 'sim', label: 'Point simulation', pts: toPts(w.ws, sim) },
+      { id: 'elo', label: 'Surface form (Elo)', pts: toPts(w.we, elo), estimated: probs.elo == null },
+      { id: 'rank', label: 'World ranking', pts: toPts(w.wr, rank) },
+    ];
+  }, [probs, tour, config.surfaceKey]);
+
+  // Track-record data powers the credibility line + the receipts (how the
+  // model has actually done on matchups this lopsided, on this surface).
+  const [trackData, setTrackData] = useState(null);
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/track_record.json')
+      .then((r) => r.json()).then(setTrackData).catch(() => setTrackData({ matches: [] }));
+  }, []);
+
+  const receipts = useMemo(() => {
+    if (!trackData || probA == null) return null;
+    const favProb = Math.max(probA, 1 - probA);
+    const band = (trackData.matches || []).filter((m) => {
+      if (m.tour !== tour || m.surface !== config.surfaceKey) return false;
+      const fp = m.smashProbP1 >= 0.5 ? m.smashProbP1 : 1 - m.smashProbP1;
+      return Math.abs(fp - favProb) <= 0.07;
+    });
+    const acc = band.length ? Math.round((band.filter((m) => m.smashCorrect).length / band.length) * 100) : null;
+    const examples = band.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map((m) => {
+      const wIsP1 = m.winner === m.p1;
+      return { wName: wIsP1 ? m.name1 : m.name2, lName: wIsP1 ? m.name2 : m.name1, score: m.score, right: m.smashCorrect };
+    });
+    return { acc, n: band.length, examples, lo: Math.round((favProb - 0.07) * 100), hi: Math.round(Math.min(1, favProb + 0.07) * 100) };
+  }, [trackData, probA, tour, config.surfaceKey]);
+
+  // Live matches: current locked (not-yet-played) Slam predictions for this
+  // tour, so you can drop straight into a real matchup instead of searching.
+  const [livePicks, setLivePicks] = useState([]);
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/predictions.json')
+      .then((r) => r.json())
+      .then((d) => setLivePicks((d.predictions || []).filter((p) => p.tour === tour && p.status === 'pending').slice(0, 6)))
+      .catch(() => setLivePicks([]));
+  }, [tour]);
+  const pickLiveMatch = (p) => {
+    const a = players.find((x) => x.id === p.p1);
+    const b = players.find((x) => x.id === p.p2);
+    if (a) setPlayerA(a);
+    if (b) setPlayerB(b);
+    if (p.surface && p.surface !== surface) handleSurfaceChange(p.surface);
+  };
+
+  const swapPlayers = () => { const a = playerA; setPlayerA(playerB); setPlayerB(a); };
+
+  // ── Make Your Call: your pick, stored locally, graded against real results ─
+  const callKey = bothPicked ? `${[playerA.id, playerB.id].sort().join('_')}|${config.surfaceKey}|${tour}` : null;
+  const [userPick, setUserPick] = useState(null);
+  useEffect(() => {
+    if (!callKey) { setUserPick(null); return; }
+    try { const s = JSON.parse(localStorage.getItem('smashCalls') || '{}'); setUserPick(s[callKey]?.pick || null); } catch { setUserPick(null); }
+  }, [callKey]);
+  const makeCall = (pid) => {
+    if (!callKey || !playerA || !playerB) return;
+    setUserPick(pid);
+    try {
+      const s = JSON.parse(localStorage.getItem('smashCalls') || '{}');
+      s[callKey] = { pick: pid, modelPick: favoredIsA ? playerA.id : playerB.id, p1: playerA.id, p2: playerB.id, name1: playerA.name, name2: playerB.name, surface: config.surfaceKey, tour, date: Date.now() };
+      localStorage.setItem('smashCalls', JSON.stringify(s));
+    } catch { /* storage unavailable */ }
+  };
+
+  // Your record vs the model: grade every stored call whose matchup has since
+  // been decided in the track record.
+  const youVsModel = useMemo(() => {
+    if (!trackData) return null;
+    let store; try { store = JSON.parse(localStorage.getItem('smashCalls') || '{}'); } catch { return null; }
+    const byPair = new Map();
+    for (const m of (trackData.matches || [])) {
+      const key = [m.p1, m.p2].sort().join('_');
+      const prev = byPair.get(key);
+      if (!prev || new Date(m.date) > new Date(prev.date)) byPair.set(key, m);
+    }
+    let youRight = 0, modelRight = 0, graded = 0;
+    for (const k of Object.keys(store)) {
+      const c = store[k];
+      const m = byPair.get([c.p1, c.p2].sort().join('_'));
+      if (!m) continue;
+      if (new Date(m.date).getTime() < c.date - 2 * 864e5) continue; // only grade matches at/after the call
+      graded++;
+      if (c.pick === m.winner) youRight++;
+      if (c.modelPick === m.winner) modelRight++;
+    }
+    return graded ? { graded, youRight, modelRight } : null;
+    // userPick is intentional: it re-grades the moment you lock a new call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackData, userPick]);
 
   const buildOptions = (excludeId) => [
     { value:'add', label:'+ Add Player' },
@@ -449,121 +532,275 @@ export default function H2H({ tour = 'atp' }) {
     return `${process.env.PUBLIC_URL}/assets/players/default.png`;
   };
 
+  const selectStyles = SELECT_STYLES;
+  const renderSelect = (who) => (
+    <div className="studio-pick-row">
+      <Select
+        className="react-select"
+        options={buildOptions((who === 'A' ? playerB : playerA)?.id)}
+        value={(who === 'A' ? playerA : playerB) ? { value: (who === 'A' ? playerA : playerB).id, label: (who === 'A' ? playerA : playerB).name } : null}
+        onChange={(opt) => {
+          if (opt.value === 'add') handleAddPlayer(who);
+          else (who === 'A' ? setPlayerA : setPlayerB)(opt.data);
+        }}
+        placeholder="Search a player…"
+        isDisabled={isRunning || isWatching}
+        styles={selectStyles}
+        aria-label={`Player ${who}`}
+      />
+      <UiButton variant="ghost" size="sm" aria-label={`Pick a random player for slot ${who}`} onClick={() => randomPick(who)} className="studio-random">Random</UiButton>
+    </div>
+  );
+
   return (
     <div className={`page-background ${config.bgClass}`}>
-      <div className="overlay text-center">
-        <div className="h2h-artifact">
-        {loadError && (
-          <div className="h2h-load-error" role="alert">
-            <strong>Couldn't load the {config.label} roster.</strong>
-            <span> Check your connection and try again.</span>
-            <UiButton variant="danger" size="sm" onClick={() => handleSurfaceChange(surface)}>Retry</UiButton>
-          </div>
-        )}
-        <MatchHero
-          title={`${config.label}${isWta ? " Women's" : ''} · ${config.surfaceLabel}`}
-          logo={config.logo}
-          badge={isFeatured ? 'Matchup of the day' : null}
-          surfaceSelector={
-            <Form.Select
-              className="dark-select h2h-tournament-select"
-              aria-label="Tournament and surface"
-              value={surface}
-              onChange={e => handleSurfaceChange(e.target.value)}
-              disabled={isRunning||isWatching}
-            >
-              <option value="clay">French Open · Clay</option>
-              <option value="grass">Wimbledon · Grass</option>
-              <option value="hard">US Open · Hard</option>
-            </Form.Select>
-          }
-          playerA={playerA}
-          playerB={playerB}
-          selectorA={
-            <div className="d-flex">
-              <Select
-                className="react-select"
-                options={buildOptions(playerB?.id)}
-                value={playerA?{value:playerA.id,label:playerA.name}:null}
-                onChange={opt => {
-                  if (opt.value==='add') handleAddPlayer('A');
-                  else setPlayerA(opt.data);
-                }}
-                placeholder="Type to search…"
-                isDisabled={isRunning||isWatching}
-                styles={SELECT_STYLES}
-              />
-              <Button variant="outline-light" size="sm" className="ms-1 random-btn" aria-label="Pick a random player for slot A" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
-            </div>
-          }
-          selectorB={
-            <div className="d-flex">
-              <Select
-                className="react-select"
-                options={buildOptions(playerA?.id)}
-                value={playerB?{value:playerB.id,label:playerB.name}:null}
-                onChange={opt => {
-                  if (opt.value==='add') handleAddPlayer('B');
-                  else setPlayerB(opt.data);
-                }}
-                placeholder="Type to search…"
-                isDisabled={isRunning||isWatching}
-                styles={SELECT_STYLES}
-              />
-              <Button variant="outline-light" size="sm" className="ms-1 random-btn" aria-label="Pick a random player for slot B" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
-            </div>
-          }
-          surfaceLabel={config.surfaceLabel}
-          surfaceKey={config.surfaceKey}
-          bestOf={bestOf}
-          accentColor={config.accentColor}
-          accentTextColor={config.accentTextColor}
-          h2hData={h2hData}
-          eloData={eloData}
-          tour={tour}
-          engine={engine}
-          setEngine={setEngine}
-          engineDisabled={engineDisabled}
-          recommendedEngine={recommendedEngine}
-          winProbOverride={engineProbA}
-          getPlayerImageSrc={getPlayerImageSrc}
-          poolLoading={players.length === 0}
-          statsA={statsA}
-          statsB={statsB}
-        />
+      <div className="overlay">
+        <div className="studio">
 
-        <AdvancedSimPanel
-          colorA={config.panelColorA}
-          colorB={config.panelColorB}
-          colorAText={config.panelColorAText}
-          colorBText={config.panelColorBText}
-          simulateButtonColor={config.simulateButtonColor}
-          simulateButtonTextColor={config.simulateButtonTextColor}
-          playerA={playerA}
-          playerB={playerB}
-          getPlayerImageSrc={getPlayerImageSrc}
-          statsA={statsA}
-          setStatsA={setStatsA}
-          statsB={statsB}
-          setStatsB={setStatsB}
-          simCount={simCount}
-          setSimCount={setSimCount}
-          isRunning={isRunning}
-          progress={progress}
-          batchResult={batchResult}
-          showResults={showResults}
-          liveLog={liveLog}
-          isWatching={isWatching}
-          engine={engine}
-          engineWinProbA={engineProbA}
-          onSimulate={handleSimulate}
-          onWatchMatch={handleWatchMatch}
-          bestOf={bestOf}
-          tournamentLabel={config.label}
-          surfaceLabel={config.surfaceLabel}
-          surfaceKey={config.surfaceKey}
-          h2hData={h2hData}
-        />
+          {/* Header: tournament + surface segmented control */}
+          <div className="studio-head">
+            <div className="studio-title">
+              <img src={config.logo} alt="" className="studio-logo" />
+              <span className="studio-title-text">{config.label}{isWta ? " Women's" : ''}</span>
+              <span className="studio-title-sub">{config.surfaceLabel} · Best of {bestOf}</span>
+            </div>
+            <div className="studio-surface-seg" role="group" aria-label="Surface">
+              {[['hard', 'Hard'], ['clay', 'Clay'], ['grass', 'Grass']].map(([v, l]) => (
+                <button key={v} type="button" className={`studio-seg-btn${surface === v ? ' active' : ''}`} onClick={() => handleSurfaceChange(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          {loadError && (
+            <div className="h2h-load-error" role="alert">
+              <strong>Couldn't load the {config.label} roster.</strong>
+              <span> Check your connection and try again.</span>
+              <UiButton variant="danger" size="sm" onClick={() => handleSurfaceChange(surface)}>Retry</UiButton>
+            </div>
+          )}
+
+          {/* Setup: two searchable picks + swap */}
+          <div className="studio-setup">
+            <div className="studio-pick">
+              <span className="studio-pick-label">Player A</span>
+              {renderSelect('A')}
+            </div>
+            <button type="button" className="studio-swap" onClick={swapPlayers} disabled={!bothPicked} aria-label="Swap the two players">
+              <ArrowLeftRight size={16} />
+            </button>
+            <div className="studio-pick">
+              <span className="studio-pick-label">Player B</span>
+              {renderSelect('B')}
+            </div>
+          </div>
+
+          {/* Live matches: drop straight into a real matchup */}
+          {livePicks.length > 0 && (
+            <div className="studio-live">
+              <span className="studio-live-label"><span className="studio-live-dot" /> Live now</span>
+              <div className="studio-live-row">
+                {livePicks.map((p) => (
+                  <button key={p.id} type="button" className="studio-live-chip" onClick={() => pickLiveMatch(p)}>
+                    {p.name1.split(' ').pop()} vs {p.name2.split(' ').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!bothPicked ? (
+            <div className="studio-empty">
+              {players.length === 0 ? 'Loading the roster…' : 'Pick two players to see the verdict.'}
+            </div>
+          ) : (
+            <>
+              {/* ── The Verdict ─────────────────────────────────────────── */}
+              <section className="studio-verdict" style={{ '--accent': config.accentColor }}>
+                {isFeatured && <Chip tone="accent" className="studio-featured-chip">Matchup of the day</Chip>}
+                <div className="verdict-eyebrow">The verdict</div>
+                {favPct != null ? (
+                  <div className="verdict-headline">
+                    <strong>{favPlayer.name.split(' ').pop()}</strong> is the pick
+                    <span className="verdict-pct" style={{ color: config.accentColor }}>{favPct}%</span>
+                  </div>
+                ) : (
+                  <div className="verdict-headline verdict-loading">Running the simulation…</div>
+                )}
+
+                <div className="verdict-faces">
+                  <PlayerFace player={playerA} favored={probA != null && favoredIsA} accent={config.accentColor} getImg={getPlayerImageSrc} />
+                  <div className="verdict-vs">vs</div>
+                  <PlayerFace player={playerB} favored={probA != null && !favoredIsA} accent={config.accentColor} getImg={getPlayerImageSrc} align="right" />
+                </div>
+
+                {favPct != null && (
+                  <>
+                    <div className="verdict-bar">
+                      <div className="verdict-bar-fill" style={{ width: `${Math.round(probA * 100)}%`, background: favoredIsA ? config.accentColor : 'var(--surface-3)' }} />
+                      <div className="verdict-bar-fill" style={{ width: `${100 - Math.round(probA * 100)}%`, background: !favoredIsA ? config.accentColor : 'var(--surface-3)' }} />
+                    </div>
+                    <div className="verdict-bar-labels">
+                      <span style={{ fontWeight: favoredIsA ? 700 : 400 }}>{playerA.name.split(' ').pop()} {Math.round(probA * 100)}%</span>
+                      <span style={{ fontWeight: !favoredIsA ? 700 : 400 }}>{playerB.name.split(' ').pop()} {100 - Math.round(probA * 100)}%</span>
+                    </div>
+                    {scoreline && (
+                      <div className="verdict-scoreline">Most likely: <strong>{favPlayer.name.split(' ').pop()}</strong> wins {scoreline} in sets</div>
+                    )}
+                    {receipts && receipts.acc != null && receipts.n >= 8 && (
+                      <div className="verdict-credibility">
+                        <Trophy size={14} /> On {config.surfaceLabel.toLowerCase()} matchups this lopsided, the model has called the winner{' '}
+                        <strong>{receipts.acc}%</strong> of the time ({receipts.n} matches).{' '}
+                        <Link to="/methodology" className="verdict-method-link">How it works</Link>
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+
+              {/* ── Why ─────────────────────────────────────────────────── */}
+              {attribution && favPct != null && (
+                <section className="studio-card">
+                  <div className="studio-card-title">Why {favPlayer.name.split(' ').pop()}</div>
+                  <p className="studio-card-sub">What pushes the Smart Blend toward each player, in probability points.</p>
+                  <div className="why-attr">
+                    {attribution.map((c) => {
+                      const pos = c.pts >= 0;
+                      const maxAbs = Math.max(1, ...attribution.map((x) => Math.abs(x.pts)));
+                      const w = (Math.abs(c.pts) / maxAbs) * 46;
+                      return (
+                        <div className="why-attr-row" key={c.id}>
+                          <div className="why-attr-name">{c.label}{c.estimated && <span className="why-attr-est"> (est.)</span>}</div>
+                          <div className="why-attr-track">
+                            <div className="why-attr-zero" />
+                            <div className={`why-attr-fill ${pos ? 'pos' : 'neg'}`} style={{ width: `${w}%`, left: pos ? '50%' : `${50 - w}%`, background: pos ? config.accentColor : 'var(--accent-negative)' }} />
+                          </div>
+                          <div className={`why-attr-val ${pos ? 'pos' : 'neg'}`}>{pos ? '+' : '−'}{Math.abs(c.pts).toFixed(1)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="why-attr-legend">Bars right (toward {favPlayer.name.split(' ').pop()}) and left (toward {dogPlayer.name.split(' ').pop()}) sum to the {favPct}% call.</div>
+
+                  {/* Stat comparison: the raw evidence */}
+                  <div className="why-stats">
+                    {STAT_KEYS.map(([key, label]) => {
+                      const a = Math.round(statsA[key] || 0);
+                      const b = Math.round(statsB[key] || 0);
+                      const total = a + b || 1;
+                      return (
+                        <div className="why-stat-row" key={key}>
+                          <div className={`why-stat-val a${a >= b ? ' lead' : ''}`}>{a}</div>
+                          <div className="why-stat-mid">
+                            <div className="why-stat-label">{label}</div>
+                            <div className="why-stat-bar">
+                              <div className="why-stat-bar-a" style={{ width: `${(a / total) * 100}%`, background: config.accentColor }} />
+                              <div className="why-stat-bar-b" style={{ width: `${(b / total) * 100}%` }} />
+                            </div>
+                          </div>
+                          <div className={`why-stat-val b${b > a ? ' lead' : ''}`}>{b}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="why-stats-legend">
+                    <span>{playerA.name.split(' ').pop()}</span>
+                    <span className="why-stats-legend-hint">Edit these under Explore to run what-ifs</span>
+                    <span>{playerB.name.split(' ').pop()}</span>
+                  </div>
+                </section>
+              )}
+
+              {/* ── Make your call ──────────────────────────────────────── */}
+              {favPct != null && (
+                <section className="studio-card studio-call">
+                  <div className="studio-card-title">Make your call</div>
+                  <p className="studio-card-sub">Lock your pick before the match. Real matchups grade automatically when the result lands.</p>
+                  <div className="call-buttons">
+                    {[playerA, playerB].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`call-btn${userPick === p.id ? ' picked' : ''}`}
+                        onClick={() => makeCall(p.id)}
+                        style={userPick === p.id ? { borderColor: config.accentColor } : undefined}
+                      >
+                        <img src={getPlayerImageSrc(p)} alt="" className="call-btn-img" />
+                        <span>{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {userPick && (
+                    <div className="call-result">
+                      You backed <strong>{(userPick === playerA.id ? playerA : playerB).name.split(' ').pop()}</strong>.
+                      {' '}The model backs <strong>{favPlayer.name.split(' ').pop()}</strong>.
+                      {userPick === (favoredIsA ? playerA.id : playerB.id)
+                        ? ' You agree.'
+                        : ' Bold call: you are fading the model.'}
+                    </div>
+                  )}
+                  {youVsModel && (
+                    <div className="call-record">
+                      Your record vs the model: <strong>you {youVsModel.youRight}/{youVsModel.graded}</strong>, model {youVsModel.modelRight}/{youVsModel.graded}.
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* ── Receipts: comparable past matchups ──────────────────── */}
+              {receipts && receipts.examples.length > 0 && (
+                <section className="studio-card">
+                  <div className="studio-card-title">Comparable calls</div>
+                  <p className="studio-card-sub">Recent {config.surfaceLabel.toLowerCase()} matchups the model rated about this lopsided ({receipts.lo}-{receipts.hi}% favorites), and how they went.</p>
+                  <div className="receipts-list">
+                    {receipts.examples.map((ex, i) => (
+                      <div className="receipt-row" key={i}>
+                        <span className={`receipt-mark ${ex.right ? 'hit' : 'miss'}`}>{ex.right ? <Check size={14} /> : <X size={14} />}</span>
+                        <span className="receipt-text"><strong>{ex.wName.split(' ').pop()}</strong> beat {ex.lName.split(' ').pop()} {ex.score}</span>
+                        <span className="receipt-verdict">{ex.right ? 'model right' : 'model wrong'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ── Explore the full simulation (power-user drawer) ─────── */}
+              <details className="studio-drawer">
+                <summary>Explore the full simulation</summary>
+                <AdvancedSimPanel
+                  colorA={config.panelColorA}
+                  colorB={config.panelColorB}
+                  colorAText={config.panelColorAText}
+                  colorBText={config.panelColorBText}
+                  simulateButtonColor={config.simulateButtonColor}
+                  simulateButtonTextColor={config.simulateButtonTextColor}
+                  playerA={playerA}
+                  playerB={playerB}
+                  getPlayerImageSrc={getPlayerImageSrc}
+                  statsA={statsA}
+                  setStatsA={setStatsA}
+                  statsB={statsB}
+                  setStatsB={setStatsB}
+                  simCount={simCount}
+                  setSimCount={setSimCount}
+                  isRunning={isRunning}
+                  progress={progress}
+                  batchResult={batchResult}
+                  showResults={showResults}
+                  liveLog={liveLog}
+                  isWatching={isWatching}
+                  engine={engine}
+                  engineWinProbA={engineProbA}
+                  onSimulate={handleSimulate}
+                  onWatchMatch={handleWatchMatch}
+                  bestOf={bestOf}
+                  tournamentLabel={config.label}
+                  surfaceLabel={config.surfaceLabel}
+                  surfaceKey={config.surfaceKey}
+                  h2hData={h2hData}
+                />
+              </details>
+            </>
+          )}
         </div>
 
         <AppModal
@@ -605,6 +842,33 @@ export default function H2H({ tour = 'atp' }) {
             />
           </Form.Group>
         </AppModal>
+      </div>
+    </div>
+  );
+}
+
+// A single player in the Verdict: photo (accent ring + "Favored" badge when
+// the model favors them), name with flag, rank and age.
+function PlayerFace({ player, favored, accent, getImg, align = 'left' }) {
+  const flag = countryFlagUrl(player.country);
+  return (
+    <div className={`verdict-face ${align}${favored ? ' favored' : ''}`}>
+      <div className="verdict-face-photo-wrap">
+        <img
+          src={getImg(player)}
+          alt={player.name}
+          className="verdict-face-photo"
+          style={favored ? { borderColor: accent, boxShadow: `0 0 0 4px rgba(255,255,255,0.06), 0 0 22px -2px ${accent}` } : undefined}
+        />
+        {favored && <span className="verdict-face-badge" style={{ background: accent }}>Favored</span>}
+      </div>
+      <div className="verdict-face-name">
+        {flag && <img src={flag} alt="" className="verdict-face-flag" />}
+        <span>{player.name}</span>
+      </div>
+      <div className="verdict-face-meta">
+        {player.us_seed != null && player.us_seed !== '' && <span>Rank {player.us_seed}</span>}
+        {player.age ? <span> · Age {player.age}</span> : null}
       </div>
     </div>
   );
