@@ -5,11 +5,11 @@ import {
   PieChart,
   Pie,
   Cell,
-  Tooltip as RechartTooltip,
   BarChart,
   Bar,
   XAxis,
-  YAxis
+  YAxis,
+  LabelList
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share2, Download, X, Check, AlertTriangle, Zap } from 'lucide-react';
@@ -17,6 +17,7 @@ import { credibleInterval, confidenceLabel } from '../credibleInterval';
 import { generateShareCard } from '../utils/generateShareCard';
 import { countryFlagUrl } from './countryFlags';
 import Scoreboard, { deriveLiveScoreboardState } from './Scoreboard';
+import Chip from './ui/Chip';
 import './AdvancedSimPanel.css';
 
 export const STAT_KEYS = [
@@ -309,13 +310,6 @@ export default function AdvancedSimPanel({
                       >
                         {pieData.map((_,i)=><Cell key={i} fill={VS_COLORS[i]} stroke="none"/>)}
                       </Pie>
-                      <RechartTooltip
-                        contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, maxWidth: 190 }}
-                        labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: 4, whiteSpace: 'normal' }}
-                        itemStyle={{ color: '#ddd', whiteSpace: 'normal' }}
-                        formatter={(v,n)=>([`${v}% win probability (${totalWins.toLocaleString()} simulations)`, n])}
-                        wrapperStyle={{ transform: 'translateX(-90px)', pointerEvents: 'none' }}
-                      />
                       <text
                         x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
                         fill="#ccc" fontSize={13} fontWeight="bold"
@@ -369,16 +363,16 @@ export default function AdvancedSimPanel({
 
                         {/* Confidence badge - based on win rate, not sample size */}
                         {favProb >= 0.70 ? (
-                          <div className="adv-flag adv-flag--confident"><Check size={12} style={{ verticalAlign: -2, marginRight: 3 }} />High confidence</div>
+                          <Chip tone="positive" block icon={<Check size={12} />}>High confidence</Chip>
                         ) : favProb < 0.60 ? (
-                          <div className="adv-flag adv-flag--warn"><AlertTriangle size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Low confidence · toss-up matchup</div>
+                          <Chip tone="warn" block icon={<AlertTriangle size={12} />}>Low confidence · toss-up matchup</Chip>
                         ) : null}
 
                         {/* Underdog flag - binomial P(underdog wins >5 of 10 games) */}
                         {binom10 >= 0.10 && (
-                          <div className="adv-flag adv-flag--underdog">
-                            <Zap size={12} style={{ verticalAlign: -2, marginRight: 3 }} />Underdog alert · {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
-                          </div>
+                          <Chip tone="info" block icon={<Zap size={12} />}>
+                            Underdog alert · {underdogName} wins a short series {Math.round(binom10 * 100)}% of the time
+                          </Chip>
                         )}
 
                         <div className="adv-confidence-label">{confidenceLabel(favProb, favLower, favUpper)}</div>
@@ -398,23 +392,26 @@ export default function AdvancedSimPanel({
                       Most likely: <strong>{favoredName}</strong> wins <strong>{mostLikelyScoreline.scoreline}</strong> ({mostLikelyScoreline.pct}%)
                     </div>
                   )}
-                  <ResponsiveContainer width="100%" height={140}>
-                    <BarChart layout="vertical" data={barData} margin={{ top:0, right:10, bottom:0, left:0 }}>
-                      <XAxis type="number" stroke="#999" tick={{ fontSize: 10 }} />
-                      <YAxis dataKey="name" type="category" stroke="#999" width={36} tick={{ fontSize: 10 }} />
-                      <RechartTooltip
-                        cursor={{ fill: 'rgba(255,255,255,0.06)' }}
-                        contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6 }}
-                        labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: 4 }}
-                        itemStyle={{ color: '#ddd' }}
-                        labelFormatter={(label) => `Final score: ${label}`}
-                        formatter={(value, name) => [`${value}% of all simulations`, name]}
-                        wrapperStyle={{ transform: 'translateX(100px) translateY(-55px)', pointerEvents: 'none' }}
+                  <ResponsiveContainer width="100%" height={148}>
+                    <BarChart layout="vertical" data={barData} margin={{ top:2, right:38, bottom:0, left:0 }} barCategoryGap="28%">
+                      <XAxis type="number" hide domain={[0, 100]} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        axisLine={false}
+                        tickLine={false}
+                        width={40}
+                        tick={{ fontSize: 12, fill: '#9aa1ab' }}
                       />
-                      <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={9}/>
-                      <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={9}/>
+                      <Bar dataKey={playerA.name} fill={SETBAR_COLORS[1]} barSize={10} radius={[0,3,3,0]} isAnimationActive={false}>
+                        <LabelList dataKey={playerA.name} position="right" fill="#eef1f5" fontSize={11} fontWeight={600} formatter={(v)=> v ? `${v}%` : ''} />
+                      </Bar>
+                      <Bar dataKey={playerB.name} fill={SETBAR_COLORS[0]} barSize={10} radius={[0,3,3,0]} isAnimationActive={false}>
+                        <LabelList dataKey={playerB.name} position="right" fill="#eef1f5" fontSize={11} fontWeight={600} formatter={(v)=> v ? `${v}%` : ''} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  <div className="adv-bar-caption">Share of all {totalWins.toLocaleString()} simulations ending at each set score</div>
                   {renderFixedLegend()}
                 </div>
               {/* Share button - bottom-right of results row */}

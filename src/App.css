@@ -49,8 +49,10 @@
   --border-1: rgba(255, 255, 255, 0.12);
   --border-2: rgba(255, 255, 255, 0.24);
   --text-1: #ffffff;
-  --text-2: #c9cdd3;
-  --text-3: #8f96a0;
+  --text-2: #ced2d8;
+  /* Low-emphasis text. Lightened from #8f96a0 so even small captions clear
+     WCAG AA (>=4.5:1) on our dark surfaces. */
+  --text-3: #9aa1ab;
 
   --radius-sm: 4px;
   --radius-md: 8px;

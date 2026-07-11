@@ -30,7 +30,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// Wilson 95% interval — same as the Track Record / Methodology headline, so
+// Wilson 95% interval - same as the Track Record / Methodology headline, so
 // the home proof band shows the identical honest number.
 function wilsonHalf(k, n) {
   if (!n) return 0;
@@ -45,7 +45,7 @@ export default function Home({ tour = 'atp' }) {
   const [refreshMeta, setRefreshMeta] = useState(null);
   const [proof, setProof] = useState(null);
 
-  // Live proof stats from the graded track record — the credibility engine
+  // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/track_record.json')
@@ -173,7 +173,7 @@ export default function Home({ tour = 'atp' }) {
           <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
           <p className="sub-title">
             Pick two players, choose a surface, and run a real point-by-point
-            Monte Carlo matchup — the same model we grade in public, match after match.
+            Monte Carlo matchup - the same model we grade in public, match after match.
           </p>
 
           <div className="d-flex flex-wrap gap-3 hero-ctas">

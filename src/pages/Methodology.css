@@ -66,6 +66,21 @@
   margin-top: 0.35rem;
 }
 
+.method-headline-skeleton {
+  height: 92px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+}
+.method-error {
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(224, 86, 86, 0.5);
+  background: rgba(224, 86, 86, 0.12);
+  border-radius: var(--radius-md);
+  color: var(--text-1);
+  font-size: 0.9rem;
+}
+
 .method-section { margin-bottom: 2rem; }
 .method-section h2 {
   font-size: 1.15rem;

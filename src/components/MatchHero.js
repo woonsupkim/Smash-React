@@ -25,6 +25,7 @@ function probsFromRow(row) {
 export default function MatchHero({
   title,
   logo,
+  badge = null, // small pill under the context line (e.g. "Matchup of the day")
   surfaceSelector = null, // tournament/surface dropdown, rendered under the title
   playerA,
   playerB,
@@ -166,6 +167,7 @@ export default function MatchHero({
       <div className="match-hero-context">
         {surfaceLabel} &middot; Best of {bestOf}
       </div>
+      {badge && <div className="match-hero-badge"><span className="match-hero-badge-dot" />{badge}</div>}
       {surfaceSelector && <div className="match-hero-surface-select">{surfaceSelector}</div>}
 
       <div className="match-hero-main">

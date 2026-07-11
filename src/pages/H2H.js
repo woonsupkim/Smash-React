@@ -100,6 +100,8 @@ export default function H2H({ tour = 'atp' }) {
   const [eloData, setEloData]             = useState(null);
   const [engine, setEngine]               = useState('smash');
   const [engineAcc, setEngineAcc]         = useState(null);
+  const [featuredPair, setFeaturedPair]   = useState(null); // {a,b} ids of the auto-picked "matchup of the day"
+  const [loadError, setLoadError]         = useState(false); // roster CSV failed to load
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
   // instead of the season CSV - selecting it re-seeds the sliders.
   const upsetMode = engine === 'upset';
@@ -127,6 +129,7 @@ export default function H2H({ tour = 'atp' }) {
       setPlayerB(null);
       setEngine('smash');
     }
+    setLoadError(false);
     Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + config.csvFile, {
       header: true,
       download: true,
@@ -134,9 +137,11 @@ export default function H2H({ tour = 'atp' }) {
         const newPool = data.filter(r => Number(r.us_rd) === 2);
         poolDirRef.current = dataDir;
         setPlayers(newPool);
+        setLoadError(newPool.length === 0);
         setPlayerA(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
         setPlayerB(prev => (prev ? (newPool.find(p => p.id === prev.id) || null) : null));
-      }
+      },
+      error: () => setLoadError(true),
     });
     fetch(process.env.PUBLIC_URL + dataDir + '/h2h.json')
       .then(r => r.json())
@@ -212,6 +217,31 @@ export default function H2H({ tour = 'atp' }) {
   }, []);
   const recommendedEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
   useEffect(() => { setEngine(recommendedEngine); }, [recommendedEngine]);
+
+  // Onboarding: on the first load with nothing picked, preselect a
+  // deterministic "matchup of the day" so the landing screen shows a live
+  // prediction instead of two empty dropdowns. Fires once per page load; if
+  // the user has already picked (or once they change a player) it steps aside.
+  const featuredDoneRef = useRef(false);
+  useEffect(() => {
+    if (featuredDoneRef.current) return;
+    if (playerA || playerB) { featuredDoneRef.current = true; return; }
+    if (!players.length || poolDirRef.current !== dataDir) return;
+    featuredDoneRef.current = true;
+    const d = new Date();
+    let seed = (d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+    const top = players.slice(0, Math.min(16, players.length));
+    const iA = Math.floor(rand() * top.length);
+    let iB = Math.floor(rand() * top.length);
+    if (iB === iA) iB = (iB + 1) % top.length;
+    setPlayerA(top[iA]);
+    setPlayerB(top[iB]);
+    setFeaturedPair({ a: top[iA].id, b: top[iB].id });
+  }, [players, dataDir, playerA, playerB]);
+
+  // Badge shows only while the current picks are still the featured pair.
+  const isFeatured = !!(featuredPair && playerA?.id === featuredPair.a && playerB?.id === featuredPair.b);
 
   useEffect(() => {
     if (!batchResult) return;
@@ -422,9 +452,17 @@ export default function H2H({ tour = 'atp' }) {
     <div className={`page-background ${config.bgClass}`}>
       <div className="overlay text-center">
         <div className="h2h-artifact">
+        {loadError && (
+          <div className="h2h-load-error" role="alert">
+            <strong>Couldn't load the {config.label} roster.</strong>
+            <span> Check your connection and try again.</span>
+            <button type="button" onClick={() => handleSurfaceChange(surface)}>Retry</button>
+          </div>
+        )}
         <MatchHero
           title={`${config.label}${isWta ? " Women's" : ''} · ${config.surfaceLabel}`}
           logo={config.logo}
+          badge={isFeatured ? 'Matchup of the day' : null}
           surfaceSelector={
             <Form.Select
               className="dark-select h2h-tournament-select"

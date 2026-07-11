@@ -159,6 +159,13 @@
   text-align: center;
 }
 
+.adv-bar-caption {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  text-align: center;
+  margin-top: 0.15rem;
+}
+
 .adv-ci-caption {
   font-size: 0.75rem;
   color: var(--text-2);

@@ -18,7 +18,7 @@ const SURFACES = {
 
 const PAGE_SIZE = 10;
 
-// Wilson 95% score interval for a binomial proportion — defends the headline
+// Wilson 95% score interval for a binomial proportion - defends the headline
 // accuracy against "that's just luck" by showing the sampling uncertainty.
 function wilson(k, n) {
   if (!n) return { lo: 0, hi: 0, mid: 0 };
@@ -174,7 +174,7 @@ export default function TrackRecord() {
   const isLoading = !data;
   const shown = filtered.slice(0, visible);
 
-  // Freshness indicator — invisible when healthy, loud when the data is stale
+  // Freshness indicator - invisible when healthy, loud when the data is stale
   // (enterprise = nobody ever sees February rankings in July).
   const refreshedAt = data?.generatedAt ? new Date(data.generatedAt) : null;
   const staleDays = refreshedAt ? (Date.now() - refreshedAt.getTime()) / 864e5 : null;
@@ -277,20 +277,20 @@ export default function TrackRecord() {
                   <div className="track-hero-label">of winners called correctly</div>
                   <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                   {stats.n > 0 && (
-                    <div className="track-hero-ci">±{stats.ciHalf}% at 95% confidence — the range this accuracy would fall in on fresh matches, not luck.</div>
+                    <div className="track-hero-ci">±{stats.ciHalf}% at 95% confidence - the range this accuracy would fall in on fresh matches, not luck.</div>
                   )}
                 </div>
               </div>
 
-              {/* Versus the betting market — the most credible claim in sports
+              {/* Versus the betting market - the most credible claim in sports
                   prediction. This is a SUBSET (only matches that carried odds),
                   so both figures are scored on those matches, NOT on the full
-                  set behind the headline above — that's why they differ. */}
+                  set behind the headline above - that's why they differ. */}
               {stats.market.n > 0 && (
                 <div className="track-panel track-market">
                   <div className="track-section-label">Versus the betting market</div>
                   <div className="track-market-scope">
-                    Scored on the {stats.market.n} of {stats.n} matches that had published odds — a
+                    Scored on the {stats.market.n} of {stats.n} matches that had published odds - a
                     different (smaller) set than the headline above, so these percentages won't match it.
                   </div>
                   <div className="track-market-row">
@@ -313,9 +313,9 @@ export default function TrackRecord() {
                   </div>
                   <div className="track-note">
                     Both figures are graded on these same odds-carrying matches. Beating the closing
-                    line is the hardest test in sports prediction — the market already prices in
+                    line is the hardest test in sports prediction - the market already prices in
                     everything public.
-                    {stats.market.n < 50 && ' Small sample on this filter, so expect it to swing — read it loosely.'}
+                    {stats.market.n < 50 && ' Small sample on this filter, so expect it to swing - read it loosely.'}
                   </div>
                 </div>
               )}

@@ -27,11 +27,12 @@ const CALIB_BUCKETS = [
 export default function Methodology() {
   const [data, setData] = useState(null);
 
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/track_record.json')
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error('bad response'); return r.json(); })
       .then(setData)
-      .catch(() => setData({ matches: [] }));
+      .catch(() => { setData({ matches: [] }); setFailed(true); });
   }, []);
 
   const stats = useMemo(() => {
@@ -70,6 +71,15 @@ export default function Methodology() {
             </p>
           </div>
 
+          {data === null && !failed && (
+            <div className="skeleton method-headline-skeleton" aria-hidden="true" />
+          )}
+          {failed && (
+            <div className="method-error" role="alert">
+              Live scorecard numbers are temporarily unavailable. The methodology below still applies.
+            </div>
+          )}
+
           {stats.n > 0 && (
             <div className="method-headline">
               <div className="method-headline-stat">
@@ -105,7 +115,7 @@ export default function Methodology() {
               Two other signals sharpen it: a <strong>surface Elo</strong> rating (how a player has
               actually been winning and losing on this surface) and a <strong>ranking-implied</strong>
               probability. The deployed <strong>Smart Blend</strong> combines all three with weights
-              tuned separately for each tour and surface — clay rewards ranking and grind, grass rewards
+              tuned separately for each tour and surface - clay rewards ranking and grind, grass rewards
               serve, and the mix reflects that.
             </p>
           </section>
@@ -113,7 +123,7 @@ export default function Methodology() {
           <section className="method-section">
             <h2>Is it calibrated?</h2>
             <p>
-              Accuracy alone isn't enough — a stated 70% should win about 70% of the time. These bars
+              Accuracy alone isn't enough - a stated 70% should win about 70% of the time. These bars
               show, for every confidence band, how often the favorite actually won across the season.
               Bars landing near their band mean the probabilities are honest, not just directional.
             </p>
@@ -125,7 +135,7 @@ export default function Methodology() {
                     <div className="method-calib-ideal" style={{ left: `${b.mid}%` }} />
                     <div className="method-calib-fill" style={{ width: `${b.rate ?? 0}%` }} />
                   </div>
-                  <div className="method-calib-actual">{b.rate == null ? '—' : `won ${b.rate}%`}</div>
+                  <div className="method-calib-actual">{b.rate == null ? '-' : `won ${b.rate}%`}</div>
                   <div className="method-calib-n">{b.n}</div>
                 </div>
               ))}
@@ -136,13 +146,13 @@ export default function Methodology() {
             <h2>In-sample vs. the forward test</h2>
             <p>
               The blend weights are fit on the 2026 season the retrospective page also displays. That
-              is useful for comparing engines, but it flatters the model — it has, in a sense, seen the
+              is useful for comparing engines, but it flatters the model - it has, in a sense, seen the
               answers. The honest number is the <strong>locked forward record</strong>: a prediction is
               published <em>before</em> a match is played, then graded automatically when the result
               lands. No hindsight, no retuning. That record is the one that counts.
             </p>
             <p>
-              The surface Elo used in the retrospective is also leak-free — ratings are replayed
+              The surface Elo used in the retrospective is also leak-free - ratings are replayed
               chronologically, so each match is scored with only what was known beforehand.
             </p>
           </section>
@@ -151,7 +161,7 @@ export default function Methodology() {
             <h2>What it's measured against</h2>
             <p>
               Two baselines keep the model honest. <strong>Higher rank wins</strong> is the naive pick
-              — just take the better-ranked player. The much harder test is the
+              - just take the better-ranked player. The much harder test is the
               <strong> bookmaker favorite</strong>: the market's shortest price already prices in
               everything public, so matching or beating the closing line is the most credible claim in
               sports prediction. Both are shown on the{' '}
@@ -162,7 +172,7 @@ export default function Methodology() {
           <section className="method-section">
             <h2>Honest limitations</h2>
             <ul className="method-limits">
-              <li>Weights are fit on a single season, so in-sample accuracy overstates real-world edge — read the locked forward record.</li>
+              <li>Weights are fit on a single season, so in-sample accuracy overstates real-world edge - read the locked forward record.</li>
               <li>Each player's cache holds only their recent matches, so a very old head-to-head can be missed.</li>
               <li>The forward record is Slam-focused and built on a top-50 roster, so it fills in gradually.</li>
               <li>Betting-market comparisons only cover matches that carried odds (about half the sample).</li>
