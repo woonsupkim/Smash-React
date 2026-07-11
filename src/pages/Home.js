@@ -231,27 +231,36 @@ export default function Home({ tour = 'atp' }) {
         </div>
 
         {livePicks.length > 0 && (
-          <div className="home-live">
-            <div className="home-live-head">
+          <section className="home-board">
+            <div className="home-board-head">
               <span className="home-live-dot" />
-              On the tour right now
-              <span className="home-live-event">{livePicks[0].event}</span>
+              <span className="home-board-title">Happening now</span>
+              <span className="home-board-event">{livePicks[0].event}</span>
             </div>
-            <div className="home-live-list">
+            <div className="home-board-grid">
               {livePicks.map((p) => (
                 <Link
                   key={p.id}
-                  to={withTourPrefix(`/h2h?surface=${p.surface}`, isWta)}
-                  className="home-live-pick"
+                  to={withTourPrefix(`/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`, isWta)}
+                  className="home-board-card"
                 >
-                  <span className="home-live-match">{p.name1} vs {p.name2}</span>
-                  <span className="home-live-call">Model backs {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                  <div className="home-board-match">
+                    <span className={p.favorite === p.p1 ? 'fav' : ''}>{p.name1}</span>
+                    <span className="home-board-vs">vs</span>
+                    <span className={p.favorite === p.p2 ? 'fav' : ''}>{p.name2}</span>
+                  </div>
+                  <div className="home-board-call">
+                    <span className="home-board-pct">{Math.round(p.favProb * 100)}%</span>
+                    <span className="home-board-callsub">model backs {p.favName.split(' ').pop()}</span>
+                  </div>
+                  <span className="home-board-open">Open the verdict →</span>
                 </Link>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
+        <div className="home-section-label">Or start any matchup</div>
         <div className="surface-strip">
           {SURFACES.map(({ to, label, city, desc, className }) => (
             <Link key={to} to={withTourPrefix(to, isWta)} className={`surface-tile ${className}`}>

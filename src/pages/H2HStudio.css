@@ -278,6 +278,18 @@
 .studio-drawer > summary::before { content: '▸ '; color: var(--text-3); }
 .studio-drawer[open] > summary::before { content: '▾ '; }
 .studio-drawer[open] > summary { border-bottom: 1px solid var(--border-1); }
+/* The old panel brought its own card chrome; inside the drawer it should read
+   as one continuous surface with the rest of the studio. */
+.studio-drawer .advanced-sim-panel { margin-top: 0 !important; }
+.studio-drawer .advanced-panel-card {
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  max-width: none;
+  padding: 1.1rem 1.35rem 1.4rem;
+}
 
 @media (max-width: 640px) {
   .studio-setup { grid-template-columns: 1fr; }

@@ -231,6 +231,19 @@ export default function H2H({ tour = 'atp' }) {
     if (playerA || playerB) { featuredDoneRef.current = true; return; }
     if (!players.length || poolDirRef.current !== dataDir) return;
     featuredDoneRef.current = true;
+
+    // Deep link: /h2h?surface=grass&a=zvere&b=sinne preselects that exact
+    // matchup (used by Home's "Live now" cards). Overrides the featured pick.
+    const aId = searchParams.get('a');
+    const bId = searchParams.get('b');
+    if (aId || bId) {
+      const a = players.find((p) => p.id === aId);
+      const b = players.find((p) => p.id === bId);
+      if (a) setPlayerA(a);
+      if (b) setPlayerB(b);
+      if (a || b) return;
+    }
+
     const d = new Date();
     let seed = (d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()) >>> 0;
     const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
@@ -241,6 +254,8 @@ export default function H2H({ tour = 'atp' }) {
     setPlayerA(top[iA]);
     setPlayerB(top[iB]);
     setFeaturedPair({ a: top[iA].id, b: top[iB].id });
+    // Reads searchParams once on first pool load; intentionally not reactive to it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, dataDir, playerA, playerB]);
 
   // Badge shows only while the current picks are still the featured pair.
@@ -818,12 +833,12 @@ export default function H2H({ tour = 'atp' }) {
               <details className="studio-drawer">
                 <summary>Explore the full simulation</summary>
                 <AdvancedSimPanel
-                  colorA={config.panelColorA}
-                  colorB={config.panelColorB}
-                  colorAText={config.panelColorAText}
-                  colorBText={config.panelColorBText}
-                  simulateButtonColor={config.simulateButtonColor}
-                  simulateButtonTextColor={config.simulateButtonTextColor}
+                  colorA={config.accentColor}
+                  colorB="#6b7280"
+                  colorAText={config.accentTextColor}
+                  colorBText="#ffffff"
+                  simulateButtonColor={config.accentColor}
+                  simulateButtonTextColor={config.accentTextColor}
                   playerA={playerA}
                   playerB={playerB}
                   getPlayerImageSrc={getPlayerImageSrc}

@@ -1,7 +1,11 @@
 /* src/pages/Home.css */
 
 .home-page {
-  background: linear-gradient(rgba(5,5,8,0.94), rgba(5,5,8,0.94)), url(../assets/smash1.jpg);
+  /* Lighter than the old flat near-black: a vertical scrim that lets the court
+     photo show through up top and only deepens behind the lower content. */
+  background:
+    linear-gradient(180deg, rgba(16,20,30,0.55) 0%, rgba(12,15,22,0.78) 52%, rgba(9,11,16,0.9) 100%),
+    url(../assets/smash1.jpg);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -188,6 +192,50 @@
 .home-live-pick:hover { background: var(--surface-2); border-color: var(--border-2); border-left-color: var(--accent-brand); }
 .home-live-match { color: var(--text-1); font-weight: 700; font-size: 0.95rem; }
 .home-live-call { color: var(--text-3); font-size: 0.8rem; }
+
+/* Section label above the surface strip */
+.home-section-label {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0.25rem 2rem 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Live board: the current tournament's matches, each opening its full verdict. */
+.home-board { max-width: 900px; margin: 0 auto; padding: 0 2rem 2.5rem; }
+.home-board-head {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-2); margin-bottom: 0.9rem;
+}
+.home-board-event { color: var(--text-3); font-weight: 600; letter-spacing: 0.04em; }
+.home-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+}
+.home-board-card {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  padding: 1rem 1.1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--accent-brand);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.home-board-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); border-color: var(--border-2); border-left-color: var(--accent-brand); }
+.home-board-match { font-size: 1rem; font-weight: 700; color: var(--text-3); display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.home-board-match .fav { color: #fff; }
+.home-board-vs { font-size: 0.72rem; color: var(--text-3); font-weight: 400; }
+.home-board-call { display: flex; align-items: baseline; gap: 0.45rem; }
+.home-board-pct { font-family: var(--font-display, inherit); font-size: 1.5rem; font-weight: 800; color: var(--accent-brand); line-height: 1; }
+.home-board-callsub { font-size: 0.8rem; color: var(--text-3); }
+.home-board-open { font-size: 0.78rem; font-weight: 700; color: var(--accent-brand); }
 
 /* Full-bleed surface strip - edge-to-edge color blocks, not floating cards. */
 .surface-strip {
