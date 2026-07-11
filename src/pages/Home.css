@@ -136,6 +136,59 @@
   color: #fff !important;
 }
 
+/* Live-tournament surfacing: what's on the tour right now, straight to H2H. */
+.home-live {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 2rem 2.5rem;
+}
+.home-live-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 0.9rem;
+}
+.home-live-event {
+  color: var(--text-3);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.home-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-negative, #e05656);
+  box-shadow: 0 0 8px var(--accent-negative, #e05656);
+  animation: home-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes home-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .home-live-dot { animation: none; } }
+.home-live-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.home-live-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.8rem 1rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--accent-brand);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.home-live-pick:hover { background: var(--surface-2); border-color: var(--border-2); border-left-color: var(--accent-brand); }
+.home-live-match { color: var(--text-1); font-weight: 700; font-size: 0.95rem; }
+.home-live-call { color: var(--text-3); font-size: 0.8rem; }
+
 /* Full-bleed surface strip - edge-to-edge color blocks, not floating cards. */
 .surface-strip {
   display: flex;

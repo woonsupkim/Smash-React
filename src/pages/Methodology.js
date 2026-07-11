@@ -6,6 +6,7 @@
 // data instead of drifting into stale copy.
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import Button from '../components/ui/Button';
 import './Methodology.css';
 
 function wilson(k, n) {
@@ -181,7 +182,7 @@ export default function Methodology() {
           </section>
 
           <div className="method-footer">
-            <Link className="method-cta" to="/track-record">See the full track record →</Link>
+            <Button as={Link} variant="primary" to="/track-record">See the full track record →</Button>
           </div>
         </div>
       </div>

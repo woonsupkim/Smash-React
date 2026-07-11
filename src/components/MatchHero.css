@@ -124,16 +124,6 @@
   color: var(--text-1);
   font-size: 0.88rem;
 }
-.h2h-load-error button {
-  background: var(--accent-negative, #e05656);
-  border: none;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.9rem;
-  border-radius: var(--radius-sm, 4px);
-  cursor: pointer;
-}
 
 .match-hero-main {
   display: flex;

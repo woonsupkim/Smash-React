@@ -296,7 +296,11 @@ export default function AdvancedSimPanel({
                 transition={{ duration:0.4 }}
               >
                 <div className="adv-pie-col">
-                  <ResponsiveContainer width="100%" height={170}>
+                  <p className="sr-only">
+                    Win probability: {playerA.name} {dispPctA} percent, {playerB.name} {dispPctB} percent,
+                    from {totalWins.toLocaleString()} simulated matches.
+                  </p>
+                  <ResponsiveContainer width="100%" height={170} role="img" aria-label={`Win probability chart: ${playerA.name} ${dispPctA} percent versus ${playerB.name} ${dispPctB} percent`}>
                     <PieChart>
                       <Pie
                         data={pieData}

@@ -1,0 +1,9 @@
+.ui-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1.1rem 1.25rem;
+}
+.ui-card--accent {
+  border-top: 3px solid var(--accent, var(--accent-brand, #c6ff1c));
+}

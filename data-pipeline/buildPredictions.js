@@ -19,6 +19,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { winProb } = require('./simCore');
 const { predElo, expected } = require('./eloCore');
+const { normName, normSurface, isGrandSlam, surfaceFromEventName, matchRoster } = require('./lib/espnParse');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
 // Which engine is most accurate for each tour x surface (from the backtest).
@@ -34,34 +35,6 @@ const LOOKAHEAD_DAYS = 10;
 const BROWSER_UA = 'Mozilla/5.0';
 
 const SURFACE_CSV = { hard: 'smash_us.csv', clay: 'smash_fr.csv', grass: 'smash_wb.csv' };
-
-const normName = (s) => (s || '')
-  .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/[-–]/g, ' ').replace(/[^a-z\s']/g, '').replace(/\s+/g, ' ').trim();
-
-function normSurface(raw) {
-  if (!raw) return null;
-  const s = String(raw).toLowerCase();
-  if (s.includes('clay')) return 'clay';
-  if (s.includes('grass')) return 'grass';
-  if (s.includes('hard') || s.includes('carpet')) return 'hard';
-  return null;
-}
-
-// Forward predictions are locked only for Grand Slams - that's where the
-// roster's top players actually meet, and it keeps the forward record focused.
-function isGrandSlam(name) {
-  return /wimbledon|roland garros|french open|us open|australian open/i.test(name || '');
-}
-
-// Best-effort surface from an ESPN event name (schedule doesn't expose it
-// directly). Falls back to hard, the most common surface.
-function surfaceFromEventName(name) {
-  const n = (name || '').toLowerCase();
-  if (/wimbledon|newport|hall of fame|grass|halle|queen|s-hertogenbosch|eastbourne|mallorca|stuttgart/.test(n)) return 'grass';
-  if (/roland garros|french open|madrid|rome|monte|bastad|gstaad|hamburg|kitzbuhel|umag|bucharest|clay|barcelona|estoril|munich/.test(n)) return 'clay';
-  return 'hard';
-}
 
 function loadTour(tour) {
   const ns = tour === 'wta' ? 'women' : '';
@@ -101,15 +74,6 @@ function loadTour(tour) {
 }
 
 const probsFromRow = (r) => [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6].map((v) => Number(v) || 0);
-
-function matchRoster(espnName, roster) {
-  const norm = normName(espnName);
-  let hit = roster.find((p) => p.norm === norm);
-  if (hit) return hit;
-  const last = norm.split(' ').pop();
-  const lastHits = roster.filter((p) => p.norm.split(' ').pop() === last);
-  return lastHits.length === 1 ? lastHits[0] : null;
-}
 
 // Locked prediction for a matchup on a surface, made with the best-performing
 // engine for this tour x surface. Returns { probA, engine } (P(a wins) plus the

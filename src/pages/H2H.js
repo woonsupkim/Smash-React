@@ -9,6 +9,7 @@ import AppModal from '../components/ui/AppModal';
 import { simulateBatch, simulateMatchStepwise } from '../simulator';
 import MatchHero from '../components/MatchHero';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
+import UiButton from '../components/ui/Button';
 import { pickEngineProb, eloProb } from '../engines';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
@@ -456,7 +457,7 @@ export default function H2H({ tour = 'atp' }) {
           <div className="h2h-load-error" role="alert">
             <strong>Couldn't load the {config.label} roster.</strong>
             <span> Check your connection and try again.</span>
-            <button type="button" onClick={() => handleSurfaceChange(surface)}>Retry</button>
+            <UiButton variant="danger" size="sm" onClick={() => handleSurfaceChange(surface)}>Retry</UiButton>
           </div>
         )}
         <MatchHero
@@ -466,6 +467,7 @@ export default function H2H({ tour = 'atp' }) {
           surfaceSelector={
             <Form.Select
               className="dark-select h2h-tournament-select"
+              aria-label="Tournament and surface"
               value={surface}
               onChange={e => handleSurfaceChange(e.target.value)}
               disabled={isRunning||isWatching}
@@ -491,7 +493,7 @@ export default function H2H({ tour = 'atp' }) {
                 isDisabled={isRunning||isWatching}
                 styles={SELECT_STYLES}
               />
-              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" aria-label="Pick a random player for slot A" onClick={()=>randomPick('A')} disabled={isRunning||isWatching}>Random</Button>
             </div>
           }
           selectorB={
@@ -508,7 +510,7 @@ export default function H2H({ tour = 'atp' }) {
                 isDisabled={isRunning||isWatching}
                 styles={SELECT_STYLES}
               />
-              <Button variant="outline-light" size="sm" className="ms-1 random-btn" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
+              <Button variant="outline-light" size="sm" className="ms-1 random-btn" aria-label="Pick a random player for slot B" onClick={()=>randomPick('B')} disabled={isRunning||isWatching}>Random</Button>
             </div>
           }
           surfaceLabel={config.surfaceLabel}

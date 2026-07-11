@@ -9,6 +9,8 @@ import TrackRecord from './pages/TrackRecord';
 import Methodology from './pages/Methodology';
 
 import GATracker from './components/GATracker'; // <-- added this line
+import ErrorBoundary from './components/ErrorBoundary';
+import { initMonitoring } from './utils/monitoring';
 import { ToastHost } from './components/ui/Toast';
 import { Analytics } from '@vercel/analytics/react';
 import { motion } from 'framer-motion';
@@ -16,6 +18,8 @@ import { motion } from 'framer-motion';
 import logoHome from './assets/ball.png';
 
 import './App.css';
+
+initMonitoring();
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
@@ -124,6 +128,7 @@ function App() {
       <NavBar />
 
       <main className="page-content">
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Home tour="atp" />} />
           <Route path="/h2h" element={<H2H tour="atp" />} />
@@ -152,6 +157,7 @@ function App() {
           <Route path="/women/us-open" element={<Navigate to="/women/h2h?surface=hard" replace />} />
           {/* <Route path="/about" element={<About />} /> */}
         </Routes>
+        </ErrorBoundary>
       </main>
     </Router>
   );

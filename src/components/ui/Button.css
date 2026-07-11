@@ -1,0 +1,44 @@
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  min-height: 44px; /* comfortable tap target */
+}
+.ui-btn--sm { padding: 0.4rem 0.9rem; font-size: 0.82rem; min-height: 36px; }
+.ui-btn--md { padding: 0.6rem 1.4rem; font-size: 0.9rem; }
+
+.ui-btn--primary {
+  background: var(--accent-brand, #c6ff1c);
+  color: #111;
+}
+.ui-btn--primary:hover { filter: brightness(1.06); }
+
+.ui-btn--secondary {
+  background: transparent;
+  border-color: var(--border-2);
+  color: var(--text-1);
+}
+.ui-btn--secondary:hover { background: var(--surface-2); border-color: var(--text-3); }
+
+.ui-btn--ghost {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.ui-btn--ghost:hover { background: var(--surface-3); color: var(--text-1); }
+
+.ui-btn--danger {
+  background: var(--accent-negative, #e05656);
+  color: #fff;
+}
+.ui-btn--danger:hover { filter: brightness(1.06); }
+
+.ui-btn:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }

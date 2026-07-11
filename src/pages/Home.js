@@ -44,6 +44,23 @@ export default function Home({ tour = 'atp' }) {
   const dataDir = isWta ? '/data/women' : '/data';
   const [refreshMeta, setRefreshMeta] = useState(null);
   const [proof, setProof] = useState(null);
+  const [livePicks, setLivePicks] = useState([]);
+
+  // Live-tournament surfacing: if there are locked, not-yet-played predictions
+  // for this tour (i.e. a Slam is on), show them up top so opening the app
+  // during Wimbledon lands you on Wimbledon.
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/predictions.json')
+      .then((r) => r.json())
+      .then((d) => {
+        const picks = (d.predictions || [])
+          .filter((p) => p.tour === tour && p.status === 'pending')
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .slice(0, 4);
+        setLivePicks(picks);
+      })
+      .catch(() => setLivePicks([]));
+  }, [tour]);
 
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
@@ -66,8 +83,11 @@ export default function Home({ tour = 'atp' }) {
       .catch(() => setProof(null));
   }, []);
   // Only on the very first Home mount of a page load - not when navigating
-  // back to Home later in the session (see introHasPlayed above).
-  const [showIntro, setShowIntro] = useState(!introHasPlayed);
+  // back to Home later in the session (see introHasPlayed above). Skipped
+  // entirely for visitors who prefer reduced motion.
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [showIntro, setShowIntro] = useState(!introHasPlayed && !prefersReducedMotion);
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + dataDir + '/refresh-meta.json')
@@ -209,6 +229,28 @@ export default function Home({ tour = 'atp' }) {
             </Link>
           )}
         </div>
+
+        {livePicks.length > 0 && (
+          <div className="home-live">
+            <div className="home-live-head">
+              <span className="home-live-dot" />
+              On the tour right now
+              <span className="home-live-event">{livePicks[0].event}</span>
+            </div>
+            <div className="home-live-list">
+              {livePicks.map((p) => (
+                <Link
+                  key={p.id}
+                  to={withTourPrefix(`/h2h?surface=${p.surface}`, isWta)}
+                  className="home-live-pick"
+                >
+                  <span className="home-live-match">{p.name1} vs {p.name2}</span>
+                  <span className="home-live-call">Model backs {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="surface-strip">
           {SURFACES.map(({ to, label, city, desc, className }) => (
