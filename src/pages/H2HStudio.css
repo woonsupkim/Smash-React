@@ -28,6 +28,7 @@
 }
 .studio-title-sub { font-size: 0.78rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
 
+.studio-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .studio-surface-seg {
   display: inline-flex;
   background: var(--surface-2);

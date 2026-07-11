@@ -1,6 +1,6 @@
 // src/pages/H2H.js
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
 import { Form } from 'react-bootstrap';
@@ -87,6 +87,16 @@ export default function H2H({ tour = 'atp' }) {
     const next = new URLSearchParams(searchParams);
     next.set('surface', value);
     setSearchParams(next);
+  };
+
+  // Tour lives on this page (and Brackets), not in the global header: switching
+  // navigates between the ATP and /women mirror of the current path, keeping
+  // the surface query so you stay on the same tournament.
+  const navigate = useNavigate();
+  const location = useLocation();
+  const switchTour = (nextIsWta) => {
+    const base = location.pathname.replace(/^\/women/, '') || '/';
+    navigate((nextIsWta ? '/women' + base : base) + location.search);
   };
 
   const [players, setPlayers]             = useState([]);
@@ -587,10 +597,16 @@ export default function H2H({ tour = 'atp' }) {
               <span className="studio-title-text">{config.label}{isWta ? " Women's" : ''}</span>
               <span className="studio-title-sub">{config.surfaceLabel} · Best of {bestOf}</span>
             </div>
-            <div className="studio-surface-seg" role="group" aria-label="Surface">
-              {[['hard', 'Hard'], ['clay', 'Clay'], ['grass', 'Grass']].map(([v, l]) => (
-                <button key={v} type="button" className={`studio-seg-btn${surface === v ? ' active' : ''}`} onClick={() => handleSurfaceChange(v)}>{l}</button>
-              ))}
+            <div className="studio-controls">
+              <div className="studio-surface-seg" role="group" aria-label="Tour">
+                <button type="button" className={`studio-seg-btn${!isWta ? ' active' : ''}`} onClick={() => switchTour(false)}>ATP</button>
+                <button type="button" className={`studio-seg-btn${isWta ? ' active' : ''}`} onClick={() => switchTour(true)}>WTA</button>
+              </div>
+              <div className="studio-surface-seg" role="group" aria-label="Surface">
+                {[['hard', 'Hard'], ['clay', 'Clay'], ['grass', 'Grass']].map(([v, l]) => (
+                  <button key={v} type="button" className={`studio-seg-btn${surface === v ? ' active' : ''}`} onClick={() => handleSurfaceChange(v)}>{l}</button>
+                ))}
+              </div>
             </div>
           </div>
 

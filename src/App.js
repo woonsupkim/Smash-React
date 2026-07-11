@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 
 import Home from './pages/Home';
 import H2H from './pages/H2H';
@@ -46,12 +46,7 @@ function withTour(path, isWomen) {
 // at, and to compute the toggle's target paths.
 function NavBar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const isWomen = location.pathname.startsWith('/women');
-  // Keep the query string when mirroring the path, so tour-switching on
-  // /h2h?surface=grass lands on /women/h2h?surface=grass (same tournament).
-  const menPath = (isWomen ? (location.pathname.replace(/^\/women/, '') || '/') : location.pathname) + location.search;
-  const womenPath = withTour(menPath, true);
 
   // NavLink's default isActive match ignores the query string, so "Clay",
   // "Grass", and "Hard" (all pointing at /h2h with a different ?surface=)
@@ -70,22 +65,6 @@ function NavBar() {
           <span className="brand-dot"><motion.img layoutId="home-intro-logo" src={logoHome} alt="" /></span>
           Smash!
         </NavLink>
-        <div className="tour-toggle" role="group" aria-label="Tour">
-          <button
-            type="button"
-            className={`tour-toggle-btn${!isWomen ? ' active' : ''}`}
-            onClick={() => navigate(menPath)}
-          >
-            ATP
-          </button>
-          <button
-            type="button"
-            className={`tour-toggle-btn${isWomen ? ' active' : ''}`}
-            onClick={() => navigate(womenPath)}
-          >
-            WTA
-          </button>
-        </div>
         <button
           className="navbar-toggler"
           type="button"

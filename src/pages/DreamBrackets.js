@@ -695,6 +695,18 @@ export default function DreamBrackets({ tour = 'atp' }) {
         <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>
           <div className="bracket-setup">
             <label className="bracket-field">
+              <span className="bracket-field-label">Tour</span>
+              <Form.Select
+                className="dark-select"
+                value={isWta ? 'wta' : 'atp'}
+                onChange={e => navigate(e.target.value === 'wta' ? '/women/dream-brackets' : '/dream-brackets')}
+                disabled={isRunning}
+              >
+                <option value="atp">ATP (Men)</option>
+                <option value="wta">WTA (Women)</option>
+              </Form.Select>
+            </label>
+            <label className="bracket-field">
               <span className="bracket-field-label">Tournament</span>
               <Form.Select className="dark-select" value={tournament} onChange={e => setTournament(e.target.value)} disabled={isRunning}>
                 {TOURNAMENTS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
