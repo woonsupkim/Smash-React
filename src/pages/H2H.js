@@ -8,7 +8,7 @@ import { ArrowLeftRight, Trophy, Check, X } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
 import AppModal from '../components/ui/AppModal';
 import Chip from '../components/ui/Chip';
-import { simulateBatch, simulateMatchStepwise } from '../simulator';
+import { simulateBatch, simulateMatchStepwise, seedFromString } from '../simulator';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
@@ -72,6 +72,24 @@ const TOURNAMENT_CONFIGS = {
 };
 const VALID_SURFACES = Object.keys(TOURNAMENT_CONFIGS);
 
+// A roster row is usable only if it carries real serve/return/rally rates.
+// Blank rows (ranked players without enough recent match data) sim to nonsense.
+const hasStats = (r) => ['p1', 'p2', 'p3', 'p4', 'p5'].every((k) => Number(r[k]) > 0);
+
+// Fallback headshot when a player has no image (or it fails to load).
+const DEFAULT_IMG = `${process.env.PUBLIC_URL}/assets/players/default.png`;
+const imgFallback = (e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_IMG; };
+
+// Per-engine field names in track_record.json, so the credibility line and
+// receipts can be scored with the same engine that drives the verdict.
+const ENGINE_FIELDS = {
+  smash: { prob: 'smashProbP1', correct: 'smashCorrect' },
+  sim:   { prob: 'probP1',      correct: 'correct' },
+  elo:   { prob: 'eloProbP1',   correct: 'eloCorrect' },
+  rank:  { prob: 'rankProbP1',  correct: 'rankCorrect' },
+  upset: { prob: 'upsetProbP1', correct: 'upsetCorrect' },
+};
+
 export default function H2H({ tour = 'atp' }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const surfaceParam = searchParams.get('surface');
@@ -124,7 +142,6 @@ export default function H2H({ tour = 'atp' }) {
   // instead of the season CSV - selecting it re-seeds the sliders.
   const upsetMode = engine === 'upset'; // always false in the redesign; kept so the seeding effect below reads cleanly
   const watchTimeoutRef = useRef(null);
-  const batchRef                          = useRef({ completed: 0, total: 0 });
   const prevDataDirRef                    = useRef(dataDir);
   const poolDirRef                        = useRef(dataDir); // which tour's CSV the current pool came from
 
@@ -148,7 +165,10 @@ export default function H2H({ tour = 'atp' }) {
       header: true,
       download: true,
       complete: ({ data }) => {
-        const newPool = data.filter(r => Number(r.us_rd) === 2);
+        // Only players with real computed stats are selectable. The expanded
+        // top-120 roster includes ranked players who lack enough recent match
+        // data (blank p1-p5); those would sim to nonsense, so drop them.
+        const newPool = data.filter(r => Number(r.us_rd) === 2 && hasStats(r));
         poolDirRef.current = dataDir;
         setPlayers(newPool);
         setLoadError(newPool.length === 0);
@@ -317,36 +337,18 @@ export default function H2H({ tour = 'atp' }) {
   };
 
   const runBatch = (pA, pB, n) => {
-    batchRef.current = { completed: 0, total: n };
     setIsRunning(true);
     setProgress(0);
-
-    const acc = { matchWins: [0,0], lostInWins: [[0,0,0],[0,0,0]] };
-    const chunk = 50;
-
-    const step = () => {
-      const left = batchRef.current.total - batchRef.current.completed;
-      const run  = Math.min(chunk, left);
-      const res  = simulateBatch(pA, pB, run, bestOf);
-
-      acc.matchWins[0] += res.matchWins[0];
-      acc.matchWins[1] += res.matchWins[1];
-      for (let i=0; i<3; i++) {
-        acc.lostInWins[0][i] += res.lostInWins[0][i] || 0;
-        acc.lostInWins[1][i] += res.lostInWins[1][i] || 0;
-      }
-
-      batchRef.current.completed += run;
-      setProgress(Math.round(100 * batchRef.current.completed / batchRef.current.total));
-
-      if (batchRef.current.completed < batchRef.current.total) {
-        setTimeout(step, 10);
-      } else {
-        setBatchResult(acc);
-        setIsRunning(false);
-      }
-    };
-    step();
+    // Seed the whole batch from the matchup so the probability is identical on
+    // every reload (no Monte Carlo jitter). 1000 sims run in a single pass, so
+    // there is no need to chunk for progress. The seed folds in the stats so
+    // slider what-ifs still change the result deterministically.
+    const key = [playerA?.id, playerB?.id].sort().join('_') + '|' + config.surfaceKey + '|' + tour
+      + '|' + pA.map((v) => Math.round(v * 1000)).join(',') + '|' + pB.map((v) => Math.round(v * 1000)).join(',');
+    const res = simulateBatch(pA, pB, n, bestOf, seedFromString(key));
+    setProgress(100);
+    setBatchResult({ matchWins: res.matchWins, lostInWins: res.lostInWins });
+    setIsRunning(false);
   };
 
   const showPlayerError = () => toast({
@@ -403,17 +405,20 @@ export default function H2H({ tour = 'atp' }) {
     advance();
   };
 
-  // Auto-run the detailed batch simulation once both players are picked (and
-  // their stats have seeded), and whenever the matchup, engine, or surface
-  // changes - so results are ready without clicking. Manual slider tweaks
-  // don't re-trigger it (the key is unchanged); use the button to re-run.
+  // Auto-run the detailed batch simulation once both players are picked and
+  // their stats have seeded, re-running whenever the matchup, engine, surface,
+  // or the stats themselves change. The stats are in the key so that when the
+  // Hot Streak engine swaps in its hot-form stats (loaded async), the Verdict
+  // re-simulates on them instead of being stuck on the season values - and so
+  // slider what-ifs update the Verdict live.
   const autoRunKeyRef = useRef(null);
   useEffect(() => {
     if (!playerA || !playerB || isWatching || isRunning) return;
     const readyA = STAT_KEYS.some(([k]) => (statsA[k] || 0) > 0);
     const readyB = STAT_KEYS.some(([k]) => (statsB[k] || 0) > 0);
     if (!readyA || !readyB) return;
-    const key = `${playerA.id}|${playerB.id}|${engine}|${config.csvFile}`;
+    const statsSig = STAT_KEYS.map(([k]) => `${Math.round(statsA[k] || 0)}-${Math.round(statsB[k] || 0)}`).join(',');
+    const key = `${playerA.id}|${playerB.id}|${engine}|${config.csvFile}|${statsSig}`;
     if (autoRunKeyRef.current === key) return;
     autoRunKeyRef.current = key;
     handleSimulate();
@@ -490,19 +495,24 @@ export default function H2H({ tour = 'atp' }) {
 
   const receipts = useMemo(() => {
     if (!trackData || probA == null) return null;
+    // Score the band and accuracy with the SAME engine that drives the verdict,
+    // so the credibility line and the headline never cite different models.
+    const F = ENGINE_FIELDS[engine] || ENGINE_FIELDS.smash;
     const favProb = Math.max(probA, 1 - probA);
     const band = (trackData.matches || []).filter((m) => {
       if (m.tour !== tour || m.surface !== config.surfaceKey) return false;
-      const fp = m.smashProbP1 >= 0.5 ? m.smashProbP1 : 1 - m.smashProbP1;
+      const p = m[F.prob];
+      if (typeof p !== 'number') return false;
+      const fp = p >= 0.5 ? p : 1 - p;
       return Math.abs(fp - favProb) <= 0.07;
     });
-    const acc = band.length ? Math.round((band.filter((m) => m.smashCorrect).length / band.length) * 100) : null;
+    const acc = band.length ? Math.round((band.filter((m) => m[F.correct]).length / band.length) * 100) : null;
     const examples = band.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map((m) => {
       const wIsP1 = m.winner === m.p1;
-      return { wName: wIsP1 ? m.name1 : m.name2, lName: wIsP1 ? m.name2 : m.name1, score: m.score, right: m.smashCorrect };
+      return { wName: wIsP1 ? m.name1 : m.name2, lName: wIsP1 ? m.name2 : m.name1, score: m.score, right: m[F.correct] };
     });
     return { acc, n: band.length, examples, lo: Math.round((favProb - 0.07) * 100), hi: Math.round(Math.min(1, favProb + 0.07) * 100) };
-  }, [trackData, probA, tour, config.surfaceKey]);
+  }, [trackData, probA, engine, tour, config.surfaceKey]);
 
   // Live matches: current locked (not-yet-played) Slam predictions for this
   // tour, so you can drop straight into a real matchup instead of searching.
@@ -706,8 +716,9 @@ export default function H2H({ tour = 'atp' }) {
                     </div>
                     {receipts && receipts.acc != null && receipts.n >= 8 && (
                       <div className="verdict-credibility">
-                        <Trophy size={14} /> On {config.surfaceLabel.toLowerCase()} matchups this lopsided, the model has called the winner{' '}
-                        <strong>{receipts.acc}%</strong> of the time ({receipts.n} matches).{' '}
+                        <Trophy size={14} /> <strong>Track record:</strong> when {ENGINE_LABELS[engine] || 'Smart Blend'} has
+                        been this confident on {config.surfaceLabel.toLowerCase()} ({receipts.lo}{'–'}{receipts.hi}% favorite),
+                        its pick has been right <strong>{receipts.acc}%</strong> of the time ({receipts.n} past matches).{' '}
                         <Link to="/methodology" className="verdict-method-link">How it works</Link>
                       </div>
                     )}
@@ -790,7 +801,7 @@ export default function H2H({ tour = 'atp' }) {
                         onClick={() => makeCall(p.id)}
                         style={userPick === p.id ? { borderColor: config.accentColor } : undefined}
                       >
-                        <img src={getPlayerImageSrc(p)} alt="" className="call-btn-img" />
+                        <img src={getPlayerImageSrc(p)} alt="" className="call-btn-img" onError={imgFallback} />
                         <span>{p.name}</span>
                       </button>
                     ))}
@@ -924,6 +935,7 @@ function PlayerFace({ player, favored, accent, getImg, align = 'left' }) {
           src={getImg(player)}
           alt={player.name}
           className="verdict-face-photo"
+          onError={imgFallback}
           style={favored ? { borderColor: accent, boxShadow: `0 0 0 4px rgba(255,255,255,0.06), 0 0 22px -2px ${accent}` } : undefined}
         />
         {favored && <span className="verdict-face-badge" style={{ background: accent }}>Favored</span>}

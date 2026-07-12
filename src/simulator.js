@@ -1,3 +1,16 @@
+// Seedable RNG. When a seed is set (via simulateBatch's `seed` arg) a given
+// matchup produces the exact same probability every run, so the number never
+// jitters between reloads. Unseeded, it falls back to Math.random.
+let _rng = Math.random;
+function _mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
  * Simulates a single point given server and returner probabilities.
  * @param {number[]} srv - [p1, p2, p3, p4, p5, p6] for server (p6 = ace rate given 1st serve in; optional, defaults to 0 if omitted)
@@ -6,24 +19,24 @@
  */
 function simulatePoint(srv, rtn) {
   // First serve
-  if (Math.random() < srv[0]) {
+  if (_rng() < srv[0]) {
     // Unreturnable ace - the point ends before the returner gets involved at
     // all, which is why this is checked separately from the rally win rate
     // (p5): an ace isn't a function of the returner's skill, but blending
     // it into p5 (as the original model did) made it look like one.
-    if (Math.random() < srv[5]) return 0;
+    if (_rng() < srv[5]) return 0;
     // Return first serve
-    if (Math.random() < rtn[2]) {
+    if (_rng() < rtn[2]) {
       // Rally outcome
-      return Math.random() < srv[4] ? 0 : 1;
+      return _rng() < srv[4] ? 0 : 1;
     }
     return 0; // return fails, server wins
   } else {
     // Second serve
-    if (Math.random() < srv[1]) {
+    if (_rng() < srv[1]) {
       // Return second serve
-      if (Math.random() < rtn[3]) {
-        return Math.random() < srv[4] ? 0 : 1;
+      if (_rng() < rtn[3]) {
+        return _rng() < srv[4] ? 0 : 1;
       }
       return 0; // return fails, server wins
     }
@@ -98,7 +111,7 @@ function simulateSet(probA, probB) {
   let gamesB = 0;
   let tbLoserPoints = null;
   // Randomize initial server each set
-  let server = Math.random() < 0.5 ? 0 : 1;
+  let server = _rng() < 0.5 ? 0 : 1;
 
   while (true) {
     // Play a standard game
@@ -158,30 +171,44 @@ export function simulateMatch(probA, probB, bestOf = 5) {
  * Runs N fast simulations and aggregates results for batch display.
  * @param {number} bestOf - 5 (ATP Grand Slam default) or 3 (WTA Grand Slam).
  */
-export function simulateBatch(probA, probB, n = 1000, bestOf = 5) {
-  const setsWonAgg = [0, 0];
-  const matchWins = [0, 0];
-  const lostInWins = [[0, 0, 0], [0, 0, 0]];
-  let lastSetScores = [];
+export function simulateBatch(probA, probB, n = 1000, bestOf = 5, seed = null) {
+  const prevRng = _rng;
+  if (seed != null) _rng = _mulberry32(seed >>> 0);
+  try {
+    const setsWonAgg = [0, 0];
+    const matchWins = [0, 0];
+    const lostInWins = [[0, 0, 0], [0, 0, 0]];
+    let lastSetScores = [];
 
-  for (let i = 0; i < n; i++) {
-    const { setsWon, setScores } = simulateMatch(probA, probB, bestOf);
-    setsWonAgg[0] += setsWon[0];
-    setsWonAgg[1] += setsWon[1];
-    const winner = setsWon[0] > setsWon[1] ? 0 : 1;
-    matchWins[winner]++;
-    lastSetScores = setScores;
-    const lost = Math.min(setsWon[1 - winner], 2);
-    lostInWins[winner][lost]++;
+    for (let i = 0; i < n; i++) {
+      const { setsWon, setScores } = simulateMatch(probA, probB, bestOf);
+      setsWonAgg[0] += setsWon[0];
+      setsWonAgg[1] += setsWon[1];
+      const winner = setsWon[0] > setsWon[1] ? 0 : 1;
+      matchWins[winner]++;
+      lastSetScores = setScores;
+      const lost = Math.min(setsWon[1 - winner], 2);
+      lostInWins[winner][lost]++;
+    }
+
+    return {
+      simCount: n,
+      matchWins,
+      setsWon: setsWonAgg,
+      lostInWins,
+      setScores: lastSetScores
+    };
+  } finally {
+    _rng = prevRng; // never leak the seed to other callers (e.g. Dream Brackets)
   }
+}
 
-  return {
-    simCount: n,
-    matchWins,
-    setsWon: setsWonAgg,
-    lostInWins,
-    setScores: lastSetScores
-  };
+// Stable 32-bit hash of a matchup key, so H2H can derive a seed that is the
+// same every time the same two players meet on the same surface.
+export function seedFromString(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
 }
 
 /**
@@ -195,7 +222,7 @@ export function* simulateMatchStepwise(probA, probB, playerInfo = { A: {}, B: {}
   let currentSet = 0;
   let games = [0, 0];
   let points = [0, 0];
-  let server = Math.random() < 0.5 ? 0 : 1;
+  let server = _rng() < 0.5 ? 0 : 1;
 
   while (Math.max(...setsWon) < targetSets) {
     // Regular point. simulatePoint returns 0/1 relative to server/returner,

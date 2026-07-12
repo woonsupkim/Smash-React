@@ -344,7 +344,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
       download: true,
       complete: ({ data }) => {
         const newPool = data
-          .filter(r => Number(r.us_rd) === 2)
+          // Only players with real computed stats; drop blank top-120 entries.
+          .filter(r => Number(r.us_rd) === 2 && ['p1','p2','p3','p4','p5'].every(k => Number(r[k]) > 0))
           .map(r => ({
             ...r,
             probabilities: [
@@ -670,7 +671,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
     }
     return (
       <div className={competitorClass}>
-        <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" />
+        <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }} />
         <div className="competitor-name-col">
           <span className="competitor-name">{p ? p.name : '–'}</span>
           {ciCaption}
@@ -838,7 +839,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
                       {colPlayers[0] ? (
                         <div className="competitor winner champion-winner">
                           <span className="champion-crown" aria-hidden="true">👑</span>
-                          <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" />
+                          <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }} />
                           <span className="champion-name">{colPlayers[0].name}</span>
                         </div>
                       ) : (

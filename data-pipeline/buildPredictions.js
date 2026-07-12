@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { winProb } = require('./simCore');
+const { winProb, seedFromString } = require('./simCore');
 const { predElo, expected } = require('./eloCore');
 const { normName, normSurface, isGrandSlam, surfaceFromEventName, matchRoster } = require('./lib/espnParse');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
@@ -42,13 +42,19 @@ function loadTour(tour) {
   const RAW = path.join(__dirname, 'raw', ns);
 
   const statsBySurface = {};
+  const upsetBySurface = {}; // hot-form (7-day half-life) stats, for the Hot Streak engine
   let roster = [];
   for (const [surface, file] of Object.entries(SURFACE_CSV)) {
     const p = path.join(dir, file);
-    if (!fs.existsSync(p)) { statsBySurface[surface] = new Map(); continue; }
+    if (!fs.existsSync(p)) { statsBySurface[surface] = new Map(); upsetBySurface[surface] = new Map(); continue; }
     const rows = Papa.parse(fs.readFileSync(p, 'utf8'), { header: true }).data.filter((r) => r.id);
     statsBySurface[surface] = new Map(rows.map((r) => [r.id, r]));
     if (surface === 'hard') roster = rows.map((r) => ({ id: r.id, name: r.name, norm: normName(r.name) }));
+
+    const up = path.join(dir, file.replace('.csv', '_upset.csv'));
+    upsetBySurface[surface] = fs.existsSync(up)
+      ? new Map(Papa.parse(fs.readFileSync(up, 'utf8'), { header: true }).data.filter((r) => r.id).map((r) => [r.id, r]))
+      : new Map();
   }
   const elo = fs.existsSync(path.join(dir, 'elo.json'))
     ? JSON.parse(fs.readFileSync(path.join(dir, 'elo.json'), 'utf8')) : {};
@@ -70,7 +76,7 @@ function loadTour(tour) {
     }
   }
 
-  return { tour, dir, roster, statsBySurface, elo, completed, bestOf: tour === 'wta' ? 3 : 5 };
+  return { tour, dir, roster, statsBySurface, upsetBySurface, elo, completed, bestOf: tour === 'wta' ? 3 : 5 };
 }
 
 const probsFromRow = (r) => [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6].map((v) => Number(v) || 0);
@@ -83,7 +89,24 @@ function predict(ctx, a, b, surface) {
   const rowB = ctx.statsBySurface[surface].get(b.id);
   if (!rowA || !rowB) return null;
 
-  const simP = winProb(probsFromRow(rowA), probsFromRow(rowB), SIMS, ctx.bestOf);
+  const best = ACC?.[ctx.tour]?.[surface]?.best || 'smash';
+
+  // The Hot Streak (upset) engine runs the point sim on heavy-recency stats,
+  // per-player falling back to the season stats when a player has no hot-form
+  // row - exactly what the H2H page's slider seeding does.
+  let pA = probsFromRow(rowA), pB = probsFromRow(rowB);
+  if (best === 'upset' && ctx.upsetBySurface) {
+    const uA = ctx.upsetBySurface[surface].get(a.id);
+    const uB = ctx.upsetBySurface[surface].get(b.id);
+    if (uA) pA = probsFromRow(uA);
+    if (uB) pB = probsFromRow(uB);
+  }
+
+  // Seed the point sim from the exact same matchup key the H2H page uses, so
+  // the locked probability shown on Home equals the live H2H number to the digit.
+  const seedKey = [a.id, b.id].sort().join('_') + '|' + surface + '|' + ctx.tour
+    + '|' + pA.map((v) => Math.round(v * 1000)).join(',') + '|' + pB.map((v) => Math.round(v * 1000)).join(',');
+  const simP = winProb(pA, pB, SIMS, ctx.bestOf, seedFromString(seedKey));
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
   let eloP = 0.5;
   if (eA && eB) eloP = expected(predElo(eA, surface), predElo(eB, surface));
@@ -92,10 +115,9 @@ function predict(ctx, a, b, surface) {
   const w = (ENGINE.weights[ctx.tour] && ENGINE.weights[ctx.tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
   const smashP = w.ws * simP + w.we * eloP + w.wr * rankP;
 
-  const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP };
-  // 'upset' needs hot-form stats we don't load here, so fall back to Smart
-  // Blend if that's the nominal best for the surface.
-  const best = ACC?.[ctx.tour]?.[surface]?.best;
+  // For 'upset', simP already reflects the hot-form point sim (matches the H2H
+  // pickEngineProb('upset') result); for 'sim' it is the season point sim.
+  const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP, upset: simP };
   const engine = probs[best] != null ? best : 'smash';
   return { probA: probs[engine], engine };
 }

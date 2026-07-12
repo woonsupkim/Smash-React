@@ -230,6 +230,17 @@
 }
 .home-board-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); border-color: var(--border-2); border-left-color: var(--accent-brand); }
 .home-board-match { font-size: 1rem; font-weight: 700; color: var(--text-3); display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.home-board-tour {
+  align-self: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
 .home-board-match .fav { color: #fff; }
 .home-board-vs { font-size: 0.72rem; color: var(--text-3); font-weight: 400; }
 .home-board-call { display: flex; align-items: baseline; gap: 0.45rem; }

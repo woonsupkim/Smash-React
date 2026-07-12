@@ -46,21 +46,20 @@ export default function Home({ tour = 'atp' }) {
   const [proof, setProof] = useState(null);
   const [livePicks, setLivePicks] = useState([]);
 
-  // Live-tournament surfacing: if there are locked, not-yet-played predictions
-  // for this tour (i.e. a Slam is on), show them up top so opening the app
-  // during Wimbledon lands you on Wimbledon.
+  // Live-tournament surfacing: locked, not-yet-played predictions across BOTH
+  // tours, so the landing board shows everything that's on right now.
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
       .then((d) => {
         const picks = (d.predictions || [])
-          .filter((p) => p.tour === tour && p.status === 'pending')
+          .filter((p) => p.status === 'pending')
           .sort((a, b) => new Date(a.date) - new Date(b.date))
-          .slice(0, 4);
+          .slice(0, 6);
         setLivePicks(picks);
       })
       .catch(() => setLivePicks([]));
-  }, [tour]);
+  }, []);
 
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
@@ -241,10 +240,11 @@ export default function Home({ tour = 'atp' }) {
               {livePicks.map((p) => (
                 <Link
                   key={p.id}
-                  to={withTourPrefix(`/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`, isWta)}
+                  to={`${p.tour === 'wta' ? '/women' : ''}/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`}
                   className="home-board-card"
                 >
                   <div className="home-board-match">
+                    <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
                     <span className={p.favorite === p.p1 ? 'fav' : ''}>{p.name1}</span>
                     <span className="home-board-vs">vs</span>
                     <span className={p.favorite === p.p2 ? 'fav' : ''}>{p.name2}</span>
