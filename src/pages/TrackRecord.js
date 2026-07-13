@@ -100,11 +100,21 @@ export default function TrackRecord() {
     const n = filtered.length;
     const pct = (k) => (n ? Math.round((filtered.filter((m) => m[k]).length / n) * 100) : 0);
 
-    // Per-surface accuracy (for the whole tour, ignoring the surface filter)
+    // Per-surface accuracy (for the whole tour, ignoring the surface filter).
+    // Each card shows its BEST engine's number - matching the "Most accurate"
+    // highlight in the engine panel below - and names that engine on the card
+    // so the figure is never quietly cherry-picked. Smart Blend wins ties.
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
       const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s);
-      const acc = list.length ? Math.round((list.filter((m) => m.smashCorrect).length / list.length) * 100) : 0;
-      return { key: s, ...SURFACES[s], n: list.length, acc };
+      const accOf = (key) => (list.length ? Math.round((list.filter((m) => m[key]).length / list.length) * 100) : 0);
+      const best = [
+        { label: 'Smart Blend', acc: accOf('smashCorrect') },
+        { label: 'Point Sim', acc: accOf('correct') },
+        { label: 'Form', acc: accOf('eloCorrect') },
+        { label: 'Rankings', acc: accOf('rankCorrect') },
+        { label: 'Hot Streak', acc: accOf('upsetCorrect') },
+      ].reduce((b, e) => (e.acc > b.acc ? e : b));
+      return { key: s, ...SURFACES[s], n: list.length, acc: best.acc, engine: best.label };
     });
 
     // Confidence calibration buckets on the favorite's modeled probability
@@ -431,7 +441,7 @@ export default function TrackRecord() {
                   >
                     <div className="track-surface-acc" style={{ color: s.accent }}>{s.acc}%</div>
                     <div className="track-surface-label">{s.label}</div>
-                    <div className="track-surface-n">{s.n} matches</div>
+                    <div className="track-surface-n">{s.engine} · {s.n} matches</div>
                   </button>
                 ))}
               </div>
