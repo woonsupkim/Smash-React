@@ -145,7 +145,7 @@ export default function Home({ tour = 'atp' }) {
                 exit={{ opacity: 0 }}
                 transition={{ delay: 0.25, duration: 0.35, ease: 'easeOut' }}
               >
-                SMASH!
+                SMASH
               </motion.div>
             </div>
           </>

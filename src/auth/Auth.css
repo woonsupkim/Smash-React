@@ -1,0 +1,57 @@
+/* src/auth/Auth.css */
+
+.account-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.32rem 0.8rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  margin-left: 0.75rem;
+  white-space: nowrap;
+}
+.account-btn:hover { border-color: var(--accent-brand); color: var(--accent-brand); }
+.account-btn.signed-in { border-color: var(--border-2); color: var(--text-2); text-transform: none; letter-spacing: 0; }
+
+.account-wrap { position: relative; }
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 200px;
+  background: #16181d;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 0.4rem;
+  z-index: 1100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.account-email {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--border-1);
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.account-menu-item:hover { background: var(--surface-2); color: var(--text-1); }
+
+.auth-note, .auth-sent { font-size: 0.88rem; color: var(--text-3); line-height: 1.55; }
+.auth-sent strong { color: var(--text-1); }

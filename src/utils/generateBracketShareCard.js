@@ -125,7 +125,7 @@ export async function generateBracketShareCard({
   ctx.textAlign = 'left';
   ctx.font = '800 22px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('⚡ SMASH!', 40, 50);
+  ctx.fillText('⚡ SMASH', 40, 50);
   ctx.textAlign = 'right';
   ctx.font = '600 18px Arial, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';

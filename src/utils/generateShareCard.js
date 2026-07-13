@@ -207,7 +207,7 @@ export async function generateShareCard({
   ctx.textAlign = 'left';
   ctx.font = '800 22px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('⚡ SMASH!', 40, 50);
+  ctx.fillText('⚡ SMASH', 40, 50);
 
   const meta = [tournamentLabel, surfaceLabel].filter(Boolean).join(' · ').toUpperCase();
   if (meta) {

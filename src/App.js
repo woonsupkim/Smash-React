@@ -15,6 +15,8 @@ import SiteFooter from './components/SiteFooter';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import ErrorBoundary from './components/ErrorBoundary';
+import { AuthProvider } from './auth/AuthContext';
+import AccountButton from './auth/AccountButton';
 import { initMonitoring } from './utils/monitoring';
 import { ToastHost } from './components/ui/Toast';
 import { Analytics } from '@vercel/analytics/react';
@@ -68,7 +70,7 @@ function NavBar() {
       <div className="container">
         <NavLink to={withTour('/', isWomen)} className="navbar-brand d-flex align-items-center">
           <span className="brand-dot"><motion.img layoutId="home-intro-logo" src={logoHome} alt="" /></span>
-          Smash!
+          Smash
         </NavLink>
         <button
           className="navbar-toggler"
@@ -96,6 +98,9 @@ function NavBar() {
                 </li>
               );
             })}
+            <li className="nav-item">
+              <AccountButton />
+            </li>
           </ul>
         </div>
       </div>
@@ -106,12 +111,14 @@ function NavBar() {
 function App() {
   return (
     <Router>
+      <AuthProvider>
       <GATracker /> {/* <-- Google Analytics route change tracker */}
       <Analytics /> {/* <-- Vercel Web Analytics */}
       <ToastHost />
+      <a className="skip-link" href="#main">Skip to content</a>
       <NavBar />
 
-      <main className="page-content">
+      <main id="main" className="page-content">
         <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Home tour="atp" />} />
@@ -155,6 +162,7 @@ function App() {
         </ErrorBoundary>
       </main>
       <SiteFooter />
+      </AuthProvider>
     </Router>
   );
 }

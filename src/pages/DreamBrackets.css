@@ -1,10 +1,16 @@
-/* Dark translucent overlay over the tournament background, denser than
-   Home's since this page has a lot of small text/controls. */
+/* Same vertical gradient scrim as Home and the H2H studio (.overlay in
+   App.css), so all photo-backed pages share one atmosphere. */
 .bracket-overlay {
-  background-color: rgba(0, 0, 0, 0.78);
+  background: linear-gradient(180deg, rgba(13, 16, 24, 0.82) 0%, rgba(11, 13, 19, 0.90) 45%, rgba(9, 11, 16, 0.96) 100%);
   min-height: calc(100vh - 70px);
   padding: var(--page-pad-top) 1.5rem 3rem;
   color: #fff;
+}
+
+/* Keyboard focus on the tappable pick rows */
+.competitor.pickable:focus-visible {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
 }
 
 .dream-brackets-page h3 {
@@ -503,3 +509,31 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.pool-signin-nudge {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  padding: 0.5rem 0.7rem;
+  background: rgba(198, 255, 28, 0.05);
+  border: 1px solid rgba(198, 255, 28, 0.2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+}
+.pool-signin-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-brand);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Roster loading: skeleton strip instead of a wall of empty dropdowns */
+.bracket-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+.bracket-skel-row { height: 96px; border-radius: var(--radius-md); }

@@ -215,6 +215,37 @@ h1, h2, h3, .heading-xl, .heading-lg,
   --bs-btn-hover-border-color: var(--border-2);
   --bs-btn-hover-color: var(--text-1);
 }
+/* outline-light is the workhorse secondary button on H2H/Brackets - retheme
+   it from Bootstrap's stark white outline to the design system's grays. */
+.btn-outline-light {
+  --bs-btn-color: var(--text-2);
+  --bs-btn-border-color: var(--border-2);
+  --bs-btn-hover-bg: var(--surface-2);
+  --bs-btn-hover-border-color: rgba(255, 255, 255, 0.45);
+  --bs-btn-hover-color: var(--text-1);
+  --bs-btn-active-bg: var(--surface-3);
+  --bs-btn-active-border-color: rgba(255, 255, 255, 0.45);
+  --bs-btn-active-color: var(--text-1);
+  --bs-btn-disabled-color: var(--text-3);
+  --bs-btn-disabled-border-color: var(--border-1);
+}
+
+/* ── Accessibility: skip link (visible only on keyboard focus) ────────── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 2000;
+  background: var(--accent-brand);
+  color: #111;
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 var(--radius-sm) 0;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 0;
+}
 
 /* Dark text inputs everywhere (modals already themed in AppModal.css) */
 .form-control {
@@ -303,10 +334,11 @@ h1, h2, h3, .heading-xl, .heading-lg,
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
 .about-bg     { background-image: url(./assets/smash3.jpg); }
 
-/* Dark tint over the background photo on the tournament pages - without
-   this the raw photo renders at full brightness behind the UI. */
+/* Dark scrim over the background photo on the deep pages - the SAME
+   vertical gradient treatment as Home, so every photo-backed page shares
+   one atmosphere: photo showing through up top, deepening behind content. */
 .overlay {
-  background-color: rgba(0, 0, 0, 0.82);
+  background: linear-gradient(180deg, rgba(13, 16, 24, 0.82) 0%, rgba(11, 13, 19, 0.90) 45%, rgba(9, 11, 16, 0.96) 100%);
   min-height: calc(100vh - 70px);
   padding: var(--page-pad-top) 1.5rem 3rem;
 }

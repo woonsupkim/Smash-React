@@ -163,7 +163,7 @@ export default function AdvancedSimPanel({
     try {
       const blob = await (await fetch(shareUrl)).blob();
       const file = new File([blob], 'smash-prediction.png', { type: 'image/png' });
-      await navigator.share({ files: [file], title: 'SMASH! Match Prediction' });
+      await navigator.share({ files: [file], title: 'Smash Match Prediction' });
     } catch (_) { /* user cancelled */ }
   };
 
