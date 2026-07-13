@@ -1,110 +1,66 @@
-/* src/pages/Home.css */
+/* src/pages/Home.css
+   One centered shell, one alignment axis. Every section (hero, stat rail,
+   live board, destination cards, footer) lives inside .home-shell and shares
+   the same width and horizontal padding - no more full-bleed breaks. */
 
 .home-page {
-  /* Lighter than the old flat near-black: a vertical scrim that lets the court
-     photo show through up top and only deepens behind the lower content. */
+  /* Court photo up top, deepening scrim below so content stays readable. */
   background:
-    linear-gradient(180deg, rgba(16,20,30,0.55) 0%, rgba(12,15,22,0.78) 52%, rgba(9,11,16,0.9) 100%),
+    linear-gradient(180deg, rgba(13,16,24,0.72) 0%, rgba(11,13,19,0.88) 45%, rgba(9,11,16,0.97) 100%),
     url(../assets/smash1.jpg);
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-attachment: fixed;
   min-height: calc(100vh - 70px);
 }
 
+.home-shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero: centered column ───────────────────────────────────────────── */
 .home-hero {
-  padding: var(--page-pad-top) 2rem 4rem;
-  max-width: 900px;
+  text-align: center;
+  padding: calc(var(--page-pad-top) + 1.5rem) 0 2.5rem;
 }
 
 .eyebrow {
-  font-size: 0.78rem;
-  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
   color: var(--accent-brand);
   font-weight: 700;
   margin-bottom: 1rem;
   text-transform: uppercase;
 }
 
-/* Condensed, ultra-bold, all-caps hero headline - broadcast/ESPN energy. */
 .main-title {
-  font-size: clamp(2.4rem, 6.5vw, 4.2rem);
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
   font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: #fff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.1rem;
 }
 
 .sub-title {
-  font-size: clamp(1rem, 2vw, 1.15rem);
-  color: var(--text-3);
+  font-size: clamp(1rem, 2vw, 1.12rem);
+  color: var(--text-2);
   max-width: 560px;
-  margin-bottom: 2rem;
-  line-height: 1.5;
+  margin: 0 auto 1.9rem;
+  line-height: 1.55;
 }
 
 .hero-ctas {
-  margin-bottom: 1.75rem;
-}
-
-/* Proof band - the credibility moat, one click from its receipts. */
-.home-proof {
   display: flex;
-  align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem 2rem;
-  max-width: 640px;
-  padding: 1.1rem 1.35rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-left: 3px solid var(--accent-brand);
-  border-radius: 4px;
-  text-decoration: none;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  gap: 0.75rem;
 }
-.home-proof:hover {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.25);
-  border-left-color: var(--accent-brand);
-}
-.home-proof-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem 1.75rem;
-  flex: 1 1 auto;
-}
-.home-proof-item {
-  display: flex;
-  flex-direction: column;
-}
-.hp-val {
-  font-family: var(--font-display, inherit);
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.hp-val small { font-size: 0.9rem; }
-.hp-ci { font-size: 0.85rem; color: var(--accent-brand); font-weight: 700; }
-.hp-vs { font-size: 0.85rem; color: var(--text-3); font-weight: 600; }
-.hp-cap {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-3);
-  margin-top: 0.3rem;
-}
-.home-proof-cta {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--accent-brand);
-  white-space: nowrap;
-}
-.trust-method-link { color: var(--accent-brand); text-decoration: none; }
-.trust-method-link:hover { text-decoration: underline; }
 
 .cta-primary,
 .cta-secondary {
@@ -112,7 +68,7 @@
   font-size: 0.95rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 0.85rem 1.75rem;
+  padding: 0.85rem 1.9rem;
   min-height: 44px;
   border-radius: 2px;
   border-width: 2px;
@@ -131,7 +87,7 @@
 
 .cta-secondary {
   background: transparent;
-  border-color: #fff;
+  border-color: rgba(255,255,255,0.7);
   color: #fff !important;
 }
 .cta-secondary:hover {
@@ -140,29 +96,85 @@
   color: #fff !important;
 }
 
-/* Live-tournament surfacing: what's on the tour right now, straight to H2H. */
-.home-live {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 2rem 2.5rem;
-}
-.home-live-head {
-  display: flex;
+/* ── Stat rail: proof numbers on one line, one click from receipts ───── */
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  margin-bottom: 0.9rem;
+  gap: 1rem 2rem;
+  padding: 1.25rem 1.75rem;
+  margin-bottom: 3rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.home-live-event {
+.home-stats:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: var(--border-2);
+}
+.home-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.home-stat + .home-stat {
+  border-left: 1px solid var(--border-1);
+  padding-left: 2rem;
+}
+.home-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.home-stat-ci { font-size: 0.95rem; color: var(--accent-brand); font-weight: 700; }
+.home-stat-vs { font-size: 0.95rem; color: var(--text-3); font-weight: 600; }
+.home-stat-cap {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text-3);
+}
+.home-stat-link {
+  align-items: flex-end;
+  text-align: right;
+  color: var(--accent-brand);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.home-stat-link .home-stat-cap { color: var(--accent-brand); }
+
+/* ── Shared section header: dot + title + context on one baseline ────── */
+.home-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-1);
+  padding-bottom: 0.6rem;
+}
+.home-section-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin: 0;
+}
+.home-section-sub {
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
 .home-live-dot {
+  align-self: center;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -172,165 +184,154 @@
 }
 @keyframes home-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .home-live-dot { animation: none; } }
-.home-live-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.75rem;
-}
-.home-live-pick {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.8rem 1rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-left: 3px solid var(--accent-brand);
-  border-radius: 4px;
-  text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.home-live-pick:hover { background: var(--surface-2); border-color: var(--border-2); border-left-color: var(--accent-brand); }
-.home-live-match { color: var(--text-1); font-weight: 700; font-size: 0.95rem; }
-.home-live-call { color: var(--text-3); font-size: 0.8rem; }
 
-/* Section label above the surface strip */
-.home-section-label {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0.25rem 2rem 0.85rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-/* Live board: the current tournament's matches, each opening its full verdict. */
-.home-board { max-width: 900px; margin: 0 auto; padding: 0 2rem 2.5rem; }
-.home-board-head {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-2); margin-bottom: 0.9rem;
-}
-.home-board-event { color: var(--text-3); font-weight: 600; letter-spacing: 0.04em; }
+/* ── Live board ──────────────────────────────────────────────────────── */
+.home-board { margin-bottom: 3rem; }
 .home-board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.85rem;
 }
 .home-board-card {
-  display: flex; flex-direction: column; gap: 0.55rem;
-  padding: 1rem 1.1rem;
-  background: rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem 1.15rem;
+  background: rgba(255,255,255,0.045);
   border: 1px solid var(--border-1);
-  border-left: 3px solid var(--accent-brand);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
-.home-board-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); border-color: var(--border-2); border-left-color: var(--accent-brand); }
-.home-board-match { font-size: 1rem; font-weight: 700; color: var(--text-3); display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.home-board-card:hover {
+  background: rgba(255,255,255,0.09);
+  transform: translateY(-2px);
+  border-color: var(--border-2);
+}
+.home-board-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .home-board-tour {
-  align-self: center;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 999px;
-  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  padding: 0.12rem 0.5rem;
 }
-.home-board-match .fav { color: #fff; }
-.home-board-vs { font-size: 0.72rem; color: var(--text-3); font-weight: 400; }
-.home-board-call { display: flex; align-items: baseline; gap: 0.45rem; }
-.home-board-pct { font-family: var(--font-display, inherit); font-size: 1.5rem; font-weight: 800; color: var(--accent-brand); line-height: 1; }
-.home-board-callsub { font-size: 0.8rem; color: var(--text-3); }
-.home-board-open { font-size: 0.78rem; font-weight: 700; color: var(--accent-brand); }
-
-/* Full-bleed surface strip - edge-to-edge color blocks, not floating cards. */
-.surface-strip {
+.home-board-surface {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.home-board-surface.s-clay  { color: #e8694a; }
+.home-board-surface.s-grass { color: #3ddc84; }
+.home-board-surface.s-hard  { color: #5b8cff; }
+.home-board-players {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.15rem;
 }
+.home-board-player {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-3);
+  line-height: 1.3;
+}
+.home-board-player.fav { color: #fff; font-weight: 800; }
+.home-board-call {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border-1);
+}
+.home-board-pct {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-brand);
+  line-height: 1;
+}
+.home-board-callsub { font-size: 0.8rem; color: var(--text-3); }
 
-.surface-tile {
-  flex: 1 1 280px;
-  position: relative;
-  overflow: hidden;
-  padding: 2.5rem 2rem;
+/* ── Destination cards (replaces the old city surface tiles) ─────────── */
+.home-nav { margin-bottom: 3rem; }
+.home-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.85rem;
+}
+.home-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.35rem 1.25rem 1.2rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
   text-decoration: none;
-  min-height: 220px;
-  background-size: 8px 100%;
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
-.surface-tile:hover {
-  filter: brightness(1.15);
+.home-nav-card:hover {
+  background: rgba(255,255,255,0.07);
+  transform: translateY(-2px);
+  border-color: var(--border-2);
 }
-
-.surface-tile-label {
+.home-nav-num {
+  font-family: var(--font-display);
   font-size: 0.8rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--accent-brand);
 }
-
-.surface-tile-city {
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.01em;
+.home-nav-name {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: #fff;
   line-height: 1.1;
 }
-
-.surface-tile-desc {
-  font-size: 0.88rem;
-  color: rgba(255,255,255,0.75);
-  margin-top: 0.5rem;
+.home-nav-desc {
+  font-size: 0.86rem;
+  color: var(--text-3);
+  line-height: 1.5;
+  margin: 0;
 }
-
-.surface-tile-enter {
-  font-size: 0.82rem;
+.home-nav-go {
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-top: 1.25rem;
+  color: var(--accent-brand);
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
-.surface-clay {
-  background-color: #3a1208;
-  background-image: repeating-linear-gradient(90deg, rgba(178,73,54,0.18) 0 1px, transparent 1px 24px);
-}
-.surface-clay .surface-tile-label,
-.surface-clay .surface-tile-enter { color: #e8694a; }
-
-.surface-grass {
-  background-color: #0c2415;
-  background-image: repeating-linear-gradient(90deg, rgba(30,122,69,0.22) 0 1px, transparent 1px 24px);
-}
-.surface-grass .surface-tile-label,
-.surface-grass .surface-tile-enter { color: #3ddc84; }
-
-.surface-hard {
-  background-color: #061330;
-  background-image: repeating-linear-gradient(90deg, rgba(0,51,160,0.25) 0 1px, transparent 1px 24px);
-}
-.surface-hard .surface-tile-label,
-.surface-hard .surface-tile-enter { color: #5b8cff; }
-
+/* ── Footer ──────────────────────────────────────────────────────────── */
 .home-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 2rem 1rem;
+  gap: 0.45rem;
+  padding: 1.5rem 0 1rem;
+  border-top: 1px solid var(--border-1);
 }
 
 .trust-signal {
   font-size: 0.8rem;
   color: var(--text-3);
 }
+.trust-method-link { color: var(--accent-brand); text-decoration: none; }
+.trust-method-link:hover { text-decoration: underline; }
 
 .update-data-link {
   background: none;
@@ -347,11 +348,12 @@
   color: var(--text-3);
 }
 
-/* One-time intro overlay, similar in spirit to a sports broadcast's logo
-   sting - plays once per browser session then fades to reveal the page.
-   z-index sits BELOW the navbar (Bootstrap's fixed-top is ~1030) so the
-   real nav logo stays visible the whole time - that's the landing target
-   the big intro logo morphs into via the shared layoutId. */
+/* ── One-time intro overlay ──────────────────────────────────────────
+   Similar in spirit to a sports broadcast's logo sting - plays once per
+   browser session then fades to reveal the page. z-index sits BELOW the
+   navbar (Bootstrap's fixed-top is ~1030) so the real nav logo stays
+   visible the whole time - that's the landing target the big intro logo
+   morphs into via the shared layoutId. */
 .home-intro {
   position: fixed;
   inset: 0;
@@ -398,7 +400,21 @@
   line-height: 1;
 }
 
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .home-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 1.5rem;
+  }
+  .home-stat + .home-stat {
+    border-left: none;
+    padding-left: 0;
+  }
+  .home-stat-link { align-items: flex-start; text-align: left; }
+}
+
 @media (max-width: 576px) {
-  .home-hero { padding: var(--page-pad-top) 1.25rem 2.5rem; }
-  .surface-tile { flex: 1 1 100%; }
+  .home-shell { padding: 0 1.1rem 1.5rem; }
+  .home-hero { padding-top: var(--page-pad-top); }
+  .home-stats { grid-template-columns: 1fr; padding: 1.1rem 1.25rem; }
 }

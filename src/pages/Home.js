@@ -10,12 +10,6 @@ import logoHome from '../assets/ball.png';
 import { playSwoosh, playSmack, playServeWhoosh } from '../utils/introSounds';
 import './Home.css';
 
-const SURFACES = [
-  { to: '/h2h?surface=clay',  label: 'Clay',  city: 'Paris',    desc: 'Slow, high bounce. Grinders thrive.', className: 'surface-clay' },
-  { to: '/h2h?surface=grass', label: 'Grass', city: 'London',   desc: 'Fast, low skid. Big servers fly.', className: 'surface-grass' },
-  { to: '/h2h?surface=hard',  label: 'Hard',  city: 'New York', desc: 'Balanced, true bounce. All-courters.', className: 'surface-hard' },
-];
-
 // /women/* mirrors every men's route 1:1 (see App.js) - prefixing here keeps
 // this one Home component shared between both tours instead of forking it.
 const withTourPrefix = (path, isWta) => (isWta ? `/women${path}` : path);
@@ -31,7 +25,7 @@ function formatDate(iso) {
 }
 
 // Wilson 95% interval - same as the Track Record / Methodology headline, so
-// the home proof band shows the identical honest number.
+// the home stat rail shows the identical honest number.
 function wilsonHalf(k, n) {
   if (!n) return 0;
   const z = 1.96, p = k / n, z2 = z * z, denom = 1 + z2 / n;
@@ -183,58 +177,60 @@ export default function Home({ tour = 'atp' }) {
       </AnimatePresence>
 
       <motion.div
+        className="home-shell"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: showIntro ? 1.9 : 0 }}
       >
-        <div className="home-hero">
-          <div className="eyebrow">GRAND SLAM PREDICTION ENGINE{isWta ? ' · WTA' : ''}</div>
-          <h1 className="main-title">Simulate the<br/>Slams in Seconds</h1>
+        {/* ── Hero: one centered column, everything on the same axis ───── */}
+        <header className="home-hero">
+          <div className="eyebrow">GRAND SLAM PREDICTION ENGINE{isWta ? ' · WTA' : ' · ATP'}</div>
+          <h1 className="main-title">Simulate the Slams<br />in Seconds</h1>
           <p className="sub-title">
             Pick two players, choose a surface, and run a real point-by-point
             Monte Carlo matchup - the same model we grade in public, match after match.
           </p>
-
-          <div className="d-flex flex-wrap gap-3 hero-ctas">
+          <div className="hero-ctas">
             <Button as={Link} to={withTourPrefix('/h2h', isWta)} className="cta-primary">
-              Quick H2H
+              Simulate a Match
             </Button>
             <Button as={Link} to={withTourPrefix('/dream-brackets', isWta)} className="cta-secondary">
               Build a Bracket
             </Button>
           </div>
+        </header>
 
-          {/* Proof band: the moat, front and center. Links straight to the
-              graded record so the headline number is one click from its receipts. */}
-          {proof && proof.n > 0 && (
-            <Link to={withTourPrefix('/track-record', isWta)} className="home-proof">
-              <div className="home-proof-stats">
-                <div className="home-proof-item">
-                  <span className="hp-val">{proof.acc}%<span className="hp-ci"> ±{proof.ciHalf}</span></span>
-                  <span className="hp-cap">winners called correctly</span>
-                </div>
-                <div className="home-proof-item">
-                  <span className="hp-val">{proof.n.toLocaleString()}</span>
-                  <span className="hp-cap">matches graded in public</span>
-                </div>
-                {proof.marketAcc != null && (
-                  <div className="home-proof-item">
-                    <span className="hp-val">{proof.smashOnOdds}<small>%</small> <span className="hp-vs">vs {proof.marketAcc}%</span></span>
-                    <span className="hp-cap">us vs the betting market</span>
-                  </div>
-                )}
+        {/* ── Stat rail: the proof, one click from its receipts ────────── */}
+        {proof && proof.n > 0 && (
+          <Link to={withTourPrefix('/track-record', isWta)} className="home-stats">
+            <div className="home-stat">
+              <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
+              <span className="home-stat-cap">winners called correctly</span>
+            </div>
+            <div className="home-stat">
+              <span className="home-stat-val">{proof.n.toLocaleString()}</span>
+              <span className="home-stat-cap">matches graded in public</span>
+            </div>
+            {proof.marketAcc != null && (
+              <div className="home-stat">
+                <span className="home-stat-val">{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></span>
+                <span className="home-stat-cap">us vs the betting market</span>
               </div>
-              <span className="home-proof-cta">See the track record →</span>
-            </Link>
-          )}
-        </div>
+            )}
+            <div className="home-stat home-stat-link">
+              <span aria-hidden="true">→</span>
+              <span className="home-stat-cap">see the full record</span>
+            </div>
+          </Link>
+        )}
 
+        {/* ── Live board: what's on the tour right now ─────────────────── */}
         {livePicks.length > 0 && (
           <section className="home-board">
-            <div className="home-board-head">
+            <div className="home-section-head">
               <span className="home-live-dot" />
-              <span className="home-board-title">Happening now</span>
-              <span className="home-board-event">{livePicks[0].event}</span>
+              <h2 className="home-section-title">Happening Now</h2>
+              <span className="home-section-sub">{livePicks[0].event}</span>
             </div>
             <div className="home-board-grid">
               {livePicks.map((p) => (
@@ -243,49 +239,66 @@ export default function Home({ tour = 'atp' }) {
                   to={`${p.tour === 'wta' ? '/women' : ''}/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`}
                   className="home-board-card"
                 >
-                  <div className="home-board-match">
+                  <div className="home-board-top">
                     <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
-                    <span className={p.favorite === p.p1 ? 'fav' : ''}>{p.name1}</span>
-                    <span className="home-board-vs">vs</span>
-                    <span className={p.favorite === p.p2 ? 'fav' : ''}>{p.name2}</span>
+                    <span className={`home-board-surface s-${p.surface}`}>{p.surface}</span>
+                  </div>
+                  <div className="home-board-players">
+                    <span className={`home-board-player${p.favorite === p.p1 ? ' fav' : ''}`}>{p.name1}</span>
+                    <span className={`home-board-player${p.favorite === p.p2 ? ' fav' : ''}`}>{p.name2}</span>
                   </div>
                   <div className="home-board-call">
                     <span className="home-board-pct">{Math.round(p.favProb * 100)}%</span>
                     <span className="home-board-callsub">model backs {p.favName.split(' ').pop()}</span>
                   </div>
-                  <span className="home-board-open">Open the verdict →</span>
                 </Link>
               ))}
             </div>
           </section>
         )}
 
-        <div className="home-section-label">Or start any matchup</div>
-        <div className="surface-strip">
-          {SURFACES.map(({ to, label, city, desc, className }) => (
-            <Link key={to} to={withTourPrefix(to, isWta)} className={`surface-tile ${className}`}>
-              <div className="surface-tile-label">{label}</div>
-              <div className="surface-tile-city">{city}</div>
-              <div className="surface-tile-desc">{desc}</div>
-              <div className="surface-tile-enter">ENTER →</div>
+        {/* ── Destinations: replaces the old Paris/London/NY tiles ─────── */}
+        <section className="home-nav">
+          <div className="home-section-head">
+            <h2 className="home-section-title">Explore</h2>
+          </div>
+          <div className="home-nav-grid">
+            <Link to={withTourPrefix('/h2h', isWta)} className="home-nav-card">
+              <div className="home-nav-num">01</div>
+              <div className="home-nav-name">Head to Head</div>
+              <p className="home-nav-desc">Any two players, any surface. Full point-by-point simulation with win probability, score lines, and momentum.</p>
+              <span className="home-nav-go">Open the studio →</span>
             </Link>
-          ))}
-        </div>
+            <Link to={withTourPrefix('/dream-brackets', isWta)} className="home-nav-card">
+              <div className="home-nav-num">02</div>
+              <div className="home-nav-name">Dream Brackets</div>
+              <p className="home-nav-desc">Seed your own fantasy slam and let the engine play out every round to a champion.</p>
+              <span className="home-nav-go">Build yours →</span>
+            </Link>
+            <Link to={withTourPrefix('/track-record', isWta)} className="home-nav-card">
+              <div className="home-nav-num">03</div>
+              <div className="home-nav-name">Track Record</div>
+              <p className="home-nav-desc">Every prediction locked before the match and graded after it. No cherry-picking, no memory-holing.</p>
+              <span className="home-nav-go">Check the receipts →</span>
+            </Link>
+          </div>
+        </section>
 
-        <div className="home-footer">
+        {/* ── Footer ────────────────────────────────────────────────────── */}
+        <footer className="home-footer">
           <span className="trust-signal">
             Real ATP &amp; WTA match data · calibrated probabilities · <Link to="/methodology" className="trust-method-link">how it works</Link>
           </span>
-          <button type="button" className="update-data-link" onClick={handleUpdateData}>
-            Update Data
-          </button>
           {refreshMeta && (
             <span className="refresh-meta">
               Data last refreshed {formatDate(refreshMeta.refreshedAt)}
               {refreshMeta.mostRecentMatchDate && ` · most recent match ${formatDate(refreshMeta.mostRecentMatchDate)}`}
             </span>
           )}
-        </div>
+          <button type="button" className="update-data-link" onClick={handleUpdateData}>
+            Update Data
+          </button>
+        </footer>
       </motion.div>
 
       <AppModal
