@@ -253,7 +253,7 @@ export default function AdvancedSimPanel({
           <div className="adv-panel-heading">Detailed simulation</div>
           <div className="adv-controls-col adv-controls-centered">
               <Form.Group controlId="simCount" className="mb-2">
-                <Form.Label className="text-white">Simulations</Form.Label>
+                <Form.Label className="text-white">Times we play the match</Form.Label>
                 <Form.Select
                   className="dark-select"
                   value={simCount}
@@ -361,8 +361,8 @@ export default function AdvancedSimPanel({
                     return (
                       <div className="adv-ci-caption">
                         <div className="adv-ci-range">
-                          <span>95% CI: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
-                          <span>95% CI: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
+                          <span>Likely range: {Math.round(lower*100)}–{Math.round(upper*100)}%</span>
+                          <span>Likely range: {Math.round((1-upper)*100)}–{Math.round((1-lower)*100)}%</span>
                         </div>
 
                         {/* Confidence badge - based on win rate, not sample size */}
@@ -415,7 +415,7 @@ export default function AdvancedSimPanel({
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                  <div className="adv-bar-caption">Share of all {totalWins.toLocaleString()} simulations ending at each set score</div>
+                  <div className="adv-bar-caption">How often each final set score came up across {totalWins.toLocaleString()} plays of the match</div>
                   {renderFixedLegend()}
                 </div>
               {/* Share button - bottom-right of results row */}

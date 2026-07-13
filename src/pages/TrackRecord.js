@@ -188,7 +188,7 @@ export default function TrackRecord() {
       { id: 'elo', label: 'Form', ...roiFor(eloFav) },
       { id: 'upset', label: 'Hot Streak', ...roiFor((m) => m.upsetFavorite) },
       { id: 'rank', label: 'Higher rank', baseline: true, ...roiFor((m) => m.rankPick) },
-      { id: 'odd', label: 'Bookmaker favorite', baseline: true, ...roiFor((m) => m.oddFav) },
+      { id: 'odd', label: "The bookies' favorite", baseline: true, ...roiFor((m) => m.oddFav) },
     ];
     const bestReturn = returns.reduce((b, r) => (r.profit > b.profit ? r : b), returns[0]);
 
@@ -239,7 +239,7 @@ export default function TrackRecord() {
             <h1 className="track-title">Track Record</h1>
             <p className="track-sub">
               Every completed 2026 tour match between two ranked players, scored
-              against the real result. No cherry-picking. Every match counts.
+              against what actually happened. No cherry-picking. Every match counts.
             </p>
             <div className="track-header-meta">
               <Link className="track-method-link" to="/methodology">How it works →</Link>
@@ -276,7 +276,7 @@ export default function TrackRecord() {
           {(forward.pending.length > 0 || forward.decided.length > 0) && (
             <div className="track-panel track-forward">
               <div className="track-forward-head">
-                <div className="track-section-label" style={{ margin: 0 }}>🔒 Locked predictions · called before play</div>
+                <div className="track-section-label" style={{ margin: 0 }}>🔒 Called before the match · no take-backs</div>
                 {forward.decided.length > 0 && (
                   <div className="track-forward-record">
                     {Math.round((forward.correct / forward.decided.length) * 100)}% · {forward.correct}/{forward.decided.length} verified
@@ -299,8 +299,8 @@ export default function TrackRecord() {
               ))}
               {forward.pending.length > 0 && forward.decided.length === 0 && (
                 <div className="track-note" style={{ marginTop: '0.6rem' }}>
-                  These picks are locked now and graded automatically when the results come in: a
-                  true forward test with no hindsight.
+                  These calls are on the record now. When the matches finish we score them
+                  automatically. No hindsight, no edits.
                 </div>
               )}
             </div>
@@ -321,7 +321,7 @@ export default function TrackRecord() {
                   <div className="track-hero-label">of winners called correctly</div>
                   <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                   {stats.n > 0 && (
-                    <div className="track-hero-ci">±{stats.ciHalf}% at 95% confidence - the range this accuracy would fall in on fresh matches, not luck.</div>
+                    <div className="track-hero-ci">Give or take {stats.ciHalf} points. Over {stats.n.toLocaleString()} matches, that's a track record, not a lucky streak.</div>
                   )}
                 </div>
               </div>
@@ -332,10 +332,10 @@ export default function TrackRecord() {
                   set behind the headline above - that's why they differ. */}
               {stats.market.n > 0 && (
                 <div className="track-panel track-market">
-                  <div className="track-section-label">Versus the betting market</div>
+                  <div className="track-section-label">Us versus the bookies</div>
                   <div className="track-market-scope">
-                    Scored on the {stats.market.n} of {stats.n} matches that had published odds - a
-                    different (smaller) set than the headline above, so these percentages won't match it.
+                    Scored only on the {stats.market.n} of {stats.n} matches that had betting odds, a
+                    smaller set than the headline above, so the numbers differ a little.
                   </div>
                   <div className="track-market-row">
                     <div className="track-market-cell">
@@ -345,21 +345,20 @@ export default function TrackRecord() {
                     <div className="track-market-vs">vs</div>
                     <div className="track-market-cell">
                       <div className="track-market-val">{stats.market.marketAcc}%</div>
-                      <div className="track-market-cap">Bookmaker favorite</div>
+                      <div className="track-market-cap">The bookies' pick</div>
                     </div>
                     {stats.market.disagreeWin != null && (
                       <div className="track-market-disagree">
-                        When we disagreed with the market, we were right{' '}
+                        When we disagreed with the bookies, we were right{' '}
                         <strong>{stats.market.disagreeWin}%</strong> of the time
                         <span className="track-market-disagree-n"> ({stats.market.disagreeN} picks)</span>
                       </div>
                     )}
                   </div>
                   <div className="track-note">
-                    Both figures are graded on these same odds-carrying matches. Beating the closing
-                    line is the hardest test in sports prediction - the market already prices in
-                    everything public.
-                    {stats.market.n < 50 && ' Small sample on this filter, so expect it to swing - read it loosely.'}
+                    Both numbers come from the same matches. Beating the bookies is the hardest
+                    test in sports prediction: their odds already bake in everything the public knows.
+                    {stats.market.n < 50 && ' Not many matches in this view yet, so take it with a grain of salt.'}
                   </div>
                 </div>
               )}
@@ -369,8 +368,8 @@ export default function TrackRecord() {
                 <div className="track-panel track-roi">
                   <div className="track-section-label">If you bet $1 on every pick</div>
                   <div className="track-roi-scope">
-                    Stake $1 on each strategy's pick at the closing odds, across the {stats.betN} matches
-                    that carried odds. A win pays the odds; a loss costs the stake.
+                    Imagine putting $1 on every pick, at the bookies' own odds, across all {stats.betN} matches
+                    that had them. Win and you collect; lose and the dollar's gone.
                   </div>
                   {(() => {
                     const maxAbs = Math.max(1, ...stats.returns.map((r) => Math.abs(r.profit)));
@@ -395,9 +394,9 @@ export default function TrackRecord() {
                     });
                   })()}
                   <div className="track-note">
-                    Net profit and return per $1 staked. Backing the bookmaker's favorite bleeds the
-                    margin over time; any strategy that stays positive is genuinely beating the closing line.
-                    {stats.betN < 50 && ' Small sample on this filter, so expect it to swing.'}
+                    Total profit and return per $1. Just backing the bookies' favorite slowly loses
+                    money (that's their cut). Anything that stays in the green is genuinely beating them.
+                    {stats.betN < 50 && ' Not many matches in this view yet, so expect it to swing.'}
                   </div>
                 </div>
               )}
@@ -420,14 +419,14 @@ export default function TrackRecord() {
 
               {/* Engine comparison - the best engine for this filter is highlighted */}
               <div className="track-panel">
-                <div className="track-section-label">How the pick is made · {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}, same matches</div>
+                <div className="track-section-label">Five ways to pick a winner · {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}, same matches</div>
                 <div className="track-compare">
                   {[
-                    { id: 'smash', label: 'Smart Blend', desc: 'Tuned mix of the models below', acc: stats.smash },
-                    { id: 'sim', label: 'Point Sim', desc: 'Point-by-point serve/return sim', acc: stats.season },
-                    { id: 'elo', label: 'Form', desc: 'Surface rating (Elo)', acc: stats.elo },
-                    { id: 'rank', label: 'Rankings', desc: 'World-ranking implied odds', acc: stats.rank },
-                    { id: 'upset', label: 'Hot Streak', desc: 'Last-few-weeks hot form', acc: stats.upset },
+                    { id: 'smash', label: 'Smart Blend', desc: 'Our best: a mix of everything below', acc: stats.smash },
+                    { id: 'sim', label: 'Point Sim', desc: 'The match, played 1,000 times', acc: stats.season },
+                    { id: 'elo', label: 'Form', desc: "Who's been winning on this surface", acc: stats.elo },
+                    { id: 'rank', label: 'Rankings', desc: 'Just trust the world rankings', acc: stats.rank },
+                    { id: 'upset', label: 'Hot Streak', desc: "Who's hot in the last few weeks", acc: stats.upset },
                   ].map((mo) => (
                     <div className={`track-compare-row${mo.id === stats.bestEngine ? ' primary' : ''}`} key={mo.id}>
                       <div className="track-compare-name">
@@ -460,9 +459,9 @@ export default function TrackRecord() {
                   {stats.oddAcc != null && (
                     <div className="track-compare-row baseline">
                       <div className="track-compare-name">
-                        Bookmaker favorite
+                        The bookies' favorite
                         <span className="track-compare-baseline-tag">Baseline</span>
-                        <span className="track-compare-desc">Always back the market's shortest price</span>
+                        <span className="track-compare-desc">Always take whoever the bookies like</span>
                       </div>
                       <div className="track-compare-bar-wrap">
                         <div className="track-compare-bar" style={{ width: `${stats.oddAcc}%` }} />
@@ -472,13 +471,11 @@ export default function TrackRecord() {
                   )}
                 </div>
                 <div className="track-note">
-                  <em>Smart Blend</em> mixes the point simulation, a surface form rating (Elo), and
-                  world ranking, with weights tuned per tour and surface, so it clears the
-                  higher-rank baseline on every surface. The tougher test is the <em>bookmaker
-                  favorite</em> (the market's shortest price), shown only for matches that carried
-                  odds. The <em>Rankings</em> engine makes the same picks as the rank baseline but as
-                  graded odds. These weights are fit on this same season, so the honest read is the
-                  locked forward record above.
+                  <em>Smart Blend</em> mixes the simulation, recent form, and world ranking, tuned
+                  for each tour and surface, which is why it beats just following the rankings. The
+                  tougher opponent is <em>the bookies' favorite</em>, shown only for matches that
+                  had odds. One honest caveat: the blend was tuned on this same season, so the
+                  purest proof is the called-before-the-match record up top.
                 </div>
               </div>
 
@@ -499,9 +496,9 @@ export default function TrackRecord() {
                   ))}
                 </div>
                 <div className="track-note">
-                  Each bar is how often the favorite actually won, for matches where the model
-                  expressed that confidence. The tick marks the ideal; bars landing near their
-                  ticks mean a stated 70% really is about a 70% chance.
+                  Each row is a promise check: when we said "about 70%", did favorites actually win
+                  about 70% of the time? Bars landing near their tick mark mean yes, the
+                  percentages mean what they say.
                 </div>
               </div>
 
@@ -557,9 +554,9 @@ export default function TrackRecord() {
               </div>
 
               <p className="track-footnote">
-                Retrospective analysis: matchups are re-simulated with current recency-weighted
-                stats, which already include these results. A live, locked-before-play track record
-                begins with the next tournament.
+                One honest footnote: these past matches are re-run with today's stats, which
+                already know how the season went. The purest test is the called-before-the-match
+                record above, and it grows with every tournament.
               </p>
             </>
           )}

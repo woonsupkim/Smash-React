@@ -997,7 +997,14 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner, pairReady }) => {
     const competitorClass = `competitor${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
     const ciCaption = isWinner && winner && winner._ciLower != null
-      ? <div className="bracket-ci-tag">{Math.round(winner._winProb*100)}% [{Math.round(winner._ciLower*100)}–{Math.round(winner._ciUpper*100)}%]</div>
+      ? (
+        <div
+          className="bracket-ci-tag"
+          title={`Likely range ${Math.round(winner._ciLower * 100)}–${Math.round(winner._ciUpper * 100)}% across the simulated plays`}
+        >
+          wins {Math.round(winner._winProb * 100)}% of the time
+        </div>
+      )
       : null;
     // In picks mode a filled competitor row becomes the pick control itself:
     // tap a player to advance them. The slot selects stay for empty slots.
@@ -1094,7 +1101,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
               </Form.Select>
             </label>
             <label className="bracket-field">
-              <span className="bracket-field-label">Sims / match</span>
+              <span className="bracket-field-label">Plays per match</span>
               <Form.Select className="dark-select" value={simsPerMatch} onChange={e => setSimsPerMatch(Number(e.target.value))} disabled={isRunning}>
                 {SIMS_PER_MATCHUP_OPTIONS.map(n => <option key={n} value={n}>{n.toLocaleString()}</option>)}
               </Form.Select>
@@ -1215,9 +1222,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
             )}
 
             <div className="pool-note">
-              Scoring escalates by round ({Array.from({ length: Math.log2(stageConfig.slots) }, (_, t) => 2 ** t).join(' / ')} points
-              per correct call), graded against the real {tournamentConfig.label} results.
-              Start from the ESPN draw so every pick can score.
+              Right picks are worth more the deeper you go
+              ({Array.from({ length: Math.log2(stageConfig.slots) }, (_, t) => 2 ** t).join(', then ')} points),
+              so calling the champion counts the most. Scored against the real {tournamentConfig.label} results.
+              Start from the ESPN draw so every pick can count.
             </div>
           </div>
         )}

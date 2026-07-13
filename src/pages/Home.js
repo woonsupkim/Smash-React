@@ -163,8 +163,9 @@ export default function Home({ tour = 'atp' }) {
           <div className="eyebrow">GRAND SLAM PREDICTION ENGINE{isWta ? ' · WTA' : ' · ATP'}</div>
           <h1 className="main-title">Simulate the Slams<br />in Seconds</h1>
           <p className="sub-title">
-            Pick two players, choose a surface, and run a real point-by-point
-            Monte Carlo matchup - the same model we grade in public, match after match.
+            Pick any two players. We play the match 1,000 times, point by point,
+            and show you who wins, how often, and by what score. And we keep
+            score on ourselves in public, match after match.
           </p>
           <div className="hero-ctas">
             <Button as={Link} to={withTourPrefix('/h2h', isWta)} className="cta-primary">
@@ -188,12 +189,12 @@ export default function Home({ tour = 'atp' }) {
             </div>
             <div className="home-stat">
               <span className="home-stat-val">{proof.n.toLocaleString()}</span>
-              <span className="home-stat-cap">matches graded in public</span>
+              <span className="home-stat-cap">matches on the public record</span>
             </div>
             {proof.marketAcc != null && (
               <div className="home-stat">
                 <span className="home-stat-val">{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></span>
-                <span className="home-stat-cap">model vs betting market</span>
+                <span className="home-stat-cap">us vs the bookies</span>
               </div>
             )}
             <div className="home-stat home-stat-link">
@@ -219,7 +220,7 @@ export default function Home({ tour = 'atp' }) {
             <div className="home-board-empty">
               <span className="home-board-empty-title">No live predictions right now.</span>
               <span className="home-board-empty-sub">
-                Predictions are locked when a grand slam draw is released.
+                We call matches as soon as a grand slam draw drops.
                 Next up: {nextSlam()}.
               </span>
             </div>
@@ -259,7 +260,7 @@ export default function Home({ tour = 'atp' }) {
             <Link to={withTourPrefix('/h2h', isWta)} className="home-nav-card">
               <div className="home-nav-num">01</div>
               <div className="home-nav-name">Head to Head</div>
-              <p className="home-nav-desc">Any two players, any surface. Full point-by-point simulation with win probability, score lines, and momentum.</p>
+              <p className="home-nav-desc">Any two players, any surface. We play it 1,000 times and show who wins, how often, and by what score.</p>
               <span className="home-nav-go">Open the studio →</span>
             </Link>
             <Link to={withTourPrefix('/dream-brackets', isWta)} className="home-nav-card">
@@ -271,7 +272,7 @@ export default function Home({ tour = 'atp' }) {
             <Link to={withTourPrefix('/track-record', isWta)} className="home-nav-card">
               <div className="home-nav-num">03</div>
               <div className="home-nav-name">Track Record</div>
-              <p className="home-nav-desc">Every prediction locked before the match and graded after it. Nothing edited, nothing removed.</p>
+              <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
               <span className="home-nav-go">View the record →</span>
             </Link>
           </div>
