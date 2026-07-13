@@ -858,6 +858,20 @@ export default function DreamBrackets({ tour = 'atp' }) {
     placeholder: base => ({ ...base, color: '#888' }),
   };
 
+  // Headshot + name row for the slot dropdowns (both the open menu and the
+  // selected value), so picking a field looks like the bracket itself.
+  const formatPlayerOption = (opt) => (
+    <div className="select-player-option">
+      <img
+        className="select-player-avatar"
+        src={getPlayerImageSrc(opt.data)}
+        alt=""
+        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }}
+      />
+      <span className="select-player-name">{opt.label}</span>
+    </div>
+  );
+
   const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner, pairReady }) => {
     const competitorClass = `competitor${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
     const ciCaption = isWinner && winner && winner._ciLower != null
@@ -871,10 +885,11 @@ export default function DreamBrackets({ tour = 'atp' }) {
         <div className={`${competitorClass} editable`}>
           <Select
             options={optionsForSlot(globalSlotIdx)}
-            value={p ? { value: p.id, label: p.name } : null}
+            value={p ? { value: p.id, label: p.name, data: p } : null}
             onChange={opt => handleSlotChange(globalSlotIdx, opt.data)}
             isDisabled={isRunning || isLocked}
             styles={selectStyles}
+            formatOptionLabel={formatPlayerOption}
             placeholder={`Slot ${globalSlotIdx + 1}`}
           />
           {isWinner || isLoser ? <span className="bracket-result-tag">{isWinner ? '✓' : '✗'}</span> : null}

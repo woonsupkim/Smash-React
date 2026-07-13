@@ -481,3 +481,25 @@
   line-height: 1.5;
 }
 .pool-lock-note { font-size: 0.85rem; color: var(--text-3); line-height: 1.5; }
+
+/* Headshots inside the slot dropdowns (menu options and selected value) */
+.select-player-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.select-player-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+.select-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
