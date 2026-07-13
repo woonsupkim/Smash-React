@@ -6,7 +6,7 @@ name: Refresh player stats
 # full data-pipeline refresh and commits the regenerated CSVs/h2h.json back
 # to main, which triggers a Vercel redeploy. Doing this in a GitHub Action
 # (rather than inside the Vercel serverless function) sidesteps Vercel's
-# function execution time limits — a full refresh across ~50 players can
+# function execution time limits - a full refresh across ~50 players can
 # take several minutes.
 on:
   workflow_dispatch: {}
@@ -26,7 +26,7 @@ on:
     - cron: '0 6 1-15 9 *'    # US Open: Sep 1-15
 
 # The default GITHUB_TOKEN is read-only on contents unless explicitly
-# elevated — without this, the final "git push" step fails with exit 1.
+# elevated - without this, the final "git push" step fails with exit 1.
 # issues: write lets the failure step below open an alert issue.
 permissions:
   contents: write
@@ -45,7 +45,7 @@ jobs:
       # --legacy-peer-deps: an unrelated optional peer (@sveltejs/kit, only
       # used by @vercel/analytics' Svelte integration, which this project
       # doesn't use) otherwise makes plain `npm ci` fail with an ERESOLVE
-      # conflict — same issue hit installing locally.
+      # conflict - same issue hit installing locally.
       - run: npm ci --legacy-peer-deps
 
       - name: Refresh stats (fetch + recompute + rebuild CSVs)
@@ -78,12 +78,12 @@ jobs:
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
 
-      # Surface Elo form ratings (both tours) — the live H2H blends these
+      # Surface Elo form ratings (both tours) - the live H2H blends these
       # with the point simulation.
       - name: Compute Elo form ratings
         run: npm run compute-elo
 
-      # Must run LAST — it re-simulates every completed 2026 match using the
+      # Must run LAST - it re-simulates every completed 2026 match using the
       # freshly-rebuilt surface + upset CSVs and the newly-fetched match
       # caches (and replays Elo), so the Track Record page picks up new
       # results automatically.

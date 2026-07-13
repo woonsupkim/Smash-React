@@ -219,7 +219,15 @@ export async function generateShareCard({
 
   // ── Verdict headline (the shareable hook) ────────────────────────────────
   ctx.textAlign = 'center';
+  // scoreline arrives winner-first ("3–1"); judge straight sets on that
+  // orientation BEFORE re-orienting it for display below.
   const straightSets = !!scoreline && /–0$/.test(scoreline);
+  // Render the score in left-right player order (A's sets on the left, B's on
+  // the right) so the bigger number sits on the projected winner's side
+  // instead of always leading regardless of which side won.
+  const displayScore = scoreline && !isWinnerA
+    ? scoreline.split(/[–-]/).reverse().join('–')
+    : scoreline;
   const verdict = pickVerdict({ favShare, straightSets, binom10 });
   ctx.font = 'bold 58px Arial, sans-serif';
   ctx.fillStyle = '#ffffff';
@@ -293,7 +301,7 @@ export async function generateShareCard({
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = winnerColor;
     ctx.shadowBlur = 26;
-    ctx.fillText(scoreline, W / 2, photoY + 4);
+    ctx.fillText(displayScore, W / 2, photoY + 4);
     ctx.shadowBlur = 0;
     ctx.font = 'bold 22px Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.45)';

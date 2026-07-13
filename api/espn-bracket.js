@@ -11,15 +11,18 @@
 // the competitors in draw order.
 //
 // Query params:
-//   slug   — ESPN tournament slug: "wimbledon" | "french-open" | "us-open"
-//   season — 4-digit year (e.g. "2026")
-//   slots  — bracket size the client wants to fill: 16 | 8 | 4 | 2 (default 16)
-//   tour   — "atp" (default) | "wta"
+//   slug   - ESPN tournament slug: "wimbledon" | "french-open" | "us-open"
+//   season - 4-digit year (e.g. "2026")
+//   slots  - bracket size the client wants to fill: 16 | 8 | 4 | 2 (default 16)
+//   tour   - "atp" (default) | "wta"
+//   mode   - "draw" (default: ordered players for one round) | "results"
+//            (who actually reached each round + the champion, for scoring
+//            locked pool brackets against reality)
 
 const TOURNEYS = {
   wimbledon: {
     namePattern: /wimbledon/i,
-    // MMDD probe dates — draw is published a few days before play starts
+    // MMDD probe dates - draw is published a few days before play starts
     probes: ['0701', '0706', '0629', '0627', '0710'],
   },
   'french-open': {
@@ -42,7 +45,7 @@ async function fetchScoreboard(league, yyyymmdd) {
 }
 
 module.exports = async function handler(req, res) {
-  const { slug, season, slots: slotsParam, tour } = req.query || {};
+  const { slug, season, slots: slotsParam, tour, mode } = req.query || {};
   if (!slug) return res.status(400).json({ error: 'Missing required query param: slug' });
 
   const conf = TOURNEYS[slug];
@@ -83,6 +86,35 @@ module.exports = async function handler(req, res) {
       byRound.get(key).push(c);
     }
 
+    const sortedCompsEarly = (m) =>
+      [...(m.competitors || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const compNameEarly = (c) => (c?.athlete?.displayName || c?.athlete?.fullName || '').trim();
+
+    // Results mode: membership per round (who actually reached it) plus the
+    // champion once the final is decided. Draw order doesn't matter here -
+    // pool scoring only tests set membership - so skip the ordering pass.
+    if (mode === 'results') {
+      const rounds = {};
+      let champion = null;
+      for (const comps of byRound.values()) {
+        const size = comps.length * 2;
+        const names = [];
+        for (const c of comps) {
+          for (const p of sortedCompsEarly(c)) {
+            const n = compNameEarly(p);
+            if (n && !/^tbd$/i.test(n)) names.push(n);
+          }
+        }
+        rounds[String(size)] = names;
+        if (comps.length === 1) {
+          const w = sortedCompsEarly(comps[0]).find(p => p.winner === true || p.winner === 'true');
+          if (w) champion = compNameEarly(w);
+        }
+      }
+      res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+      return res.status(200).json({ rounds, champion });
+    }
+
     // Rounds sorted from Final (1 match) down to the biggest round.
     const roundsBySize = [...byRound.values()].sort((a, b) => a.length - b.length);
     if (!roundsBySize.some(r => r.length === targetMatches)) {
@@ -95,7 +127,7 @@ module.exports = async function handler(req, res) {
       [...(m.competitors || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
     const compName = (c) => (c?.athlete?.displayName || c?.athlete?.fullName || '').trim();
 
-    // Neither ESPN match ids nor dates follow draw order — but each match's
+    // Neither ESPN match ids nor dates follow draw order - but each match's
     // players reappear in the NEXT round, so true bracket order can be
     // reconstructed by chaining feeders: the two matches that produced the
     // players of next-round match k belong in slots 2k and 2k+1.
@@ -139,7 +171,7 @@ module.exports = async function handler(req, res) {
 
     if (players.every(p => p === 'TBD')) {
       return res.status(404).json({
-        error: 'That round has no decided players yet — the tournament hasn\'t progressed that far.',
+        error: 'That round has no decided players yet - the tournament hasn\'t progressed that far.',
       });
     }
 

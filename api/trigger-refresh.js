@@ -1,7 +1,7 @@
 // Vercel serverless function. Validates an admin password, then triggers
 // the "Refresh player stats" GitHub Action (.github/workflows/refresh-data.yml)
 // via the workflow_dispatch API, instead of running the pipeline inline here
-// — Vercel functions have execution time limits that a full ~50-player
+// - Vercel functions have execution time limits that a full ~50-player
 // refresh (300+ sequential API calls) can exceed, while GitHub Actions runs
 // have no such constraint.
 //
@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
 
     res.status(200).json({
       ok: true,
-      message: 'Refresh triggered. It runs in the background and takes a few minutes — check the Actions tab on GitHub for progress.',
+      message: 'Refresh triggered. It runs in the background and takes a few minutes - check the Actions tab on GitHub for progress.',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

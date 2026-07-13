@@ -19,6 +19,7 @@ import EngineSelector from '../components/ui/EngineSelector';
 import { credibleInterval } from '../credibleInterval';
 import { generateBracketShareCard } from '../utils/generateBracketShareCard';
 import { countryFlagUrl } from '../components/countryFlags';
+import { poolKey, getPool, savePool, clearMine, addFriendEntry, encodeEntry, decodeEntry, scoreEntry } from '../utils/bracketPool';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
@@ -126,6 +127,9 @@ const ESPN_SLUG_TO_CSV = {
   'french-open': 'smash_fr.csv',
   'us-open': 'smash_us.csv',
 };
+const CSV_TO_ESPN_SLUG = Object.fromEntries(
+  Object.entries(ESPN_SLUG_TO_CSV).map(([slug, csv]) => [csv, slug])
+);
 
 function parseEspnUrl(url) {
   const trimmed = url.trim();
@@ -267,6 +271,24 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const [shareUrl, setShareUrl] = useState(null);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+
+  // ── Pool Play ──────────────────────────────────────────────────────────
+  // 'sim': the engine plays the bracket out (original behavior).
+  // 'picks': the USER advances players by tapping, then locks the bracket
+  // into the pool; the model's own deterministic bracket locks beside it.
+  const [mode, setMode] = useState('sim');
+  // userRounds mirrors `rounds` but holds the user's manual picks
+  // (userRounds[0] is the slot field; later rounds may contain nulls).
+  const [userRounds, setUserRounds] = useState([]);
+  const key = poolKey(tour, tournament, stage);
+  const [pool, setPool] = useState(() => getPool(key));
+  const isLocked = !!pool.mine;
+  const [lockModalOpen, setLockModalOpen] = useState(false);
+  const [entrantName, setEntrantName] = useState('');
+  // realSets[t] = Set of player ids that truly reached the round picks[t]
+  // predicts, built from the ESPN results endpoint; null until fetched.
+  const [realSets, setRealSets] = useState(null);
+  const [isScoring, setIsScoring] = useState(false);
 
   // Completed bracket: the last rounds entry is a single champion.
   const champion = rounds.length > 1 && rounds[rounds.length - 1]?.length === 1
@@ -514,6 +536,193 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const handleReset = () => resetBracketState(stageConfig.slots);
 
+  // ── Pool Play: state restoration ───────────────────────────────────────
+  // Reload the pool whenever the bracket context changes; if this device has
+  // a locked bracket for it, restore the field and picks read-only.
+  useEffect(() => {
+    const p = getPool(key);
+    setPool(p);
+    setRealSets(null);
+    if (p.mine && playersPool.length) {
+      const byId = Object.fromEntries(playersPool.map((pl) => [pl.id, pl]));
+      setMode('picks');
+      setSlots(p.mine.slots.map((id) => byId[id] || null));
+      setUserRounds([
+        p.mine.slots.map((id) => byId[id] || null),
+        ...p.mine.picks.map((r) => r.map((id) => (id ? byId[id] || null : null))),
+      ]);
+    }
+  }, [key, playersPool]);
+
+  // Fresh empty pick rounds whenever the field changes while unlocked.
+  useEffect(() => {
+    if (mode !== 'picks' || isLocked) return;
+    const cols = Math.log2(stageConfig.slots);
+    const next = [slots];
+    for (let j = 1, n = stageConfig.slots / 2; j <= cols; j++, n /= 2) {
+      next.push(Array(n).fill(null));
+    }
+    setUserRounds(next);
+  }, [mode, slots, stageConfig.slots, isLocked]);
+
+  // Advance a player into the next round; changing a pick invalidates any
+  // downstream rounds the replaced player had been advanced into.
+  const setUserPick = (roundIdx, pairIdx, player) => {
+    if (isLocked) return;
+    setUserRounds((prev) => {
+      if (!prev[roundIdx + 1]) return prev;
+      const next = prev.map((r) => [...r]);
+      const old = next[roundIdx + 1][pairIdx];
+      next[roundIdx + 1][pairIdx] = player;
+      if (old && old.id !== player.id) {
+        let idx = pairIdx;
+        for (let j = roundIdx + 2; j < next.length; j++) {
+          idx = Math.floor(idx / 2);
+          if (next[j][idx]?.id === old.id) next[j][idx] = null;
+          else break;
+        }
+      }
+      return next;
+    });
+  };
+
+  const picksComplete = userRounds.length > 1 && userRounds.slice(1).every((r) => r.every(Boolean));
+
+  // The model's own bracket: deterministic favorite-advance with the current
+  // engine, so every pool has the house entry to beat.
+  const computeGhostPicks = () => {
+    const ghost = [];
+    let field = slots;
+    while (field.length > 1) {
+      const winners = [];
+      for (let i = 0; i < field.length; i += 2) {
+        const A = field[i], B = field[i + 1];
+        const { matchWins } = simulateBatch(A.probabilities, B.probabilities, 1000, bestOf);
+        const simProb = matchWins[0] / (matchWins[0] + matchWins[1]);
+        let probA = simProb;
+        if (engine !== 'sim' && engine !== 'upset') {
+          const elo = eloData ? eloProbFn(eloData[A.id], eloData[B.id], surfaceKey) : null;
+          probA = pickEngineProb(engine, { sim: simProb, elo, rankA: A.us_seed, rankB: B.us_seed }, tour, surfaceKey);
+        }
+        winners.push(probA >= 0.5 ? A : B);
+      }
+      ghost.push(winners.map((w) => w.id));
+      field = winners;
+    }
+    return ghost;
+  };
+
+  const handleLock = () => {
+    if (!picksComplete || slots.some((s) => !s)) {
+      toast({ type: 'warning', title: 'Bracket incomplete', message: 'Advance a winner through every round before locking.' });
+      return;
+    }
+    setEntrantName('');
+    setLockModalOpen(true);
+  };
+
+  const confirmLock = () => {
+    const name = entrantName.trim();
+    if (!name || !picksComplete) return;
+    const lockedAt = new Date().toISOString();
+    const mine = {
+      name,
+      lockedAt,
+      slots: slots.map((s) => s.id),
+      picks: userRounds.slice(1).map((r) => r.map((p) => p.id)),
+    };
+    const ghost = { name: 'Smash Model', lockedAt, slots: mine.slots, picks: computeGhostPicks() };
+    const next = { ...getPool(key), mine, ghost };
+    savePool(key, next);
+    setPool(next);
+    setLockModalOpen(false);
+    toast({ type: 'success', title: 'Bracket locked', message: 'Copy your pool link and send it to friends. The model is in the pool too.' });
+  };
+
+  const handleDeleteMine = () => {
+    setPool(clearMine(key));
+    setRealSets(null);
+    toast({ type: 'info', title: 'Bracket deleted', message: 'Your locked bracket (and the model entry) were removed from this pool.' });
+  };
+
+  const handleCopyPoolLink = async () => {
+    if (!pool.mine) return;
+    const url = `${window.location.origin}${window.location.pathname}?pool=${encodeEntry(key, pool.mine)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ type: 'success', title: 'Pool link copied', message: 'Anyone who opens it joins your pool with their own locked bracket.' });
+    } catch {
+      toast({ type: 'info', title: 'Copy this link', message: url, duration: 12000 });
+    }
+  };
+
+  // Score every pool entry against the real tournament: fetch who actually
+  // reached each round (and the champion) from the ESPN results endpoint.
+  const handleScore = async () => {
+    setIsScoring(true);
+    try {
+      const slug = CSV_TO_ESPN_SLUG[tournament];
+      const season = new Date().getFullYear();
+      const res = await fetch(`/api/espn-bracket?slug=${slug}&season=${season}&tour=${tour}&mode=results`);
+      if (!res.ok) throw new Error(`Results lookup failed (${res.status})`);
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+
+      const sets = [];
+      for (let size = stageConfig.slots / 2; size >= 1; size /= 2) {
+        if (size === 1) {
+          const champ = json.champion ? matchPlayerByName(json.champion, playersPool) : null;
+          sets.push(new Set(champ ? [champ.id] : []));
+        } else {
+          const names = json.rounds?.[String(size)] || [];
+          sets.push(new Set(names.map((n) => matchPlayerByName(n, playersPool)?.id).filter(Boolean)));
+        }
+      }
+      setRealSets(sets);
+      const anyDecided = sets.some((s) => s.size > 0);
+      toast(anyDecided
+        ? { type: 'success', title: 'Results loaded', message: 'Standings updated from the real tournament.' }
+        : { type: 'info', title: 'No results yet', message: 'The tournament has not reached your bracket rounds. Check back later.' });
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not fetch results', message: err.message, duration: 7000 });
+    } finally {
+      setIsScoring(false);
+    }
+  };
+
+  // A friend's pool link: fold their bracket into the local pool for that
+  // bracket context, hopping tours first if the link is for the other draw
+  // (same resume pattern as the ESPN import above).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('pool');
+    if (!raw) return;
+    const decoded = decodeEntry(raw);
+    const clearParam = () => navigate(window.location.pathname, { replace: true });
+    if (!decoded) {
+      toast({ type: 'error', title: 'Invalid pool link', message: 'That link is damaged or from a newer version.' });
+      clearParam();
+      return;
+    }
+    const [pTour, pTournament, pStage] = decoded.k.split('|');
+    if (!TOURNAMENTS.some((t) => t.value === pTournament) || !STAGES.some((s) => s.value === pStage)) {
+      toast({ type: 'error', title: 'Invalid pool link', message: 'Unknown tournament or round in that link.' });
+      clearParam();
+      return;
+    }
+    if (pTour !== tour) {
+      navigate(`${pTour === 'wta' ? '/women' : ''}/dream-brackets?pool=${raw}`, { replace: true });
+      return;
+    }
+    setTournament(pTournament);
+    if (pStage !== stage) handleStageChange(pStage);
+    setMode('picks');
+    setPool(addFriendEntry(decoded.k, decoded.e));
+    toast({ type: 'success', title: `${decoded.e.name} joined your pool`, message: 'Lock your own bracket to compete, then score everyone against reality.' });
+    clearParam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour]);
+
   // Resume an ESPN import that started on the other tour's brackets page -
   // runEspnImport stashes the link and navigates here when the URL's draw
   // (men's/women's) doesn't match the page it was pasted on. Keyed on `tour`
@@ -649,19 +858,22 @@ export default function DreamBrackets({ tour = 'atp' }) {
     placeholder: base => ({ ...base, color: '#888' }),
   };
 
-  const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner }) => {
+  const renderCompetitor = (p, { colIdx, globalSlotIdx, isWinner, isLoser, winner, pairReady }) => {
     const competitorClass = `competitor${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
     const ciCaption = isWinner && winner && winner._ciLower != null
       ? <div className="bracket-ci-tag">{Math.round(winner._winProb*100)}% [{Math.round(winner._ciLower*100)}–{Math.round(winner._ciUpper*100)}%]</div>
       : null;
-    if (colIdx === 0) {
+    // In picks mode a filled competitor row becomes the pick control itself:
+    // tap a player to advance them. The slot selects stay for empty slots.
+    const pickable = mode === 'picks' && !isLocked && p && pairReady;
+    if (colIdx === 0 && (mode !== 'picks' || !p)) {
       return (
         <div className={`${competitorClass} editable`}>
           <Select
             options={optionsForSlot(globalSlotIdx)}
             value={p ? { value: p.id, label: p.name } : null}
             onChange={opt => handleSlotChange(globalSlotIdx, opt.data)}
-            isDisabled={isRunning}
+            isDisabled={isRunning || isLocked}
             styles={selectStyles}
             placeholder={`Slot ${globalSlotIdx + 1}`}
           />
@@ -669,8 +881,16 @@ export default function DreamBrackets({ tour = 'atp' }) {
         </div>
       );
     }
+    const advance = () => pickable && setUserPick(colIdx, Math.floor(globalSlotIdx / 2), p);
     return (
-      <div className={competitorClass}>
+      <div
+        className={`${competitorClass}${pickable ? ' pickable' : ''}`}
+        onClick={advance}
+        onKeyDown={(e) => { if (pickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); advance(); } }}
+        role={pickable ? 'button' : undefined}
+        tabIndex={pickable ? 0 : undefined}
+        aria-pressed={pickable ? isWinner : undefined}
+      >
         <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }} />
         <div className="competitor-name-col">
           <span className="competitor-name">{p ? p.name : '–'}</span>
@@ -680,6 +900,17 @@ export default function DreamBrackets({ tour = 'atp' }) {
       </div>
     );
   };
+
+  // Pool standings: you, the model ghost, and everyone whose link you opened.
+  const poolEntries = [
+    ...(pool.mine ? [{ ...pool.mine, tag: 'you' }] : []),
+    ...(pool.ghost ? [{ ...pool.ghost, tag: 'model' }] : []),
+    ...pool.friends,
+  ];
+  const standings = poolEntries
+    .map((e) => ({ ...e, score: scoreEntry(e, realSets || []) }))
+    .sort((a, b) => b.score.total - a.score.total);
+  const anyScored = !!realSets && realSets.some((s) => s.size > 0);
 
   return (
     <div
@@ -733,21 +964,41 @@ export default function DreamBrackets({ tour = 'atp' }) {
           </div>
 
           <div className="bracket-actions">
-            <Button
-              className="bracket-primary-btn"
-              style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
-              onClick={runDreamBracket}
-              disabled={isRunning}
-            >
-              {isRunning ? <><Spinner animation="border" size="sm" /> Running…</> : 'Simulate Tournament'}
-            </Button>
+            <div className="bracket-mode-seg" role="group" aria-label="Bracket mode">
+              <button type="button" className={`bracket-mode-btn${mode === 'sim' ? ' active' : ''}`} onClick={() => setMode('sim')} disabled={isRunning}>
+                Simulate
+              </button>
+              <button type="button" className={`bracket-mode-btn${mode === 'picks' ? ' active' : ''}`} onClick={() => setMode('picks')} disabled={isRunning}>
+                Pool Play
+              </button>
+            </div>
+            {mode === 'sim' ? (
+              <Button
+                className="bracket-primary-btn"
+                style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
+                onClick={runDreamBracket}
+                disabled={isRunning}
+              >
+                {isRunning ? <><Spinner animation="border" size="sm" /> Running…</> : 'Simulate Tournament'}
+              </Button>
+            ) : (
+              <Button
+                className="bracket-primary-btn"
+                style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
+                onClick={isLocked ? handleCopyPoolLink : handleLock}
+                disabled={!isLocked && !picksComplete}
+                title={isLocked ? 'Copy your pool link' : (picksComplete ? 'Lock your bracket into the pool' : 'Advance a winner through every round first')}
+              >
+                {isLocked ? 'Copy Pool Link' : 'Lock Bracket'}
+              </Button>
+            )}
             <div className="bracket-actions-secondary">
-              <Button variant="outline-light" size="sm" onClick={handleRandomizeAll} disabled={isRunning}>Random fill</Button>
-              <Button variant="outline-light" size="sm" onClick={handleEspnImport} disabled={isRunning || isImporting} title="Paste an ESPN bracket link to auto-fill players">
+              <Button variant="outline-light" size="sm" onClick={handleRandomizeAll} disabled={isRunning || isLocked}>Random fill</Button>
+              <Button variant="outline-light" size="sm" onClick={handleEspnImport} disabled={isRunning || isImporting || isLocked} title="Paste an ESPN bracket link to auto-fill players">
                 {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : <><ClipboardList size={14} style={{ marginRight: 5, verticalAlign: -2 }} />ESPN</>}
               </Button>
-              <Button variant="outline-light" size="sm" onClick={handleReset} disabled={isRunning}>Reset</Button>
-              {champion && (
+              <Button variant="outline-light" size="sm" onClick={handleReset} disabled={isRunning || isLocked}>Reset</Button>
+              {champion && mode === 'sim' && (
                 <Button size="sm" className="adv-share-btn" onClick={handleShareBracket} disabled={isGeneratingShare}>
                   {isGeneratingShare ? 'Generating…' : <><Share2 size={14} style={{ marginRight: 6, verticalAlign: -2 }} />Share</>}
                 </Button>
@@ -755,6 +1006,84 @@ export default function DreamBrackets({ tour = 'atp' }) {
             </div>
           </div>
         </div>
+
+        {(mode === 'picks' || pool.friends.length > 0) && (
+          <div className="pool-panel">
+            <div className="pool-head">
+              <span className="pool-title">Pool Play · {tournamentConfig.label}{isWta ? " Women's" : ''} · from the {stageConfig.label}</span>
+              {isLocked ? (
+                <span className="pool-locked-tag">
+                  Locked as {pool.mine.name} · {new Date(pool.mine.lockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              ) : (
+                <span className="pool-hint">
+                  Import the real draw (ESPN button), tap a winner through every round, then lock before play begins.
+                </span>
+              )}
+            </div>
+
+            {isLocked && (
+              <div className="pool-actions">
+                <Button variant="outline-light" size="sm" onClick={handleScore} disabled={isScoring}>
+                  {isScoring ? <><Spinner animation="border" size="sm" /> Checking…</> : 'Score vs reality'}
+                </Button>
+                <Button variant="outline-light" size="sm" onClick={handleCopyPoolLink}>Copy pool link</Button>
+                <button type="button" className="pool-delete" onClick={handleDeleteMine}>Delete my bracket</button>
+              </div>
+            )}
+
+            {standings.length > 0 && (
+              <div className="pool-standings">
+                {standings.map((e, i) => (
+                  <div className={`pool-row${e.tag === 'you' ? ' me' : ''}${e.tag === 'model' ? ' ghost' : ''}`} key={`${e.name}-${e.lockedAt}`}>
+                    <span className="pool-rank">{anyScored ? `#${i + 1}` : '·'}</span>
+                    <span className="pool-name">
+                      {e.name}
+                      {e.tag === 'you' && <span className="pool-tag">You</span>}
+                      {e.tag === 'model' && <span className="pool-tag house">House</span>}
+                    </span>
+                    <span className="pool-detail">
+                      {anyScored ? `${e.score.correct}/${e.score.decidedPicks} calls` : 'awaiting results'}
+                    </span>
+                    <span className="pool-pts">{anyScored ? `${e.score.total} pts` : ''}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pool-note">
+              Scoring escalates by round ({Array.from({ length: Math.log2(stageConfig.slots) }, (_, t) => 2 ** t).join(' / ')} points
+              per correct call), graded against the real {tournamentConfig.label} results.
+              Start from the ESPN draw so every pick can score.
+            </div>
+          </div>
+        )}
+
+        <AppModal
+          show={lockModalOpen}
+          onHide={() => setLockModalOpen(false)}
+          title="Lock your bracket"
+          confirmText="Lock it in"
+          onConfirm={confirmLock}
+          confirmDisabled={!entrantName.trim()}
+        >
+          <p className="pool-lock-note">
+            Locking is final for this pool: no edits once it's in, the same rule the model
+            plays by. Your display name appears in the standings and in the link you share.
+          </p>
+          <Form.Group>
+            <Form.Label>Display name</Form.Label>
+            <Form.Control
+              value={entrantName}
+              onChange={(e) => setEntrantName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmLock(); }}
+              placeholder="Your name in the pool"
+              maxLength={24}
+              autoFocus
+              autoComplete="off"
+            />
+          </Form.Group>
+        </AppModal>
 
         <AppModal
           show={espnModalOpen}
@@ -820,8 +1149,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
         <div className="bracket-row">
           {stageConfig.roundLabels.map((label, colIdx) => {
             const isChampionCol = colIdx === geometry.numMatchCols;
-            const colPlayers = colIdx === 0 ? slots : (rounds[colIdx] || []);
-            const nextRoundWinners = rounds[colIdx + 1] || [];
+            const activeRounds = mode === 'picks' ? userRounds : rounds;
+            const colPlayers = colIdx === 0 ? slots : (activeRounds[colIdx] || []);
+            const nextRoundWinners = activeRounds[colIdx + 1] || [];
             const matchCenters = isChampionCol
               ? null
               : geometry.matchCentersByCol[colIdx];
@@ -860,9 +1190,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
                             const globalSlotIdx = pairIdx * 2 + slotIdx;
                             const isWinner = !!(winner && p && winner.id === p.id);
                             const isLoser = !!(winner && p && winner.id !== p.id);
+                            const pairReady = !!(pair[0] && pair[1]);
                             return (
                               <React.Fragment key={slotIdx}>
-                                {renderCompetitor(p, { colIdx, globalSlotIdx, isWinner, isLoser, winner })}
+                                {renderCompetitor(p, { colIdx, globalSlotIdx, isWinner, isLoser, winner, pairReady })}
                                 {slotIdx === 0 && <div className="bracket-vs">vs</div>}
                               </React.Fragment>
                             );
