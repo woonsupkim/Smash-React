@@ -21,6 +21,8 @@ import { generateBracketShareCard } from '../utils/generateBracketShareCard';
 import { countryFlagUrl } from '../components/countryFlags';
 import { poolKey, getPool, savePool, clearMine, addFriendEntry, encodeEntry, decodeEntry, scoreEntry } from '../utils/bracketPool';
 import { isPoolId, createPoolWithEntries, joinPool, fetchPool, fetchMyLatestPool } from '../utils/cloudPool';
+import { currentSlamCsv } from '../utils/currentSlam';
+import defaultAvatar from '../assets/player-default.png';
 import { useAuth } from '../auth/AuthContext';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
@@ -121,7 +123,8 @@ function buildConnectorPath(feeders, outputs, width) {
   return d;
 }
 
-const DEFAULT_TOURNAMENT = 'smash_us.csv';
+// Default to the slam that's live or up next instead of a fixed tournament.
+const DEFAULT_TOURNAMENT = currentSlamCsv();
 
 // Map ESPN URL tournament slug → our CSV value
 const ESPN_SLUG_TO_CSV = {
@@ -241,7 +244,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
     const key = `./${player.id}.png`;
     const keys = playerImgs.keys ? playerImgs.keys() : [];
     if (keys.includes(key)) return playerImgs(key);
-    return `${process.env.PUBLIC_URL}/assets/players/default.png`;
+    // Bundled fallback: /public/assets is gitignored, so a public-path
+    // default.png never reaches production.
+    return defaultAvatar;
   };
 
   const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);
@@ -983,7 +988,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
         className="select-player-avatar"
         src={getPlayerImageSrc(opt.data)}
         alt=""
-        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }}
+        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultAvatar; }}
       />
       <span className="select-player-name">{opt.label}</span>
     </div>
@@ -1023,7 +1028,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
         tabIndex={pickable ? 0 : undefined}
         aria-pressed={pickable ? isWinner : undefined}
       >
-        <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }} />
+        <img className="player-avatar" src={getPlayerImageSrc(p)} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultAvatar; }} />
         <div className="competitor-name-col">
           <span className="competitor-name">{p ? p.name : '–'}</span>
           {ciCaption}
@@ -1332,7 +1337,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
                       {colPlayers[0] ? (
                         <div className="competitor winner champion-winner">
                           <span className="champion-crown" aria-hidden="true">👑</span>
-                          <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `${process.env.PUBLIC_URL}/assets/players/default.png`; }} />
+                          <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultAvatar; }} />
                           <span className="champion-name">{colPlayers[0].name}</span>
                         </div>
                       ) : (

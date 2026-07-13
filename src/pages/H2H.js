@@ -13,6 +13,8 @@ import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
 import { eloProb, engineProbs, pickEngineProb, ENGINE_LABELS } from '../engines';
+import { currentSlamSurface } from '../utils/currentSlam';
+import defaultAvatar from '../assets/player-default.png';
 import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
@@ -77,7 +79,9 @@ const VALID_SURFACES = Object.keys(TOURNAMENT_CONFIGS);
 const hasStats = (r) => ['p1', 'p2', 'p3', 'p4', 'p5'].every((k) => Number(r[k]) > 0);
 
 // Fallback headshot when a player has no image (or it fails to load).
-const DEFAULT_IMG = `${process.env.PUBLIC_URL}/assets/players/default.png`;
+// Bundled (not in gitignored /public/assets) so the fallback actually ships
+// to production for the many rostered players without a headshot yet.
+const DEFAULT_IMG = defaultAvatar;
 const imgFallback = (e) => { e.currentTarget.onerror = null; e.currentTarget.src = DEFAULT_IMG; };
 
 // Per-engine field names in track_record.json, so the credibility line and
@@ -93,7 +97,9 @@ const ENGINE_FIELDS = {
 export default function H2H({ tour = 'atp' }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const surfaceParam = searchParams.get('surface');
-  const surface = VALID_SURFACES.includes(surfaceParam) ? surfaceParam : 'hard';
+  // No explicit surface in the URL: default to the slam that's live or up
+  // next (grass during Wimbledon, clay in the French Open run-up, etc.).
+  const surface = VALID_SURFACES.includes(surfaceParam) ? surfaceParam : currentSlamSurface();
   const config = TOURNAMENT_CONFIGS[surface];
 
   const isWta = tour === 'wta';
@@ -587,7 +593,7 @@ export default function H2H({ tour = 'atp' }) {
     const key = `./${player.id}.png`;
     const keys = playerImgs.keys ? playerImgs.keys() : [];
     if (keys.includes(key)) return playerImgs(key);
-    return `${process.env.PUBLIC_URL}/assets/players/default.png`;
+    return DEFAULT_IMG;
   };
 
   const selectStyles = SELECT_STYLES;

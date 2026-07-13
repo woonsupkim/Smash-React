@@ -124,25 +124,6 @@
   text-decoration: none;
 }
 .track-model-version:hover { color: var(--text-1); text-decoration: underline; }
-.track-brier {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin-top: 0.9rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-1);
-}
-.track-brier-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.track-brier-vals { font-size: 0.92rem; color: var(--text-2); }
-.track-brier-vals strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
-.track-brier-sep { margin: 0 0.4rem; color: var(--text-3); font-size: 0.8rem; }
-.track-brier-n { color: var(--text-3); font-size: 0.8rem; }
 .track-refreshed {
   display: inline-flex;
   align-items: center;

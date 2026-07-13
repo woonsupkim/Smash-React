@@ -41,7 +41,7 @@ export default function SiteFooter() {
 
         <nav className="site-footer-col" aria-label="Product">
           <div className="site-footer-head">Product</div>
-          <Link to={prefix('/h2h') + '?surface=hard'}>Head to Head</Link>
+          <Link to={prefix('/h2h')}>Head to Head</Link>
           <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
           <Link to={prefix('/track-record')}>Track Record</Link>
           <Link to="/methodology">Methodology</Link>

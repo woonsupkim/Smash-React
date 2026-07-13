@@ -11,7 +11,7 @@ export default function NotFound() {
       <p className="notfound-sub">That page doesn't exist. The rest of the court is still open:</p>
       <div className="notfound-links">
         <Link to="/">Home</Link>
-        <Link to="/h2h?surface=hard">Head to Head</Link>
+        <Link to="/h2h">Head to Head</Link>
         <Link to="/track-record">Track Record</Link>
         <Link to="/methodology">Methodology</Link>
       </div>

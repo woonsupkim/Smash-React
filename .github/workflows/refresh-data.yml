@@ -36,9 +36,9 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -95,13 +95,24 @@ jobs:
       - name: Update forward predictions
         run: npm run build-predictions
 
+      # The full run takes a while; if main moved in the meantime (a normal
+      # push during a slam), a plain push is rejected as non-fast-forward.
+      # Rebase our single data commit on top of the new head, retrying once
+      # in case of a push race.
       - name: Commit refreshed data
         run: |
           git config user.name "smash-data-bot"
           git config user.email "actions@users.noreply.github.com"
           git add public/data data-pipeline/output src/assets/players src/assets/players-women
-          git diff --cached --quiet || git commit -m "Automated data refresh"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "Automated data refresh"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push attempt $attempt failed; retrying..."
+            sleep 15
+          done
+          echo "Could not push after 3 attempts" >&2
+          exit 1
 
       # Fail loudly and privately: a broken refresh during a slam should open
       # an issue (which GitHub emails to watchers), never rot silently while
