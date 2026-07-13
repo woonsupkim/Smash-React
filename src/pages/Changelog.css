@@ -1,0 +1,94 @@
+/* src/pages/Changelog.css */
+
+.changelog-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+
+.changelog-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  margin-bottom: 0.75rem;
+}
+
+.changelog-sub {
+  color: var(--text-3);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-bottom: 2rem;
+  max-width: 560px;
+}
+.changelog-sub strong { color: var(--text-1); font-weight: 700; }
+.changelog-sub a { color: var(--accent-brand); text-decoration: none; }
+.changelog-sub a:hover { text-decoration: underline; }
+
+.changelog-list {
+  border-left: 1px solid var(--border-1);
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.changelog-entry { position: relative; }
+.changelog-entry::before {
+  content: '';
+  position: absolute;
+  left: calc(-1.5rem - 4.5px);
+  top: 0.35rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.changelog-entry:first-child::before { background: var(--accent-brand); }
+
+.changelog-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+.changelog-version {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-1);
+}
+.changelog-type {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
+  background: var(--surface-1);
+}
+.changelog-date { font-size: 0.78rem; color: var(--text-3); }
+
+.changelog-entry-title {
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+
+.changelog-notes {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.changelog-notes li {
+  font-size: 0.88rem;
+  color: var(--text-2);
+  line-height: 1.55;
+}

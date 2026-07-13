@@ -1,0 +1,41 @@
+/* src/pages/Legal.css */
+
+.legal-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+
+.legal-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  margin-bottom: 0.35rem;
+}
+
+.legal-updated {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  margin-bottom: 2rem;
+}
+
+.legal-page h2 {
+  font-family: var(--font-ui);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 1.6rem 0 0.5rem;
+}
+
+.legal-page p {
+  font-size: 0.92rem;
+  color: var(--text-2);
+  line-height: 1.65;
+  margin-bottom: 0.75rem;
+}
+
+.legal-page a { color: var(--accent-brand); text-decoration: none; }
+.legal-page a:hover { text-decoration: underline; }
+.legal-page strong { color: var(--text-1); }

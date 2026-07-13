@@ -179,6 +179,70 @@ h1, h2, h3, .heading-xl, .heading-lg,
   color: var(--accent-brand) !important;
 }
 
+/* ── De-Bootstrap: retheme stock variants to the design system ─────────
+   Several pages still use react-bootstrap's named variants (primary,
+   danger, success). Overriding them here keeps every button/input/progress
+   bar on-brand without forking each call site. */
+.btn-primary,
+.btn-primary:focus {
+  --bs-btn-bg: var(--accent-brand);
+  --bs-btn-border-color: var(--accent-brand);
+  --bs-btn-color: #111;
+  --bs-btn-hover-bg: #b3e619;
+  --bs-btn-hover-border-color: #b3e619;
+  --bs-btn-hover-color: #111;
+  --bs-btn-active-bg: #a5d417;
+  --bs-btn-active-border-color: #a5d417;
+  --bs-btn-active-color: #111;
+  --bs-btn-disabled-bg: var(--surface-3);
+  --bs-btn-disabled-border-color: var(--border-1);
+  --bs-btn-disabled-color: var(--text-3);
+  font-weight: 700;
+}
+.btn-danger {
+  --bs-btn-bg: var(--accent-negative);
+  --bs-btn-border-color: var(--accent-negative);
+  --bs-btn-hover-bg: #c94b4b;
+  --bs-btn-hover-border-color: #c94b4b;
+  font-weight: 700;
+}
+.btn-secondary,
+.btn-info {
+  --bs-btn-bg: var(--surface-2);
+  --bs-btn-border-color: var(--border-2);
+  --bs-btn-color: var(--text-1);
+  --bs-btn-hover-bg: var(--surface-3);
+  --bs-btn-hover-border-color: var(--border-2);
+  --bs-btn-hover-color: var(--text-1);
+}
+
+/* Dark text inputs everywhere (modals already themed in AppModal.css) */
+.form-control {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
+  border-radius: var(--radius-sm);
+}
+.form-control:focus {
+  background-color: var(--surface-3);
+  border-color: var(--accent-brand);
+  color: var(--text-1);
+  box-shadow: none;
+}
+.form-control::placeholder { color: var(--text-3); }
+.form-label { color: var(--text-2); }
+
+/* Progress bars pick up the brand accent instead of Bootstrap green */
+.progress { background-color: var(--surface-2); }
+.progress-bar.bg-success { background-color: var(--accent-brand) !important; color: #111; }
+
+/* Navbar toggler: replace the stock bordered box with a quiet ghost button */
+.navbar-toggler {
+  border: 1px solid var(--border-1);
+  padding: 0.35rem 0.6rem;
+}
+.navbar-toggler:focus { box-shadow: none; outline: 2px solid var(--accent-brand); }
+
 .brand-dot {
   width: 26px;
   height: 26px;
@@ -263,11 +327,6 @@ h1, h2, h3, .heading-xl, .heading-lg,
   .page-content { padding-top: 60px; }
   .page-background { min-height: calc(100vh - 60px); }
 }
-
-
-/* Text color utilities */
-.text-lime    { color: lime    !important; }
-.text-magenta { color: magenta !important; }
 
 /* About page specific */
 .about-page {

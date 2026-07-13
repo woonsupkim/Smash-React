@@ -1,0 +1,74 @@
+/* src/pages/Admin.css */
+
+.admin-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+
+.admin-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  margin-bottom: 1.5rem;
+}
+
+.admin-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.admin-panel-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 0.9rem;
+}
+
+.admin-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.admin-meta-cell { min-width: 0; }
+.admin-meta-tour {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin-bottom: 0.35rem;
+}
+.admin-meta-row { font-size: 0.85rem; color: var(--text-3); }
+.admin-meta-row strong { color: var(--text-1); font-weight: 600; }
+
+.admin-note { font-size: 0.85rem; color: var(--text-3); line-height: 1.5; }
+
+.admin-form-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.admin-input {
+  flex: 1 1 220px;
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border-2) !important;
+  color: var(--text-1) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.admin-input:focus {
+  background: var(--surface-3) !important;
+  border-color: var(--accent-brand) !important;
+  box-shadow: none !important;
+}
+.admin-trigger { white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .admin-meta-grid { grid-template-columns: 1fr; }
+}

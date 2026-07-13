@@ -27,8 +27,10 @@ on:
 
 # The default GITHUB_TOKEN is read-only on contents unless explicitly
 # elevated — without this, the final "git push" step fails with exit 1.
+# issues: write lets the failure step below open an alert issue.
 permissions:
   contents: write
+  issues: write
 
 jobs:
   refresh:
@@ -100,3 +102,22 @@ jobs:
           git add public/data data-pipeline/output src/assets/players src/assets/players-women
           git diff --cached --quiet || git commit -m "Automated data refresh"
           git push
+
+      # Fail loudly and privately: a broken refresh during a slam should open
+      # an issue (which GitHub emails to watchers), never rot silently while
+      # the site serves stale data. Reuses an existing open alert instead of
+      # piling up duplicates when a failure repeats daily.
+      - name: Open an issue if the refresh failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="Data refresh failed"
+          BODY="The scheduled/manual data refresh failed on $(date -u +%Y-%m-%d). See the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' --repo "${{ github.repository }}")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY" --repo "${{ github.repository }}"
+          else
+            gh issue create --title "$TITLE" --body "$BODY" --label bug --repo "${{ github.repository }}" || \
+            gh issue create --title "$TITLE" --body "$BODY" --repo "${{ github.repository }}"
+          fi

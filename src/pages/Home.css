@@ -131,7 +131,7 @@
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.home-stat-ci { font-size: 0.95rem; color: var(--accent-brand); font-weight: 700; }
+.home-stat-ci { font-size: 0.95rem; color: var(--text-2); font-weight: 700; }
 .home-stat-vs { font-size: 0.95rem; color: var(--text-3); font-weight: 600; }
 .home-stat-cap {
   font-size: 0.68rem;
@@ -142,11 +142,19 @@
 .home-stat-link {
   align-items: flex-end;
   text-align: right;
-  color: var(--accent-brand);
+  color: var(--text-2);
   font-size: 1.3rem;
   font-weight: 800;
 }
-.home-stat-link .home-stat-cap { color: var(--accent-brand); }
+.home-stats:hover .home-stat-link { color: var(--text-1); }
+
+/* Skeleton placeholder matching the stat rail's footprint, so content
+   doesn't jump when the real numbers land. */
+.home-stats-skel {
+  height: 96px;
+  margin-bottom: 3rem;
+  border-radius: var(--radius-md);
+}
 
 /* ── Shared section header: dot + title + context on one baseline ────── */
 .home-section-head {
@@ -192,6 +200,21 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 0.85rem;
 }
+.home-board-skel {
+  height: 148px;
+  border-radius: var(--radius-md);
+}
+.home-board-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.75rem 1.25rem;
+  border: 1px dashed var(--border-1);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.home-board-empty-title { font-weight: 700; color: var(--text-2); font-size: 0.95rem; }
+.home-board-empty-sub { color: var(--text-3); font-size: 0.85rem; }
 .home-board-card {
   display: flex;
   flex-direction: column;
@@ -289,7 +312,7 @@
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: var(--accent-brand);
+  color: var(--text-3);
 }
 .home-nav-name {
   font-family: var(--font-display);
@@ -311,42 +334,11 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--accent-brand);
+  color: var(--text-2);
   margin-top: auto;
   padding-top: 0.5rem;
 }
-
-/* ── Footer ──────────────────────────────────────────────────────────── */
-.home-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 1.5rem 0 1rem;
-  border-top: 1px solid var(--border-1);
-}
-
-.trust-signal {
-  font-size: 0.8rem;
-  color: var(--text-3);
-}
-.trust-method-link { color: var(--accent-brand); text-decoration: none; }
-.trust-method-link:hover { text-decoration: underline; }
-
-.update-data-link {
-  background: none;
-  border: none;
-  color: var(--text-3);
-  font-size: 0.72rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-.update-data-link:hover { color: var(--text-2); }
-
-.refresh-meta {
-  font-size: 0.68rem;
-  color: var(--text-3);
-}
+.home-nav-card:hover .home-nav-go { color: var(--text-1); }
 
 /* ── One-time intro overlay ──────────────────────────────────────────
    Similar in spirit to a sports broadcast's logo sting - plays once per

@@ -1,0 +1,78 @@
+/* src/components/SiteFooter.css */
+
+.site-footer {
+  background: #0a0a0a;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2.5rem 1.5rem 1.5rem;
+}
+
+.site-footer-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 2rem 4rem;
+}
+
+.site-footer-logo {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-1);
+  margin-bottom: 0.4rem;
+}
+
+.site-footer-tag {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  max-width: 300px;
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+
+.site-footer-sla {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.site-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.site-footer-head {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 0.25rem;
+}
+
+.site-footer-col a {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  text-decoration: none;
+}
+.site-footer-col a:hover { color: var(--text-1); }
+
+.site-footer-legal {
+  max-width: 1040px;
+  margin: 2rem auto 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .site-footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem 1.5rem;
+  }
+  .site-footer-brand { grid-column: 1 / -1; }
+}

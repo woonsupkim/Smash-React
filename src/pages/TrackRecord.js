@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { countryFlagUrl } from '../components/countryFlags';
+import { MODEL_VERSION } from '../data/changelog';
 import './TrackRecord.css';
 
 const SURFACES = {
@@ -170,6 +171,22 @@ export default function TrackRecord() {
       }
       return { profit, k, roi: k ? (profit / k) * 100 : 0 };
     };
+    // Brier score: mean squared error of the stated probability against the
+    // 0/1 outcome - the standard proper scoring rule for probability quality
+    // (lower is better; 0.25 = coin flip). Scored head-to-head against the
+    // market's vig-removed implied probability on the same matches.
+    const brier = (() => {
+      if (!betList.length) return null;
+      let s = 0, mk = 0;
+      for (const m of betList) {
+        const y = m.p1Won ? 1 : 0;
+        s += (m.smashProbP1 - y) ** 2;
+        const q1 = 1 / m.od1, q2 = 1 / m.od2;
+        mk += (q1 / (q1 + q2) - y) ** 2;
+      }
+      return { n: betList.length, smash: s / betList.length, market: mk / betList.length };
+    })();
+
     const eloFav = (m) => (m.eloProbP1 >= 0.5 ? m.p1 : m.p2);
     const returns = [
       { id: 'smash', label: 'Smart Blend', ...roiFor((m) => m.smashFavorite) },
@@ -195,6 +212,7 @@ export default function TrackRecord() {
       oddAcc,
       market,
       ciHalf,
+      brier,
       returns,
       betN: betList.length,
       bestReturnId: bestReturn.profit > 0 ? bestReturn.id : null,
@@ -232,6 +250,7 @@ export default function TrackRecord() {
             </p>
             <div className="track-header-meta">
               <Link className="track-method-link" to="/methodology">How it works →</Link>
+              <Link className="track-model-version" to="/changelog">Model v{MODEL_VERSION} · changelog</Link>
               {refreshedLabel && (
                 <span className={`track-refreshed${isStale ? ' stale' : ''}`}>
                   <span className="track-refreshed-dot" />
@@ -343,6 +362,17 @@ export default function TrackRecord() {
                       </div>
                     )}
                   </div>
+                  {stats.brier && (
+                    <div className="track-brier">
+                      <span className="track-brier-label">Probability quality · Brier score (lower is better)</span>
+                      <span className="track-brier-vals">
+                        Model <strong>{stats.brier.smash.toFixed(3)}</strong>
+                        <span className="track-brier-sep">vs</span>
+                        market <strong>{stats.brier.market.toFixed(3)}</strong>
+                        <span className="track-brier-n"> · same {stats.brier.n} matches · 0.250 = coin flip</span>
+                      </span>
+                    </div>
+                  )}
                   <div className="track-note">
                     Both figures are graded on these same odds-carrying matches. Beating the closing
                     line is the hardest test in sports prediction - the market already prices in

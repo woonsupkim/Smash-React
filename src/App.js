@@ -7,6 +7,11 @@ import H2H from './pages/H2H';
 import DreamBrackets from './pages/DreamBrackets';
 import TrackRecord from './pages/TrackRecord';
 import Methodology from './pages/Methodology';
+import Changelog from './pages/Changelog';
+import Admin from './pages/Admin';
+import NotFound from './pages/NotFound';
+import { Terms, Privacy, Disclaimer } from './pages/Legal';
+import SiteFooter from './components/SiteFooter';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import ErrorBoundary from './components/ErrorBoundary';
@@ -135,9 +140,21 @@ function App() {
           <Route path="/women/wimbledon" element={<Navigate to="/women/h2h?surface=grass" replace />} />
           <Route path="/women/us-open" element={<Navigate to="/women/h2h?surface=hard" replace />} />
           {/* <Route path="/about" element={<About />} /> */}
+
+          {/* Release notes and legal - tour-agnostic */}
+          <Route path="/changelog" element={<Changelog />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+
+          {/* Operations console - intentionally unlinked from the nav */}
+          <Route path="/admin" element={<Admin />} />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
         </ErrorBoundary>
       </main>
+      <SiteFooter />
     </Router>
   );
 }
