@@ -1,7 +1,8 @@
 name: Refresh player stats
 
-# Triggered manually from the Home page's "Update Data" button (via
-# api/trigger-refresh.js) or directly from the GitHub Actions tab. Runs the
+# Triggered three ways: daily on a schedule during grand slam windows (below),
+# manually from the Home page's "Update Data" button (via
+# api/trigger-refresh.js), or directly from the GitHub Actions tab. Runs the
 # full data-pipeline refresh and commits the regenerated CSVs/h2h.json back
 # to main, which triggers a Vercel redeploy. Doing this in a GitHub Action
 # (rather than inside the Vercel serverless function) sidesteps Vercel's
@@ -9,6 +10,20 @@ name: Refresh player stats
 # take several minutes.
 on:
   workflow_dispatch: {}
+  # Daily at 06:00 UTC, but only inside generous windows around each slam
+  # (cron can't span month boundaries, so slams that straddle one get two
+  # entries). Exact tournament dates shift a little year to year; the
+  # windows are padded so they stay covered without annual edits. Outside
+  # these windows the refresh stays manual-only.
+  schedule:
+    - cron: '0 6 8-31 1 *'    # Australian Open: Jan 8-31
+    - cron: '0 6 1-2 2 *'     # Australian Open spillover: Feb 1-2
+    - cron: '0 6 18-31 5 *'   # French Open: May 18-31
+    - cron: '0 6 1-10 6 *'    # French Open: Jun 1-10
+    - cron: '0 6 22-30 6 *'   # Wimbledon: Jun 22-30
+    - cron: '0 6 1-15 7 *'    # Wimbledon: Jul 1-15
+    - cron: '0 6 18-31 8 *'   # US Open: Aug 18-31
+    - cron: '0 6 1-15 9 *'    # US Open: Sep 1-15
 
 # The default GITHUB_TOKEN is read-only on contents unless explicitly
 # elevated — without this, the final "git push" step fails with exit 1.
