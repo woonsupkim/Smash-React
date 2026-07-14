@@ -632,8 +632,8 @@ export default function TrackRecord() {
                   return (
                     <div className={`track-row${m.smashCorrect ? '' : ' miss'}`} key={m.id}>
                       <div className="track-row-meta">
-                        <span className="track-row-surface" style={{ color: SURFACES[m.surface].accent }}>
-                          {SURFACES[m.surface].label}
+                        <span className="track-row-surface" style={{ color: (SURFACES[m.surface] || {}).accent }}>
+                          {(SURFACES[m.surface] || { label: m.surface }).label}
                         </span>
                         <span className="track-row-date">{new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>

@@ -43,15 +43,17 @@ function markIntroSeen() {
 // AO = 3rd Monday of January, RG = last Sunday of May, Wimbledon = last
 // Monday of June, US Open = last Monday of August. Good to within a day or
 // two, which is all a countdown needs.
+// UTC like the pipeline's slamCalendar, so the countdown can't drift a day
+// from the rest of the app for viewers west of UTC.
 function nthMonday(year, month, n) {
-  const d = new Date(year, month, 1);
-  const offset = (8 - d.getDay()) % 7;
-  return new Date(year, month, 1 + offset + (n - 1) * 7);
+  const d = new Date(Date.UTC(year, month, 1));
+  const offset = (8 - d.getUTCDay()) % 7;
+  return new Date(Date.UTC(year, month, 1 + offset + (n - 1) * 7));
 }
 function lastWeekday(year, month, weekday) {
-  const d = new Date(year, month + 1, 0);
-  const back = (d.getDay() - weekday + 7) % 7;
-  return new Date(year, month, d.getDate() - back);
+  const d = new Date(Date.UTC(year, month + 1, 0));
+  const back = (d.getUTCDay() - weekday + 7) % 7;
+  return new Date(Date.UTC(year, month, d.getUTCDate() - back));
 }
 function nextSlam(now = new Date()) {
   const slamsIn = (y) => [
@@ -270,16 +272,23 @@ export default function Home() {
         )}
 
         {/* ── Title odds: both tours' draws, played out 2,000 times ─────── */}
-        {(titleOdds?.atp || titleOdds?.wta) && (
+        {(titleOdds?.atp || titleOdds?.wta) && (() => {
+          // Section heading/footer copy: the tours can briefly be in mixed
+          // states (one final, one projecting the next slam), so lead with
+          // the most "alive" status either tour is in.
+          const entries = [titleOdds.atp, titleOdds.wta].filter(Boolean);
+          const headStatus = ['live', 'projection', 'final'].find((s) => entries.some((e) => e.status === s));
+          const headEntry = entries.find((e) => e.status === headStatus) || entries[0];
+          return (
           <section className="home-odds">
             <div className="home-section-head">
               <h2 className="home-section-title">
-                {(titleOdds.atp || titleOdds.wta).status === 'projection' ? `Road to the ${(titleOdds.atp || titleOdds.wta).event}` : 'Title Odds'}
+                {headStatus === 'projection' ? `Road to the ${headEntry.event}` : 'Title Odds'}
               </h2>
               <span className="home-section-sub">
-                {(titleOdds.atp || titleOdds.wta).status === 'projection'
+                {headStatus === 'projection'
                   ? 'projected from current rankings · each player\'s chance to win it all'
-                  : `${(titleOdds.atp || titleOdds.wta).event} · each player's chance to win it all`}
+                  : `${headEntry.event} · each player's chance to win it all`}
               </span>
             </div>
             <div className="home-odds-tours">
@@ -290,7 +299,7 @@ export default function Home() {
                 return (
                   <div className="home-odds-tour" key={t}>
                     <div className="home-odds-tour-label">{t === 'wta' ? 'WTA' : 'ATP'}</div>
-                    {o.status === 'final' ? (
+                    {o.status === 'final' && o.champion ? (
                       <div className="home-odds-champion">
                         {o.champion.id && (
                           <img className="home-odds-champ-photo" src={playerPhoto(t, o.champion.id)} alt="" />
@@ -305,7 +314,7 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="home-odds-list">
-                        {o.odds.slice(0, 6).map((p, i) => {
+                        {(o.odds || []).slice(0, 6).map((p, i) => {
                           const pct = Math.round(p.prob * 100);
                           const prev = prevSnap?.[p.name];
                           const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
@@ -339,14 +348,15 @@ export default function Home() {
               })}
             </div>
             <div className="home-odds-note">
-              {(titleOdds.atp?.status === 'live' || titleOdds.wta?.status === 'live')
+              {headStatus === 'live'
                 ? "The remaining draw, played out 2,000 times before each day's play. Arrows show movement since yesterday."
-                : (titleOdds.atp?.status === 'projection' || titleOdds.wta?.status === 'projection')
+                : headStatus === 'projection'
                   ? <>A hypothetical seeded field from today's rankings, simulated 2,000 times. It re-prices with every refresh until the real draw drops. <Link to="/draw">See the full projected draw</Link>.</>
-                  : "Title odds return when the next slam's draw drops."}
+                  : <>The champions are crowned. The road to the next slam appears here as rankings move. <Link to="/draw">Revisit the final bracket</Link>.</>}
             </div>
           </section>
-        )}
+          );
+        })()}
 
         {/* ── Live board: what's on the tour right now ─────────────────── */}
         <section className="home-board">

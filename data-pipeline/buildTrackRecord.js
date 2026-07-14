@@ -87,7 +87,7 @@ function loadTour(tour) {
       }
 
       const d = new Date(m.date);
-      if (isNaN(d) || d < new Date('2026-01-01') || d > new Date('2026-12-31')) continue;
+      if (isNaN(d) || d < new Date('2026-01-01') || d >= new Date('2027-01-01')) continue;
       const p1 = apiToShort.get(p1Id), p2 = apiToShort.get(p2Id);
       if (!p1 || !p2) continue;
       const winner = apiToShort.get(winId);

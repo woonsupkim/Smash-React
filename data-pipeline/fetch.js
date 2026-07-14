@@ -16,7 +16,11 @@ const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
 const API_KEY = process.env.RAPIDAPI_KEY;
 const PAGES_PER_PLAYER = 6; // ~50/page -> up to 300 recent matches (was 2, capped to conserve API quota)
 const PAGE_SIZE = 50;
-const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
+// 20h, deliberately UNDER the 24h daily cron interval: the CI cache restores
+// files with their original mtimes, so a 24h threshold would sit exactly on
+// the cron boundary and a slightly-early run would skip every player. 20h
+// still catches the same-day duplicate-run case (slam-window Mondays).
+const MAX_CACHE_AGE_MS = 20 * 60 * 60 * 1000;
 
 
 function loadActivePlayerNames() {

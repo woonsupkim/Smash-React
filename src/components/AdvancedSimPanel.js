@@ -263,7 +263,11 @@ export default function AdvancedSimPanel({
       }))
     : [];
 
-  const favoredIdx = batchResult ? (dispProbA >= 0.5 ? 0 : 1) : null;
+  // Batch-derived detail (set-score distribution, likely range, underdog
+  // caption) orients on the POINT SIM's favorite, not the engine's - those
+  // numbers come from the batch, and when a non-sim engine flips the pick
+  // the batch arrays would otherwise describe the wrong player.
+  const favoredIdx = batchResult ? (rawProbA >= 0.5 ? 0 : 1) : null;
   const favoredName = favoredIdx === 0 ? playerA?.name : playerB?.name;
   const underdogName = favoredIdx === 0 ? playerB?.name : playerA?.name;
   const favoredWins = batchResult ? batchResult.matchWins[favoredIdx] : 0;
@@ -395,9 +399,10 @@ export default function AdvancedSimPanel({
                   </ResponsiveContainer>
                   {(() => {
                     const { lower, upper } = credibleInterval(batchResult.matchWins[0], batchResult.matchWins[1]);
-                    // Confidence framing follows the headline (engine) probability,
-                    // not the raw point-sim share, so the badges agree with the pie.
-                    const favProb = favoredIdx === 0 ? dispProbA : 1 - dispProbA;
+                    // Confidence framing follows the point-sim batch, same as the
+                    // likely-range and scoreline numbers beside it - one data
+                    // source per caption, even when the engine flips the pick.
+                    const favProb = favoredIdx === 0 ? rawProbA : 1 - rawProbA;
                     const underdogProb = 1 - favProb;
                     const [favLower, favUpper] = favoredIdx === 0 ? [lower, upper] : [1 - upper, 1 - lower];
 

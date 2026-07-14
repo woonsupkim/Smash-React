@@ -37,42 +37,48 @@ export default function MatchPage() {
       .catch(() => setPred(null));
   }, [matchId]);
 
-  // Roster stats (rank + recent form) for the prediction's tour.
+  // Roster stats (rank + recent form) for the prediction's tour. The alive
+  // flag keeps a slow response for the previous match from clobbering the
+  // current one after a quick navigation.
   useEffect(() => {
-    if (!pred) return;
+    if (!pred) return undefined;
+    let alive = true;
+    const guard = (setter) => (v) => { if (alive) setter(v); };
+    const setRowsG = guard(setRows), setH2hG = guard(setH2h), setPairG = guard(setPairRecord);
     const dir = pred.tour === 'wta' ? '/data/women' : '/data';
     Papa.parse(process.env.PUBLIC_URL + dir + '/smash_us.csv', {
       header: true,
       download: true,
       complete: ({ data }) => {
         const byId = new Map(data.filter((r) => r.id).map((r) => [r.id, r]));
-        setRows({ a: byId.get(pred.p1) || null, b: byId.get(pred.p2) || null });
+        setRowsG({ a: byId.get(pred.p1) || null, b: byId.get(pred.p2) || null });
       },
-      error: () => setRows({ a: null, b: null }),
+      error: () => setRowsG({ a: null, b: null }),
     });
     fetch(process.env.PUBLIC_URL + '/data/h2h.json')
       .then((r) => r.json())
       .then((d) => {
         const key = [pred.p1, pred.p2].sort().join('_');
         const rec = d[key];
-        if (!rec) { setH2h(null); return; }
+        if (!rec) { setH2hG(null); return; }
         const firstIsP1 = [pred.p1, pred.p2].sort()[0] === pred.p1;
-        setH2h({
+        setH2hG({
           w1: firstIsP1 ? rec.winsA : rec.winsB,
           w2: firstIsP1 ? rec.winsB : rec.winsA,
           form1: firstIsP1 ? rec.recentFormA : rec.recentFormB,
           form2: firstIsP1 ? rec.recentFormB : rec.recentFormA,
         });
       })
-      .catch(() => setH2h(null));
+      .catch(() => setH2hG(null));
     fetch(process.env.PUBLIC_URL + '/data/track_record.json')
       .then((r) => r.json())
       .then((d) => {
         const pair = (d.matches || []).filter((m) =>
           (m.p1 === pred.p1 && m.p2 === pred.p2) || (m.p1 === pred.p2 && m.p2 === pred.p1));
-        setPairRecord({ n: pair.length, correct: pair.filter((m) => m.smashCorrect).length });
+        setPairG({ n: pair.length, correct: pair.filter((m) => m.smashCorrect).length });
       })
-      .catch(() => setPairRecord(null));
+      .catch(() => setPairG(null));
+    return () => { alive = false; };
   }, [pred]);
 
   const when = useMemo(() => (pred ? timeUntil(pred.date) : null), [pred]);
@@ -175,10 +181,12 @@ export default function MatchPage() {
         <p className="match-verdict-line">{verdictLine(pred.favProb, favLast)} Locked before play{decided ? ', graded after' : ''}.</p>
       </div>
 
-      {/* Your call + the fan tally (voting closes once the match is decided) */}
-      {(!decided || (tally && tally.total > 0)) && (
+      {/* Your call + the fan tally. Voting closes at kickoff, not at grading:
+          a match that started (or finished, but hasn't been graded yet)
+          shouldn't accept new calls. */}
+      {((!decided && !when?.past) || (tally && tally.total > 0)) && (
         <div className="match-call">
-          {!decided && (
+          {!decided && !when?.past && (
             <div className="match-call-btns">
               {[[pred.p1, pred.name1], [pred.p2, pred.name2]].map(([pid, name]) => (
                 <button

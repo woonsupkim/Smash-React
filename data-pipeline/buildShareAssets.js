@@ -957,6 +957,14 @@ async function run() {
       if (a.category === 'weekly' && fs.existsSync(path.join(OUT, a.file))) assets.push(a);
     }
   }
+
+  // Motion assets (.mp4) are appended by buildMotionAssets AFTER this script
+  // runs. Carry the previous run's video entries forward so a standalone
+  // share-assets run doesn't delete them in the stale-file cleanup; when
+  // buildMotionAssets runs next it replaces these entries file-by-file.
+  for (const a of (prevManifest.assets || [])) {
+    if (a.format === 'video' && fs.existsSync(path.join(OUT, a.file))) assets.push(a);
+  }
   if (new Date().getUTCDay() === 1 || process.env.FORCE_WEEKLY === '1') {
     const weekMs = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5);
     if (weekMs.length >= 5) {
