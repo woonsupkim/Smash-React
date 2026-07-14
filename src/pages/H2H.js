@@ -644,11 +644,11 @@ export default function H2H({ tour = 'atp' }) {
 
           {/* Header: tournament + surface segmented control */}
           <div className="studio-head">
-            <div className="studio-title">
+            <h1 className="studio-title">
               <img src={config.logo} alt="" className="studio-logo" />
               <span className="studio-title-text">{config.label}{isWta ? " Women's" : ''}</span>
               <span className="studio-title-sub">{config.surfaceLabel} · Best of {bestOf}</span>
-            </div>
+            </h1>
             <div className="studio-controls">
               <div className="studio-surface-seg" role="group" aria-label="Tour">
                 <button type="button" className={`studio-seg-btn${!isWta ? ' active' : ''}`} onClick={() => switchTour(false)}>ATP</button>

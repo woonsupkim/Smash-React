@@ -1069,10 +1069,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
     >
       <div className="dream-brackets-page bracket-overlay">
         <div className="bracket-card" style={{ '--accent': 'var(--bracket-accent)' }}>
-        <h3 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
+        <h1 className="broadcast-title" style={{ '--accent': 'var(--bracket-accent)' }}>
           <img src={tournamentConfig.logo} alt="" className="bracket-title-logo" />
           {tournamentConfig.label}{isWta ? " Women's" : ''} · Bracket Simulator
-        </h3>
+        </h1>
 
         <div className="bracket-controls-panel mb-3" style={{ '--accent': 'var(--bracket-accent)' }}>
           <div className="bracket-setup">

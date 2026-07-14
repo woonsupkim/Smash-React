@@ -17,7 +17,7 @@
   flex-wrap: wrap;
   gap: 0.75rem;
 }
-.studio-title { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.studio-title { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin: 0; }
 .studio-logo { height: 1.6rem; width: auto; align-self: center; }
 .studio-title-text {
   font-family: var(--font-display);
