@@ -939,7 +939,20 @@ async function run() {
     add(file, 'wrap', 'square', 'wrap', `${o.event} ${tour.toUpperCase()} report card: ${correct} of ${evMs.length} winners called before play${beat ? `, ${beat} wins over the bookies` : ''}, ${exact} exact scorelines. ${o.champion.name} takes the title. ${SITE}/track-record ${tags}`);
   }
 
-  // ── WEEKLY: the week in calls (Mondays, or FORCE_WEEKLY=1) ──────────────
+  // Previous run's manifest: the weekly carry-over below and the MOMENTS
+  // milestone check both need it.
+  const prevManifest = fs.existsSync(path.join(OUT, 'manifest.json'))
+    ? JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'))
+    : {};
+
+  // ── WEEKLY: the week in calls (fresh on Mondays or FORCE_WEEKLY=1; on
+  // other days last Monday's card carries over so it lives in the kit all
+  // week instead of vanishing on Tuesday) ──────────────────────────────────
+  if (new Date().getUTCDay() !== 1 && process.env.FORCE_WEEKLY !== '1') {
+    for (const a of (prevManifest.assets || [])) {
+      if (a.category === 'weekly' && fs.existsSync(path.join(OUT, a.file))) assets.push(a);
+    }
+  }
   if (new Date().getUTCDay() === 1 || process.env.FORCE_WEEKLY === '1') {
     const weekMs = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5);
     if (weekMs.length >= 5) {
@@ -967,9 +980,6 @@ async function run() {
   }
 
   // ── MOMENTS: milestone crossings + perfect days ─────────────────────────
-  const prevManifest = fs.existsSync(path.join(OUT, 'manifest.json'))
-    ? JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'))
-    : {};
   const prevN = prevManifest.seasonN || 0;
   if (Math.floor(sc.season.n / 250) > Math.floor(prevN / 250) && prevN > 0) {
     const mark = Math.floor(sc.season.n / 250) * 250;

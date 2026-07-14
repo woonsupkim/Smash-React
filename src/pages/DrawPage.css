@@ -122,3 +122,21 @@ a.draw-player-link:hover .draw-name { color: var(--accent-brand); }
   .draw-table { font-size: 0.82rem; }
   .draw-name { max-width: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 }
+
+/* Title race chart */
+.draw-race { margin-top: 2rem; }
+.draw-race-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.4rem;
+}
+.draw-race-chart {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1rem 0.75rem 0.5rem;
+}
+.draw-race-pending { margin-top: 1.5rem; color: var(--text-3); font-size: 0.85rem; }

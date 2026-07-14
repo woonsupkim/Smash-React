@@ -7,9 +7,13 @@
 // actual current matchups.
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil } from '../utils/matchTime';
 import './DrawPage.css';
+
+// Distinct line colors for the race chart, lime first (the leader).
+const RACE_COLORS = ['#c6ff1c', '#5b8cff', '#e8694a', '#3ddc84', '#f2c14e', '#c792ea'];
 
 // Column label from the field size a win puts you into: 8 left = you made
 // the quarterfinals, and so on.
@@ -50,6 +54,25 @@ export default function DrawPage() {
   }, [entry]);
 
   const startsIn = entry?.startsAt ? timeUntil(entry.startsAt) : null;
+
+  // The title race: daily odds snapshots as lines, top 6 of the most recent
+  // multi-player snapshot. Needs at least two days of history to be a chart.
+  const race = useMemo(() => {
+    const hist = (entry?.history || []).filter((h) => h.fieldSize > 1 && h.odds && Object.keys(h.odds).length > 1);
+    if (hist.length < 2) return null;
+    // Contenders by PEAK odds across the tournament, not just the latest
+    // snapshot - an eliminated favorite's collapse is part of the story.
+    const peak = new Map();
+    for (const h of hist) {
+      for (const [n, v] of Object.entries(h.odds)) peak.set(n, Math.max(peak.get(n) || 0, v));
+    }
+    const names = [...peak.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n]) => n);
+    const data = hist.map((h) => ({
+      date: h.date.slice(5).replace('-', '/'),
+      ...Object.fromEntries(names.map((n) => [n, h.odds[n] != null ? Math.round(h.odds[n] * 100) : null])),
+    }));
+    return { names, data };
+  }, [entry]);
 
   return (
     <div className="draw-page">
@@ -149,6 +172,48 @@ export default function DrawPage() {
             <div className="draw-empty">
               No bracket snapshot for this event yet. It appears with the next data refresh.
             </div>
+          )}
+
+          {race && (
+            <section className="draw-race">
+              <h2 className="draw-race-title">The title race</h2>
+              <p className="draw-note">
+                Each line is a contender's chance to win it all, re-priced after every
+                session of play. The story of the tournament in one picture.
+              </p>
+              <div className="draw-race-chart">
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={race.data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: '#9aa1ab', fontSize: 12 }} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.15)' }} />
+                    <YAxis unit="%" tick={{ fill: '#9aa1ab', fontSize: 12 }} tickLine={false} axisLine={false} width={52} />
+                    <Tooltip
+                      formatter={(v) => [`${v}%`]}
+                      contentStyle={{ background: '#141922', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, fontSize: 13 }}
+                      labelStyle={{ color: '#ced2d8' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, color: '#ced2d8' }} />
+                    {race.names.map((n, i) => (
+                      <Line
+                        key={n}
+                        type="monotone"
+                        dataKey={n}
+                        stroke={RACE_COLORS[i % RACE_COLORS.length]}
+                        strokeWidth={i === 0 ? 3 : 2}
+                        dot={{ r: 2.5 }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          )}
+          {!race && entry.status !== 'final' && (
+            <p className="draw-race-pending">
+              The title-race chart draws itself here as daily snapshots accumulate,
+              one point per refresh.
+            </p>
           )}
 
           <p className="draw-foot">
