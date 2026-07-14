@@ -55,15 +55,25 @@ function lastWeekday(year, month, weekday) {
   const back = (d.getUTCDay() - weekday + 7) % 7;
   return new Date(Date.UTC(year, month, d.getUTCDate() - back));
 }
+const slamsIn = (y) => [
+  { name: 'Australian Open', surface: 'hard', start: nthMonday(y, 0, 3) },
+  { name: 'French Open', surface: 'clay', start: lastWeekday(y, 4, 0) },
+  { name: 'Wimbledon', surface: 'grass', start: lastWeekday(y, 5, 1) },
+  { name: 'US Open', surface: 'hard', start: lastWeekday(y, 7, 1) },
+];
 function nextSlam(now = new Date()) {
-  const slamsIn = (y) => [
-    { name: 'Australian Open', surface: 'hard', start: nthMonday(y, 0, 3) },
-    { name: 'French Open', surface: 'clay', start: lastWeekday(y, 4, 0) },
-    { name: 'Wimbledon', surface: 'grass', start: lastWeekday(y, 5, 1) },
-    { name: 'US Open', surface: 'hard', start: lastWeekday(y, 7, 1) },
-  ];
   const all = [...slamsIn(now.getFullYear()), ...slamsIn(now.getFullYear() + 1)];
   return all.find((s) => s.start > now);
+}
+// The most recent slam already underway or finished, with its (approximate)
+// end date - a fortnight after the start. Everything graded after that is
+// "between the slams": the summer/spring swings the weekly refresh feeds in.
+function prevSlam(now = new Date()) {
+  const all = [...slamsIn(now.getFullYear() - 1), ...slamsIn(now.getFullYear())];
+  const past = all.filter((s) => s.start <= now);
+  const last = past[past.length - 1];
+  if (!last) return null;
+  return { ...last, end: new Date(last.start.getTime() + 15 * 864e5) };
 }
 
 // Wilson 95% interval - same as the Track Record / Methodology headline, so
@@ -137,6 +147,11 @@ export default function Home() {
         const n = ms.length;
         const k = ms.filter((m) => m.smashCorrect).length;
         const odds = ms.filter((m) => m.oddCorrect != null);
+        // "Between the slams": everything graded since the last slam ended -
+        // the proof strip for the quiet weeks (fed by the weekly refresh).
+        const prev = prevSlam();
+        const between = prev ? ms.filter((m) => new Date(m.date) >= prev.end) : [];
+        const bCorrect = between.filter((m) => m.smashCorrect).length;
         setProof({
           state: 'ready',
           n,
@@ -144,6 +159,12 @@ export default function Home() {
           ciHalf: wilsonHalf(k, n),
           smashOnOdds: odds.length ? Math.round((odds.filter((m) => m.smashCorrect).length / odds.length) * 100) : null,
           marketAcc: odds.length ? Math.round((odds.filter((m) => m.oddCorrect).length / odds.length) * 100) : null,
+          between: between.length >= 5 ? {
+            n: between.length,
+            correct: bCorrect,
+            acc: Math.round((bCorrect / between.length) * 100),
+            since: prev.name,
+          } : null,
         });
       })
       .catch(() => setProof({ state: 'error' }));
@@ -412,6 +433,22 @@ export default function Home() {
               </div>
             );
           })()}
+          {/* Between-the-slams proof: the model keeps calling the summer and
+              spring swings while the slams sleep. Shows once 5+ non-slam
+              matches have graded since the last slam ended. */}
+          {picks.state !== 'loading' && picks.list.length === 0 && proof.state === 'ready' && proof.between && (
+            <Link to="/track-record" className="home-summer">
+              <span className="home-summer-pct">{proof.between.acc}%</span>
+              <span className="home-summer-body">
+                <span className="home-summer-title">The model doesn't take summers off.</span>
+                <span className="home-summer-sub">
+                  {proof.between.correct} of {proof.between.n} winners called at the tour events
+                  since {proof.between.since} ended, graded on the public record like everything else.
+                </span>
+              </span>
+              <span className="home-summer-go" aria-hidden="true">→</span>
+            </Link>
+          )}
           {picks.list.length > 0 && (
             <div className="home-board-grid">
               {picks.list.map((p) => {

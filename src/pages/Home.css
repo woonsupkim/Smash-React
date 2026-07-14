@@ -632,3 +632,30 @@
   .home-offseason { grid-template-columns: 1fr; text-align: center; }
   .home-off-body { align-items: center; }
 }
+
+/* Between-the-slams proof strip (off-season only) */
+.home-summer {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 0.85rem;
+  padding: 1rem 1.25rem;
+  background: rgba(198, 255, 28, 0.05);
+  border: 1px solid rgba(198, 255, 28, 0.22);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.home-summer:hover { background: rgba(198, 255, 28, 0.09); border-color: rgba(198, 255, 28, 0.4); }
+.home-summer-pct {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--accent-brand);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.home-summer-body { display: flex; flex-direction: column; gap: 0.15rem; }
+.home-summer-title { font-size: 0.95rem; font-weight: 700; color: var(--text-1); }
+.home-summer-sub { font-size: 0.82rem; color: var(--text-3); }
+.home-summer-go { margin-left: auto; color: var(--accent-brand); font-weight: 800; }

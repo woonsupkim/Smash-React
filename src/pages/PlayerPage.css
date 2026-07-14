@@ -62,3 +62,38 @@
 .player-cta { font-weight: 700; color: var(--accent-brand); text-decoration: none; }
 .player-cta:hover { text-decoration: underline; }
 .player-studio { font-size: 1rem; }
+
+/* Last-10 form strip */
+.player-form { margin-bottom: 1.5rem; }
+.player-form-dots { display: flex; gap: 0.35rem; margin: 0.5rem 0 0.3rem; flex-wrap: wrap; }
+.player-form-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800;
+  cursor: default;
+}
+.player-form-dot.w { background: rgba(76, 175, 125, 0.18); color: var(--accent-positive); border: 1px solid rgba(76, 175, 125, 0.45); }
+.player-form-dot.l { background: rgba(224, 86, 86, 0.14); color: var(--accent-negative); border: 1px solid rgba(224, 86, 86, 0.4); }
+.player-form-sub { font-size: 0.72rem; color: var(--text-3); }
+
+/* Title-odds history sparkline inside a fact card */
+.player-fact-spark { display: flex; align-items: center; gap: 0.6rem; margin: 0.25rem 0; }
+.player-fact-val-sm { font-size: 1.3rem !important; }
+
+/* Surface splits */
+.player-surfaces { margin-bottom: 1.75rem; }
+.player-surfaces-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+.player-surface-cell {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+}
+.player-surface-tag { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.player-surface-tag.s-hard { color: #5b8cff; }
+.player-surface-tag.s-clay { color: #e8694a; }
+.player-surface-tag.s-grass { color: #3ddc84; }
+.player-surface-rec { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text-1); line-height: 1.1; }
+.player-surface-sub { font-size: 0.72rem; color: var(--text-3); }
