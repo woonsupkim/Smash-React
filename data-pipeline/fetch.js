@@ -18,10 +18,6 @@ const PAGES_PER_PLAYER = 6; // ~50/page -> up to 300 recent matches (was 2, capp
 const PAGE_SIZE = 50;
 const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
 
-if (!API_KEY) {
-  console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
-  process.exit(1);
-}
 
 function loadActivePlayerNames() {
   const names = new Set();
@@ -80,24 +76,57 @@ async function resolveApiIds(players) {
   return cached;
 }
 
+// Merge freshly fetched matches into the cached history, keyed by match id.
+// Fresh data wins for ids present in both (recent matches change: a live
+// match completes, a score gets corrected); everything older that the fetch
+// didn't reach is preserved forever - history ACCUMULATES across runs
+// instead of rolling off at the newest-300 window like the old full
+// overwrite did.
+function mergeMatches(existing, fetched) {
+  const byId = new Map();
+  for (const m of existing) byId.set(String(m.id), m);
+  for (const m of fetched) byId.set(String(m.id), m);
+  return [...byId.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+}
+
+// Incremental fetch: page through the API newest-first and STOP as soon as
+// an entire page is matches we already have - the gap between the cache and
+// today is closed, everything older is on disk. A daily/weekly run costs
+// 1-2 pages per player instead of the full PAGES_PER_PLAYER; a brand-new
+// player (no cache) still bootstraps with the full window.
 async function fetchPlayerMatches(ourId, apiId) {
   const dest = path.join(RAW_DIR, `${ourId}.json`);
   if (fs.existsSync(dest) && Date.now() - fs.statSync(dest).mtimeMs < MAX_CACHE_AGE_MS) {
-    return false; // fresh cache, skip
+    return null; // fresh cache, skip
   }
-  const matches = [];
+  const existing = fs.existsSync(dest) ? JSON.parse(fs.readFileSync(dest, 'utf8')) : [];
+  const knownIds = new Set(existing.map((m) => String(m.id)));
+  const isBootstrap = existing.length === 0;
+
+  const fetched = [];
+  let pages = 0;
   for (let pageNo = 1; pageNo <= PAGES_PER_PLAYER; pageNo++) {
     const { data, hasNextPage } = await apiGet(
       `/tennis/v2/${TOUR}/player/past-matches/${apiId}?include=stat&pageSize=${PAGE_SIZE}&pageNo=${pageNo}`
     );
-    matches.push(...(data || []));
+    const page = data || [];
+    fetched.push(...page);
+    pages = pageNo;
+    if (!isBootstrap && page.length > 0 && page.every((m) => knownIds.has(String(m.id)))) break;
     if (!hasNextPage) break;
   }
-  fs.writeFileSync(dest, JSON.stringify(matches));
-  return true;
+
+  const merged = mergeMatches(existing, fetched);
+  fs.writeFileSync(dest, JSON.stringify(merged));
+  const newCount = fetched.filter((m) => !knownIds.has(String(m.id))).length;
+  return { pages, newCount, total: merged.length };
 }
 
 async function main() {
+  if (!API_KEY) {
+    console.error('Missing RAPIDAPI_KEY - set it in .env (see .env.example).');
+    process.exit(1);
+  }
   if (!fs.existsSync(RAW_DIR)) fs.mkdirSync(RAW_DIR, { recursive: true });
 
   const players = loadActivePlayerNames();
@@ -113,8 +142,8 @@ async function main() {
     const apiId = idMap[p.id];
     if (!apiId) continue;
     try {
-      const fetched = await fetchPlayerMatches(p.id, apiId);
-      console.log(`  ${p.name}: ${fetched ? 'fetched' : 'cached (fresh)'}`);
+      const r = await fetchPlayerMatches(p.id, apiId);
+      console.log(`  ${p.name}: ${r ? `+${r.newCount} new in ${r.pages} page${r.pages === 1 ? '' : 's'} (${r.total} cached)` : 'cached (fresh)'}`);
     } catch (err) {
       console.warn(`  ${p.name}: failed (${err.message})`);
     }
@@ -122,7 +151,11 @@ async function main() {
   console.log('Done.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+module.exports = { mergeMatches };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

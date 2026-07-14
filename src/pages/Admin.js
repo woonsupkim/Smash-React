@@ -90,8 +90,9 @@ export default function Admin() {
         <p className="admin-note">
           Dispatches the full pipeline (stats, Elo, track record, title odds,
           predictions, daily scorecard) as a GitHub Action. Runs automatically
-          every day during grand slam windows; use this for an off-schedule
-          refresh. Takes several minutes and redeploys the site when it lands.
+          every day during grand slam windows and every Monday in the
+          off-season; use this for an off-schedule refresh. Takes a while and
+          redeploys the site when it lands.
         </p>
         <Button className="cta-primary admin-trigger" disabled={!password || !!busy} onClick={() => trigger('refresh', 'Refresh triggered')}>
           {busy === 'refresh' ? 'Triggering…' : 'Trigger refresh'}

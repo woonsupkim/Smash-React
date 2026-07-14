@@ -24,6 +24,14 @@ on:
     - cron: '0 6 1-15 7 *'    # Wimbledon: Jul 1-15
     - cron: '0 6 18-31 8 *'   # US Open: Aug 18-31
     - cron: '0 6 1-15 9 *'    # US Open: Sep 1-15
+    # Off-season heartbeat: Mondays year-round. Keeps the stats current with
+    # non-slam tournaments (the summer hard-court swing feeds the US Open
+    # model), re-prices the projected title odds, grows the season track
+    # record, and lands the same day the weekly recap share card generates.
+    # On Mondays inside a slam window this fires alongside the daily cron;
+    # the concurrency group below serializes the two, and the second run is
+    # cheap (the fetch cache is under 24h old, so it skips every player).
+    - cron: '0 6 * * 1'       # Off-season: every Monday
 
 # The default GITHUB_TOKEN is read-only on contents unless explicitly
 # elevated - without this, the final "git push" step fails with exit 1.
@@ -31,6 +39,13 @@ on:
 permissions:
   contents: write
   issues: write
+
+# Never run two refreshes at once (e.g. a slam-window Monday triggers both
+# crons, or a manual dispatch lands mid-run): queue instead of overlapping,
+# so the commit/push step never races itself.
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
 
 jobs:
   refresh:
