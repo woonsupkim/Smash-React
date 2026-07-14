@@ -18,6 +18,7 @@ export default function Admin() {
   const [meta, setMeta] = useState({ atp: null, wta: null });
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(null); // 'refresh' | 'retune' | null
+  const [shareKit, setShareKit] = useState(null);
 
   useEffect(() => {
     const load = (dir, key) =>
@@ -27,6 +28,10 @@ export default function Admin() {
         .catch(() => {});
     load('/data', 'atp');
     load('/data/women', 'wta');
+    fetch(process.env.PUBLIC_URL + '/data/share/manifest.json')
+      .then((r) => { if (!r.ok) throw new Error('none'); return r.json(); })
+      .then(setShareKit)
+      .catch(() => setShareKit(null));
   }, []);
 
   // Both buttons dispatch a whitelisted GitHub Action through the same
@@ -105,6 +110,48 @@ export default function Admin() {
         <Button className="cta-primary admin-trigger" disabled={!password || !!busy} onClick={() => trigger('retune', 'Retune triggered')}>
           {busy === 'retune' ? 'Triggering…' : 'Trigger retune'}
         </Button>
+      </div>
+
+      <div className="admin-panel">
+        <div className="admin-panel-label">Today's share kit</div>
+        {shareKit?.assets?.length ? (
+          <>
+            <p className="admin-note">
+              Regenerated with every data refresh (last: {formatDate(shareKit.generatedAt)}).
+              Right-click any card to save it; the caption below each one is ready to paste.
+            </p>
+            {[['daily', "Today's posts"], ['promo', 'Evergreen promos']].map(([cat, label]) => {
+              const group = shareKit.assets.filter((a) => (a.category || 'daily') === cat);
+              if (!group.length) return null;
+              return (
+                <div key={cat}>
+                  <div className="admin-kit-group">{label}</div>
+                  <div className="admin-kit-grid">
+                    {group.map((a) => {
+                      const src = `${process.env.PUBLIC_URL}/data/share/${a.file}?v=${encodeURIComponent(shareKit.generatedAt)}`;
+                      return (
+                        <figure className="admin-kit-item" key={a.file}>
+                          <a href={src} target="_blank" rel="noopener noreferrer">
+                            <img src={src} alt={a.caption} />
+                          </a>
+                          <figcaption>
+                            <span className={`admin-kit-type t-${a.type}`}>{a.type}</span>
+                            {a.caption}
+                          </figcaption>
+                        </figure>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        ) : (
+          <p className="admin-note">
+            No kit generated yet. Assets appear here after the next data refresh
+            (or run <code>npm run build-share-assets</code> locally).
+          </p>
+        )}
       </div>
     </div>
   );

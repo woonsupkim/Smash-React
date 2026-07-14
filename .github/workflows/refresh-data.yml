@@ -104,6 +104,17 @@ jobs:
       - name: Build the daily scorecard
         run: npm run build-daily-scorecard
 
+      # The share kit: Instagram-format prediction cards (carousel + story)
+      # in public/data/share/, each with a ready caption in manifest.json.
+      # sharp is installed here rather than kept in package.json (a local
+      # file lock prevents committing it as a dependency); fonts-barlow gives
+      # the cards the app's own condensed display face.
+      - name: Generate shareable assets
+        run: |
+          sudo apt-get install -y --no-install-recommends fonts-barlow > /dev/null 2>&1 || true
+          npm install --no-save sharp
+          npm run build-share-assets
+
       # The full run takes a while; if main moved in the meantime (a normal
       # push during a slam), a plain push is rejected as non-fast-forward.
       # Rebase our single data commit on top of the new head, retrying once

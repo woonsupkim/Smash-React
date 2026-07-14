@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-07-14T03:48:54.620Z",
+  "seasonN": 2372,
+  "assets": [
+    {
+      "file": "cover.png",
+      "type": "carousel-cover",
+      "format": "square",
+      "category": "daily",
+      "caption": "Today's calls at the Wimbledon: 2 matches, locked before play. Swipe for every pick. Season: 69% of winners called. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "match-1.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Karolina Muchova over Linda Noskova at 56%, Wimbledon (grass). Locked before play, graded after. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "match-2.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Jannik Sinner over Alexander Zverev at 53%, Wimbledon (grass). Locked before play, graded after. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "parlay.png",
+      "type": "carousel-closer",
+      "format": "square",
+      "category": "daily",
+      "caption": "If every call today hits, $10 at fair odds returns $34. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "slate-story.png",
+      "type": "slate",
+      "format": "story",
+      "category": "daily",
+      "caption": "The full slate for Jul 11: every call with win probability and flags. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "poll.png",
+      "type": "poll",
+      "format": "square",
+      "category": "daily",
+      "caption": "Zverev or Sinner at the Wimbledon? Our model already picked a side - drop yours below, answer tomorrow. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "title-odds-atp.png",
+      "type": "champion",
+      "format": "square",
+      "category": "daily",
+      "caption": "Jannik Sinner wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "title-odds-wta.png",
+      "type": "champion",
+      "format": "square",
+      "category": "daily",
+      "caption": "Linda Noskova wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "results.png",
+      "type": "results",
+      "format": "square",
+      "category": "daily",
+      "caption": "Receipts from 2026-07-10: called 2 of 2 winners before play. Season: 69%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "proof.png",
+      "type": "proof",
+      "format": "square",
+      "category": "promo",
+      "caption": "The 2026 receipts: 69% of winners called across 2,372 matches, all graded in public. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "how-it-works-1.png",
+      "type": "explainer",
+      "format": "square",
+      "category": "promo",
+      "caption": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "how-it-works-2.png",
+      "type": "explainer",
+      "format": "square",
+      "category": "promo",
+      "caption": "How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "how-it-works-3.png",
+      "type": "explainer",
+      "format": "square",
+      "category": "promo",
+      "caption": "How Smash works, 3 of 3: then the results grade us. 69% of winners called across 2,372 matches. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "pool-promo.png",
+      "type": "feature",
+      "format": "square",
+      "category": "promo",
+      "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "hot-streak-atp.png",
+      "type": "spotlight",
+      "format": "square",
+      "category": "promo",
+      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "hot-streak-wta.png",
+      "type": "spotlight",
+      "format": "square",
+      "category": "promo",
+      "caption": "Hottest racket on the WTA right now: Karolina Muchova, 10-0 in recent matches. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "countdown.png",
+      "type": "countdown",
+      "format": "square",
+      "category": "promo",
+      "caption": "42 days until the US Open. Title odds from day one of the draw - the model is warming up. #tennis #atp #wta #tennisprediction"
+    }
+  ]
+}

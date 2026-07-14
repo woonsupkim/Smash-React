@@ -72,3 +72,51 @@
 @media (max-width: 480px) {
   .admin-meta-grid { grid-template-columns: 1fr; }
 }
+
+/* Share-kit gallery */
+.admin-kit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.admin-kit-item { margin: 0; min-width: 0; }
+.admin-kit-item img {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-1);
+  display: block;
+}
+.admin-kit-item img:hover { border-color: var(--border-2); }
+.admin-kit-item figcaption {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+.admin-kit-type {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
+  background: var(--surface-1);
+}
+.admin-kit-type.t-special { color: var(--accent-brand); border-color: rgba(198, 255, 28, 0.4); }
+
+@media (max-width: 560px) {
+  .admin-kit-grid { grid-template-columns: 1fr; }
+}
+
+.admin-kit-group {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 1rem 0 0.6rem;
+}
