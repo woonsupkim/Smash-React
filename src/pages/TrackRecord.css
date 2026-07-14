@@ -589,3 +589,56 @@
 .ts-player-link:hover { color: var(--accent-brand); }
 a.track-forward-row { text-decoration: none; color: inherit; }
 a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--radius-sm); }
+
+/* Forward-test hero + season benchmark labeling */
+.track-hero-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent-brand);
+  margin-bottom: 0.4rem;
+}
+.track-hero-marks { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; }
+.track-hero-hit { color: var(--accent-positive); font-weight: 700; }
+.track-hero-miss { color: var(--accent-negative); font-weight: 700; }
+.track-hero-marks-note { color: var(--text-3); font-size: 0.78rem; }
+
+.track-benchmark-chip {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  padding: 0.18rem 0.6rem;
+  margin: 0.45rem 0 0.2rem;
+}
+.track-benchmark { margin-top: 0.75rem; }
+.track-benchmark .track-benchmark-chip { margin: 0 0 0.45rem; }
+.track-benchmark-row { display: flex; align-items: baseline; gap: 0.75rem; }
+.track-benchmark-val {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1;
+}
+.track-benchmark-text { color: var(--text-3); font-size: 0.85rem; max-width: 64ch; }
+
+.track-arming {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  background: rgba(198, 255, 28, 0.06);
+  border: 1px solid rgba(198, 255, 28, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+.track-arming strong { color: var(--text-1); }
+.track-arming-count { color: var(--accent-brand) !important; }
+.track-arming-lock { flex-shrink: 0; }

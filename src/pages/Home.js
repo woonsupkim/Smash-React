@@ -83,15 +83,23 @@ export default function Home() {
 
   // Live-tournament surfacing: locked, not-yet-played predictions across BOTH
   // tours, so the landing board shows everything that's on right now.
+  // Forward-test record (locked before play, graded after): once it has
+  // enough verified calls it takes over the stat rail's lead number, same
+  // switch the Track Record hero makes.
+  const [forward, setForward] = useState(null);
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => { if (!r.ok) throw new Error('bad response'); return r.json(); })
       .then((d) => {
-        const list = (d.predictions || [])
+        const all = d.predictions || [];
+        const list = all
           .filter((p) => p.status === 'pending')
           .sort((a, b) => new Date(a.date) - new Date(b.date))
           .slice(0, 6);
         setPicks({ state: 'ready', list });
+        const decided = all.filter((p) => p.status !== 'pending');
+        const correct = decided.filter((p) => p.correct).length;
+        setForward({ n: decided.length, correct, acc: decided.length ? Math.round((correct / decided.length) * 100) : 0 });
       })
       .catch(() => setPicks({ state: 'error', list: [] }));
   }, []);
@@ -233,10 +241,17 @@ export default function Home() {
         {proof.state === 'loading' && <div className="skeleton home-stats-skel" aria-hidden="true" />}
         {proof.state === 'ready' && proof.n > 0 && (
           <Link to="/track-record" className="home-stats">
-            <div className="home-stat">
-              <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
-              <span className="home-stat-cap">winners called correctly</span>
-            </div>
+            {forward && forward.n >= 25 ? (
+              <div className="home-stat">
+                <span className="home-stat-val">{forward.acc}%</span>
+                <span className="home-stat-cap">called before play · {forward.n.toLocaleString()} verified</span>
+              </div>
+            ) : (
+              <div className="home-stat">
+                <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
+                <span className="home-stat-cap">winners called · season benchmark</span>
+              </div>
+            )}
             <div className="home-stat">
               <span className="home-stat-val">{proof.n.toLocaleString()}</span>
               <span className="home-stat-cap">matches on the public record</span>

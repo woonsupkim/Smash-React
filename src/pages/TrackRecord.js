@@ -100,6 +100,25 @@ export default function TrackRecord() {
     return { pending, decided, correct: decided.filter((p) => p.correct).length };
   }, [predictions, tour, surface]);
 
+  // Unfiltered forward record for the hero: the locked-before-play claim is
+  // the page's headline once it has enough verified calls behind it.
+  const forwardAll = useMemo(() => {
+    const all = predictions?.predictions || [];
+    const decided = all.filter((p) => p.status !== 'pending');
+    const correct = decided.filter((p) => p.correct).length;
+    const dates = all.map((p) => new Date(p.date)).filter((d) => !isNaN(d));
+    return {
+      n: decided.length,
+      correct,
+      acc: decided.length ? Math.round((correct / decided.length) * 100) : 0,
+      since: dates.length ? new Date(Math.min(...dates)) : null,
+    };
+  }, [predictions]);
+  // Below this many verified calls the season benchmark keeps the hero (an
+  // n-of-3 headline helps nobody); past it, the forward test takes over.
+  const FORWARD_HERO_MIN = 25;
+  const forwardHero = forwardAll.n >= FORWARD_HERO_MIN;
+
   // Reset pagination whenever the filters change
   useEffect(() => { setVisible(PAGE_SIZE); }, [tour, surface]);
 
@@ -348,23 +367,72 @@ export default function TrackRecord() {
             </div>
           ) : (
             <>
-              {/* Headline: how often the model calls the winner */}
-              <div className="track-hero-stat">
-                <div className="track-hero-value">{stats.smash}%</div>
-                <div className="track-hero-detail">
-                  <div className="track-hero-label">of winners called correctly</div>
-                  <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
-                  {stats.n > 0 && (
-                    <div className="track-hero-ci">Give or take {stats.ciHalf} points. Over {stats.n.toLocaleString()} matches, that's a track record, not a lucky streak.</div>
-                  )}
-                  {stats.scoreline.n > 0 && (
-                    <div className="track-hero-scoreline">
-                      Tougher test: we called the exact set score in {stats.scoreline.pct}% of matches
-                      ({stats.scoreline.hits.toLocaleString()} of {stats.scoreline.n.toLocaleString()}).
+              {/* Headline. Once the forward test has enough verified calls,
+                  the locked-before-play record IS the hero - the one number
+                  that can only be earned, never edited. Until then the season
+                  benchmark keeps the spot, labeled for what it is. */}
+              {forwardHero ? (
+                <>
+                  <div className="track-hero-eyebrow">🔒 LOCKED BEFORE PLAY · NO TAKE-BACKS</div>
+                  <div className="track-hero-stat">
+                    <div className="track-hero-value">{forwardAll.acc}%</div>
+                    <div className="track-hero-detail">
+                      <div className="track-hero-label">of winners called before the match</div>
+                      <div className="track-hero-sub">
+                        {forwardAll.correct} of {forwardAll.n.toLocaleString()} verified calls · every one timestamped
+                        before play and graded automatically when the result lands
+                      </div>
+                      <div className="track-hero-marks">
+                        <span className="track-hero-hit">✓ {forwardAll.correct} hits</span>
+                        <span className="track-hero-miss">✗ {(forwardAll.n - forwardAll.correct)} misses</span>
+                        <span className="track-hero-marks-note">every receipt public</span>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                  <div className="track-panel track-benchmark">
+                    <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
+                    <div className="track-benchmark-row">
+                      <span className="track-benchmark-val">{stats.smash}%</span>
+                      <span className="track-benchmark-text">
+                        of winners across {stats.n.toLocaleString()} matches ({tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}),
+                        today's model re-run over the full season. A model benchmark, not locked picks.
+                        {stats.scoreline.n > 0 ? ` Exact set score called in ${stats.scoreline.pct}%.` : ''}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="track-hero-stat">
+                    <div className="track-hero-value">{stats.smash}%</div>
+                    <div className="track-hero-detail">
+                      <div className="track-hero-label">of winners called correctly</div>
+                      <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
+                      <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
+                      <div className="track-hero-ci">
+                        How today's model scores when re-run across every completed match this
+                        season, give or take {stats.ciHalf} points. The locked-before-play record below is
+                        the one that can only be earned.
+                      </div>
+                      {stats.scoreline.n > 0 && (
+                        <div className="track-hero-scoreline">
+                          Tougher test: we called the exact set score in {stats.scoreline.pct}% of matches
+                          ({stats.scoreline.hits.toLocaleString()} of {stats.scoreline.n.toLocaleString()}).
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="track-arming">
+                    <span className="track-arming-lock" aria-hidden="true">🔒</span>
+                    <span>
+                      <strong>The forward test is arming.</strong> Every call locked before
+                      play{forwardAll.since ? ` since ${forwardAll.since.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : ''}
+                      {forwardAll.n > 0 ? <> · <strong className="track-arming-count">{forwardAll.correct} of {forwardAll.n} verified</strong></> : null} · it
+                      fills up match by match at the next grand slam, then takes over this page's headline.
+                    </span>
+                  </div>
+                </>
+              )}
 
               {/* Versus the betting market - the most credible claim in sports
                   prediction. This is a SUBSET (only matches that carried odds),
