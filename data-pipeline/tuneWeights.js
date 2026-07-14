@@ -9,12 +9,13 @@
  * "higher-ranked player wins" baseline by a comfortable margin - this reports
  * that margin per surface so the improvement is visible.
  *
- * Run AFTER a full track-record build (which produces the component probs),
- * then run the full build again so smashProbP1/engine_accuracy.json pick up the
- * new weights:
- *   FULL=1 node data-pipeline/buildTrackRecord.js
- *   node   data-pipeline/tuneWeights.js
- *   FULL=1 node data-pipeline/buildTrackRecord.js
+ * Run AFTER a track-record build (which produces the component probs). The
+ * full re-simulation with the new weights happens automatically on the next
+ * refresh: buildTrackRecord fingerprints the model config (modelKey) and
+ * re-evaluates everything when it changes.
+ *
+ * Scheduled by .github/workflows/retune-weights.yml just before each slam,
+ * which opens a PR for human review instead of committing directly.
  *
  * Usage: node tuneWeights.js
  */

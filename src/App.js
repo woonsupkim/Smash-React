@@ -122,11 +122,13 @@ function App() {
       <main id="main" className="page-content">
         <ErrorBoundary>
         <Routes>
-          <Route path="/" element={<Home tour="atp" />} />
+          {/* Home is tour-agnostic (covers ATP + WTA together); the /women
+              mirror stays only so the tour toggle and old links keep working */}
+          <Route path="/" element={<Home />} />
           <Route path="/h2h" element={<H2H tour="atp" />} />
           <Route path="/dream-brackets" element={<DreamBrackets tour="atp" />} />
 
-          <Route path="/women" element={<Home tour="wta" />} />
+          <Route path="/women" element={<Home />} />
           <Route path="/women/h2h" element={<H2H tour="wta" />} />
           <Route path="/women/dream-brackets" element={<DreamBrackets tour="wta" />} />
 

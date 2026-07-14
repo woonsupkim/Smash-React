@@ -95,6 +95,15 @@ jobs:
       - name: Update forward predictions
         run: npm run build-predictions
 
+      # Championship odds: simulate the live slam draw to completion and
+      # append today's snapshot to the odds history.
+      - name: Compute championship title odds
+        run: npm run build-title-odds
+
+      # The day's shareable artifact: yesterday's scorecard + upset watch.
+      - name: Build the daily scorecard
+        run: npm run build-daily-scorecard
+
       # The full run takes a while; if main moved in the meantime (a normal
       # push during a slam), a plain push is rejected as non-fast-forward.
       # Rebase our single data commit on top of the new head, retrying once
@@ -113,6 +122,19 @@ jobs:
           done
           echo "Could not push after 3 attempts" >&2
           exit 1
+
+      # Optional publicity: if a SOCIAL_WEBHOOK_URL secret is configured (a
+      # Slack/Discord/Zapier-style JSON webhook), post the day's scorecard
+      # text after a successful refresh. With no secret the step is a no-op,
+      # so nothing is ever published unless you explicitly wire it up.
+      - name: Post daily scorecard to webhook (optional)
+        env:
+          WEBHOOK: ${{ secrets.SOCIAL_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "No SOCIAL_WEBHOOK_URL configured; skipping."; exit 0; fi
+          TEXT=$(node -e "console.log(JSON.stringify(require('./public/data/daily_scorecard.json').postText))")
+          curl -s -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\": $TEXT, \"content\": $TEXT}" "$WEBHOOK" || echo "Webhook post failed (non-fatal)."
 
       # Fail loudly and privately: a broken refresh during a slam should open
       # an issue (which GitHub emails to watchers), never rot silently while

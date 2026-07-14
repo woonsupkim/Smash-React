@@ -6,9 +6,20 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '2.4';
+export const MODEL_VERSION = '2.5';
 
 export const CHANGELOG = [
+  {
+    version: '2.5',
+    date: '2026-07-13',
+    type: 'model',
+    title: 'Calibration fix, title odds, and scoreline grading',
+    notes: [
+      'WTA confidence recalibrated: the model was overstating its strongest calls (85%+ picks won just 72% of the time), so stated confidence above 75% is now compressed. Picks are unchanged; the percentages just tell the truth. ATP was already calibrated and is untouched.',
+      'Championship odds: the live draw is simulated to completion 2,000 times each day, publishing every player\'s chance to win the title, with movement tracked round by round.',
+      'Exact set-score accuracy is now graded and published on the track record, and each day\'s scorecard (yesterday\'s calls, upset watch) is generated automatically after the data refresh.',
+    ],
+  },
   {
     version: '2.4',
     date: '2026-07-12',

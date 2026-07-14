@@ -163,6 +163,25 @@ export default function TrackRecord() {
     const ci = wilson(smashK, n);
     const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
 
+    // Exact-scoreline grading: the model predicts a set score ("3–1", from
+    // the favorite's perspective); a hit requires both the right winner AND
+    // the right number of sets.
+    const scoreline = (() => {
+      let total = 0, hits = 0;
+      for (const m of filtered) {
+        if (!m.predScore || !m.score) continue;
+        const sets = parseScore(m.score);
+        if (!sets.length) continue;
+        const wSets = sets.filter((s) => s.w > s.l).length;
+        const lSets = sets.filter((s) => s.l > s.w).length;
+        const favWon = m.smashFavorite === m.winner;
+        const actualFav = favWon ? `${wSets}–${lSets}` : `${lSets}–${wSets}`;
+        total += 1;
+        if (m.predScore === actualFav) hits += 1;
+      }
+      return { n: total, hits, pct: total ? Math.round((hits / total) * 100) : 0 };
+    })();
+
     // Betting return: stake $1 on each strategy's pick at the match's decimal
     // odds. Win pays (odds - 1) profit; loss costs the $1 stake. Restricted to
     // matches with two distinct prices so every strategy (including "back the
@@ -206,6 +225,7 @@ export default function TrackRecord() {
       oddAcc,
       market,
       ciHalf,
+      scoreline,
       returns,
       betN: betList.length,
       bestReturnId: bestReturn.profit > 0 ? bestReturn.id : null,
@@ -322,6 +342,12 @@ export default function TrackRecord() {
                   <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                   {stats.n > 0 && (
                     <div className="track-hero-ci">Give or take {stats.ciHalf} points. Over {stats.n.toLocaleString()} matches, that's a track record, not a lucky streak.</div>
+                  )}
+                  {stats.scoreline.n > 0 && (
+                    <div className="track-hero-scoreline">
+                      Tougher test: we called the exact set score in {stats.scoreline.pct}% of matches
+                      ({stats.scoreline.hits.toLocaleString()} of {stats.scoreline.n.toLocaleString()}).
+                    </div>
                   )}
                 </div>
               </div>

@@ -17,7 +17,7 @@ function formatDate(iso) {
 export default function Admin() {
   const [meta, setMeta] = useState({ atp: null, wta: null });
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(null); // 'refresh' | 'retune' | null
 
   useEffect(() => {
     const load = (dir, key) =>
@@ -29,23 +29,24 @@ export default function Admin() {
     load('/data/women', 'wta');
   }, []);
 
-  const triggerRefresh = async () => {
+  // Both buttons dispatch a whitelisted GitHub Action through the same
+  // serverless endpoint (api/trigger-refresh.js).
+  const trigger = async (workflow, title) => {
     if (!password || busy) return;
-    setBusy(true);
+    setBusy(workflow);
     try {
       const res = await fetch('/api/trigger-refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, workflow }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Refresh failed');
-      toast({ type: 'success', title: 'Refresh triggered', message: data.message });
-      setPassword('');
+      if (!res.ok) throw new Error(data.error || 'Trigger failed');
+      toast({ type: 'success', title, message: data.message });
     } catch (err) {
-      toast({ type: 'error', title: 'Could not trigger refresh', message: err.message });
+      toast({ type: 'error', title: `Could not trigger ${workflow}`, message: err.message });
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -68,27 +69,42 @@ export default function Admin() {
       </div>
 
       <div className="admin-panel">
+        <div className="admin-panel-label">Authorization</div>
+        <Form.Control
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Admin password"
+          aria-label="Admin password"
+          className="admin-input"
+        />
+      </div>
+
+      <div className="admin-panel">
         <div className="admin-panel-label">Manual data refresh</div>
         <p className="admin-note">
-          Dispatches the full pipeline (stats, Elo, track record, predictions) as a
-          GitHub Action. Runs automatically every day during grand slam windows;
-          use this for an off-schedule refresh. Takes several minutes and
-          redeploys the site when it lands.
+          Dispatches the full pipeline (stats, Elo, track record, title odds,
+          predictions, daily scorecard) as a GitHub Action. Runs automatically
+          every day during grand slam windows; use this for an off-schedule
+          refresh. Takes several minutes and redeploys the site when it lands.
         </p>
-        <div className="admin-form-row">
-          <Form.Control
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') triggerRefresh(); }}
-            placeholder="Admin password"
-            aria-label="Admin password"
-            className="admin-input"
-          />
-          <Button className="cta-primary admin-trigger" disabled={!password || busy} onClick={triggerRefresh}>
-            {busy ? 'Triggering…' : 'Trigger refresh'}
-          </Button>
-        </div>
+        <Button className="cta-primary admin-trigger" disabled={!password || !!busy} onClick={() => trigger('refresh', 'Refresh triggered')}>
+          {busy === 'refresh' ? 'Triggering…' : 'Trigger refresh'}
+        </Button>
+      </div>
+
+      <div className="admin-panel">
+        <div className="admin-panel-label">Retune blend weights</div>
+        <p className="admin-note">
+          Re-fits the Smart Blend weights on the season-to-date track record.
+          Runs automatically just before each grand slam; use this for an
+          off-schedule retune. Never changes the model directly: if the weights
+          move, a pull request opens on GitHub for your review, and merging it
+          re-simulates the full track record on the next refresh.
+        </p>
+        <Button className="cta-primary admin-trigger" disabled={!password || !!busy} onClick={() => trigger('retune', 'Retune triggered')}>
+          {busy === 'retune' ? 'Triggering…' : 'Trigger retune'}
+        </Button>
       </div>
     </div>
   );

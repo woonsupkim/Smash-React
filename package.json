@@ -52,7 +52,9 @@
     "refresh-stats-women": "npm run fetch-stats-women && npm run fetch-surfaces-women && npm run fetch-profiles-women && npm run compute-stats-women && npm run compute-matchup-facts-women && npm run build-stats-csv-women",
     "build-track-record": "node data-pipeline/buildTrackRecord.js",
     "compute-elo": "node data-pipeline/computeElo.js",
-    "build-predictions": "node data-pipeline/buildPredictions.js"
+    "build-predictions": "node data-pipeline/buildPredictions.js",
+    "build-title-odds": "node data-pipeline/buildTitleOdds.js",
+    "build-daily-scorecard": "node data-pipeline/buildDailyScorecard.js"
   },
   "eslintConfig": {
     "extends": [

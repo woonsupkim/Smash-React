@@ -193,6 +193,98 @@
 @keyframes home-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .home-live-dot { animation: none; } }
 
+/* ── Title odds: leaderboard of chances to win the live slam ─────────── */
+.home-odds { margin-bottom: 3rem; }
+.home-odds-tours {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem 2.5rem;
+}
+.home-odds-tour { min-width: 0; }
+.home-odds-tour-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.6rem;
+}
+@media (max-width: 760px) {
+  .home-odds-tours { grid-template-columns: 1fr; }
+}
+.home-odds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.home-odds-row {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(9rem, 14rem) 1fr 3.2rem 2.6rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+.home-odds-rank {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.home-odds-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-odds-track {
+  height: 10px;
+  background: var(--surface-1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.home-odds-fill {
+  height: 100%;
+  background: var(--accent-brand);
+  border-radius: 999px;
+  opacity: 0.85;
+}
+.home-odds-pct {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-1);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.home-odds-delta { font-size: 0.72rem; font-weight: 700; color: var(--text-3); }
+.home-odds-delta.up { color: var(--accent-positive); }
+.home-odds-delta.down { color: var(--accent-negative); }
+.home-odds-note {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.home-odds-champion {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+.home-odds-champion strong { color: var(--text-1); }
+.home-odds-trophy { font-size: 1.2rem; align-self: center; }
+.home-odds-champ-sub { font-size: 0.8rem; color: var(--text-3); }
+
+@media (max-width: 576px) {
+  .home-odds-row { grid-template-columns: 1.2rem minmax(7rem, 1fr) 3rem 2.4rem; }
+  .home-odds-track { display: none; }
+}
+
 /* ── Live board ──────────────────────────────────────────────────────── */
 .home-board { margin-bottom: 3rem; }
 .home-board-grid {
@@ -283,6 +375,44 @@
   line-height: 1;
 }
 .home-board-callsub { font-size: 0.8rem; color: var(--text-3); }
+
+/* Yesterday's scorecard chip, right-aligned in the board head */
+.home-board-yday {
+  margin-left: auto;
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  padding: 0.25rem 0.7rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.home-board-yday:hover { background: var(--surface-3); color: var(--text-1); }
+
+/* Upset watch callout on a live-board card */
+.home-board-upsetwatch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(224, 86, 86, 0.08);
+  border: 1px solid rgba(224, 86, 86, 0.3);
+  border-radius: var(--radius-sm);
+}
+.home-board-upset-tag {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-negative);
+}
+.home-board-upset-reason { font-size: 0.78rem; color: var(--text-2); line-height: 1.4; }
 
 /* ── Destination cards (replaces the old city surface tiles) ─────────── */
 .home-nav { margin-bottom: 3rem; }

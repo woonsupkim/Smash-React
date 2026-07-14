@@ -1,0 +1,71 @@
+name: Retune blend weights
+
+# Runs just before each grand slam (and on demand from the Actions tab).
+# Re-fits the Smart Blend weights on the season-to-date track record and
+# opens a PULL REQUEST rather than committing: every model change gets a
+# human review, a version bump, and a changelog entry before it ships.
+#
+# Merging the PR changes the model fingerprint in engineConfig.json, so the
+# next daily refresh re-simulates the full track record with the new weights
+# automatically (see modelKey in data-pipeline/buildTrackRecord.js).
+on:
+  workflow_dispatch: {}
+  # ~4-7 days before play starts at each slam, 05:00 UTC (an hour ahead of
+  # the daily data refresh). Dates shift a little year to year; these sit
+  # safely inside the pre-tournament week.
+  schedule:
+    - cron: '0 5 10 1 *'   # before the Australian Open
+    - cron: '0 5 20 5 *'   # before the French Open
+    - cron: '0 5 24 6 *'   # before Wimbledon
+    - cron: '0 5 20 8 *'   # before the US Open
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  retune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Retune weights on the season-to-date record
+        id: tune
+        run: |
+          node data-pipeline/tuneWeights.js | tee tune.log
+          if git diff --quiet src/engineConfig.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Weights unchanged - no PR needed."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open a pull request with the new weights
+        if: steps.tune.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="retune-weights-$(date -u +%Y%m%d)"
+          git config user.name "smash-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add src/engineConfig.json
+          git commit -m "Retune Smart Blend weights (pre-slam)"
+          git push -u origin "$BRANCH"
+          {
+            echo "Pre-slam retune of the Smart Blend weights, fit on the season-to-date track record."
+            echo
+            echo '```'
+            cat tune.log
+            echo '```'
+            echo
+            echo "**Before merging:** bump \`MODEL_VERSION\` and add a changelog entry in \`src/data/changelog.js\`."
+            echo "**After merging:** the model fingerprint changes, so the next daily refresh re-simulates the full track record with these weights automatically."
+          } > pr-body.md
+          gh pr create --title "Pre-slam retune: Smart Blend weights" --body-file pr-body.md --base main --head "$BRANCH"

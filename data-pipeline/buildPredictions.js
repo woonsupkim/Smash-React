@@ -113,7 +113,17 @@ function predict(ctx, a, b, surface) {
   const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;
   const rankP = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
   const w = (ENGINE.weights[ctx.tour] && ENGINE.weights[ctx.tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
-  const smashP = w.ws * simP + w.we * eloP + w.wr * rankP;
+  // Per-tour calibration shrink on the blend's tail (mirrors src/engines.js
+  // shrinkTail): tempers stated confidence, never flips the favorite.
+  const shrink = (p) => {
+    const s = ENGINE.tailShrink && ENGINE.tailShrink[ctx.tour];
+    if (!s) return p;
+    const fav = Math.max(p, 1 - p);
+    if (fav <= s.knee) return p;
+    const shrunk = s.knee + (fav - s.knee) * s.factor;
+    return p >= 0.5 ? shrunk : 1 - shrunk;
+  };
+  const smashP = shrink(w.ws * simP + w.we * eloP + w.wr * rankP);
 
   // For 'upset', simP already reflects the hot-form point sim (matches the H2H
   // pickEngineProb('upset') result); for 'sim' it is the season point sim.

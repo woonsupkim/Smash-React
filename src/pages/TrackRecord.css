@@ -101,6 +101,13 @@
   max-width: 40ch;
 }
 
+.track-hero-scoreline {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  margin-top: 0.3rem;
+  max-width: 44ch;
+}
+
 /* ── Header meta: methodology link + freshness chip ───────────────────── */
 .track-header-meta {
   display: flex;

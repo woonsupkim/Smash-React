@@ -26,6 +26,17 @@ export function eloProb(eloA, eloB, surfaceKey) {
   return 1 / (1 + Math.pow(10, (pred(eloB) - pred(eloA)) / 400));
 }
 
+// Calibration shrink on the blend's tail (see engineConfig tailShrink):
+// compresses stated confidence above the knee without ever changing the pick.
+export function shrinkTail(p, tour) {
+  const s = CONFIG.tailShrink?.[tour];
+  if (!s) return p;
+  const fav = Math.max(p, 1 - p);
+  if (fav <= s.knee) return p;
+  const shrunk = s.knee + (fav - s.knee) * s.factor;
+  return p >= 0.5 ? shrunk : 1 - shrunk;
+}
+
 // All engines' P(player 1 wins). `feats` = { sim, elo, rankA, rankB } where
 // sim/elo are P(p1) in [0,1] (elo may be null). Returns { sim, elo, rank, smash }.
 export function engineProbs(feats, tour, surfaceKey) {
@@ -36,7 +47,7 @@ export function engineProbs(feats, tour, surfaceKey) {
   // If Elo is unavailable, fold its weight into the simulation so the blend
   // still sums to 1.
   const eloVal = elo == null ? sim : elo;
-  const smash = w.ws * sim + w.we * eloVal + w.wr * rank;
+  const smash = shrinkTail(w.ws * sim + w.we * eloVal + w.wr * rank, tour);
   return { sim, elo: elo == null ? null : elo, rank, smash };
 }
 

@@ -17,6 +17,17 @@ const Papa = require('papaparse');
 const { buildTimeline, predElo, expected } = require('./eloCore');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
+// Per-tour calibration shrink on the blend's tail (mirrors src/engines.js
+// shrinkTail): compresses stated confidence above the knee, never flips picks.
+function shrinkTail(p, tour) {
+  const s = ENGINE.tailShrink && ENGINE.tailShrink[tour];
+  if (!s) return p;
+  const fav = Math.max(p, 1 - p);
+  if (fav <= s.knee) return p;
+  const shrunk = s.knee + (fav - s.knee) * s.factor;
+  return p >= 0.5 ? shrunk : 1 - shrunk;
+}
+
 const SIMS = 1000;
 
 // ── Simulation core (mirrors src/simulator.js) ────────────────────────────
@@ -193,9 +204,10 @@ function evaluate(ctx, rec) {
   // 5. Ranking-implied probability (continuous version of the baseline)
   const rankProbP1 = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
 
-  // 6. SMASH model - per tour x surface blend of sim + Elo + ranking
+  // 6. SMASH model - per tour x surface blend of sim + Elo + ranking, with
+  // the per-tour calibration shrink on the tail (engineConfig tailShrink).
   const w = (ENGINE.weights[tour] && ENGINE.weights[tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
-  const smashProbP1 = w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1;
+  const smashProbP1 = shrinkTail(w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1, tour);
   const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
 
   // Predicted scoreline, from the deployed pick's (Smart Blend favorite's)
@@ -242,10 +254,20 @@ function evaluate(ctx, rec) {
 // a locked one rather than a retroactively re-simulated one. Set FULL=1 to
 // re-simulate everything (e.g. after changing the model or its weights).
 const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json');
+// Model fingerprint: when the weights or calibration change, every cached
+// row is stale - re-simulate everything instead of silently serving rows
+// from two different models in one file.
+const modelKey = JSON.stringify({ w: ENGINE.weights, ts: ENGINE.tailShrink || null, rs: ENGINE.rankScale });
 const forceFull = process.env.FULL === '1';
-const existing = (!forceFull && fs.existsSync(outPath))
-  ? new Map(JSON.parse(fs.readFileSync(outPath, 'utf8')).matches.map((m) => [m.id, m]))
-  : new Map();
+let existing = new Map();
+if (!forceFull && fs.existsSync(outPath)) {
+  const prev = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  if (prev.modelKey === modelKey) {
+    existing = new Map(prev.matches.map((m) => [m.id, m]));
+  } else {
+    console.log('Model config changed since the last run - re-simulating all matches.');
+  }
+}
 
 const all = [];
 for (const tour of ['atp', 'wta']) {
@@ -272,7 +294,7 @@ for (const tour of ['atp', 'wta']) {
   }
 }
 
-fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, matches: all }));
+fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, modelKey, matches: all }));
 console.log(`Wrote ${all.length} matches to ${outPath}`);
 
 // ── Engine accuracy summary (per tour x surface, + "all") ─────────────────

@@ -1,5 +1,10 @@
 {
   "_comment": "Prediction-engine weights, tuned per tour x surface on the 2026 backtest (see data-pipeline/buildTrackRecord.js log). Each match's SMASH probability = ws*simProb + we*eloProb + wr*rankProb. rankProb(p1) = 1/(1+10^((log10(rankA)-log10(rankB))*rankScale)).",
+  "_tailShrinkComment": "Calibration fix for top-end overconfidence, applied to the SMASH blend only: favorite prob f above knee compresses to knee + (f-knee)*factor. Picks are unchanged (monotone around 0.5); only stated confidence drops. Fit on the 2026 record: ATP was already calibrated at the top (85%+ calls won 94%), WTA was badly overconfident (85%+ calls won just 72%, n=503), so shrinkage applies to WTA only. Validated on held-out halves (Brier 0.232 -> 0.215/0.209).",
+  "tailShrink": {
+    "atp": { "knee": 1, "factor": 1 },
+    "wta": { "knee": 0.75, "factor": 0.3 }
+  },
   "rankScale": 2,
   "weights": {
     "atp": {
