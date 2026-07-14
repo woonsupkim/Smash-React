@@ -307,3 +307,15 @@
   line-height: 1.5;
   margin-bottom: 0.35rem;
 }
+
+/* Community pick tally under Make your call */
+.call-tally { margin-top: 0.8rem; }
+.call-tally-bar {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.call-tally-fill { height: 100%; border-radius: var(--radius-pill); transition: width 0.4s ease; }
+.call-tally-line { margin-top: 0.4rem; font-size: 0.82rem; color: var(--text-2); }
+.call-tally-n { color: var(--text-3); }

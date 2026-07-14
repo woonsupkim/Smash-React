@@ -7,7 +7,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { buildTimeline } = require('./eloCore');
+const { buildTimeline, parseSets } = require('./eloCore');
 
 function normSurface(raw) {
   if (!raw) return null;
@@ -33,7 +33,9 @@ function collectMatches(RAW, surfaces) {
       const surface = normSurface(surfaces[String(m.tournamentId)]);
       if (!surface) continue;
       if (seen.has(String(m.id))) continue;
-      seen.set(String(m.id), { date: m.date, winnerId: w, loserId: w === p1 ? p2 : p1, surface });
+      // Set counts feed the margin-aware K (engineConfig elo.marginK).
+      const { setsW, setsL } = parseSets(m.result, w === p1);
+      seen.set(String(m.id), { date: m.date, winnerId: w, loserId: w === p1 ? p2 : p1, surface, setsW, setsL, bestOf: Number(m.best_of) || null });
     }
   }
   return [...seen.values()];

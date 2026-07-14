@@ -58,3 +58,26 @@ create policy "users lock their own entry"
       and exists (select 1 from public.pools p where p.id = pool_id and p.created_by = auth.uid())
     )
   );
+
+-- ── Community match calls ("who do the fans back?") ────────────────────────
+--  * Open to everyone, signed in or not: voter_id is a client-generated id
+--    (the signed-in user id when available). It's a fan tally, not a ballot.
+--  * One vote per voter per matchup via the unique constraint, and no update
+--    or delete policies: a cast call is locked, same as everything else.
+create table if not exists public.match_calls (
+  id uuid primary key default gen_random_uuid(),
+  match_key text not null check (char_length(match_key) between 5 and 120),
+  voter_id text not null check (char_length(voter_id) between 8 and 64),
+  pick text not null check (char_length(pick) between 1 and 40),
+  created_at timestamptz not null default now(),
+  unique (match_key, voter_id)
+);
+
+create index if not exists match_calls_key_idx on public.match_calls (match_key);
+
+alter table public.match_calls enable row level security;
+
+create policy "tallies are readable by anyone"
+  on public.match_calls for select using (true);
+create policy "anyone can cast a call"
+  on public.match_calls for insert with check (true);

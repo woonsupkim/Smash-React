@@ -120,6 +120,28 @@ export default function Admin() {
               Regenerated with every data refresh (last: {formatDate(shareKit.generatedAt)}).
               Right-click any card to save it; the caption below each one is ready to paste.
             </p>
+            {shareKit.thread?.length > 0 && (
+              <div className="admin-thread">
+                <div className="admin-kit-group">Ready-to-paste thread</div>
+                {shareKit.thread.map((post, i) => (
+                  <div className="admin-thread-post" key={i}>
+                    <span className="admin-thread-n">{i + 1}</span>
+                    <span className="admin-thread-text">{post}</span>
+                    <Button
+                      size="sm"
+                      className="admin-thread-copy"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(post)
+                          .then(() => toast({ type: 'success', title: 'Copied', message: `Post ${i + 1} on the clipboard.` }))
+                          .catch(() => {});
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             {[
               ['daily', "Today's posts"],
               ['wrap', 'Tournament wrap'],

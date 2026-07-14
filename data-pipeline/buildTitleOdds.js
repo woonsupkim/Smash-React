@@ -30,14 +30,10 @@ const ACC = (() => {
   try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'data', 'engine_accuracy.json'), 'utf8')); } catch { return {}; }
 })();
 
-// Per-tour calibration shrink (mirrors src/engines.js shrinkTail).
-function shrinkTail(p, tour) {
-  const s = ENGINE.tailShrink && ENGINE.tailShrink[tour];
-  if (!s) return p;
-  const fav = Math.max(p, 1 - p);
-  if (fav <= s.knee) return p;
-  const shrunk = s.knee + (fav - s.knee) * s.factor;
-  return p >= 0.5 ? shrunk : 1 - shrunk;
+// Per-tour Platt recalibration (mirrors src/engines.js calibrate).
+const { applyCalib } = require('./lib/evalCore');
+function calibrate(p, tour) {
+  return applyCalib(p, ENGINE.calibration && ENGINE.calibration[tour] && ENGINE.calibration[tour].a);
 }
 
 // ── Roster/stats context (subset of buildPredictions.loadTour) ────────────
@@ -79,13 +75,16 @@ function pairProb(ctx, a, b, surface) {
   const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;
   const rankP = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
   const w = (ENGINE.weights[ctx.tour] && ENGINE.weights[ctx.tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
-  const smashP = shrinkTail(w.ws * simP + w.we * eloP + w.wr * rankP, ctx.tour);
+  const smashP = calibrate(w.ws * simP + w.we * eloP + w.wr * rankP, ctx.tour);
   const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP, upset: simP };
   const best = ACC?.[ctx.tour]?.[surface]?.best || 'smash';
   return probs[best] != null ? probs[best] : smashP;
 }
 
 // ── Tournament simulation ──────────────────────────────────────────────────
+// Also tracks round-by-round survival: advance[playerIdx][r] counts sims
+// where the player won their round-r match, so the draw page can show
+// "makes the QF 61% / wins it all 24%" for every line of the bracket.
 function simulateTitles(ctx, field, surface) {
   // field: [{id, name, rostered}] in draw order, power-of-two length
   const memo = new Map();
@@ -94,21 +93,30 @@ function simulateTitles(ctx, field, surface) {
     if (!memo.has(key)) memo.set(key, pairProb(ctx, a, b, surface));
     return memo.get(key);
   };
+  const nRounds = Math.round(Math.log2(field.length));
+  const idx = new Map(field.map((p, i) => [p.id, i]));
+  const advance = field.map(() => Array(nRounds).fill(0));
   const titles = new Map(field.map((p) => [p.id, 0]));
   for (let t = 0; t < N_SIM; t++) {
     let cur = field;
+    let r = 0;
     while (cur.length > 1) {
       const next = [];
       for (let i = 0; i < cur.length; i += 2) {
-        next.push(Math.random() < prob(cur[i], cur[i + 1]) ? cur[i] : cur[i + 1]);
+        const winner = Math.random() < prob(cur[i], cur[i + 1]) ? cur[i] : cur[i + 1];
+        advance[idx.get(winner.id)][r]++;
+        next.push(winner);
       }
       cur = next;
+      r++;
     }
     titles.set(cur[0].id, titles.get(cur[0].id) + 1);
   }
-  return field
+  const odds = field
     .map((p) => ({ id: p.rostered ? p.id : null, name: p.name, prob: titles.get(p.id) / N_SIM }))
     .sort((a, b) => b.prob - a.prob);
+  const survival = advance.map((row) => row.map((c) => Math.round((c / N_SIM) * 1000) / 1000));
+  return { odds, survival };
 }
 
 async function buildTour(tour) {
@@ -151,12 +159,52 @@ async function buildTour(tour) {
       : { id: `x${i}:${n}`, name: n, rostered: false };
   });
 
-  const odds = simulateTitles(ctx, field, slam.surface);
+  const { odds, survival } = simulateTitles(ctx, field, slam.surface);
+  const ranks = ctx.statsBySurface[slam.surface];
   return {
     event: slam.label, tour, surface: slam.surface, status: 'live',
     updatedAt: new Date().toISOString(),
     fieldSize,
     odds: odds.map((o) => ({ ...o, prob: Math.round(o.prob * 1000) / 1000 })),
+    draw: {
+      field: field.map((p) => ({
+        id: p.rostered ? p.id : null,
+        name: p.name,
+        rank: p.rostered ? (Number(ranks.get(p.id)?.us_seed) || null) : null,
+      })),
+      survival,
+    },
+  };
+}
+
+// Off-season projection: no live draw, so seed a hypothetical 16-player
+// field from the current rankings on the NEXT slam's surface and simulate
+// that instead ("road to the US Open"). Standard seeding order (1v16, 8v9,
+// ...) so the bracket shape is realistic.
+const SEED_ORDER_16 = [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11];
+const NEXT_SLAM = require('./lib/slamCalendar');
+
+function buildProjection(tour) {
+  const ctx = loadTour(tour);
+  const next = NEXT_SLAM.nextSlam(new Date());
+  if (!next) return null;
+  const rows = [...ctx.statsBySurface[next.surface].values()]
+    .map((r) => ({ id: r.id, name: r.name, rank: Number(r.us_seed) || 999 }))
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 16);
+  if (rows.length < 16) return null;
+  const field = SEED_ORDER_16.map((seed) => ({ ...rows[seed - 1], rostered: true }));
+  const { odds, survival } = simulateTitles(ctx, field, next.surface);
+  return {
+    event: next.label, tour, surface: next.surface, status: 'projection',
+    startsAt: next.startsAt,
+    updatedAt: new Date().toISOString(),
+    fieldSize: 16,
+    odds: odds.map((o) => ({ ...o, prob: Math.round(o.prob * 1000) / 1000 })),
+    draw: {
+      field: field.map((p) => ({ id: p.id, name: p.name, rank: p.rank })),
+      survival,
+    },
   };
 }
 
@@ -167,12 +215,26 @@ async function run() {
   const today = new Date().toISOString().slice(0, 10);
 
   for (const tour of ['atp', 'wta']) {
-    const result = await buildTour(tour);
-    if (!result) { console.log(`${tour}: no live slam found; keeping previous odds.`); continue; }
+    let result = await buildTour(tour);
+    if (!result) {
+      // Off-season: project the next slam from current rankings instead of
+      // going dark ("road to the US Open").
+      result = buildProjection(tour);
+      if (!result) { console.log(`${tour}: no live slam and no projection possible; keeping previous odds.`); continue; }
+      console.log(`${tour}: off-season - projecting ${result.event} from current rankings.`);
+    }
 
-    // History: carry it across runs of the SAME event; a new slam starts fresh.
+    // History: carry it across runs of the SAME event; a new slam starts
+    // fresh. A projection that becomes the real tournament keeps its
+    // history: that IS the road-to-the-slam tracker.
     const prevEntry = prev.events?.[tour];
     const history = (prevEntry && prevEntry.event === result.event) ? [...(prevEntry.history || [])] : [];
+
+    // A decided slam has no remaining draw to simulate; keep the last live
+    // bracket snapshot so the draw page can still show how it ended.
+    if (!result.draw && prevEntry && prevEntry.event === result.event && prevEntry.draw) {
+      result.draw = prevEntry.draw;
+    }
     const snapshot = {
       date: today,
       fieldSize: result.fieldSize,

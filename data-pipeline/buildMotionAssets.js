@@ -175,6 +175,90 @@ async function raceVideo(tour) {
   return { dir, file: `title-race-${tour}.mp4`, caption: `The ${o.event} ${tour.toUpperCase()} title race, day by day - the whole draw simulated 2,000 times every morning.`, type: 'race-video' };
 }
 
+// ── Result-day recap reel: yesterday's graded calls, vertical 1080x1920 ───
+// Card-by-card hit/miss stamps and a season-record end frame - the format
+// Instagram Reels and TikTok actually distribute.
+async function recapReel() {
+  const trPath = path.join(DATA, 'track_record.json');
+  const scPath = path.join(DATA, 'daily_scorecard.json');
+  if (!fs.existsSync(trPath) || !fs.existsSync(scPath)) return null;
+  const sc = JSON.parse(fs.readFileSync(scPath, 'utf8'));
+  const day = sc.yesterday?.date;
+  if (!day || !sc.yesterday.n) return null;
+  const dayMatches = JSON.parse(fs.readFileSync(trPath, 'utf8')).matches
+    .filter((m) => String(m.date).slice(0, 10) === day)
+    .slice(0, 6);
+  if (!dayMatches.length) return null;
+
+  const W = SQ, H = 1920;
+  // Theme by the day's dominant surface.
+  const counts = {};
+  for (const m of dayMatches) counts[m.surface] = (counts[m.surface] || 0) + 1;
+  const surface = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  const t = THEMES[surface] || THEMES.brand;
+
+  const dir = path.join(TMP, 'recap');
+  fs.mkdirSync(dir, { recursive: true });
+  const dateLabel = new Date(day + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
+  let frame = 0;
+
+  // Intro (~1.2s)
+  for (let f = 0; f < 14; f++) {
+    const a = easeInOut(Math.min(1, f / 8));
+    await writeFrame(dir, frame++, shell(W, H, t, `
+  <text x="${W / 2}" y="560" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="${LIME}" opacity="${a.toFixed(2)}">${esc(dateLabel.toUpperCase())}</text>
+  <text x="${W / 2}" y="720" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">YESTERDAY,</text>
+  <text x="${W / 2}" y="880" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">GRADED.</text>
+  <text x="${W / 2}" y="1010" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)" opacity="${a.toFixed(2)}">every call locked before play</text>`));
+  }
+
+  // One segment per match (~1.8s each)
+  for (let i = 0; i < dayMatches.length; i++) {
+    const m = dayMatches[i];
+    const favIsP1 = m.smashFavorite === m.p1;
+    const pickName = favIsP1 ? m.name1 : m.name2;
+    const pct = Math.round(Math.max(m.smashProbP1, 1 - m.smashProbP1) * 100);
+    const winName = m.winner === m.p1 ? m.name1 : m.name2;
+    const hit = m.smashCorrect;
+    const stampText = hit ? 'CALLED IT' : 'MISSED';
+    const stampColor = hit ? LIME : '#ff5d5d';
+    for (let f = 0; f < 22; f++) {
+      const pop = f < 4 ? 0 : Math.min(1, (f - 4) / 5);
+      const scale = 0.6 + 0.4 * easeInOut(pop);
+      await writeFrame(dir, frame++, shell(W, H, t, `
+  <text x="${W / 2}" y="380" text-anchor="middle" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="rgba(255,255,255,0.65)">CALL ${i + 1} OF ${dayMatches.length} · ${esc(m.tour.toUpperCase())} · ${esc(m.surface.toUpperCase())}</text>
+  <text x="${W / 2}" y="560" text-anchor="middle" font-family="${D}" font-size="86" font-weight="800" fill="#ffffff">${esc(m.name1.toUpperCase())}</text>
+  <text x="${W / 2}" y="650" text-anchor="middle" font-family="${D}" font-size="52" font-weight="700" fill="rgba(255,255,255,0.55)">VS</text>
+  <text x="${W / 2}" y="750" text-anchor="middle" font-family="${D}" font-size="86" font-weight="800" fill="#ffffff">${esc(m.name2.toUpperCase())}</text>
+  <text x="${W / 2}" y="900" text-anchor="middle" font-family="${U}" font-size="32" font-weight="700" fill="${LIME}">WE SAID: ${esc(pickName.split(' ').pop().toUpperCase())} ${pct}%</text>
+  <text x="${W / 2}" y="980" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.8)">${esc(winName.split(' ').pop())} won${m.score ? ` ${esc(m.score)}` : ''}</text>
+  ${pop > 0 ? `
+  <g transform="translate(${W / 2} 1220) rotate(-7) scale(${scale.toFixed(3)})">
+    <rect x="-330" y="-86" width="660" height="172" rx="18" fill="none" stroke="${stampColor}" stroke-width="12" opacity="${easeInOut(pop).toFixed(2)}"/>
+    <text x="0" y="42" text-anchor="middle" font-family="${D}" font-size="120" font-weight="800" fill="${stampColor}" opacity="${easeInOut(pop).toFixed(2)}">${stampText}</text>
+  </g>` : ''}`));
+    }
+  }
+
+  // Outro (~2.5s): the day tally + season record
+  const season = sc.season;
+  for (let f = 0; f < 30; f++) {
+    const a = easeInOut(Math.min(1, f / 8));
+    await writeFrame(dir, frame++, shell(W, H, t, `
+  <text x="${W / 2}" y="600" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="rgba(255,255,255,0.65)" opacity="${a.toFixed(2)}">THE DAY</text>
+  <text x="${W / 2}" y="800" text-anchor="middle" font-family="${D}" font-size="230" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">${sc.yesterday.correct} OF ${sc.yesterday.n}</text>
+  <text x="${W / 2}" y="900" text-anchor="middle" font-family="${U}" font-size="34" font-weight="700" fill="#ffffff" opacity="${a.toFixed(2)}">WINNERS CALLED RIGHT</text>
+  ${season?.n ? `<text x="${W / 2}" y="1060" text-anchor="middle" font-family="${U}" font-size="29" fill="rgba(255,255,255,0.75)" opacity="${a.toFixed(2)}">SEASON: ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} (${season.acc}%)</text>` : ''}
+  <text x="${W / 2}" y="1200" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="4" fill="${LIME}" opacity="${a.toFixed(2)}">TOMORROW'S CALLS · LINK IN BIO</text>`));
+  }
+
+  return {
+    dir, file: 'recap-reel.mp4',
+    caption: `Yesterday, graded: ${sc.yesterday.correct} of ${sc.yesterday.n} winners called right. Every pick locked before play, receipts public.`,
+    type: 'recap-video',
+  };
+}
+
 async function run() {
   fs.rmSync(TMP, { recursive: true, force: true });
   fs.mkdirSync(TMP, { recursive: true });
@@ -187,6 +271,8 @@ async function run() {
     const rv = await raceVideo(tour);
     if (rv) jobs.push(rv);
   }
+  const rr = await recapReel();
+  if (rr) jobs.push(rr);
 
   if (!jobs.length) {
     console.log('No motion assets to build right now (no countdown window, not enough odds history).');

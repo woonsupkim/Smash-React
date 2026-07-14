@@ -39,19 +39,29 @@ function markIntroSeen() {
   try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch { /* private browsing */ }
 }
 
-// Approximate grand slam start windows - used only for the empty-state copy
-// ("next slam: ..."), so rough month/day boundaries are fine year over year.
+// Grand slam calendar rules (mirrors data-pipeline/lib/slamCalendar.js):
+// AO = 3rd Monday of January, RG = last Sunday of May, Wimbledon = last
+// Monday of June, US Open = last Monday of August. Good to within a day or
+// two, which is all a countdown needs.
+function nthMonday(year, month, n) {
+  const d = new Date(year, month, 1);
+  const offset = (8 - d.getDay()) % 7;
+  return new Date(year, month, 1 + offset + (n - 1) * 7);
+}
+function lastWeekday(year, month, weekday) {
+  const d = new Date(year, month + 1, 0);
+  const back = (d.getDay() - weekday + 7) % 7;
+  return new Date(year, month, d.getDate() - back);
+}
 function nextSlam(now = new Date()) {
-  const y = now.getFullYear();
-  const slams = [
-    { name: 'Australian Open', start: new Date(y, 0, 12) },
-    { name: 'French Open', start: new Date(y, 4, 24) },
-    { name: 'Wimbledon', start: new Date(y, 5, 29) },
-    { name: 'US Open', start: new Date(y, 7, 24) },
-    { name: 'Australian Open', start: new Date(y + 1, 0, 12) },
+  const slamsIn = (y) => [
+    { name: 'Australian Open', surface: 'hard', start: nthMonday(y, 0, 3) },
+    { name: 'French Open', surface: 'clay', start: lastWeekday(y, 4, 0) },
+    { name: 'Wimbledon', surface: 'grass', start: lastWeekday(y, 5, 1) },
+    { name: 'US Open', surface: 'hard', start: lastWeekday(y, 7, 1) },
   ];
-  const next = slams.find((s) => s.start > now);
-  return `${next.name} · ${next.start.toLocaleDateString('en-US', { month: 'long' })}`;
+  const all = [...slamsIn(now.getFullYear()), ...slamsIn(now.getFullYear() + 1)];
+  return all.find((s) => s.start > now);
 }
 
 // Wilson 95% interval - same as the Track Record / Methodology headline, so
@@ -248,9 +258,13 @@ export default function Home() {
         {(titleOdds?.atp || titleOdds?.wta) && (
           <section className="home-odds">
             <div className="home-section-head">
-              <h2 className="home-section-title">Title Odds</h2>
+              <h2 className="home-section-title">
+                {(titleOdds.atp || titleOdds.wta).status === 'projection' ? `Road to the ${(titleOdds.atp || titleOdds.wta).event}` : 'Title Odds'}
+              </h2>
               <span className="home-section-sub">
-                {(titleOdds.atp || titleOdds.wta).event} · each player's chance to win it all
+                {(titleOdds.atp || titleOdds.wta).status === 'projection'
+                  ? 'projected from current rankings · each player\'s chance to win it all'
+                  : `${(titleOdds.atp || titleOdds.wta).event} · each player's chance to win it all`}
               </span>
             </div>
             <div className="home-odds-tours">
@@ -312,7 +326,9 @@ export default function Home() {
             <div className="home-odds-note">
               {(titleOdds.atp?.status === 'live' || titleOdds.wta?.status === 'live')
                 ? "The remaining draw, played out 2,000 times before each day's play. Arrows show movement since yesterday."
-                : "Title odds return when the next slam's draw drops."}
+                : (titleOdds.atp?.status === 'projection' || titleOdds.wta?.status === 'projection')
+                  ? <>A hypothetical seeded field from today's rankings, simulated 2,000 times. It re-prices with every refresh until the real draw drops. <Link to="/draw">See the full projected draw</Link>.</>
+                  : "Title odds return when the next slam's draw drops."}
             </div>
           </section>
         )}
@@ -334,15 +350,43 @@ export default function Home() {
               {[0, 1, 2].map((i) => <div key={i} className="skeleton home-board-skel" />)}
             </div>
           )}
-          {picks.state !== 'loading' && picks.list.length === 0 && (
-            <div className="home-board-empty">
-              <span className="home-board-empty-title">No live predictions right now.</span>
-              <span className="home-board-empty-sub">
-                We call matches as soon as a grand slam draw drops.
-                Next up: {nextSlam()}.
-              </span>
-            </div>
-          )}
+          {picks.state !== 'loading' && picks.list.length === 0 && (() => {
+            // Off-season: the countdown, the season scoreboard, and where to
+            // go while nothing is live - instead of a bare "come back later".
+            const next = nextSlam();
+            const days = next ? Math.max(1, Math.ceil((next.start - new Date()) / 864e5)) : null;
+            const season = scorecard?.season;
+            return (
+              <div className="home-offseason">
+                {next && (
+                  <div className="home-off-count">
+                    <span className="home-off-days">{days}</span>
+                    <span className="home-off-days-cap">day{days === 1 ? '' : 's'} to the {next.name}</span>
+                    <span className="home-off-date">
+                      {next.start.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })} · {next.surface} court
+                    </span>
+                  </div>
+                )}
+                <div className="home-off-body">
+                  {season?.n > 0 && (
+                    <div className="home-off-season">
+                      Season so far: <strong>{season.correct.toLocaleString()} of {season.n.toLocaleString()}</strong> winners
+                      called ({season.acc}%), locked before play and graded in public.
+                    </div>
+                  )}
+                  <div className="home-off-sub">
+                    Predictions return the moment the {next ? next.name : 'next slam'} draw drops.
+                    Until then the projected field above re-prices with every refresh as rankings move.
+                  </div>
+                  <div className="home-off-links">
+                    <Link to="/draw">Projected draw</Link>
+                    <Link to="/h2h">Run any matchup</Link>
+                    <Link to="/track-record">Season receipts</Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {picks.list.length > 0 && (
             <div className="home-board-grid">
               {picks.list.map((p) => {

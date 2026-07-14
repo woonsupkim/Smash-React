@@ -1,13 +1,20 @@
 {
-  "generatedAt": "2026-07-14T04:47:14.759Z",
+  "generatedAt": "2026-07-14T07:56:30.182Z",
   "seasonN": 2372,
+  "thread": [
+    "Today at the Wimbledon: 2 calls, every one locked before play. Season so far: 1,591 of 2,372 winners called (67%). Picks below.",
+    "1/2 Karolina Muchova over Linda Noskova at 56% on grass. /match/linda-noskova-vs-karolina-muchova-177707",
+    "2/2 Jannik Sinner over Alexander Zverev at 53% on grass. /match/alexander-zverev-vs-jannik-sinner-177491",
+    "If every call hits, $10 at fair odds returns $34. Not betting advice, just the math on our own confidence.",
+    "Every call graded in public, wins and misses alike. Today's board: /today #tennis #atp #wta #tennisprediction"
+  ],
   "assets": [
     {
       "file": "cover.png",
       "type": "carousel-cover",
       "format": "square",
       "category": "daily",
-      "caption": "Today's calls at the Wimbledon: 2 matches, locked before play. Swipe for every pick. Season: 69% of winners called. All of today: /today #tennis #atp #wta #tennisprediction"
+      "caption": "Today's calls at the Wimbledon: 2 matches, locked before play. Swipe for every pick. Season: 67% of winners called. All of today: /today #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "match-1.png",
@@ -70,35 +77,28 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-10: called 2 of 2 winners before play. Season: 69%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-10: called 2 of 2 winners before play. Season: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 64 of 81 winners called before play, 4 wins over the bookies, 24 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon ATP report card: 59 of 81 winners called before play, 2 wins over the bookies, 21 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 69 of 87 winners called before play, 3 wins over the bookies, 34 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "weekly.png",
-      "type": "weekly",
-      "format": "square",
-      "category": "weekly",
-      "caption": "The week in calls: 11 of 12 winners called. Season: 69%. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon WTA report card: 66 of 87 winners called before play, 33 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: 69% of winners called across 2,372 matches, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: 67% of winners called across 2,372 matches, all graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "how-it-works-1.png",
@@ -119,7 +119,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. 69% of winners called across 2,372 matches. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. 67% of winners called across 2,372 matches. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "pool-promo.png",

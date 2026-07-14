@@ -26,15 +26,14 @@ export function eloProb(eloA, eloB, surfaceKey) {
   return 1 / (1 + Math.pow(10, (pred(eloB) - pred(eloA)) / 400));
 }
 
-// Calibration shrink on the blend's tail (see engineConfig tailShrink):
-// compresses stated confidence above the knee without ever changing the pick.
-export function shrinkTail(p, tour) {
-  const s = CONFIG.tailShrink?.[tour];
-  if (!s) return p;
-  const fav = Math.max(p, 1 - p);
-  if (fav <= s.knee) return p;
-  const shrunk = s.knee + (fav - s.knee) * s.factor;
-  return p >= 0.5 ? shrunk : 1 - shrunk;
+// Platt recalibration of the blend (see engineConfig calibration):
+// p' = sigmoid(a * logit(p)). Zero intercept means 0.5 maps to 0.5, so the
+// pick never flips - only the stated confidence moves (a < 1 tempers it).
+export function calibrate(p, tour) {
+  const a = CONFIG.calibration?.[tour]?.a;
+  if (!a || a === 1) return p;
+  const q = Math.min(0.999, Math.max(0.001, p));
+  return 1 / (1 + Math.exp(-a * Math.log(q / (1 - q))));
 }
 
 // All engines' P(player 1 wins). `feats` = { sim, elo, rankA, rankB } where
@@ -47,7 +46,7 @@ export function engineProbs(feats, tour, surfaceKey) {
   // If Elo is unavailable, fold its weight into the simulation so the blend
   // still sums to 1.
   const eloVal = elo == null ? sim : elo;
-  const smash = shrinkTail(w.ws * sim + w.we * eloVal + w.wr * rank, tour);
+  const smash = calibrate(w.ws * sim + w.we * eloVal + w.wr * rank, tour);
   return { sim, elo: elo == null ? null : elo, rank, smash };
 }
 

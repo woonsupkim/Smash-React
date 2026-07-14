@@ -1,45 +1,55 @@
 {
-  "_comment": "Prediction-engine weights, tuned per tour x surface on the 2026 backtest (see data-pipeline/buildTrackRecord.js log). Each match's SMASH probability = ws*simProb + we*eloProb + wr*rankProb. rankProb(p1) = 1/(1+10^((log10(rankA)-log10(rankB))*rankScale)).",
-  "_tailShrinkComment": "Calibration fix for top-end overconfidence, applied to the SMASH blend only: favorite prob f above knee compresses to knee + (f-knee)*factor. Picks are unchanged (monotone around 0.5); only stated confidence drops. Fit on the 2026 record: ATP was already calibrated at the top (85%+ calls won 94%), WTA was badly overconfident (85%+ calls won just 72%, n=503), so shrinkage applies to WTA only. Validated on held-out halves (Brier 0.232 -> 0.215/0.209).",
-  "tailShrink": {
-    "atp": { "knee": 1, "factor": 1 },
-    "wta": { "knee": 0.75, "factor": 0.3 }
+  "_comment": "Prediction-engine weights, tuned per tour x surface by walk-forward log loss (data-pipeline/tuneWeights.js). Each match's SMASH probability = calibrate(ws*simProb + we*eloProb + wr*rankProb). rankProb(p1) = 1/(1+10^((log10(rankA)-log10(rankB))*rankScale)).",
+  "_calibrationComment": "One-parameter Platt recalibration applied to the SMASH blend only: p' = sigmoid(a * logit(p)). The intercept is pinned at 0 by symmetry (which side is p1 is arbitrary), so a pick can never flip, only its stated confidence moves. a is refit per tour by tuneWeights.js on walk-forward out-of-fold predictions at every retune; a < 1 compresses overconfident tails. Replaced the hand-fit knee/factor tail shrink (validated equal-or-better in data-pipeline/experiments.js).",
+  "calibration": {
+    "atp": {
+      "a": 1
+    },
+    "wta": {
+      "a": 0.7
+    }
+  },
+  "_eloComment": "Elo hyperparameters, validated by walk-forward log loss (experiments.js): rho = weight on overall vs surface rating in the predicting blend (0.5 beat 0.65/0.8 on both tours); marginK scales rating updates by set dominance (straight-sets wins move ratings more than deciding-set escapes) and improved log loss on both tours.",
+  "elo": {
+    "rho": 0.5,
+    "marginK": true
   },
   "rankScale": 2,
   "weights": {
     "atp": {
       "hard": {
-        "ws": 0.75,
-        "we": 0,
-        "wr": 0.25
+        "ws": 0.4,
+        "we": 0.2,
+        "wr": 0.4
       },
       "clay": {
-        "ws": 0.35,
-        "we": 0.4,
-        "wr": 0.25
+        "ws": 0.5,
+        "we": 0.1,
+        "wr": 0.4
       },
       "grass": {
-        "ws": 0.8,
-        "we": 0.1,
-        "wr": 0.1
+        "ws": 0.65,
+        "we": 0,
+        "wr": 0.35
       }
     },
     "wta": {
       "hard": {
-        "ws": 0.6,
-        "we": 0.3,
-        "wr": 0.1
+        "ws": 0,
+        "we": 0.7,
+        "wr": 0.3
       },
       "clay": {
-        "ws": 0.7,
-        "we": 0.05,
-        "wr": 0.25
+        "ws": 0.05,
+        "we": 0.75,
+        "wr": 0.2
       },
       "grass": {
-        "ws": 0.9,
-        "we": 0.1,
+        "ws": 0.15,
+        "we": 0.85,
         "wr": 0
       }
     }
-  }
+  },
+  "tunedAt": "2026-07-14T07:44:43.530Z"
 }

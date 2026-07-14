@@ -13,6 +13,8 @@ import NotFound from './pages/NotFound';
 import MatchPage from './pages/MatchPage';
 import PlayerPage from './pages/PlayerPage';
 import Today from './pages/Today';
+import DrawPage from './pages/DrawPage';
+import ModelCard from './pages/ModelCard';
 import { Terms, Privacy, Disclaimer } from './pages/Legal';
 import SiteFooter from './components/SiteFooter';
 import TabBar from './components/TabBar';
@@ -37,6 +39,8 @@ initMonitoring();
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
   { to: '/today', label: 'Today', tourAgnostic: true },
+  // The real slam draw with round-by-round survival odds (both tours inside).
+  { to: '/draw', label: 'Draw', tourAgnostic: true },
   // No surface query: H2H itself defaults to the live/upcoming slam.
   { to: '/h2h', label: 'H2H' },
   { to: '/dream-brackets', label: 'Brackets' },
@@ -173,6 +177,11 @@ function App() {
           <Route path="/match/:slug" element={<MatchPage />} />
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
+
+          {/* The live slam draw (both tours inside) and the model card */}
+          <Route path="/draw" element={<DrawPage />} />
+          <Route path="/women/draw" element={<DrawPage />} />
+          <Route path="/model" element={<ModelCard />} />
 
           {/* Operations console - intentionally unlinked from the nav */}
           <Route path="/admin" element={<Admin />} />

@@ -9,6 +9,7 @@ import { useParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, localKickoff, idFromSlug } from '../utils/matchTime';
+import { castCall, fetchTally, matchCallKey } from '../utils/matchCalls';
 import './MatchPage.css';
 
 const SURFACE_ACCENTS = { clay: '#e8694a', grass: '#3ddc84', hard: '#5b8cff' };
@@ -75,6 +76,32 @@ export default function MatchPage() {
   }, [pred]);
 
   const when = useMemo(() => (pred ? timeUntil(pred.date) : null), [pred]);
+
+  // Community tally + your call, shared with the H2H studio via the same
+  // matchup key (order-independent pair + surface + tour).
+  const callKey = pred ? matchCallKey(pred.p1, pred.p2, pred.surface, pred.tour) : null;
+  const [tally, setTally] = useState(null);
+  const [myPick, setMyPick] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setTally(null);
+    if (callKey) {
+      fetchTally(callKey).then((t) => { if (alive) setTally(t); });
+      try { setMyPick(JSON.parse(localStorage.getItem('smashCalls') || '{}')[callKey]?.pick || null); } catch { setMyPick(null); }
+    }
+    return () => { alive = false; };
+  }, [callKey]);
+
+  const backPlayer = (pid) => {
+    if (!pred || !callKey) return;
+    setMyPick(pid);
+    try {
+      const s = JSON.parse(localStorage.getItem('smashCalls') || '{}');
+      s[callKey] = { pick: pid, modelPick: pred.favorite, p1: pred.p1, p2: pred.p2, name1: pred.name1, name2: pred.name2, surface: pred.surface, tour: pred.tour, date: Date.now() };
+      localStorage.setItem('smashCalls', JSON.stringify(s));
+    } catch { /* storage unavailable */ }
+    castCall(callKey, pid).then(() => fetchTally(callKey).then((t) => t && setTally(t)));
+  };
 
   if (pred === undefined) {
     return <div className="match-page"><div className="skeleton match-skel" /></div>;
@@ -147,6 +174,44 @@ export default function MatchPage() {
         </div>
         <p className="match-verdict-line">{verdictLine(pred.favProb, favLast)} Locked before play{decided ? ', graded after' : ''}.</p>
       </div>
+
+      {/* Your call + the fan tally (voting closes once the match is decided) */}
+      {(!decided || (tally && tally.total > 0)) && (
+        <div className="match-call">
+          {!decided && (
+            <div className="match-call-btns">
+              {[[pred.p1, pred.name1], [pred.p2, pred.name2]].map(([pid, name]) => (
+                <button
+                  key={pid}
+                  type="button"
+                  className={`match-call-btn${myPick === pid ? ' picked' : ''}`}
+                  onClick={() => backPlayer(pid)}
+                >
+                  Back {name.split(' ').pop()}
+                </button>
+              ))}
+            </div>
+          )}
+          {myPick && !decided && (
+            <span className="match-call-note">
+              You backed {(myPick === pred.p1 ? pred.name1 : pred.name2).split(' ').pop()},
+              {myPick === pred.favorite ? ' same as the model.' : ' fading the model.'}
+            </span>
+          )}
+          {tally && (tally.counts[pred.p1] || 0) + (tally.counts[pred.p2] || 0) > 0 && (() => {
+            const a = tally.counts[pred.p1] || 0;
+            const b = tally.counts[pred.p2] || 0;
+            const tot = a + b;
+            const pctA = Math.round((a / tot) * 100);
+            const leader = pctA >= 50 ? pred.name1 : pred.name2;
+            return (
+              <span className="match-call-tally">
+                Fans back <strong>{leader.split(' ').pop()} {Math.max(pctA, 100 - pctA)}%</strong> · {tot.toLocaleString()} call{tot === 1 ? '' : 's'}
+              </span>
+            );
+          })()}
+        </div>
+      )}
 
       <div className="match-facts">
         {h2h && (h2h.w1 + h2h.w2 > 0) && (

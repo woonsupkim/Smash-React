@@ -1,4 +1,38 @@
-import { rankProb, eloProb, engineProbs, pickEngineProb } from './engines';
+import { rankProb, eloProb, engineProbs, pickEngineProb, calibrate } from './engines';
+import CONFIG from './engineConfig.json';
+
+describe('calibrate', () => {
+  test('0.5 is a fixed point for every tour (a pick can never flip)', () => {
+    expect(calibrate(0.5, 'atp')).toBeCloseTo(0.5, 9);
+    expect(calibrate(0.5, 'wta')).toBeCloseTo(0.5, 9);
+  });
+  test('preserves which side is favored', () => {
+    for (const tour of ['atp', 'wta']) {
+      expect(calibrate(0.73, tour)).toBeGreaterThan(0.5);
+      expect(calibrate(0.31, tour)).toBeLessThan(0.5);
+    }
+  });
+  test('is monotone', () => {
+    for (const tour of ['atp', 'wta']) {
+      expect(calibrate(0.9, tour)).toBeGreaterThan(calibrate(0.7, tour));
+      expect(calibrate(0.7, tour)).toBeGreaterThan(calibrate(0.55, tour));
+    }
+  });
+  test('is symmetric: calibrate(p) + calibrate(1-p) = 1', () => {
+    for (const tour of ['atp', 'wta']) {
+      expect(calibrate(0.8, tour) + calibrate(0.2, tour)).toBeCloseTo(1, 9);
+    }
+  });
+  test('a < 1 tempers confidence toward 0.5', () => {
+    for (const tour of ['atp', 'wta']) {
+      const a = CONFIG.calibration?.[tour]?.a;
+      if (a && a < 1) {
+        expect(calibrate(0.9, tour)).toBeLessThan(0.9);
+        expect(calibrate(0.9, tour)).toBeGreaterThan(0.5);
+      }
+    }
+  });
+});
 
 describe('rankProb', () => {
   test('the better-ranked (lower number) player is favored', () => {

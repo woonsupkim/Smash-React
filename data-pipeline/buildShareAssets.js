@@ -1023,8 +1023,32 @@ async function run() {
   const cd = await countdownCard('countdown.png');
   if (cd) add('countdown.png', 'countdown', 'square', 'promo', `${cd.days} days until the ${cd.name}. Title odds from day one of the draw - the model is warming up. ${tags}`);
 
+  // ── Ready-to-paste thread: the day's slate as a text thread ─────────────
+  // One post per pick with its deep link, plus an opener and a closer, so a
+  // webhook consumer (or a human) can publish the whole slate without
+  // composing anything. Lives in the manifest next to the images.
+  let thread = null;
+  if (picks.length) {
+    const posts = [];
+    posts.push(
+      `Today at the ${picks[0].event}: ${picks.length} call${picks.length === 1 ? '' : 's'}, every one locked before play. ` +
+      `Season so far: ${sc.season.correct.toLocaleString()} of ${sc.season.n.toLocaleString()} winners called (${sc.season.acc}%). Picks below.`
+    );
+    picks.forEach((p, i) => {
+      const opp = p.favorite === p.p1 ? p.name2 : p.name1;
+      const flag = p._flags.upset ? 'UPSET PICK. ' : (p._flags.confidence === 'high' ? 'High confidence. ' : '');
+      posts.push(`${i + 1}/${picks.length} ${p.favName} over ${opp} at ${pctTxt(p.favProb)} on ${p.surface}. ${flag}${matchLink(p)}`);
+    });
+    if (picks.length >= 2) {
+      const mult = picks.reduce((m, p) => m * (1 / p.favProb), 1);
+      posts.push(`If every call hits, $10 at fair odds returns $${(10 * mult).toFixed(0)}. Not betting advice, just the math on our own confidence.`);
+    }
+    posts.push(`Every call graded in public, wins and misses alike. Today's board: ${todayLink()} ${tags}`);
+    thread = posts;
+  }
+
   // ── Manifest + stale cleanup ────────────────────────────────────────────
-  const manifest = { generatedAt: new Date().toISOString(), seasonN: sc.season.n, assets };
+  const manifest = { generatedAt: new Date().toISOString(), seasonN: sc.season.n, thread, assets };
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
   const keep = new Set([...assets.map((a) => a.file), 'manifest.json']);
   for (const f of fs.readdirSync(OUT)) {

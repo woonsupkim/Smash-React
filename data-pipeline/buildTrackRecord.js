@@ -14,18 +14,14 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { buildTimeline, predElo, expected } = require('./eloCore');
+const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
+const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
-// Per-tour calibration shrink on the blend's tail (mirrors src/engines.js
-// shrinkTail): compresses stated confidence above the knee, never flips picks.
-function shrinkTail(p, tour) {
-  const s = ENGINE.tailShrink && ENGINE.tailShrink[tour];
-  if (!s) return p;
-  const fav = Math.max(p, 1 - p);
-  if (fav <= s.knee) return p;
-  const shrunk = s.knee + (fav - s.knee) * s.factor;
-  return p >= 0.5 ? shrunk : 1 - shrunk;
+// Per-tour Platt recalibration of the blend (mirrors src/engines.js
+// calibrate): p' = sigmoid(a*logit(p)). Never flips picks.
+function calibrate(p, tour) {
+  return applyCalib(p, ENGINE.calibration && ENGINE.calibration[tour] && ENGINE.calibration[tour].a);
 }
 
 const SIMS = 1000;
@@ -146,7 +142,10 @@ function loadTour(tour) {
       const surface = normSurface(surfaces[String(m.tournamentId)]);
       if (!surface) continue;
 
-      if (!allMatches.has(id)) allMatches.set(id, { id, date: m.date, winnerId: winId, loserId: winId === p1Id ? p2Id : p1Id, surface });
+      if (!allMatches.has(id)) {
+        const { setsW, setsL } = parseSets(m.result, winId === p1Id);
+        allMatches.set(id, { id, date: m.date, winnerId: winId, loserId: winId === p1Id ? p2Id : p1Id, surface, setsW, setsL, bestOf: Number(m.best_of) || null });
+      }
 
       const d = new Date(m.date);
       if (isNaN(d) || d < new Date('2026-01-01') || d > new Date('2026-12-31')) continue;
@@ -205,9 +204,9 @@ function evaluate(ctx, rec) {
   const rankProbP1 = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
 
   // 6. SMASH model - per tour x surface blend of sim + Elo + ranking, with
-  // the per-tour calibration shrink on the tail (engineConfig tailShrink).
+  // the per-tour Platt recalibration (engineConfig calibration).
   const w = (ENGINE.weights[tour] && ENGINE.weights[tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
-  const smashProbP1 = shrinkTail(w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1, tour);
+  const smashProbP1 = calibrate(w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1, tour);
   const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
 
   // Predicted scoreline, from the deployed pick's (Smart Blend favorite's)
@@ -257,7 +256,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, ts: ENGINE.tailShrink || null, rs: ENGINE.rankScale });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {
@@ -294,7 +293,30 @@ for (const tour of ['atp', 'wta']) {
   }
 }
 
-fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, modelKey, matches: all }));
+// North-star metric: log loss vs the bookmakers' closing odds, on the
+// subset of matches that carry odds. The market is the strongest known
+// predictor, so the gap to it is the honest read on remaining headroom -
+// and whether a model change was real or noise.
+const logLossMeta = {};
+for (const tour of ['atp', 'wta']) {
+  const priced = all.filter((m) => m.tour === tour && m.od1 && m.od2);
+  const model = logLoss(priced.map((m) => ({ p: m.smashProbP1, won: m.p1Won })));
+  const market = logLoss(priced.map((m) => ({ p: marketProb(m.od1, m.od2), won: m.p1Won })));
+  const allTour = all.filter((m) => m.tour === tour);
+  logLossMeta[tour] = {
+    n: allTour.length,
+    model: allTour.length ? +logLoss(allTour.map((m) => ({ p: m.smashProbP1, won: m.p1Won }))).toFixed(4) : null,
+    nPriced: priced.length,
+    modelOnPriced: priced.length ? +model.toFixed(4) : null,
+    market: priced.length ? +market.toFixed(4) : null,
+    gap: priced.length ? +(model - market).toFixed(4) : null,
+  };
+  if (priced.length) {
+    console.log(`${tour.toUpperCase()} log loss vs market (n=${priced.length}): model ${model.toFixed(4)} | market ${market.toFixed(4)} | gap ${(model - market).toFixed(4)}`);
+  }
+}
+
+fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, modelKey, logLoss: logLossMeta, matches: all }));
 console.log(`Wrote ${all.length} matches to ${outPath}`);
 
 // ── Engine accuracy summary (per tour x surface, + "all") ─────────────────

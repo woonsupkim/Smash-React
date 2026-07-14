@@ -158,3 +158,28 @@
   .match-players { grid-template-columns: 1fr; }
   .match-center { order: -1; }
 }
+
+/* Your call + community tally */
+.match-call {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin: -0.75rem 0 1.75rem;
+}
+.match-call-btns { display: flex; gap: 0.5rem; }
+.match-call-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  color: var(--text-1);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.match-call-btn:hover { border-color: var(--border-2); }
+.match-call-btn.picked { border-color: var(--surf, var(--accent-brand)); color: var(--surf, var(--accent-brand)); }
+.match-call-note, .match-call-tally { font-size: 0.8rem; color: var(--text-3); }
+.match-call-tally strong { color: var(--text-2); }

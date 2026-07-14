@@ -6,9 +6,23 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '2.5';
+export const MODEL_VERSION = '3.0';
 
 export const CHANGELOG = [
+  {
+    version: '3.0',
+    date: '2026-07-14',
+    type: 'model',
+    title: 'Honest evaluation, sharper Elo, and self-updating calibration',
+    notes: [
+      'Tuning objective switched from accuracy to log loss, evaluated strictly walk-forward (fit on the past, score on the future, never the reverse). Every future model change has to win that trial before it ships.',
+      'Elo now weighs wins by dominance: a straight-sets win moves ratings more than a deciding-set escape. Validated on 5,400+ held-out matches across both tours.',
+      'The hand-fit confidence compression is replaced by a one-parameter recalibration refit automatically at every retune, on predictions the model never trained on. Picks never flip; stated confidence self-corrects.',
+      'The bookmakers\' closing odds are now a permanent benchmark in every pipeline run. After this retune the model\'s log loss is ahead of the market on both tours for the season to date.',
+      'Also trialed and rejected for no measurable gain: shrinking thin serve samples toward tour averages, and rest-day/fatigue adjustments. They stay out.',
+      'New model card page publishes the current weights, calibration, and this scorecard from live data.',
+    ],
+  },
   {
     version: '2.5',
     date: '2026-07-13',

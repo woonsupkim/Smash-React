@@ -14,6 +14,7 @@ import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
 import { eloProb, engineProbs, pickEngineProb, ENGINE_LABELS } from '../engines';
 import { currentSlamSurface } from '../utils/currentSlam';
+import { castCall, fetchTally } from '../utils/matchCalls';
 import defaultAvatar from '../assets/player-default.png';
 import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
@@ -575,7 +576,19 @@ export default function H2H({ tour = 'atp' }) {
       s[callKey] = { pick: pid, modelPick: favoredIsA ? playerA.id : playerB.id, p1: playerA.id, p2: playerB.id, name1: playerA.name, name2: playerB.name, surface: config.surfaceKey, tour, date: Date.now() };
       localStorage.setItem('smashCalls', JSON.stringify(s));
     } catch { /* storage unavailable */ }
+    // Community tally (cloud only): cast, then re-read so the bar reflects
+    // your vote. A repeat vote on the same matchup is ignored server-side.
+    castCall(callKey, pid).then(() => fetchTally(callKey).then((t) => t && setFanTally(t)));
   };
+
+  // Who the fans back on this matchup (null when cloud is off or empty).
+  const [fanTally, setFanTally] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setFanTally(null);
+    if (callKey) fetchTally(callKey).then((t) => { if (alive) setFanTally(t); });
+    return () => { alive = false; };
+  }, [callKey]);
 
   // Your record vs the model: grade every stored call whose matchup has since
   // been decided in the track record.
@@ -848,6 +861,23 @@ export default function H2H({ tour = 'atp' }) {
                       Your record vs the model: <strong>you {youVsModel.youRight}/{youVsModel.graded}</strong>, model {youVsModel.modelRight}/{youVsModel.graded}.
                     </div>
                   )}
+                  {fanTally && (fanTally.counts[playerA.id] || 0) + (fanTally.counts[playerB.id] || 0) > 0 && (() => {
+                    const a = fanTally.counts[playerA.id] || 0;
+                    const b = fanTally.counts[playerB.id] || 0;
+                    const tot = a + b;
+                    const pctA = Math.round((a / tot) * 100);
+                    return (
+                      <div className="call-tally">
+                        <div className="call-tally-bar">
+                          <div className="call-tally-fill" style={{ width: `${pctA}%`, background: config.accentColor }} />
+                        </div>
+                        <div className="call-tally-line">
+                          Fans back <strong>{pctA >= 50 ? playerA.name.split(' ').pop() : playerB.name.split(' ').pop()} {Math.max(pctA, 100 - pctA)}%</strong>
+                          <span className="call-tally-n"> · {tot.toLocaleString()} call{tot === 1 ? '' : 's'} so far</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </section>
               )}
 

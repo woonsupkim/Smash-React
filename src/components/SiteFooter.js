@@ -42,10 +42,12 @@ export default function SiteFooter() {
         <nav className="site-footer-col" aria-label="Product">
           <div className="site-footer-head">Product</div>
           <Link to="/today">Today's Calls</Link>
+          <Link to="/draw">The Draw</Link>
           <Link to={prefix('/h2h')}>Head to Head</Link>
           <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
           <Link to={prefix('/track-record')}>Track Record</Link>
           <Link to="/methodology">Methodology</Link>
+          <Link to="/model">Model Card</Link>
           <Link to="/changelog">Changelog</Link>
         </nav>
 

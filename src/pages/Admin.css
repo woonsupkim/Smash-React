@@ -127,3 +127,27 @@
   border: 1px solid var(--border-1);
   display: block;
 }
+
+/* Ready-to-paste thread */
+.admin-thread { margin-bottom: 1rem; }
+.admin-thread-post {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.4rem;
+}
+.admin-thread-n {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 0.7rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.admin-thread-text { flex: 1; font-size: 0.85rem; color: var(--text-2); word-break: break-word; }
+.admin-thread-copy { flex-shrink: 0; }

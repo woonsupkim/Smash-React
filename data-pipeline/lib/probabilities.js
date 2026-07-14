@@ -84,8 +84,14 @@ function clamp01(x) {
 // Derives p1-p6 from one player's aggregated sums plus tour-average rates
 // (used as a fallback when data is thin, and as the centering baseline for
 // p5 - see header comment for why p5 needs a baseline).
-function deriveProbabilities(agg, tourAverages, minSvpt = 200) {
-  const { r3Avg, r4Avg, tourServerWin1stNonAce, tourServerWin2nd } = tourAverages;
+//
+// shrinkC (decayed serve points) applies empirical-Bayes shrinkage toward
+// the tour mean: each rate becomes w*own + (1-w)*tourMean with
+// w = svpt/(svpt+shrinkC), so a player estimated from 3 matches speaks more
+// quietly than one estimated from 40. The minSvpt eligibility gate is
+// evaluated BEFORE shrinkage so the player set is identical with it on/off.
+function deriveProbabilities(agg, tourAverages, minSvpt = 200, shrinkC = 0) {
+  const { r3Avg, r4Avg, tourServerWin1stNonAce, tourServerWin2nd, p1Avg, p2Avg, p6Avg } = tourAverages;
   if (agg.svpt < minSvpt) return null; // not enough data to trust
 
   const p1 = agg.firstIn / agg.svpt;
@@ -104,9 +110,15 @@ function deriveProbabilities(agg, tourAverages, minSvpt = 200) {
   const serverWin2nd = agg.secondWon / agg.secondAttempts;
   const delta1 = serverWin1stNonAce - tourServerWin1stNonAce;
   const delta2 = serverWin2nd - tourServerWin2nd;
-  const p5 = Math.min(0.65, Math.max(0.05, P5_BASELINE + (delta1 + delta2) / 2));
+  let p5 = Math.min(0.65, Math.max(0.05, P5_BASELINE + (delta1 + delta2) / 2));
 
-  return [clamp01(p1), clamp01(p2), clamp01(p3), clamp01(p4), p5, p6];
+  let out = [clamp01(p1), clamp01(p2), clamp01(p3), clamp01(p4), p5, p6];
+  if (shrinkC > 0) {
+    const w = agg.svpt / (agg.svpt + shrinkC);
+    const means = [p1Avg, p2Avg, r3Avg, r4Avg, P5_BASELINE, p6Avg];
+    out = out.map((v, i) => (means[i] != null ? w * v + (1 - w) * means[i] : v));
+  }
+  return out;
 }
 
 function deriveTourAverages(tourTotals) {
@@ -117,6 +129,10 @@ function deriveTourAverages(tourTotals) {
     r4Avg: 1 - tourTotals.secondWon / tourTotals.secondAttempts,
     tourServerWin1stNonAce: nonAceFirstWon / nonAceFirstIn,
     tourServerWin2nd: tourTotals.secondWon / tourTotals.secondAttempts,
+    // Tour means for the shrinkage targets (p3/p4/p5 already have theirs).
+    p1Avg: tourTotals.svpt > 0 ? tourTotals.firstIn / tourTotals.svpt : null,
+    p2Avg: (tourTotals.svpt - tourTotals.firstIn) > 0 ? tourTotals.secondAttempts / (tourTotals.svpt - tourTotals.firstIn) : null,
+    p6Avg: tourTotals.firstIn > 0 ? tourTotals.aces / tourTotals.firstIn : null,
   };
 }
 
