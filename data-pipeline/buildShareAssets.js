@@ -79,6 +79,13 @@ const last = (n) => String(n || '').trim().split(' ').pop();
 const pctTxt = (p) => `${Math.round(p * 100)}%`;
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+// Every caption ends with a destination. SITE_URL (repo variable / env) makes
+// links absolute; without it they stay as site-relative paths.
+const SITE = (process.env.SITE_URL || '').replace(/\/$/, '');
+const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const matchLink = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
+const todayLink = () => `${SITE}/today`;
+
 // Split a short headline into two stacked lines at the middle word.
 function splitHeadline(s) {
   const words = s.split(' ');
@@ -137,7 +144,7 @@ function chrome(w, h, t, { ghost = null, ghostY = null, ghostSize = null } = {})
 
 function eyebrow(w, y, text, color) {
   const fs2 = 27;
-  const approx = text.length * (fs2 * 0.72) + 40;
+  const approx = text.length * (fs2 * 0.8) + 40;
   return `
   <rect x="${w / 2 - approx / 2 - 34}" y="${y - 20}" width="16" height="16" fill="${color}"/>
   <text x="${w / 2 + 12}" y="${y - 5}" text-anchor="middle" font-family="${U}" font-size="${fs2}" font-weight="700" letter-spacing="6" fill="${color}">${esc(text.toUpperCase())}</text>`;
@@ -277,10 +284,16 @@ function bottomBar(w, text, { y = null, filled = true } = {}) {
 }
 
 // ── DAILY: match card (photo treatment) ────────────────────────────────────
-async function matchCard(p, flags, file) {
+// `result` (optional): { winnerName, score } turns the prediction card into
+// its receipt twin - same layout, stamped CALLED ✓, final score in the bar.
+// `context` (optional): { h2h: {w1,w2}, pair: {n,correct} } adds the rivalry
+// strip under the win probability.
+async function matchCard(p, flags, file, result = null, context = null) {
   const favIsP1 = p.favorite === p.p1;
   const favPct = Math.round(p.favProb * 100);
-  const v = verdict(p.favProb, flags.upset);
+  const v = result
+    ? { headline: 'WE CALLED IT', sub: 'Locked before play, graded after' }
+    : verdict(p.favProb, flags.upset);
   const [hl1, hl2] = splitHeadline(v.headline);
 
   const favName = favIsP1 ? p.name1 : p.name2;
@@ -319,6 +332,8 @@ async function matchCard(p, flags, file) {
 
   <text x="${SQ - 64}" y="322" text-anchor="end" font-family="${D}" font-size="168" font-weight="800" fill="${LIME}">${favPct}%</text>
   <text x="${SQ - 64}" y="374" text-anchor="end" font-family="${U}" font-size="25" font-weight="700" letter-spacing="4" fill="rgba(255,255,255,0.75)">${esc(last(favName).toUpperCase())} TO WIN</text>
+  ${context?.h2h && (context.h2h.w1 + context.h2h.w2) > 0 ? `
+  <text x="${SQ - 64}" y="420" text-anchor="end" font-family="${U}" font-size="23" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">CAREER H2H ${context.h2h.w1}-${context.h2h.w2}${context.pair?.n ? ` · WE'RE ${context.pair.correct}/${context.pair.n} ON THIS PAIR` : ''}</text>` : ''}
 
   <!-- offset accent frames behind the panels (sticker energy, layout-safe) -->
   <rect x="${dogX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
@@ -333,7 +348,14 @@ async function matchCard(p, flags, file) {
   <text x="${SQ / 2}" y="${PY + PH / 2 + 16}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">VS</text>
   ${pill(dogX + PW / 2, PY + PH - 74, `${last(dogName).toUpperCase()}${dogRank ? ` · NO. ${dogRank}` : ''}`, '#ffffff')}
   ${pill(favX + PW / 2, PY + PH - 74, `${last(favName).toUpperCase()}${favRank ? ` · NO. ${favRank}` : ''}`, LIME, true)}
-  ${bottomBar(SQ, `OUR CALL: ${last(favName).toUpperCase()} WINS · ${favPct}%`, { y: 968 })}
+  ${result ? `
+  <g transform="rotate(-10 540 300)">
+    <rect x="310" y="236" width="460" height="118" rx="16" fill="rgba(0,0,0,0.55)" stroke="${POS}" stroke-width="9"/>
+    <text x="540" y="318" text-anchor="middle" font-family="${D}" font-size="82" font-weight="800" letter-spacing="4" fill="${POS}">CALLED &#10003;</text>
+  </g>` : ''}
+  ${bottomBar(SQ, result
+    ? `${last(result.winnerName).toUpperCase()} WON${result.score ? ` ${result.score}` : ''} · WE SAID ${favPct}%`
+    : `OUR CALL: ${last(favName).toUpperCase()} WINS · ${favPct}%`, { y: 968 })}
 </svg>`;
 
   await renderOn(file, bg, [
@@ -650,7 +672,79 @@ async function hotStreakCard(tour, file) {
     { input: img, left: PX, top: PY },
     { input: Buffer.from(topSvg), left: 0, top: 0 },
   ]);
-  return { name: hot.name, w: hot.w, l: hot.l };
+  return { id: hot.id, name: hot.name, w: hot.w, l: hot.l };
+}
+
+// Did the model call the exact set score? (predScore is favorite-perspective)
+function scorelineHit(m) {
+  if (!m.predScore || !m.score) return null;
+  const sets = m.score.trim().split(/\s+/).map((s) => s.match(/^(\d+)-(\d+)/)).filter(Boolean);
+  if (!sets.length) return null;
+  const w = sets.filter((x) => +x[1] > +x[2]).length;
+  const l = sets.length - w;
+  const favWon = m.smashFavorite === m.winner;
+  const actualFav = favWon ? `${w}–${l}` : `${l}–${w}`;
+  return m.predScore === actualFav;
+}
+
+// A period report card (tournament wrap / weekly recap share the layout).
+async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, themeKey, file }) {
+  const t = theme(themeKey);
+  const c = chrome(SQ, SQ, t, { ghost: stats[0]?.value || '', ghostY: 700 });
+  const rows = stats.map((s, i) => {
+    const y = 470 + i * 118;
+    return `
+  <text x="120" y="${y}" font-family="${D}" font-size="76" font-weight="800" fill="${i === 0 ? LIME : '#ffffff'}">${esc(s.value)}</text>
+  <text x="${SQ - 120}" y="${y - 8}" text-anchor="end" font-family="${U}" font-size="27" font-weight="600" fill="rgba(255,255,255,0.75)">${esc(s.label)}</text>
+  <line x1="120" y1="${y + 26}" x2="${SQ - 120}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+  }).join('');
+  const base = `${c.open}
+  ${eyebrow(SQ, 140, eyebrowText, t.accent)}
+  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
+  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${LIME}">${esc(headline2)}</text>` : ''}
+  ${rows}
+  ${footNote ? `<text x="${SQ / 2}" y="${SQ - 130}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(footNote)}</text>` : ''}
+${c.close}`;
+  await render(file, base);
+}
+
+// Rivalry card: an upcoming pick where the pair has real history.
+async function rivalryCard(p, h2hRec, ourRecord, file) {
+  const bg = await stadiumBg(p.surface, SQ, SQ);
+  const PW = 444, PH = 420, PY = 430;
+  const aX = 64, bX = SQ - 64 - PW;
+  const [aImg, bImg] = await Promise.all([
+    panelPhoto(photoPath(p.tour, p.p1), PW, PH),
+    panelPhoto(photoPath(p.tour, p.p2), PW, PH),
+  ]);
+  const meetings = h2hRec.w1 + h2hRec.w2;
+  const baseSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  ${photoScrim(SQ, SQ)}
+  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
+  <text x="60" y="300" font-family="${D}" font-size="128" font-weight="800" fill="#ffffff">THE RIVALRY,</text>
+  <text x="60" y="410" font-family="${D}" font-size="128" font-weight="800" fill="${LIME}">ROUND ${meetings + 1}</text>
+  <rect x="${aX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
+  <rect x="${bX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
+</svg>`;
+  const topSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
+  <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
+  <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="58" fill="rgba(0,0,0,0.7)" stroke="${LIME}" stroke-width="4"/>
+  <text x="${SQ / 2}" y="${PY + PH / 2 + 20}" text-anchor="middle" font-family="${D}" font-size="52" font-weight="800" fill="#ffffff">${h2hRec.w1}-${h2hRec.w2}</text>
+  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff')}
+  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff')}
+  ${bottomBar(SQ, ourRecord && ourRecord.n > 0
+    ? `WE'VE CALLED ${ourRecord.correct} OF ${ourRecord.n} OF THEIR MEETINGS`
+    : `OUR CALL: ${last(p.favName).toUpperCase()} · ${pctTxt(p.favProb)}`, { y: 968 })}
+</svg>`;
+  await renderOn(file, bg, [
+    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: aImg, left: aX, top: PY },
+    { input: bImg, left: bX, top: PY },
+    { input: Buffer.from(topSvg), left: 0, top: 0 },
+  ]);
 }
 
 function nextSlamStart(now = new Date()) {
@@ -707,37 +801,66 @@ async function run() {
   const add = (file, type, format, category, caption) => assets.push({ file, type, format, category, caption });
   const tags = '#tennis #atp #wta #tennisprediction';
 
+  const decorate = (p) => {
+    const favId = p.favorite;
+    const oppId = favId === p.p1 ? p.p2 : p.p1;
+    const favRank = ranks[p.tour]?.get(favId);
+    const oppRank = ranks[p.tour]?.get(oppId);
+    return {
+      ...p,
+      _flags: {
+        upset: !!(favRank && oppRank && favRank > oppRank),
+        confidence: p.favProb >= 0.70 ? 'high' : (p.favProb < 0.60 ? 'low' : null),
+        rank1: ranks[p.tour]?.get(p.p1),
+        rank2: ranks[p.tour]?.get(p.p2),
+      },
+    };
+  };
+
   const picks = (preds.predictions || [])
     .filter((p) => p.status === 'pending')
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
-    .map((p) => {
-      const favId = p.favorite;
-      const oppId = favId === p.p1 ? p.p2 : p.p1;
-      const favRank = ranks[p.tour]?.get(favId);
-      const oppRank = ranks[p.tour]?.get(oppId);
-      return {
-        ...p,
-        _flags: {
-          upset: !!(favRank && oppRank && favRank > oppRank),
-          confidence: p.favProb >= 0.70 ? 'high' : (p.favProb < 0.60 ? 'low' : null),
-          rank1: ranks[p.tour]?.get(p.p1),
-          rank2: ranks[p.tour]?.get(p.p2),
-        },
-      };
-    });
+    .map(decorate);
 
   // ── DAILY layer ─────────────────────────────────────────────────────────
   if (picks.length) {
     await coverCard(picks, sc, 'cover.png');
-    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. Season: ${sc.season.acc}% of winners called. ${tags}`);
+    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. Season: ${sc.season.acc}% of winners called. All of today: ${todayLink()} ${tags}`);
+
+    // Career h2h + our pair record enrich every match card.
+    const h2hAll = fs.existsSync(path.join(DATA, 'h2h.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'h2h.json'), 'utf8')) : {};
+    const track2 = track.matches || [];
+    const contextFor = (p) => {
+      const key = [p.p1, p.p2].sort().join('_');
+      const rec = h2hAll[key];
+      const firstIsP1 = [p.p1, p.p2].sort()[0] === p.p1;
+      const h2h = rec ? { w1: firstIsP1 ? rec.winsA : rec.winsB, w2: firstIsP1 ? rec.winsB : rec.winsA } : null;
+      const pairMs = track2.filter((m) => (m.p1 === p.p1 && m.p2 === p.p2) || (m.p1 === p.p2 && m.p2 === p.p1));
+      return { h2h, pair: { n: pairMs.length, correct: pairMs.filter((m) => m.smashCorrect).length } };
+    };
 
     for (let i = 0; i < picks.length; i++) {
       const p = picks[i];
       const file = `match-${i + 1}.png`;
-      await matchCard(p, p._flags, file);
+      await matchCard(p, p._flags, file, null, contextFor(p));
       const flagBit = p._flags.upset ? ' UPSET PICK:' : (p._flags.confidence === 'high' ? ' High confidence:' : '');
-      add(file, 'match', 'square', 'daily', `${flagBit} ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, ${p.event} (${p.surface}). Locked before play, graded after. ${tags}`);
+      add(file, 'match', 'square', 'daily', `${flagBit} ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, ${p.event} (${p.surface}). Full breakdown: ${matchLink(p)} ${tags}`);
+    }
+
+    // Rivalry angle: the pick whose pair has the most career history (3+ meetings).
+    const withHistory = picks
+      .map((p) => {
+        const ctx = contextFor(p);
+        if (!ctx.h2h) return null;
+        return { p, h: ctx.h2h, pair: ctx.pair, meetings: ctx.h2h.w1 + ctx.h2h.w2 };
+      })
+      .filter((x) => x && x.meetings >= 3)
+      .sort((a, b) => b.meetings - a.meetings)[0];
+    if (withHistory) {
+      const { p, h, pair } = withHistory;
+      await rivalryCard(p, h, pair, 'rivalry.png');
+      add('rivalry.png', 'rivalry', 'square', 'daily', `${last(p.name1)} vs ${last(p.name2)}, meeting number ${withHistory.meetings + 1}. Career: ${h.w1}-${h.w2}.${pair.n ? ` We've called ${pair.correct} of ${pair.n} of their matches right.` : ''} ${matchLink(p)} ${tags}`);
     }
 
     if (picks.length >= 2) {
@@ -747,11 +870,26 @@ async function run() {
     }
 
     await slateStory(picks, sc, 'slate-story.png');
-    add('slate-story.png', 'slate', 'story', 'daily', `The full slate for ${fmtDate(picks[0].date)}: every call with win probability and flags. ${tags}`);
+    add('slate-story.png', 'slate', 'story', 'daily', `The full slate for ${fmtDate(picks[0].date)}: every call with win probability and flags. All of today: ${todayLink()} ${tags}`);
 
     const pollPick = [...picks].sort((a, b) => a.favProb - b.favProb)[0];
     await pollCard(pollPick, 'poll.png');
-    add('poll.png', 'poll', 'square', 'daily', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}? Our model already picked a side - drop yours below, answer tomorrow. ${tags}`);
+    add('poll.png', 'poll', 'square', 'daily', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}? Our model already picked a side - drop yours below, answer tomorrow. ${matchLink(pollPick)} ${tags}`);
+  }
+
+  // ── Receipts: prediction cards reborn as CALLED ✓ twins ─────────────────
+  const calledIt = (preds.predictions || [])
+    .filter((p) => p.status !== 'pending' && p.correct && p.winner
+      && (Date.now() - new Date(p.date).getTime()) < 3 * 864e5)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 3)
+    .map(decorate);
+  for (let i = 0; i < calledIt.length; i++) {
+    const p = calledIt[i];
+    const file = `called-${i + 1}.png`;
+    const winnerName = p.winner === p.p1 ? p.name1 : p.name2;
+    await matchCard(p, p._flags, file, { winnerName, score: p.score });
+    add(file, 'called-it', 'square', 'daily', `We called it: ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, locked before play. Final: ${winnerName} won${p.score ? ` ${p.score}` : ''}. Receipts: ${matchLink(p)} ${tags}`);
   }
 
   for (const tour of ['atp', 'wta']) {
@@ -772,6 +910,99 @@ async function run() {
     add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners before play. Season: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
 
+  // ── WRAP: tournament report card (a few days after a slam ends) ─────────
+  for (const tour of ['atp', 'wta']) {
+    const o = titleOdds.events?.[tour];
+    if (!o || o.status !== 'final' || !o.champion) continue;
+    if (Date.now() - new Date(o.updatedAt).getTime() > 4 * 864e5) continue;
+    const evMs = (track.matches || []).filter((m) =>
+      m.tour === tour && m.surface === o.surface && (Date.now() - new Date(m.date).getTime()) < 16 * 864e5);
+    if (evMs.length < 8) continue;
+    const correct = evMs.filter((m) => m.smashCorrect).length;
+    const beat = evMs.filter((m) => m.smashCorrect && m.oddCorrect === false).length;
+    const exact = evMs.filter((m) => scorelineHit(m) === true).length;
+    const file = `wrap-${tour}.png`;
+    await reportCard({
+      eyebrowText: `${o.event} ${tour} · tournament report card`,
+      headline1: 'HOW WE',
+      headline2: 'SCORED',
+      stats: [
+        { value: `${correct} OF ${evMs.length}`, label: 'winners called before play' },
+        ...(beat ? [{ value: `${beat}`, label: 'times we beat the bookies' }] : []),
+        { value: `${exact}`, label: 'exact set scores called' },
+        { value: last(o.champion.name).toUpperCase(), label: 'your champion' },
+      ],
+      footNote: 'every call locked before play and graded in public',
+      themeKey: o.surface,
+      file,
+    });
+    add(file, 'wrap', 'square', 'wrap', `${o.event} ${tour.toUpperCase()} report card: ${correct} of ${evMs.length} winners called before play${beat ? `, ${beat} wins over the bookies` : ''}, ${exact} exact scorelines. ${o.champion.name} takes the title. ${SITE}/track-record ${tags}`);
+  }
+
+  // ── WEEKLY: the week in calls (Mondays, or FORCE_WEEKLY=1) ──────────────
+  if (new Date().getUTCDay() === 1 || process.env.FORCE_WEEKLY === '1') {
+    const weekMs = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5);
+    if (weekMs.length >= 5) {
+      const correct = weekMs.filter((m) => m.smashCorrect).length;
+      const beat = weekMs.filter((m) => m.smashCorrect && m.oddCorrect === false).length;
+      const bold = weekMs.filter((m) => m.smashCorrect)
+        .sort((a, b) => Math.max(a.smashProbP1, 1 - a.smashProbP1) - Math.max(b.smashProbP1, 1 - b.smashProbP1))[0];
+      const boldName = bold ? last(bold.smashFavorite === bold.p1 ? bold.name1 : bold.name2) : null;
+      await reportCard({
+        eyebrowText: 'the week in calls',
+        headline1: 'WEEKLY',
+        headline2: 'RECAP',
+        stats: [
+          { value: `${correct} OF ${weekMs.length}`, label: 'winners called this week' },
+          ...(beat ? [{ value: `${beat}`, label: 'wins over the bookies' }] : []),
+          ...(bold ? [{ value: `${boldName} · ${Math.round(Math.max(bold.smashProbP1, 1 - bold.smashProbP1) * 100)}%`, label: 'boldest call that hit' }] : []),
+          { value: `${sc.season.acc}%`, label: 'season accuracy, all public' },
+        ],
+        footNote: 'new recap every Monday · every call graded',
+        themeKey: 'brand',
+        file: 'weekly.png',
+      });
+      add('weekly.png', 'weekly', 'square', 'weekly', `The week in calls: ${correct} of ${weekMs.length} winners called${beat ? `, ${beat} wins over the bookies` : ''}. Season: ${sc.season.acc}%. ${SITE}/track-record ${tags}`);
+    }
+  }
+
+  // ── MOMENTS: milestone crossings + perfect days ─────────────────────────
+  const prevManifest = fs.existsSync(path.join(OUT, 'manifest.json'))
+    ? JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'))
+    : {};
+  const prevN = prevManifest.seasonN || 0;
+  if (Math.floor(sc.season.n / 250) > Math.floor(prevN / 250) && prevN > 0) {
+    const mark = Math.floor(sc.season.n / 250) * 250;
+    await reportCard({
+      eyebrowText: 'milestone',
+      headline1: `${mark.toLocaleString()}`,
+      headline2: 'MATCHES GRADED',
+      stats: [
+        { value: `${sc.season.acc}%`, label: 'of winners called correctly' },
+        { value: 'ZERO', label: 'deletions, edits, or excuses' },
+      ],
+      footNote: 'every prediction on the public record',
+      themeKey: 'brand',
+      file: 'milestone.png',
+    });
+    add('milestone.png', 'milestone', 'square', 'moments', `${mark.toLocaleString()} matches graded in public - ${sc.season.acc}% of winners called, zero deletions. ${SITE}/track-record ${tags}`);
+  }
+  if (sc.yesterday && sc.yesterday.n >= 3 && sc.yesterday.correct === sc.yesterday.n) {
+    await reportCard({
+      eyebrowText: `perfect day · ${sc.yesterday.date}`,
+      headline1: `${sc.yesterday.correct}/${sc.yesterday.n}`,
+      headline2: 'FLAWLESS',
+      stats: [
+        { value: `${sc.yesterday.n}`, label: 'winners called before play' },
+        { value: `${sc.season.acc}%`, label: 'season accuracy' },
+      ],
+      footNote: 'locked before play, graded after - no take-backs',
+      themeKey: 'brand',
+      file: 'perfect-day.png',
+    });
+    add('perfect-day.png', 'perfect-day', 'square', 'moments', `Perfect day: ${sc.yesterday.correct}/${sc.yesterday.n} winners called before play on ${sc.yesterday.date}. ${SITE}/track-record ${tags}`);
+  }
+
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
   add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.season.acc}% of winners called across ${sc.season.n.toLocaleString()} matches, all graded in public. ${tags}`);
@@ -786,7 +1017,7 @@ async function run() {
 
   for (const tour of ['atp', 'wta']) {
     const hot = await hotStreakCard(tour, `hot-streak-${tour}.png`);
-    if (hot) add(`hot-streak-${tour}.png`, 'spotlight', 'square', 'promo', `Hottest racket on the ${tour.toUpperCase()} right now: ${hot.name}, ${hot.w}-${hot.l} in recent matches. ${tags}`);
+    if (hot) add(`hot-streak-${tour}.png`, 'spotlight', 'square', 'promo', `Hottest racket on the ${tour.toUpperCase()} right now: ${hot.name}, ${hot.w}-${hot.l} in recent matches. Their full page: ${SITE}/player/${tour}/${hot.id} ${tags}`);
   }
 
   const cd = await countdownCard('countdown.png');
@@ -799,7 +1030,8 @@ async function run() {
   for (const f of fs.readdirSync(OUT)) {
     if (!keep.has(f)) { fs.unlinkSync(path.join(OUT, f)); console.log('  removed stale', f); }
   }
-  console.log(`Share kit: ${assets.length} asset(s) (${assets.filter((a) => a.category === 'daily').length} daily, ${assets.filter((a) => a.category === 'promo').length} promo) -> ${OUT}`);
+  const byCat = assets.reduce((acc, a) => { acc[a.category] = (acc[a.category] || 0) + 1; return acc; }, {});
+  console.log(`Share kit: ${assets.length} asset(s) (${Object.entries(byCat).map(([c, n]) => `${n} ${c}`).join(', ')}) -> ${OUT}`);
 }
 
 run().catch((e) => { console.error(e); process.exit(1); });

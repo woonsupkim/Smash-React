@@ -5,7 +5,28 @@ import { Link } from 'react-router-dom';
 import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
+import { playerPhoto } from '../utils/playerPhotos';
+import { timeUntil, matchSlug } from '../utils/matchTime';
 import './Home.css';
+
+// Tiny inline sparkline for a player's title-odds history.
+function Sparkline({ values }) {
+  if (!values || values.length < 2) return <span className="home-odds-spark" aria-hidden="true" />;
+  const w = 64, h = 22, pad = 2;
+  const max = Math.max(...values, 0.01);
+  const min = Math.min(...values);
+  const span = Math.max(max - min, 0.005);
+  const pts = values.map((v, i) => {
+    const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / span) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return (
+    <svg className="home-odds-spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <polyline points={pts.join(' ')} fill="none" stroke="var(--accent-brand)" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 // The ball-drop intro plays once per browser (persisted), silently - a
 // returning visitor gets straight to content. localStorage can throw in
@@ -242,8 +263,16 @@ export default function Home() {
                     <div className="home-odds-tour-label">{t === 'wta' ? 'WTA' : 'ATP'}</div>
                     {o.status === 'final' ? (
                       <div className="home-odds-champion">
+                        {o.champion.id && (
+                          <img className="home-odds-champ-photo" src={playerPhoto(t, o.champion.id)} alt="" />
+                        )}
                         <span className="home-odds-trophy" aria-hidden="true">🏆</span>
-                        <span><strong>{o.champion.name}</strong> is the {o.event} champion.</span>
+                        <span>
+                          {o.champion.id
+                            ? <Link className="home-odds-champ-link" to={`/player/${t}/${o.champion.id}`}><strong>{o.champion.name}</strong></Link>
+                            : <strong>{o.champion.name}</strong>}
+                          {' '}is the {o.event} champion.
+                        </span>
                       </div>
                     ) : (
                       <div className="home-odds-list">
@@ -251,13 +280,22 @@ export default function Home() {
                           const pct = Math.round(p.prob * 100);
                           const prev = prevSnap?.[p.name];
                           const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
+                          const series = (o.history || []).map((hh) => hh.odds?.[p.name]).filter((v) => v != null);
                           return (
                             <div className="home-odds-row" key={p.name}>
                               <span className="home-odds-rank">{i + 1}</span>
-                              <span className="home-odds-name">{p.name}</span>
+                              {p.id ? (
+                                <Link className="home-odds-name linked" to={`/player/${t}/${p.id}`}>
+                                  <img className="home-odds-photo" src={playerPhoto(t, p.id)} alt="" loading="lazy" />
+                                  {p.name}
+                                </Link>
+                              ) : (
+                                <span className="home-odds-name">{p.name}</span>
+                              )}
                               <div className="home-odds-track">
                                 <div className="home-odds-fill" style={{ width: `${Math.max(pct, 2)}%` }} />
                               </div>
+                              <Sparkline values={series} />
                               <span className="home-odds-pct">{pct < 1 ? '<1' : pct}%</span>
                               <span className={`home-odds-delta${delta > 0 ? ' up' : delta < 0 ? ' down' : ''}`}>
                                 {delta ? (delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`) : ''}
@@ -307,32 +345,42 @@ export default function Home() {
           )}
           {picks.list.length > 0 && (
             <div className="home-board-grid">
-              {picks.list.map((p) => (
-                <Link
-                  key={p.id}
-                  to={`${p.tour === 'wta' ? '/women' : ''}/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`}
-                  className="home-board-card"
-                >
-                  <div className="home-board-top">
-                    <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
-                    <span className={`home-board-surface s-${p.surface}`}>{p.surface}</span>
-                  </div>
-                  <div className="home-board-players">
-                    <span className={`home-board-player${p.favorite === p.p1 ? ' fav' : ''}`}>{p.name1}</span>
-                    <span className={`home-board-player${p.favorite === p.p2 ? ' fav' : ''}`}>{p.name2}</span>
-                  </div>
-                  <div className="home-board-call">
-                    <span className="home-board-pct">{Math.round(p.favProb * 100)}%</span>
-                    <span className="home-board-callsub">model backs {p.favName.split(' ').pop()}</span>
-                  </div>
-                  {upsetById.has(p.id) && (
-                    <div className="home-board-upsetwatch">
-                      <span className="home-board-upset-tag">🚨 Upset watch</span>
-                      <span className="home-board-upset-reason">{upsetById.get(p.id).reason}</span>
+              {picks.list.map((p) => {
+                const when = timeUntil(p.date);
+                return (
+                  <Link key={p.id} to={`/match/${matchSlug(p)}`} className="home-board-card">
+                    <div className="home-board-top">
+                      <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
+                      <span className={`home-board-surface s-${p.surface}`}>{p.surface}</span>
+                      {when && (
+                        <span className={`home-board-when${when.soon ? ' soon' : ''}${when.past ? ' past' : ''}`}>
+                          {when.label}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </Link>
-              ))}
+                    <div className="home-board-players">
+                      <span className={`home-board-player${p.favorite === p.p1 ? ' fav' : ''}`}>
+                        <img className="home-board-face" src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
+                        {p.name1}
+                      </span>
+                      <span className={`home-board-player${p.favorite === p.p2 ? ' fav' : ''}`}>
+                        <img className="home-board-face" src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />
+                        {p.name2}
+                      </span>
+                    </div>
+                    <div className="home-board-call">
+                      <span className="home-board-pct">{Math.round(p.favProb * 100)}%</span>
+                      <span className="home-board-callsub">model backs {p.favName.split(' ').pop()}</span>
+                    </div>
+                    {upsetById.has(p.id) && (
+                      <div className="home-board-upsetwatch">
+                        <span className="home-board-upset-tag">🚨 Upset watch</span>
+                        <span className="home-board-upset-reason">{upsetById.get(p.id).reason}</span>
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </section>

@@ -8,6 +8,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { countryFlagUrl } from '../components/countryFlags';
+import { playerPhoto } from '../utils/playerPhotos';
+import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
 import './TrackRecord.css';
 
@@ -40,20 +42,32 @@ function parseScore(score) {
   }).filter(Boolean);
 }
 
-// Compact broadcast-style scoreboard for a completed match.
-function MiniScore({ wName, lName, wFlag, lFlag, sets }) {
+// Compact broadcast-style scoreboard for a completed match. Names link to
+// their player pages when tour/id are provided.
+function MiniScore({ wName, lName, wFlag, lFlag, wPhoto, lPhoto, wId, lId, tour, sets }) {
   const cell = (games, otherGames, tb) => (
     <>{games}{tb != null && games < otherGames && <sup className="ts-tb">{tb}</sup>}</>
   );
+  const nameCell = (photo, flag, name, id) => {
+    const inner = (
+      <>
+        {photo && <img className="ts-face" src={photo} alt="" loading="lazy" />}
+        {flag && <img src={flag} alt="" />}{name}
+      </>
+    );
+    return id && tour
+      ? <Link className="ts-player-link" to={`/player/${tour}/${id}`}>{inner}</Link>
+      : inner;
+  };
   return (
     <table className="track-scoreboard">
       <tbody>
         <tr className="ts-winner">
-          <td className="ts-name">{wFlag && <img src={wFlag} alt="" />}{wName}</td>
+          <td className="ts-name">{nameCell(wPhoto, wFlag, wName, wId)}</td>
           {sets.map((s, i) => <td key={i} className="ts-won">{cell(s.w, s.l, s.tb)}</td>)}
         </tr>
         <tr>
-          <td className="ts-name">{lFlag && <img src={lFlag} alt="" />}{lName}</td>
+          <td className="ts-name">{nameCell(lPhoto, lFlag, lName, lId)}</td>
           {sets.map((s, i) => <td key={i} className={s.l > s.w ? 'ts-won' : 'ts-lost'}>{cell(s.l, s.w, s.tb)}</td>)}
         </tr>
       </tbody>
@@ -304,18 +318,18 @@ export default function TrackRecord() {
                 )}
               </div>
               {forward.pending.map((p) => (
-                <div className="track-forward-row pending" key={p.id}>
+                <Link className="track-forward-row pending" to={`/match/${matchSlug(p)}`} key={p.id}>
                   <span className="track-forward-status">⏳ Upcoming</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Backing {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
-                </div>
+                </Link>
               ))}
               {forward.decided.slice(0, 5).map((p) => (
-                <div className={`track-forward-row ${p.correct ? 'hit' : 'miss'}`} key={p.id}>
+                <Link className={`track-forward-row ${p.correct ? 'hit' : 'miss'}`} to={`/match/${matchSlug(p)}`} key={p.id}>
                   <span className="track-forward-status">{p.correct ? '✓' : '✗'}</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Called {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
-                </div>
+                </Link>
               ))}
               {forward.pending.length > 0 && forward.decided.length === 0 && (
                 <div className="track-note" style={{ marginTop: '0.6rem' }}>
@@ -556,7 +570,15 @@ export default function TrackRecord() {
                         <span className="track-row-date">{new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                       </div>
                       <div className="track-row-matchup">
-                        <MiniScore wName={wName} lName={lName} wFlag={wFlag} lFlag={lFlag} sets={parseScore(m.score)} />
+                        <MiniScore
+                          wName={wName} lName={lName} wFlag={wFlag} lFlag={lFlag}
+                          wPhoto={playerPhoto(m.tour, winnerIsP1 ? m.p1 : m.p2)}
+                          lPhoto={playerPhoto(m.tour, winnerIsP1 ? m.p2 : m.p1)}
+                          wId={winnerIsP1 ? m.p1 : m.p2}
+                          lId={winnerIsP1 ? m.p2 : m.p1}
+                          tour={m.tour}
+                          sets={parseScore(m.score)}
+                        />
                       </div>
                       <div className="track-row-model">
                         <span className={`track-verdict ${m.smashCorrect ? 'hit' : 'miss'}`}>

@@ -298,3 +298,12 @@
   .verdict-faces { gap: 0.75rem; }
   .verdict-face-photo { width: 92px; height: 92px; }
 }
+
+/* The retellable one-liner at the top of the Why panel */
+.why-sentence {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.5;
+  margin-bottom: 0.35rem;
+}

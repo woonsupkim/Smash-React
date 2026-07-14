@@ -110,10 +110,17 @@ jobs:
       # file lock prevents committing it as a dependency); fonts-barlow gives
       # the cards the app's own condensed display face.
       - name: Generate shareable assets
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
         run: |
           sudo apt-get install -y --no-install-recommends fonts-barlow > /dev/null 2>&1 || true
           npm install --no-save sharp
           npm run build-share-assets
+
+      # Animated assets (title-odds race, countdown) - ffmpeg ships on the
+      # runner. Skips itself when there's nothing to animate.
+      - name: Generate motion assets
+        run: npm run build-motion-assets
 
       # The full run takes a while; if main moved in the meantime (a normal
       # push during a slam), a plain push is rejected as non-fast-forward.

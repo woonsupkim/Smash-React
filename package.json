@@ -55,7 +55,8 @@
     "build-predictions": "node data-pipeline/buildPredictions.js",
     "build-title-odds": "node data-pipeline/buildTitleOdds.js",
     "build-daily-scorecard": "node data-pipeline/buildDailyScorecard.js",
-    "build-share-assets": "node data-pipeline/buildShareAssets.js"
+    "build-share-assets": "node data-pipeline/buildShareAssets.js",
+    "build-motion-assets": "node data-pipeline/buildMotionAssets.js"
   },
   "eslintConfig": {
     "extends": [

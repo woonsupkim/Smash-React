@@ -120,3 +120,10 @@
   color: var(--text-2);
   margin: 1rem 0 0.6rem;
 }
+
+.admin-kit-item video {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-1);
+  display: block;
+}

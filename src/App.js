@@ -10,8 +10,12 @@ import Methodology from './pages/Methodology';
 import Changelog from './pages/Changelog';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import MatchPage from './pages/MatchPage';
+import PlayerPage from './pages/PlayerPage';
+import Today from './pages/Today';
 import { Terms, Privacy, Disclaimer } from './pages/Legal';
 import SiteFooter from './components/SiteFooter';
+import TabBar from './components/TabBar';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import ErrorBoundary from './components/ErrorBoundary';
@@ -28,14 +32,15 @@ import './App.css';
 
 initMonitoring();
 
+// Methodology lives in the footer (a visit-once trust page); Today is the
+// daily-habit page and earns the nav slot instead.
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
+  { to: '/today', label: 'Today', tourAgnostic: true },
   // No surface query: H2H itself defaults to the live/upcoming slam.
   { to: '/h2h', label: 'H2H' },
   { to: '/dream-brackets', label: 'Brackets' },
   { to: '/track-record', label: 'Track Record' },
-  { to: '/methodology', label: 'Methodology' },
-  // { to: '/about', label: 'About Us' }
 ];
 
 // Prefixes a men's-side path with /women, or strips it back off - the single
@@ -86,8 +91,8 @@ function NavBar() {
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
-            {NAV_ITEMS.map(({ to, label }) => {
-              const target = withTour(to, isWomen);
+            {NAV_ITEMS.map(({ to, label, tourAgnostic }) => {
+              const target = tourAgnostic ? to : withTour(to, isWomen);
               return (
                 <li className="nav-item" key={to}>
                   <NavLink
@@ -157,6 +162,11 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/disclaimer" element={<Disclaimer />} />
 
+          {/* Deep links: per-match, per-player, and the link-in-bio page */}
+          <Route path="/match/:slug" element={<MatchPage />} />
+          <Route path="/player/:tour/:id" element={<PlayerPage />} />
+          <Route path="/today" element={<Today />} />
+
           {/* Operations console - intentionally unlinked from the nav */}
           <Route path="/admin" element={<Admin />} />
 
@@ -165,6 +175,7 @@ function App() {
         </ErrorBoundary>
       </main>
       <SiteFooter />
+      <TabBar />
       </AuthProvider>
     </Router>
   );

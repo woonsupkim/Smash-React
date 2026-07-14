@@ -1,0 +1,37 @@
+/* src/components/TabBar.css */
+
+.tabbar { display: none; }
+
+@media (max-width: 768px) {
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1020;
+    background: rgba(10, 10, 10, 0.96);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+  }
+  .tabbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.3rem 0;
+    color: var(--text-3);
+    text-decoration: none;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tabbar-item.active { color: var(--accent-brand); }
+
+  /* keep page content and footer clear of the fixed bar */
+  .page-content { padding-bottom: 72px; }
+  .site-footer { padding-bottom: calc(1.5rem + 64px); }
+}

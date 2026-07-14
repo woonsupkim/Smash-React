@@ -219,9 +219,30 @@
 }
 .home-odds-row {
   display: grid;
-  grid-template-columns: 1.4rem minmax(9rem, 14rem) 1fr 3.2rem 2.6rem;
+  grid-template-columns: 1.4rem minmax(9rem, 14rem) 1fr 4rem 3.2rem 2.6rem;
   align-items: center;
   gap: 0.75rem;
+}
+.home-odds-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  background: var(--surface-2);
+}
+.home-odds-spark { display: block; opacity: 0.9; }
+.home-odds-champ-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  align-self: center;
+  border: 2px solid var(--accent-brand);
+  background: var(--surface-2);
 }
 .home-odds-rank {
   font-size: 0.75rem;
@@ -282,7 +303,7 @@
 
 @media (max-width: 576px) {
   .home-odds-row { grid-template-columns: 1.2rem minmax(7rem, 1fr) 3rem 2.4rem; }
-  .home-odds-track { display: none; }
+  .home-odds-track, .home-odds-spark { display: none; }
 }
 
 /* ── Live board ──────────────────────────────────────────────────────── */
@@ -353,12 +374,37 @@
   gap: 0.15rem;
 }
 .home-board-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-3);
   line-height: 1.3;
 }
 .home-board-player.fav { color: #fff; font-weight: 800; }
+.home-board-face {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.home-board-player.fav .home-board-face { box-shadow: 0 0 0 2px var(--accent-brand); }
+
+/* time-until-play chip */
+.home-board-when {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.home-board-when.soon { color: var(--accent-brand); }
+.home-board-when.past { color: var(--text-3); }
 .home-board-call {
   display: flex;
   align-items: baseline;
@@ -540,3 +586,9 @@
   .home-hero { padding-top: var(--page-pad-top); }
   .home-stats { grid-template-columns: 1fr; padding: 1.1rem 1.25rem; }
 }
+
+.home-odds-name.linked { text-decoration: none; display: flex; align-items: center; }
+.home-odds-name.linked:hover { color: var(--accent-brand); }
+
+.home-odds-champ-link { color: inherit; text-decoration: none; }
+.home-odds-champ-link:hover strong { color: var(--accent-brand); }

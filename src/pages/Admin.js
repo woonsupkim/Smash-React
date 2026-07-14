@@ -120,7 +120,13 @@ export default function Admin() {
               Regenerated with every data refresh (last: {formatDate(shareKit.generatedAt)}).
               Right-click any card to save it; the caption below each one is ready to paste.
             </p>
-            {[['daily', "Today's posts"], ['promo', 'Evergreen promos']].map(([cat, label]) => {
+            {[
+              ['daily', "Today's posts"],
+              ['wrap', 'Tournament wrap'],
+              ['weekly', 'Weekly recap'],
+              ['moments', 'Moments'],
+              ['promo', 'Evergreen promos'],
+            ].map(([cat, label]) => {
               const group = shareKit.assets.filter((a) => (a.category || 'daily') === cat);
               if (!group.length) return null;
               return (
@@ -132,7 +138,9 @@ export default function Admin() {
                       return (
                         <figure className="admin-kit-item" key={a.file}>
                           <a href={src} target="_blank" rel="noopener noreferrer">
-                            <img src={src} alt={a.caption} />
+                            {a.file.endsWith('.mp4')
+                              ? <video src={src} muted loop autoPlay playsInline />
+                              : <img src={src} alt={a.caption} />}
                           </a>
                           <figcaption>
                             <span className={`admin-kit-type t-${a.type}`}>{a.type}</span>

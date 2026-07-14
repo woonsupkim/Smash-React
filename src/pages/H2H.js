@@ -456,6 +456,27 @@ export default function H2H({ tour = 'atp' }) {
     );
   }, [probs, engine, playerA, playerB, tour, config.surfaceKey]);
 
+  // One retellable sentence: which signals back the pick and which dissent.
+  const whySentence = useMemo(() => {
+    if (!probs || engineProbA == null || !playerA || !playerB) return null;
+    const favIsA = engineProbA >= 0.5;
+    const agreesWithFav = (p) => (p == null ? null : (p >= 0.5) === favIsA);
+    const comps = [
+      { name: 'the point-by-point sim', agrees: agreesWithFav(probs.sim) },
+      { name: `recent ${config.surfaceLabel.toLowerCase()} form`, agrees: agreesWithFav(probs.elo) },
+      { name: 'the world rankings', agrees: agreesWithFav(probs.rank) },
+    ].filter((c) => c.agrees != null);
+    if (!comps.length) return null;
+    const fav = (favIsA ? playerA : playerB).name.split(' ').pop();
+    const list = (arr) => (arr.length === 1 ? arr[0] : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`);
+    const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+    const agree = comps.filter((c) => c.agrees).map((c) => c.name);
+    const dissent = comps.filter((c) => !c.agrees).map((c) => c.name);
+    if (!dissent.length) return `Everything points the same way: ${list(agree)} all back ${fav}.`;
+    if (!agree.length) return `A genuine split decision - no single signal carries ${fav} alone.`;
+    return `${cap(list(agree))} back${agree.length === 1 ? 's' : ''} ${fav}; ${list(dissent)} lean${dissent.length === 1 ? 's' : ''} the other way.`;
+  }, [probs, engineProbA, playerA, playerB, config.surfaceLabel]);
+
   // ── Verdict values (Smart Blend is "the model") ─────────────────────────
   const bothPicked = !!(playerA && playerB);
   const probA = engineProbA; // smash P(A wins), or null until the batch lands
@@ -736,6 +757,7 @@ export default function H2H({ tour = 'atp' }) {
               {attribution && favPct != null && (
                 <section className="studio-card">
                   <div className="studio-card-title">Why {favPlayer.name.split(' ').pop()}</div>
+                  {whySentence && <p className="why-sentence">{whySentence}</p>}
                   <p className="studio-card-sub">
                     {engine === 'smash'
                       ? 'What pushes the Smart Blend toward each player, in probability points.'
