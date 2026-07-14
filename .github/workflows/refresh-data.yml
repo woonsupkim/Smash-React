@@ -63,6 +63,23 @@ jobs:
       # conflict - same issue hit installing locally.
       - run: npm ci --legacy-peer-deps
 
+      # Persist the raw match-history caches (both tours) across runs.
+      # data-pipeline/raw is gitignored - too big and churny for the repo -
+      # so without this every run starts cold and re-downloads ~1,000 stat
+      # pages from the API (the old 1.5-hour fetch phase). With it, the
+      # incremental fetch pulls only what's new (1-2 pages per player) and
+      # player history ACCUMULATES across runs instead of being rebuilt from
+      # each player's newest-300 window. Cache keys are immutable, so each
+      # run restores the most recent cache (restore-keys prefix match) and
+      # saves an updated one under its own run id when the job succeeds.
+      - name: Restore raw match-history cache
+        uses: actions/cache@v4
+        with:
+          path: data-pipeline/raw
+          key: raw-matches-${{ github.run_id }}
+          restore-keys: |
+            raw-matches-
+
       - name: Refresh stats (fetch + recompute + rebuild CSVs)
         run: npm run refresh-stats
         env:
