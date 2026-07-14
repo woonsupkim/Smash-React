@@ -140,6 +140,32 @@ function sequentialCalibLogLoss(oof) {
   return { logLoss: logLoss(scored), accuracy: accuracy(scored) };
 }
 
+// L2-regularized logistic regression WITHOUT an intercept: which side is
+// "p1" is arbitrary, so the model must be antisymmetric (every feature must
+// flip sign when the players swap), and a zero intercept guarantees
+// swap-consistency. Plain gradient descent - the feature count is tiny.
+function fitLogistic(X, y, { lambda = 1, iters = 400, lr = 0.5 } = {}) {
+  const n = X.length, k = X[0].length;
+  let w = new Array(k).fill(0);
+  for (let it = 0; it < iters; it++) {
+    const g = new Array(k).fill(0);
+    for (let i = 0; i < n; i++) {
+      let z = 0;
+      for (let j = 0; j < k; j++) z += w[j] * X[i][j];
+      const e = 1 / (1 + Math.exp(-z)) - y[i];
+      for (let j = 0; j < k; j++) g[j] += e * X[i][j];
+    }
+    for (let j = 0; j < k; j++) w[j] -= lr * (g[j] / n + (lambda / n) * w[j]);
+  }
+  return w;
+}
+
+function predictLogistic(w, x) {
+  let z = 0;
+  for (let j = 0; j < w.length; j++) z += w[j] * x[j];
+  return 1 / (1 + Math.exp(-z));
+}
+
 // Bookmaker-implied probability with the vig removed.
 function marketProb(o1, o2) {
   if (!(o1 > 1) || !(o2 > 1)) return null;
@@ -151,4 +177,5 @@ module.exports = {
   clampP, logit, sigmoid, logLoss, accuracy,
   weightGrid, fitWeights, applyCalib, fitCalib,
   foldKey, walkForwardOOF, sequentialCalibLogLoss, marketProb,
+  fitLogistic, predictLogistic,
 };

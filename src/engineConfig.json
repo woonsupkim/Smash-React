@@ -3,7 +3,7 @@
   "_calibrationComment": "One-parameter Platt recalibration applied to the SMASH blend only: p' = sigmoid(a * logit(p)). The intercept is pinned at 0 by symmetry (which side is p1 is arbitrary), so a pick can never flip, only its stated confidence moves. a is refit per tour by tuneWeights.js on walk-forward out-of-fold predictions at every retune; a < 1 compresses overconfident tails. Replaced the hand-fit knee/factor tail shrink (validated equal-or-better in data-pipeline/experiments.js).",
   "calibration": {
     "atp": {
-      "a": 1
+      "a": 1.02
     },
     "wta": {
       "a": 0.7
@@ -51,5 +51,5 @@
       }
     }
   },
-  "tunedAt": "2026-07-14T07:44:43.530Z"
+  "tunedAt": "2026-07-14T08:47:49.605Z"
 }

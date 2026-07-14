@@ -16,6 +16,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
 const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
+const { matchProb, matchDetail } = require('./lib/analyticProb');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
 // Per-tour Platt recalibration of the blend (mirrors src/engines.js
@@ -24,71 +25,9 @@ function calibrate(p, tour) {
   return applyCalib(p, ENGINE.calibration && ENGINE.calibration[tour] && ENGINE.calibration[tour].a);
 }
 
-const SIMS = 1000;
-
-// ── Simulation core (mirrors src/simulator.js) ────────────────────────────
-function simPoint(srv, rtn) {
-  if (Math.random() < srv[0]) {
-    if (Math.random() < (srv[5] || 0)) return 0;
-    if (Math.random() < rtn[2]) return Math.random() < srv[4] ? 0 : 1;
-    return 0;
-  }
-  if (Math.random() < srv[1]) {
-    if (Math.random() < rtn[3]) return Math.random() < srv[4] ? 0 : 1;
-    return 0;
-  }
-  return 1;
-}
-function simGame(s, r) {
-  const p = [0, 0];
-  while (true) { p[simPoint(s, r)]++; if ((p[0] >= 4 || p[1] >= 4) && Math.abs(p[0] - p[1]) >= 2) return p[0] > p[1] ? 0 : 1; }
-}
-function simTiebreak(a, b, srv) {
-  const s = [0, 0]; let pt = 0;
-  while (true) {
-    const server = pt === 0 ? srv : (Math.floor((pt - 1) / 2) % 2 === 0 ? 1 - srv : srv);
-    const w = server === 0 ? simPoint(a, b) : simPoint(b, a);
-    if (server === 0) { if (w === 0) s[0]++; else s[1]++; } else { if (w === 0) s[1]++; else s[0]++; }
-    pt++;
-    if ((s[0] >= 7 || s[1] >= 7) && Math.abs(s[0] - s[1]) >= 2) return s[0] > s[1] ? 0 : 1;
-  }
-}
-function simSet(a, b) {
-  const g = [0, 0]; let server = Math.random() < 0.5 ? 0 : 1;
-  while (true) {
-    const w = simGame(server === 0 ? a : b, server === 0 ? b : a);
-    if (w === 0) { if (server === 0) g[0]++; else g[1]++; } else { if (server === 0) g[1]++; else g[0]++; }
-    server = 1 - server;
-    if ((g[0] >= 6 || g[1] >= 6) && Math.abs(g[0] - g[1]) >= 2) break;
-    if (g[0] === 6 && g[1] === 6) { if (simTiebreak(a, b, server) === 0) g[0]++; else g[1]++; break; }
-  }
-  return g[0] > g[1] ? 0 : 1;
-}
-function simMatch(a, b, bestOf) {
-  const target = Math.ceil(bestOf / 2); const won = [0, 0];
-  while (Math.max(won[0], won[1]) < target) won[simSet(a, b)]++;
-  return won[0] > won[1] ? 0 : 1;
-}
-function winProb(a, b, n, bestOf) { let w0 = 0; for (let i = 0; i < n; i++) if (simMatch(a, b, bestOf) === 0) w0++; return w0 / n; }
-
-// Like simMatch but returns [setsP1, setsP2] so we can read off the scoreline.
-function simMatchSets(a, b, bestOf) {
-  const target = Math.ceil(bestOf / 2); const won = [0, 0];
-  while (Math.max(won[0], won[1]) < target) won[simSet(a, b)]++;
-  return won;
-}
-// One pass over n sims: P(p1 wins) plus, for each winner, the distribution of
-// how many sets the LOSER took - so we can report the most likely scoreline.
-function simSummary(a, b, n, bestOf) {
-  const target = Math.ceil(bestOf / 2);
-  let w0 = 0;
-  const lossDist = [Array(target).fill(0), Array(target).fill(0)]; // [p1 won][p2's sets], [p2 won][p1's sets]
-  for (let i = 0; i < n; i++) {
-    const w = simMatchSets(a, b, bestOf);
-    if (w[0] > w[1]) { w0++; lossDist[0][w[1]]++; } else { lossDist[1][w[0]]++; }
-  }
-  return { probP1: w0 / n, target, lossDist };
-}
+// Match probabilities and set-score distributions come from the closed-form
+// model in lib/analyticProb.js (the exact expectation of the point-by-point
+// simulation - no Monte Carlo noise, fully deterministic).
 
 // ── Stats + surface helpers ───────────────────────────────────────────────
 const SURFACE_CSV = { hard: 'smash_us.csv', clay: 'smash_fr.csv', grass: 'smash_wb.csv' };
@@ -174,8 +113,9 @@ function evaluate(ctx, rec) {
   const { season, upset, preElo, bestOf, tour } = ctx;
   const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB } = rec;
 
-  // 1. season model (one pass also yields the set-score distribution)
-  const sum = simSummary(probsFromRow(rowA), probsFromRow(rowB), SIMS, bestOf);
+  // 1. season model - closed-form match probability + exact set-score
+  // distribution (no Monte Carlo noise; see lib/analyticProb.js)
+  const sum = matchDetail(probsFromRow(rowA), probsFromRow(rowB), bestOf);
   const probP1 = sum.probP1;
   const favorite = probP1 >= 0.5 ? p1 : p2;
   const favProb = probP1 >= 0.5 ? probP1 : 1 - probP1;
@@ -183,7 +123,7 @@ function evaluate(ctx, rec) {
   // 2. upset model
   const upA = upset[surface].get(p1) || rowA;
   const upB = upset[surface].get(p2) || rowB;
-  const upsetProbP1 = winProb(probsFromRow(upA), probsFromRow(upB), SIMS, bestOf);
+  const upsetProbP1 = matchProb(probsFromRow(upA), probsFromRow(upB), bestOf);
   const upsetFavorite = upsetProbP1 >= 0.5 ? p1 : p2;
 
   // 3. rank baseline
@@ -256,7 +196,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1' });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {
@@ -316,7 +256,7 @@ for (const tour of ['atp', 'wta']) {
   }
 }
 
-fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: SIMS, modelKey, logLoss: logLossMeta, matches: all }));
+fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: 'analytic', modelKey, logLoss: logLossMeta, matches: all }));
 console.log(`Wrote ${all.length} matches to ${outPath}`);
 
 // ── Engine accuracy summary (per tour x surface, + "all") ─────────────────

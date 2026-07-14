@@ -9,6 +9,7 @@ import { toast } from '../components/ui/Toast';
 import AppModal from '../components/ui/AppModal';
 import Chip from '../components/ui/Chip';
 import { simulateBatch, simulateMatchStepwise, seedFromString } from '../simulator';
+import { matchProb } from '../analyticProb';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
@@ -441,10 +442,17 @@ export default function H2H({ tour = 'atp' }) {
     if (!playerA || !playerB || !batchResult) return null;
     const total = batchResult.matchWins[0] + batchResult.matchWins[1];
     if (!total) return null;
-    const sim = batchResult.matchWins[0] / total;
+    // Engine probability comes from the CLOSED-FORM match model on the
+    // current (slider-adjusted) stats - the exact expectation the batch
+    // converges to, and digit-identical to the pipeline's locked number.
+    // The Monte Carlo batch still powers the charts and scorelines.
+    const pA = STAT_KEYS.map(([k]) => (statsA[k] || 0) / 100);
+    const pB = STAT_KEYS.map(([k]) => (statsB[k] || 0) / 100);
+    const sim = matchProb(pA, pB, bestOf);
     const elo = eloData ? eloProb(eloData[playerA.id], eloData[playerB.id], config.surfaceKey) : null;
     return engineProbs({ sim, elo, rankA: playerA.us_seed, rankB: playerB.us_seed }, tour, config.surfaceKey);
-  }, [playerA, playerB, batchResult, eloData, tour, config.surfaceKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerA, playerB, batchResult, statsA, statsB, bestOf, eloData, tour, config.surfaceKey]);
   // Headline P(A wins) from the best engine for this surface. The batch already
   // reflects hot-form stats when that engine is 'upset' (the seeding effect
   // swaps them in), so pickEngineProb reads the right point-sim number.

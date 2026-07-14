@@ -601,12 +601,16 @@ ${c.close}`;
 
 async function howItWorks(sc, file1, file2, file3) {
   const t = theme('brand');
+  // Width-aware headline size: long lines shrink to stay inside the frame
+  // (0.62em/char covers both Barlow Condensed in CI and the wider DejaVu
+  // local fallback), short lines keep the full 128px punch.
+  const fit = (s, max = 128) => Math.min(max, Math.floor((SQ - 130) / (String(s).length * 0.62)));
   const slide = (num, ghost, headline1, headline2, sub, extra = '') => {
     const c = chrome(SQ, SQ, t, { ghost, ghostY: 700 });
     return `${c.open}
   ${eyebrow(SQ, 130, `how it works · ${num} of 3`, LIME)}
-  <text x="${SQ / 2}" y="380" text-anchor="middle" font-family="${D}" font-size="128" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
-  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="128" font-weight="800" fill="${LIME}">${esc(headline2)}</text>
+  <text x="${SQ / 2}" y="380" text-anchor="middle" font-family="${D}" font-size="${fit(headline1)}" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
+  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="${fit(headline2)}" font-weight="800" fill="${LIME}">${esc(headline2)}</text>
   <text x="${SQ / 2}" y="618" text-anchor="middle" font-family="${U}" font-size="32" fill="rgba(255,255,255,0.8)">${esc(sub)}</text>
   ${extra}
 ${c.close}`;

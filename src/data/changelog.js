@@ -6,9 +6,21 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '3.0';
+export const MODEL_VERSION = '3.1';
 
 export const CHANGELOG = [
+  {
+    version: '3.1',
+    date: '2026-07-14',
+    type: 'model',
+    title: 'Exact math replaces simulation noise, plus what-if scenarios',
+    notes: [
+      'Match probabilities are now computed exactly (closed-form point-game-set-match math) instead of estimated from 1,000 simulated draws. Same model, zero noise: the roughly 1.5% random wobble that could flip a coin-flip pick is gone, and the locked number, the live H2H number, and the title odds all agree to the digit by construction.',
+      'Validated head-to-head against 200,000-draw simulations and on 5,400+ held-out matches (walk-forward): the exact version is equal or better everywhere it was measured.',
+      'New what-if scenarios in the H2H studio: court speed, off day, locked in, and playing hurt presets that shift the underlying stats in principled ways, fully reversible.',
+      'Also trialed: a machine-learned stacker over all signals plus form and head-to-head features. It gained half a point of accuracy on ATP and nothing on WTA, below our bar for shipping model complexity, so it stays in the lab. The honest market check: when our picks disagree with the bookmakers\' favorite, we win 38% of those on ATP and 54% on WTA.',
+    ],
+  },
   {
     version: '3.0',
     date: '2026-07-14',

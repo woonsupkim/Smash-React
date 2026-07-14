@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { winProb, seedFromString } = require('./simCore');
+const { matchProb } = require('./lib/analyticProb');
 const { predElo, expected } = require('./eloCore');
 const { applyCalib } = require('./lib/evalCore');
 const { normName, normSurface, isGrandSlam, surfaceFromEventName, matchRoster } = require('./lib/espnParse');
@@ -31,7 +31,6 @@ const ACC = (() => {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return {}; }
 })();
 
-const SIMS = 1000;
 const LOOKAHEAD_DAYS = 10;
 const BROWSER_UA = 'Mozilla/5.0';
 
@@ -103,11 +102,10 @@ function predict(ctx, a, b, surface) {
     if (uB) pB = probsFromRow(uB);
   }
 
-  // Seed the point sim from the exact same matchup key the H2H page uses, so
-  // the locked probability shown on Home equals the live H2H number to the digit.
-  const seedKey = [a.id, b.id].sort().join('_') + '|' + surface + '|' + ctx.tour
-    + '|' + pA.map((v) => Math.round(v * 1000)).join(',') + '|' + pB.map((v) => Math.round(v * 1000)).join(',');
-  const simP = winProb(pA, pB, SIMS, ctx.bestOf, seedFromString(seedKey));
+  // Closed-form match probability - deterministic by construction, so the
+  // locked number equals the live H2H number to the digit with no seeding
+  // gymnastics (the H2H engine probability computes the same expression).
+  const simP = matchProb(pA, pB, ctx.bestOf);
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
   let eloP = 0.5;
   if (eA && eB) eloP = expected(predElo(eA, surface), predElo(eB, surface));

@@ -38,6 +38,35 @@ const STAT_SECTIONS = [
   { label: 'Rally', keys: ['p5'] },
 ];
 
+// What-if scenario presets: named, plausible stat shifts so a fan can ask
+// "what if Sinner has an off day?" without knowing which of six sliders to
+// drag. Deltas are in UI percentage points; p6x scales the ace rate.
+const SCENARIO_PRESETS = [
+  { key: 'offday', label: 'Off day', title: 'Serve deserts them: fewer first serves in, fewer aces, softer rallies', delta: { p1: -4, p2: -3, p5: -3 }, p6x: 0.7 },
+  { key: 'locked', label: 'Locked in', title: 'Peak level: serve lands, rallies bite', delta: { p1: 4, p2: 3, p5: 3 }, p6x: 1.3 },
+  { key: 'hurt', label: 'Playing hurt', title: 'Movement compromised: returns and rallies suffer', delta: { p3: -3, p4: -3, p5: -6 } },
+];
+
+const clampPct = (v) => Math.max(0, Math.min(100, v));
+const scenariosInactive = (sc) => sc.speed === 0 && !Object.values(sc.a).some(Boolean) && !Object.values(sc.b).some(Boolean);
+
+// Effective stats = presets + court speed applied to the real-stats baseline.
+// Court speed: fast courts reward the serve (more aces, tougher returns),
+// slow courts do the reverse, for BOTH players.
+function applyScenarios(sc, base, col) {
+  const s = { ...base };
+  for (const p of SCENARIO_PRESETS) {
+    if (!sc[col][p.key]) continue;
+    for (const [k, d] of Object.entries(p.delta || {})) s[k] = (s[k] || 0) + d;
+    if (p.p6x) s.p6 = (s.p6 || 0) * p.p6x;
+  }
+  s.p6 = (s.p6 || 0) * Math.pow(1.12, sc.speed);
+  s.p3 = (s.p3 || 0) - sc.speed * 1.2;
+  s.p4 = (s.p4 || 0) - sc.speed * 1.2;
+  for (const k of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']) s[k] = clampPct(s[k] || 0);
+  return s;
+}
+
 /**
  * Detailed slider/chart panel, collapsed by default under the MatchHero.
  * All simulation logic/state lives in the page (H2H.js, DreamBrackets.js)
@@ -85,6 +114,36 @@ export default function AdvancedSimPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [slidersOpen, setSlidersOpen] = useState(false);
   const resultsRef = useRef(null);
+
+  // ── What-if scenarios ────────────────────────────────────────────────────
+  // The baseline (real stats) tracks page-driven stat updates while no
+  // scenario is active, then freezes so toggles stay exactly reversible.
+  const [scenarios, setScenarios] = useState({ speed: 0, a: {}, b: {} });
+  const baselineRef = useRef({ a: {}, b: {} });
+  useEffect(() => {
+    if (scenariosInactive(scenarios)) baselineRef.current = { a: { ...statsA }, b: { ...statsB } };
+  }, [statsA, statsB, scenarios]);
+  useEffect(() => {
+    // New matchup: clear scenario state (the baseline effect above resnaps).
+    setScenarios({ speed: 0, a: {}, b: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerA?.id, playerB?.id]);
+
+  const runScenarios = (next) => {
+    setScenarios(next);
+    setStatsA(applyScenarios(next, baselineRef.current.a, 'a'));
+    setStatsB(applyScenarios(next, baselineRef.current.b, 'b'));
+  };
+  const toggleScenario = (col, key) => {
+    runScenarios({ ...scenarios, [col]: { ...scenarios[col], [key]: !scenarios[col][key] } });
+  };
+  const setCourtSpeed = (v) => runScenarios({ ...scenarios, speed: v });
+  const resetScenarios = () => {
+    setScenarios({ speed: 0, a: {}, b: {} });
+    setStatsA({ ...baselineRef.current.a });
+    setStatsB({ ...baselineRef.current.b });
+  };
+  const anyScenario = !scenariosInactive(scenarios);
 
   const handleShare = useCallback(async () => {
     if (!batchResult) return;
@@ -494,6 +553,53 @@ export default function AdvancedSimPanel({
               {slidersOpen ? '▾' : '▸'} Adjust player stats
               <span className="adv-sliders-hint">drag to explore what-ifs</span>
             </button>
+            {slidersOpen && (
+              <div className="sim-scenarios">
+                <div className="sim-section-label">What-if scenarios</div>
+                <div className="sim-speed-row">
+                  <span className="sim-speed-cap">Slow court</span>
+                  <Form.Range
+                    min={-3} max={3} step={1}
+                    value={scenarios.speed}
+                    onChange={(e) => setCourtSpeed(+e.target.value)}
+                    disabled={isRunning || isWatching}
+                    aria-label="Court speed"
+                  />
+                  <span className="sim-speed-cap">Fast court</span>
+                  <span className="sim-speed-val">
+                    {scenarios.speed === 0 ? 'neutral' : `${scenarios.speed > 0 ? 'fast' : 'slow'} ${Math.abs(scenarios.speed)}`}
+                  </span>
+                </div>
+                {[['a', playerA], ['b', playerB]].map(([col, player]) => (
+                  <div className="sim-scenario-row" key={col}>
+                    <span className="sim-scenario-name">{player.name.split(' ').pop()}</span>
+                    {SCENARIO_PRESETS.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        title={p.title}
+                        className={`sim-scenario-chip${scenarios[col][p.key] ? ' on' : ''}`}
+                        onClick={() => toggleScenario(col, p.key)}
+                        disabled={isRunning || isWatching}
+                        aria-pressed={!!scenarios[col][p.key]}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                <div className="sim-scenario-foot">
+                  <span className="sim-scenario-hint">
+                    Presets shift the sliders below; run the simulation to see the effect.
+                  </span>
+                  {anyScenario && (
+                    <button type="button" className="sim-scenario-reset" onClick={resetScenarios} disabled={isRunning || isWatching}>
+                      Reset to real stats
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {slidersOpen && (
               <div className="adv-sliders-row">
                 {[[statsA, setStatsA], [statsB, setStatsB]].map(([stats, setStats], col) => (

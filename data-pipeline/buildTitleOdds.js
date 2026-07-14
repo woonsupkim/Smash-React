@@ -14,14 +14,13 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { winProb, seedFromString } = require('./simCore');
+const { matchProb } = require('./lib/analyticProb');
 const { predElo, expected } = require('./eloCore');
 const { normName, matchRoster } = require('./lib/espnParse');
 const { SLAMS, findSlamEvent, extractDraw } = require('./lib/espnDraw');
 const ENGINE = require('../src/engineConfig.json');
 
 const N_SIM = 2000;
-const PAIR_SIMS = 500;
 
 const SURFACE_CSV = { hard: 'smash_us.csv', clay: 'smash_fr.csv', grass: 'smash_wb.csv' };
 
@@ -68,8 +67,7 @@ function pairProb(ctx, a, b, surface) {
   if (!rowA) return 0.2;
   if (!rowB) return 0.8;
 
-  const seedKey = [a.id, b.id].sort().join('_') + '|title|' + surface + '|' + ctx.tour;
-  const simP = winProb(probsFromRow(rowA), probsFromRow(rowB), PAIR_SIMS, ctx.bestOf, seedFromString(seedKey));
+  const simP = matchProb(probsFromRow(rowA), probsFromRow(rowB), ctx.bestOf);
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
   const eloP = eA && eB ? expected(predElo(eA, surface), predElo(eB, surface)) : simP;
   const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;

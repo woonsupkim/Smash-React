@@ -24,6 +24,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
 const { buildTimeline, predElo, expected, setEloParams, parseSets } = require('./eloCore');
+const { matchProb } = require('./lib/analyticProb');
 const evalCore = require('./lib/evalCore');
 const ENGINE = require('../src/engineConfig.json');
 
@@ -171,6 +172,40 @@ function precompute(tour) {
     return { rest, sets };
   }
 
+  // Recent form: win rate over the player's last 10 completed matches
+  // strictly before the case date.
+  function formOf(ourId, caseM) {
+    const asOf = new Date(caseM.date);
+    const prior = (bundle.files.get(ourId) || [])
+      .filter((m) => m.id !== caseM.id && m.result_type === 'completed' && m.date && new Date(m.date) < asOf)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 10);
+    if (prior.length < 4) return null;
+    const apiId = String(bundle.idMap[ourId]);
+    const w = prior.filter((m) => String(m.match_winner) === apiId).length;
+    return w / prior.length;
+  }
+
+  // Prior head-to-head between the two players, strictly before the case.
+  function h2hOf(caseM) {
+    const asOf = new Date(caseM.date);
+    const p1Api = String(caseM.player1Id), p2Api = String(caseM.player2Id);
+    let w1 = 0, n = 0;
+    const seen = new Set();
+    for (const key of [bundle.apiToOur.get(p1Api), bundle.apiToOur.get(p2Api)]) {
+      for (const m of bundle.files.get(key) || []) {
+        if (m.result_type !== 'completed' || !m.date || seen.has(String(m.id)) || m.id === caseM.id) continue;
+        if (new Date(m.date) >= asOf) continue;
+        const a = String(m.player1Id), b = String(m.player2Id);
+        if (!((a === p1Api && b === p2Api) || (a === p2Api && b === p1Api))) continue;
+        seen.add(String(m.id));
+        n++;
+        if (String(m.match_winner) === p1Api) w1++;
+      }
+    }
+    return { w1, n };
+  }
+
   const out = [];
   let done = 0;
   for (const c of cases) {
@@ -181,14 +216,17 @@ function precompute(tour) {
     done++;
     if (done % 500 === 0) console.log(`  ${done}/${cases.length}…`);
 
+    const bestOf = Number(m.best_of) || (tour === 'wta' ? 3 : 5);
     const sim = {};
     let ok = true;
+    let ana = null;
     for (const cshrink of SHRINK_VARIANTS) {
       const pa = deriveProbabilities(aggA, tourAvgs[surface], 200, cshrink);
       const pb = deriveProbabilities(aggB, tourAvgs[surface], 200, cshrink);
       if (!pa || !pb) { ok = false; break; }
       const { matchWins } = simulateBatch(pa, pb, SIMS);
       sim[`c${cshrink}`] = +(matchWins[0] / SIMS).toFixed(4);
+      if (cshrink === 0) ana = +matchProb(pa, pb, bestOf).toFixed(4);
     }
     if (!ok) continue;
 
@@ -197,13 +235,16 @@ function precompute(tour) {
     const rankA = bundle.ranks[surface].get(p1) || 999;
     const rankB = bundle.ranks[surface].get(p2) || 999;
     const f1 = fatigueOf(p1, m), f2 = fatigueOf(p2, m);
+    const h2h = h2hOf(m);
     out.push({
       id: String(m.id), date: m.date, surface, p1Won,
-      sim,
+      sim, ana,
       rankProbP1: +(1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale))).toFixed(4),
       market: evalCore.marketProb(Number(m.odd1), Number(m.odd2)),
-      setsW, setsL, bestOf: Number(m.best_of) || null,
+      setsW, setsL, bestOf,
       rest1: f1.rest, rest2: f2.rest, sets1: f1.sets, sets2: f2.sets,
+      form1: formOf(p1, m), form2: formOf(p2, m),
+      h2hW1: h2h.w1, h2hN: h2h.n,
     });
   }
   if (!fs.existsSync(path.join(__dirname, 'output'))) fs.mkdirSync(path.join(__dirname, 'output'), { recursive: true });
@@ -353,6 +394,88 @@ function cmdMarket() {
   }
 }
 
+// ── Analytic vs Monte Carlo sim component ─────────────────────────────────
+function cmdAna() {
+  for (const tour of ['atp', 'wta']) {
+    console.log(`\n══ ${tour.toUpperCase()} - Monte Carlo (400 sims) vs closed-form sim ══`);
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true }).filter((r) => r.ana != null);
+    for (const [label, key] of [['MC-400', null], ['analytic', 'ana']]) {
+      const prepped = rows.map((r) => ({ ...r, probP1: key ? r[key] : r.sim.c0 }));
+      const oof = evalCore.walkForwardOOF(prepped);
+      const simAlone = evalCore.logLoss(oof.map((r) => ({ p: r.probP1, won: r.won })));
+      const simAcc = evalCore.accuracy(oof.map((r) => ({ p: r.probP1, won: r.won })));
+      console.log(`${label.padEnd(10)} | blend ${evalCore.logLoss(oof).toFixed(4)} (acc ${(evalCore.accuracy(oof) * 100).toFixed(1)}%) | sim alone ${simAlone.toFixed(4)} (acc ${(simAcc * 100).toFixed(1)}%)`);
+    }
+  }
+}
+
+// ── Regularized logistic stacker over component logits + features ─────────
+const clamp3 = (x) => Math.max(-3, Math.min(3, x));
+function stackFeatures(r) {
+  const lA = clamp3(evalCore.logit(r.ana != null ? r.ana : r.sim.c0));
+  const lE = clamp3(evalCore.logit(r.eloProbP1));
+  const lR = clamp3(evalCore.logit(r.rankProbP1));
+  const form = (r.form1 != null && r.form2 != null) ? (r.form1 - r.form2) : 0;
+  // Prior head-to-head lean, damped by sample size (4+ meetings = full).
+  const h2h = r.h2hN ? ((r.h2hW1 / r.h2hN) - 0.5) * Math.min(1, r.h2hN / 4) : 0;
+  const clay = r.surface === 'clay' ? 1 : 0;
+  const grass = r.surface === 'grass' ? 1 : 0;
+  // Surface interactions on the sim logit let clay/grass trust the point
+  // sim differently without breaking swap-antisymmetry.
+  return [lA, lE, lR, form, h2h, clay * lA, grass * lA];
+}
+
+function cmdStack() {
+  for (const tour of ['atp', 'wta']) {
+    console.log(`\n══ ${tour.toUpperCase()} - logistic stacker (walk-forward) ══`);
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true }).filter((r) => r.ana != null);
+
+    // Baseline: the current 3-weight blend, refit per fold, on the analytic sim.
+    const blendOOF = evalCore.walkForwardOOF(rows.map((r) => ({ ...r, probP1: r.ana })));
+    console.log(`blend (3 weights, analytic sim)     | acc ${(evalCore.accuracy(blendOOF) * 100).toFixed(1)}% | LL ${evalCore.logLoss(blendOOF).toFixed(4)} | n=${blendOOF.length}`);
+
+    for (const lambda of [0.3, 1, 3, 10]) {
+      // Walk-forward by quarter, same protocol as walkForwardOOF.
+      const sorted = [...rows].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const folds = new Map();
+      for (const r of sorted) {
+        const k = evalCore.foldKey(r.date);
+        if (!folds.has(k)) folds.set(k, []);
+        folds.get(k).push(r);
+      }
+      const train = [];
+      const oof = [];
+      for (const [k, test] of folds) {
+        if (train.length >= 150) {
+          const w = evalCore.fitLogistic(train.map(stackFeatures), train.map((r) => (r.p1Won ? 1 : 0)), { lambda });
+          for (const r of test) oof.push({ ...r, p: evalCore.predictLogistic(w, stackFeatures(r)), won: r.p1Won ? 1 : 0, fold: k });
+        }
+        train.push(...test);
+      }
+      const bySurf = ['hard', 'clay', 'grass'].map((s) => {
+        const list = oof.filter((r) => r.surface === s);
+        return `${s} ${(evalCore.accuracy(list) * 100).toFixed(1)}%`;
+      }).join(' · ');
+      console.log(`stacker lambda=${String(lambda).padEnd(4)}                | acc ${(evalCore.accuracy(oof) * 100).toFixed(1)}% | LL ${evalCore.logLoss(oof).toFixed(4)} | ${bySurf}`);
+
+      // Head-to-head with the market on the priced subset.
+      const priced = oof.filter((r) => r.market != null);
+      if (lambda === 1 && priced.length) {
+        const usAcc = evalCore.accuracy(priced);
+        const mkAcc = evalCore.accuracy(priced.map((r) => ({ p: r.market, won: r.won })));
+        const usLL = evalCore.logLoss(priced.map((r) => ({ p: r.p, won: r.won })));
+        const mkLL = evalCore.logLoss(priced.map((r) => ({ p: r.market, won: r.won })));
+        const agree = priced.filter((r) => (r.p >= 0.5) === (r.market >= 0.5)).length;
+        const disagrees = priced.filter((r) => (r.p >= 0.5) !== (r.market >= 0.5));
+        const disWins = disagrees.filter((r) => (r.p >= 0.5) === !!r.won).length;
+        console.log(`  vs market (n=${priced.length}): us ${(usAcc * 100).toFixed(1)}% / ${usLL.toFixed(4)} | market ${(mkAcc * 100).toFixed(1)}% / ${mkLL.toFixed(4)} | agree ${(100 * agree / priced.length).toFixed(0)}% | when we disagree we win ${disWins}/${disagrees.length}`);
+      }
+    }
+  }
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -362,4 +485,6 @@ else if (cmd === 'shrink') cmdShrink();
 else if (cmd === 'calib') cmdCalib();
 else if (cmd === 'fatigue') cmdFatigue();
 else if (cmd === 'market') cmdMarket();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market');
+else if (cmd === 'ana') cmdAna();
+else if (cmd === 'stack') cmdStack();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack');
