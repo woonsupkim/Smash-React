@@ -1,62 +1,14 @@
 {
-  "generatedAt": "2026-07-14T08:30:52.447Z",
-  "seasonN": 2372,
-  "thread": [
-    "Today at the Wimbledon: 2 calls, every one locked before play. Season so far: 1,591 of 2,372 winners called (67%). Picks below.",
-    "1/2 Karolina Muchova over Linda Noskova at 56% on grass. /match/linda-noskova-vs-karolina-muchova-177707",
-    "2/2 Jannik Sinner over Alexander Zverev at 53% on grass. /match/alexander-zverev-vs-jannik-sinner-177491",
-    "If every call hits, $10 at fair odds returns $34. Not betting advice, just the math on our own confidence.",
-    "Every call graded in public, wins and misses alike. Today's board: /today #tennis #atp #wta #tennisprediction"
-  ],
+  "generatedAt": "2026-07-14T14:15:06.747Z",
+  "seasonN": 2786,
+  "thread": null,
   "assets": [
     {
-      "file": "cover.png",
-      "type": "carousel-cover",
+      "file": "called-1.png",
+      "type": "called-it",
       "format": "square",
       "category": "daily",
-      "caption": "Today's calls at the Wimbledon: 2 matches, locked before play. Swipe for every pick. Season: 67% of winners called. All of today: /today #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "match-1.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Karolina Muchova over Linda Noskova at 56%, Wimbledon (grass). Full breakdown: /match/linda-noskova-vs-karolina-muchova-177707 #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "match-2.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Jannik Sinner over Alexander Zverev at 53%, Wimbledon (grass). Full breakdown: /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "rivalry.png",
-      "type": "rivalry",
-      "format": "square",
-      "category": "daily",
-      "caption": "Zverev vs Sinner, meeting number 11. Career: 1-9. We've called 4 of 4 of their matches right. /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "parlay.png",
-      "type": "carousel-closer",
-      "format": "square",
-      "category": "daily",
-      "caption": "If every call today hits, $10 at fair odds returns $34. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "slate-story.png",
-      "type": "slate",
-      "format": "story",
-      "category": "daily",
-      "caption": "The full slate for Jul 11: every call with win probability and flags. All of today: /today #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "poll.png",
-      "type": "poll",
-      "format": "square",
-      "category": "daily",
-      "caption": "Zverev or Sinner at the Wimbledon? Our model already picked a side - drop yours below, answer tomorrow. /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
+      "caption": "We called it: Jannik Sinner over Alexander Zverev at 52%, locked before play. Final: Jannik Sinner won 6-7(7) 7-6(2) 6-3 6-4. Receipts: /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "title-odds-atp.png",
@@ -77,21 +29,21 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-10: called 2 of 2 winners before play. Season: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-14: called 1 of 2 winners before play. Season: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 59 of 81 winners called before play, 2 wins over the bookies, 21 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon ATP report card: 62 of 87 winners called before play, 2 wins over the bookies, 26 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 66 of 87 winners called before play, 33 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon WTA report card: 67 of 90 winners called before play, 41 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "weekly.png",
@@ -101,11 +53,18 @@
       "caption": "The week in calls: 8 of 12 winners called. Season: 67%. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
+      "file": "milestone.png",
+      "type": "milestone",
+      "format": "square",
+      "category": "moments",
+      "caption": "2,750 matches graded in public - 67% of winners called, zero deletions. /track-record #tennis #atp #wta #tennisprediction"
+    },
+    {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: 67% of winners called across 2,372 matches, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: 67% of winners called across 2,786 matches, all graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "how-it-works-1.png",
@@ -126,7 +85,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. 67% of winners called across 2,372 matches. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. 67% of winners called across 2,786 matches. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "pool-promo.png",
@@ -147,7 +106,7 @@
       "type": "spotlight",
       "format": "square",
       "category": "promo",
-      "caption": "Hottest racket on the WTA right now: Karolina Muchova, 10-0 in recent matches. Their full page: /player/wta/mucho #tennis #atp #wta #tennisprediction"
+      "caption": "Hottest racket on the WTA right now: Karolina Muchova, 9-1 in recent matches. Their full page: /player/wta/mucho #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "countdown.png",
