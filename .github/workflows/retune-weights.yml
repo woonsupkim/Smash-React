@@ -39,9 +39,13 @@ jobs:
         id: tune
         run: |
           node data-pipeline/tuneWeights.js | tee tune.log
-          if git diff --quiet src/engineConfig.json; then
+          # -I ignores the tunedAt timestamp line, which the tuner rewrites on
+          # every run - a PR should open only when weights or calibration
+          # actually moved.
+          if git diff --quiet -I'"tunedAt"' src/engineConfig.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Weights unchanged - no PR needed."
+            echo "Weights and calibration unchanged - no PR needed."
+            git checkout -- src/engineConfig.json
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
