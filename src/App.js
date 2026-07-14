@@ -1,5 +1,5 @@
 // src/App.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 
 import Home from './pages/Home';
@@ -60,6 +60,14 @@ function withTour(path, isWomen) {
 function NavBar() {
   const location = useLocation();
   const isWomen = location.pathname.startsWith('/women');
+  // React-controlled collapse: the Bootstrap JS bundle was never loaded, so
+  // the data-bs-toggle markup did nothing - the hamburger was inert on
+  // mobile. State + the .show class (styled by Bootstrap's CSS) fixes it
+  // without shipping Bootstrap's JS for one toggle.
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Close the menu whenever navigation happens (link tap, back button).
+  useEffect(() => { setNavOpen(false); }, [location.pathname, location.search]);
 
   // NavLink's default isActive match ignores the query string, so "Clay",
   // "Grass", and "Hard" (all pointing at /h2h with a different ?surface=)
@@ -81,15 +89,14 @@ function NavBar() {
         <button
           className="navbar-toggler"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
+          onClick={() => setNavOpen((o) => !o)}
           aria-controls="navbarNav"
-          aria-expanded="false"
+          aria-expanded={navOpen}
           aria-label="Toggle navigation"
         >
           <span className="navbar-toggler-icon" />
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
+        <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
             {NAV_ITEMS.map(({ to, label, tourAgnostic }) => {
               const target = tourAgnostic ? to : withTour(to, isWomen);
