@@ -43,8 +43,22 @@ function collectTournamentIds() {
   return [...ids];
 }
 
+// Tournament display names live in a sibling cache (separate file so the
+// surface map's shape - consumed by half the pipeline - never changes).
+// The match log uses these to label each row with its event.
+const NAMES_PATH = path.join(RAW_DIR, 'tournament-names.json');
+// Backfilling ~2,000 historical tournaments at 1.5s per lookup would take
+// ~50 minutes in one run; cap per run and let it converge over a few runs.
+const NAME_BACKFILL_PER_RUN = 300;
+
+function extractName(data) {
+  const n = data?.name || data?.title || data?.tournament?.name || null;
+  return typeof n === 'string' && n.trim() ? n.trim() : null;
+}
+
 async function main() {
   const cache = fs.existsSync(OUT_PATH) ? JSON.parse(fs.readFileSync(OUT_PATH, 'utf8')) : {};
+  const names = fs.existsSync(NAMES_PATH) ? JSON.parse(fs.readFileSync(NAMES_PATH, 'utf8')) : {};
   const ids = collectTournamentIds();
   const missing = ids.filter((id) => !(String(id) in cache));
   console.log(`${ids.length} unique tournaments referenced across cached matches, ${missing.length} need a surface lookup.`);
@@ -53,7 +67,9 @@ async function main() {
     try {
       const { data } = await apiGet(`/tennis/v2/${TOUR}/tournament/info/${id}`);
       cache[String(id)] = data?.court?.name || 'Unknown';
-      console.log(`  tournament ${id}: ${cache[String(id)]}`);
+      const nm = extractName(data);
+      if (nm) names[String(id)] = nm;
+      console.log(`  tournament ${id}: ${cache[String(id)]}${nm ? ` (${nm})` : ''}`);
     } catch (err) {
       // Don't cache failures (e.g. rate limiting) as "Unknown" - that would
       // permanently skip retrying them on the next run. Just leave them out
@@ -63,8 +79,22 @@ async function main() {
     await new Promise((r) => setTimeout(r, 1500)); // be polite to the API
   }
 
+  // Name backfill for tournaments whose surface was cached before names
+  // existed. Capped per run; converges over a handful of refreshes.
+  const nameless = ids.filter((id) => String(id) in cache && !(String(id) in names)).slice(0, NAME_BACKFILL_PER_RUN);
+  if (nameless.length) console.log(`Backfilling names for ${nameless.length} tournaments (of ${ids.filter((id) => !(String(id) in names)).length} without one)...`);
+  for (const id of nameless) {
+    try {
+      const { data } = await apiGet(`/tennis/v2/${TOUR}/tournament/info/${id}`);
+      const nm = extractName(data);
+      if (nm) names[String(id)] = nm;
+    } catch { /* retry on a later run */ }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+
   fs.writeFileSync(OUT_PATH, JSON.stringify(cache, null, 2));
-  console.log(`Saved surface map for ${Object.keys(cache).length} tournaments to ${OUT_PATH}`);
+  fs.writeFileSync(NAMES_PATH, JSON.stringify(names, null, 2));
+  console.log(`Saved surface map for ${Object.keys(cache).length} tournaments (+${Object.keys(names).length} names) to ${RAW_DIR}`);
 }
 
 main().catch((err) => {

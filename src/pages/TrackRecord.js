@@ -636,6 +636,10 @@ export default function TrackRecord() {
                           {(SURFACES[m.surface] || { label: m.surface }).label}
                         </span>
                         <span className="track-row-date">{new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span className="track-row-event">
+                          {m.tour === 'wta' ? 'WTA' : 'ATP'}
+                          {m.event ? ` · ${m.event}` : m.bestOf ? ` · Bo${m.bestOf}` : ''}
+                        </span>
                       </div>
                       <div className="track-row-matchup">
                         <MiniScore

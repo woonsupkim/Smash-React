@@ -17,6 +17,20 @@ const Papa = require('papaparse');
 const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
 const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
 const { matchProb, matchDetail } = require('./lib/analyticProb');
+const { slamsForYear } = require('./lib/slamCalendar');
+
+// Event label for a match: the tournament-names cache when we have it
+// (fetchSurfaces backfills it over a few runs), else a slam-window
+// heuristic (a grass match inside the Wimbledon fortnight IS Wimbledon),
+// else null - the UI falls back to the format chip.
+function slamLabel(dateStr, surface) {
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  for (const s of slamsForYear(d.getUTCFullYear())) {
+    if (s.surface === surface && d >= s.start && d < new Date(s.start.getTime() + 15 * 864e5)) return s.label;
+  }
+  return null;
+}
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
 // Per-tour Platt recalibration of the blend (mirrors src/engines.js
@@ -64,6 +78,8 @@ function loadTour(tour) {
   const idMap = JSON.parse(fs.readFileSync(path.join(RAW, 'player-id-map.json'), 'utf8'));
   const apiToShort = new Map(Object.entries(idMap).map(([shortId, apiId]) => [String(apiId), shortId]));
   const surfaces = JSON.parse(fs.readFileSync(path.join(RAW, 'tournament-surfaces.json'), 'utf8'));
+  const namesPath = path.join(RAW, 'tournament-names.json');
+  const tournamentNames = fs.existsSync(namesPath) ? JSON.parse(fs.readFileSync(namesPath, 'utf8')) : {};
   const season = loadStats(tour, false);
   const upset = loadStats(tour, true);
 
@@ -94,7 +110,8 @@ function loadTour(tour) {
       if (!winner || evalMatches.has(id)) continue;
       const rowA = season[surface].get(p1), rowB = season[surface].get(p2);
       if (!rowA || !rowB) continue;
-      evalMatches.set(id, { m, id, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB });
+      const eventName = tournamentNames[String(m.tournamentId)] || slamLabel(m.date, surface);
+      evalMatches.set(id, { m, id, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB, eventName });
     }
   }
 
@@ -111,7 +128,7 @@ function loadTour(tour) {
 
 function evaluate(ctx, rec) {
   const { season, upset, preElo, bestOf, tour } = ctx;
-  const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB } = rec;
+  const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB, eventName } = rec;
 
   // Per-match format: ATP is best-of-five at slams ONLY - Masters and the
   // rest of the tour play best-of-three. The API's best_of field is always
@@ -177,6 +194,7 @@ function evaluate(ctx, rec) {
   const r3 = (x) => Math.round(x * 1000) / 1000;
   return {
     id, tour, surface, date: m.date,
+    event: eventName || null, bestOf: bo,
     p1, p2,
     name1: m.player1?.name || p1, name2: m.player2?.name || p2,
     country1: m.player1?.countryAcr || '', country2: m.player2?.countryAcr || '',
@@ -204,7 +222,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1' });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 1 });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {
@@ -223,7 +241,15 @@ for (const tour of ['atp', 'wta']) {
   const fresh = recs.filter((r) => !existing.has(r.id));
   process.stdout.write(`${tour.toUpperCase()}: ${recs.length} matches, ${fresh.length} new to simulate…\n`);
   for (const r of recs) {
-    all.push(existing.has(r.id) ? existing.get(r.id) : evaluate(ctx, r));
+    if (existing.has(r.id)) {
+      const row = existing.get(r.id);
+      // Backfill the event label on reused rows as tournament names arrive
+      // (labels are metadata, not predictions - the locked numbers stay).
+      if (!row.event && r.eventName) row.event = r.eventName;
+      all.push(row);
+    } else {
+      all.push(evaluate(ctx, r));
+    }
   }
 }
 all.sort((a, b) => new Date(a.date) - new Date(b.date));
