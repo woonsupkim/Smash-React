@@ -34,6 +34,7 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
+const { nextSlam } = require('./lib/slamCalendar');
 
 let sharp;
 try {
@@ -870,33 +871,77 @@ async function rivalryCard(p, h2hRec, ourRecord, file) {
   ]);
 }
 
-function nextSlamStart(now = new Date()) {
-  const y = now.getFullYear();
-  const starts = [
-    { name: 'Australian Open', d: new Date(y, 0, 12), surface: 'hard' },
-    { name: 'French Open', d: new Date(y, 4, 24), surface: 'clay' },
-    { name: 'Wimbledon', d: new Date(y, 5, 29), surface: 'grass' },
-    { name: 'US Open', d: new Date(y, 7, 24), surface: 'hard' },
-    { name: 'Australian Open', d: new Date(y + 1, 0, 12), surface: 'hard' },
-  ];
-  return starts.find((s) => s.d > now);
+// ── HYPE: the next grand slam, promoted ─────────────────────────────────────
+// Photo countdown hero: the slam's own stadium, the day count, and the
+// promise ("picks live the moment the draw drops").
+async function hypeCountdownCard(next, days, file) {
+  const bg = await stadiumBg(next.surface, SQ, SQ);
+  const nameFs = Math.min(150, Math.floor(950 / (next.label.length * 0.58)));
+  const dateTxt = new Date(next.startsAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  const baseSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  ${photoScrim(SQ, SQ)}
+  <text x="${SQ / 2}" y="220" text-anchor="middle" font-family="${U}" font-size="28" font-weight="700" letter-spacing="7" fill="${LIME}">THE NEXT MAJOR</text>
+  <text x="${SQ / 2}" y="${228 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff">${esc(next.label.toUpperCase())}</text>
+  <text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${D}" font-size="320" font-weight="800" fill="${LIME}">${days}</text>
+  <text x="${SQ / 2}" y="778" text-anchor="middle" font-family="${U}" font-size="34" font-weight="700" letter-spacing="8" fill="rgba(255,255,255,0.85)">DAYS TO GO</text>
+  <text x="${SQ / 2}" y="846" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.65)">${esc(`first ball ${dateTxt} · ${next.surface} court`)}</text>
+  ${bottomBar(SQ, 'PICKS LIVE THE MOMENT THE DRAW DROPS', { y: 956 })}
+</svg>`;
+  await renderOn(file, bg, [{ input: Buffer.from(baseSvg), left: 0, top: 0 }]);
 }
 
-async function countdownCard(file) {
-  const next = nextSlamStart();
-  const days = Math.ceil((next.d - new Date()) / 864e5);
-  if (days < 1 || days > 75) return null;
-  const t = theme(next.surface);
-  const c = chrome(SQ, SQ, t, { ghost: String(days), ghostY: 720, ghostSize: 760 });
+// Projected favorites for the next slam - only when the off-season
+// projection is live in title_odds.json (it replaces the last slam's final
+// state once ESPN's event ages out).
+async function hypeFavoritesCard(o, tour, file) {
+  const top = (o.odds || []).filter((p) => p.prob > 0).slice(0, 5);
+  if (top.length < 5) return false;
+  const t = theme(o.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'NEXT', ghostY: 700 });
+  const maxProb = Math.max(...top.map((p) => p.prob), 0.01);
+  let rowsSvg = '';
+  const comps = [];
+  for (let i = 0; i < top.length; i++) {
+    const p = top[i];
+    const y = 320 + i * 132;
+    const pct = Math.round(p.prob * 100);
+    const w = Math.max(14, (p.prob / maxProb) * 380);
+    rowsSvg += `
+    <text x="236" y="${y + 24}" font-family="${D}" font-size="50" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
+    <rect x="236" y="${y + 42}" width="${w.toFixed(0)}" height="24" rx="12" fill="${LIME}" opacity="0.9"/>
+    <text x="${(236 + w + 20).toFixed(0)}" y="${y + 62}" font-family="${D}" font-size="50" font-weight="800" fill="#ffffff">${pct < 1 ? '&lt;1' : pct}%</text>`;
+    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 100), left: 110, top: y - 10 });
+  }
   const base = `${c.open}
-  ${eyebrow(SQ, 170, 'the next major', t.accent)}
-  <text x="${SQ / 2}" y="368" text-anchor="middle" font-family="${D}" font-size="140" font-weight="800" fill="#ffffff">${esc(next.name.toUpperCase())}</text>
-  <text x="${SQ / 2}" y="640" text-anchor="middle" font-family="${D}" font-size="300" font-weight="800" fill="${LIME}">${days}</text>
-  <text x="${SQ / 2}" y="720" text-anchor="middle" font-family="${U}" font-size="36" font-weight="700" letter-spacing="6" fill="rgba(255,255,255,0.8)">DAYS</text>
-  <text x="${SQ / 2}" y="836" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)">The model is warming up. Title odds from day one of the draw.</text>
+  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · projected field`, t.accent)}
+  <text x="${SQ / 2}" y="248" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE <tspan fill="${LIME}">FAVORITES</tspan></text>
+  ${rowsSvg}
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops</text>
+${c.close}`;
+  await render(file, base, comps);
+  return true;
+}
+
+// Story-format countdown: day count + the model's record on the slam's
+// surface + the promise, sized for an Instagram story.
+async function hypeStoryCard(next, days, recs, file) {
+  const t = theme(next.surface);
+  const c = chrome(ST_W, ST_H, t, { ghost: String(days), ghostY: 1210, ghostSize: 700 });
+  const nameFs = Math.min(136, Math.floor(950 / (next.label.length * 0.58)));
+  const recRows = recs.map((r, i) => `
+  <text x="${ST_W / 2}" y="${1246 + i * 62}" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.8)">${esc(`${r.tour.toUpperCase()} on ${next.surface} this season: ${r.acc}% of winners called`)}</text>`).join('');
+  const base = `${c.open}
+  ${eyebrow(ST_W, 210, 'the next major', t.accent)}
+  <text x="${ST_W / 2}" y="${218 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff">${esc(next.label.toUpperCase())}</text>
+  <text x="${ST_W / 2}" y="820" text-anchor="middle" font-family="${D}" font-size="380" font-weight="800" fill="${LIME}">${days}</text>
+  <text x="${ST_W / 2}" y="920" text-anchor="middle" font-family="${U}" font-size="38" font-weight="700" letter-spacing="10" fill="rgba(255,255,255,0.85)">DAYS TO GO</text>
+  ${recRows}
+  ${recs.length ? `<text x="${ST_W / 2}" y="${1246 + recs.length * 62 + 8}" text-anchor="middle" font-family="${U}" font-size="23" fill="rgba(255,255,255,0.45)">season benchmark, re-simulated daily</text>` : ''}
+  ${pill(ST_W / 2, 1560, 'THE DRAW, PRICED FROM DAY ONE', LIME)}
+  <text x="${ST_W / 2}" y="1690" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">every pick locked before play · graded in public</text>
 ${c.close}`;
   await render(file, base);
-  return { name: next.name, days };
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -1099,10 +1144,17 @@ async function run() {
   }
 
   // Previous run's manifest: the weekly carry-over below and the MOMENTS
-  // milestone check both need it.
-  const prevManifest = fs.existsSync(path.join(OUT, 'manifest.json'))
-    ? JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'))
-    : {};
+  // milestone check both need it. Parse defensively - a corrupt manifest
+  // (e.g. committed merge-conflict markers, which happened once) must cost
+  // us the carry-overs, not the whole share kit.
+  let prevManifest = {};
+  try {
+    if (fs.existsSync(path.join(OUT, 'manifest.json'))) {
+      prevManifest = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
+    }
+  } catch {
+    console.warn('  ! previous manifest.json is unreadable - rebuilding without carry-overs');
+  }
 
   // ── WEEKLY: the week in calls (fresh on Mondays or FORCE_WEEKLY=1; on
   // other days last Monday's card carries over so it lives in the kit all
@@ -1197,8 +1249,49 @@ async function run() {
     if (hot) add(`hot-streak-${tour}.png`, 'spotlight', 'square', 'promo', `Hottest racket on the ${tour.toUpperCase()} right now: ${hot.name}, ${hot.w}-${hot.l} in recent matches. Their full page: ${SITE}/player/${tour}/${hot.id} ${tags}`);
   }
 
-  const cd = await countdownCard('countdown.png');
-  if (cd) add('countdown.png', 'countdown', 'square', 'promo', `${cd.days} days until the ${cd.name}. Title odds from day one of the draw - the model is warming up. ${tags}`);
+  // ── HYPE: the next grand slam, promoted (within 75 days) ────────────────
+  const nextMajor = nextSlam(new Date());
+  const daysTo = nextMajor ? Math.ceil((new Date(nextMajor.startsAt) - Date.now()) / 864e5) : null;
+  if (nextMajor && daysTo >= 1 && daysTo <= 75) {
+    await hypeCountdownCard(nextMajor, daysTo, 'hype-countdown.png');
+    add('hype-countdown.png', 'countdown', 'square', 'hype', `${daysTo} days until the ${nextMajor.label}. Picks live the moment the draw drops - every one locked before play and graded in public. ${tags}`);
+
+    // The model's record on the slam's own surface (season benchmark).
+    const surfRecs = ['atp', 'wta'].map((tour) => {
+      const list = (track.matches || []).filter((m) => m.tour === tour && m.surface === nextMajor.surface);
+      const correct = list.filter((m) => m.smashCorrect).length;
+      return { tour, n: list.length, acc: list.length ? Math.round((correct / list.length) * 100) : 0 };
+    }).filter((r) => r.n >= 30);
+    if (surfRecs.length) {
+      await reportCard({
+        eyebrowText: `${nextMajor.label} · played on ${nextMajor.surface}`,
+        headline1: 'WE KNOW',
+        headline2: nextMajor.surface.toUpperCase(),
+        stats: [
+          ...surfRecs.map((r) => ({ value: `${r.acc}%`, label: `${r.tour.toUpperCase()} winners called on ${nextMajor.surface} · ${r.n} matches` })),
+          { value: `${daysTo}`, label: 'days until first ball' },
+        ],
+        footNote: 'season benchmark, re-simulated daily · every call public',
+        themeKey: nextMajor.surface,
+        file: 'hype-surface.png',
+      });
+      add('hype-surface.png', 'surface-record', 'square', 'hype', `The ${nextMajor.label} is played on ${nextMajor.surface} - and ${nextMajor.surface} is where we've graded ${surfRecs.reduce((s, r) => s + r.n, 0)} matches this season. ${surfRecs.map((r) => `${r.tour.toUpperCase()} ${r.acc}%`).join(' · ')} (season benchmark). ${SITE}/track-record ${tags}`);
+    }
+
+    // Projected favorites, one card per tour, once the off-season projection
+    // has replaced the last slam's final state.
+    for (const tour of ['atp', 'wta']) {
+      const o = titleOdds.events?.[tour];
+      if (o?.status !== 'projection' || o.event !== nextMajor.label) continue;
+      const f = `hype-favorites-${tour}.png`;
+      if (await hypeFavoritesCard(o, tour, f)) {
+        add(f, 'favorites', 'square', 'hype', `Projected ${nextMajor.label} ${tour.toUpperCase()} favorites from today's rankings - re-priced with every refresh until the draw drops. ${SITE}/draw ${tags}`);
+      }
+    }
+
+    await hypeStoryCard(nextMajor, daysTo, surfRecs, 'hype-story.png');
+    add('hype-story.png', 'countdown', 'story', 'hype', `${daysTo} days to the ${nextMajor.label}. The model is warming up - picks the moment the draw drops. ${tags}`);
+  }
 
   // ── Ready-to-paste thread: the day's slate as a text thread ─────────────
   // One post per pick with its deep link, plus an opener and a closer, so a
