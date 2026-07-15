@@ -1001,8 +1001,12 @@ async function run() {
     };
   };
 
+  // Daily promo cards stay slam-focused by design (rows without a tier
+  // predate the Masters expansion and are slams). The called-it receipts
+  // below deliberately do NOT filter: "we called 21 of 28 in Cincinnati"
+  // is forward-test proof, and proof travels.
   const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending')
+    .filter((p) => p.status === 'pending' && (p.tier || 'slam') === 'slam')
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
     .map(decorate);

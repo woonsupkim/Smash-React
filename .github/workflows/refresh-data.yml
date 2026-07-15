@@ -24,6 +24,17 @@ on:
     - cron: '0 6 1-15 7 *'    # Wimbledon: Jul 1-15
     - cron: '0 6 18-31 8 *'   # US Open: Aug 18-31
     - cron: '0 6 1-15 9 *'    # US Open: Sep 1-15
+    # Combined ATP/WTA 1000s (forward test covers these too; windows padded
+    # for year-to-year date drift, and Madrid-Rome runs into the French
+    # window / Canada-Cincinnati into the US Open window for continuous
+    # daily coverage across each swing)
+    - cron: '0 6 1-20 3 *'    # Indian Wells: Mar 1-20
+    - cron: '0 6 21-31 3 *'   # Miami: Mar 21-31
+    - cron: '0 6 1-6 4 *'     # Miami spillover: Apr 1-6
+    - cron: '0 6 20-30 4 *'   # Madrid: Apr 20-30
+    - cron: '0 6 1-17 5 *'    # Madrid finish + Rome: May 1-17
+    - cron: '0 6 25-31 7 *'   # Canada: Jul 25-31
+    - cron: '0 6 1-17 8 *'    # Canada finish + Cincinnati: Aug 1-17
     # Off-season heartbeat: Mondays year-round. Keeps the stats current with
     # non-slam tournaments (the summer hard-court swing feeds the US Open
     # model), re-prices the projected title odds, grows the season track

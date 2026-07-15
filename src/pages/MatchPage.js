@@ -149,7 +149,10 @@ export default function MatchPage() {
 
   return (
     <div className="match-page" style={{ '--surf': accent }}>
-      <div className="eyebrow">{pred.event.toUpperCase()} · {pred.surface.toUpperCase()} · {pred.tour.toUpperCase()}</div>
+      <div className="eyebrow">
+        {pred.event.toUpperCase()} · {pred.surface.toUpperCase()} · {pred.tour.toUpperCase()}
+        {pred.bestOf ? ` · BEST OF ${pred.bestOf}` : ''}
+      </div>
       <h1 className="match-title-line">{pred.name1} <span className="match-vs">vs</span> {pred.name2}</h1>
 
       <div className="match-when">

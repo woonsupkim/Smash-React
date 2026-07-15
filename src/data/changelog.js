@@ -6,9 +6,21 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '3.1';
+export const MODEL_VERSION = '3.2';
 
 export const CHANGELOG = [
+  {
+    version: '3.2',
+    date: '2026-07-15',
+    type: 'model',
+    title: 'Beyond the slams: the forward test covers the big combined events',
+    notes: [
+      'Locked-before-play predictions now cover the six combined ATP/WTA 1000s (Indian Wells, Miami, Madrid, Rome, Canada, Cincinnati) alongside the grand slams - on the Home board, Today\'s calls, match pages, and the forward record. Draws, title odds, bracket pools, and the promo kit stay grand-slam exclusive by design.',
+      'Format fix: every match is now simulated in its real format. ATP is best-of-five at slams only; Masters and the rest of the tour are best-of-three. Previously the season benchmark priced all ATP matches as best-of-five, which never changed a pick (format only amplifies confidence) but overstated confidence on non-slam matches. Weights and calibration refit on the corrected probabilities.',
+      'Daily data refreshes now run during the combined-1000 weeks too, so those calls lock and grade on the same rhythm as slam calls.',
+      'Called-it receipt cards in the share kit include the new events; a Cincinnati receipt is US Open proof.',
+    ],
+  },
   {
     version: '3.1',
     date: '2026-07-14',

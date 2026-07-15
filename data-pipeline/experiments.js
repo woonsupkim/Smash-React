@@ -216,7 +216,10 @@ function precompute(tour) {
     done++;
     if (done % 500 === 0) console.log(`  ${done}/${cases.length}…`);
 
-    const bestOf = Number(m.best_of) || (tour === 'wta' ? 3 : 5);
+    // The API's best_of is always null; derive the format from the result
+    // (winner with 3 sets = best-of-five). Exact for completed full matches.
+    const boSets = parseSets(m.result, String(m.match_winner) === String(m.player1Id)).setsW;
+    const bestOf = boSets >= 3 ? 5 : boSets === 2 ? 3 : (tour === 'wta' ? 3 : 5);
     const sim = {};
     let ok = true;
     let ana = null;

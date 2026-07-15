@@ -40,8 +40,9 @@ export default function Today() {
       {picks === null && <div className="skeleton today-skel" />}
       {picks && picks.length === 0 && (
         <div className="today-empty">
-          No calls on the board right now. Predictions lock when a grand slam
-          draw drops - meanwhile, <Link to="/h2h">run any matchup yourself</Link>.
+          No calls on the board right now. Predictions lock for the grand slams
+          and the big combined events (Indian Wells through Cincinnati) as their
+          matches are scheduled - meanwhile, <Link to="/h2h">run any matchup yourself</Link>.
         </div>
       )}
       {picks && picks.length > 0 && (

@@ -20,7 +20,8 @@ const Papa = require('papaparse');
 const { matchProb } = require('./lib/analyticProb');
 const { predElo, expected } = require('./eloCore');
 const { applyCalib } = require('./lib/evalCore');
-const { normName, normSurface, isGrandSlam, surfaceFromEventName, matchRoster } = require('./lib/espnParse');
+const { normName, normSurface, matchRoster } = require('./lib/espnParse');
+const { matchEvent } = require('./lib/events');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
 
 // Which engine is most accurate for each tour x surface (from the backtest).
@@ -82,12 +83,14 @@ function loadTour(tour) {
 const probsFromRow = (r) => [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6].map((v) => Number(v) || 0);
 
 // Locked prediction for a matchup on a surface, made with the best-performing
-// engine for this tour x surface. Returns { probA, engine } (P(a wins) plus the
-// engine used) or null if either player lacks stats on this surface.
-function predict(ctx, a, b, surface) {
+// engine for this tour x surface. bestOf comes from the event (ATP slams are
+// best-of-five, everything else best-of-three). Returns { probA, engine }
+// (P(a wins) plus the engine used) or null if either player lacks stats.
+function predict(ctx, a, b, surface, bestOf) {
   const rowA = ctx.statsBySurface[surface].get(a.id);
   const rowB = ctx.statsBySurface[surface].get(b.id);
   if (!rowA || !rowB) return null;
+  const bo = bestOf || ctx.bestOf;
 
   const best = ACC?.[ctx.tour]?.[surface]?.best || 'smash';
 
@@ -105,7 +108,7 @@ function predict(ctx, a, b, surface) {
   // Closed-form match probability - deterministic by construction, so the
   // locked number equals the live H2H number to the digit with no seeding
   // gymnastics (the H2H engine probability computes the same expression).
-  const simP = matchProb(pA, pB, ctx.bestOf);
+  const simP = matchProb(pA, pB, bo);
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
   let eloP = 0.5;
   if (eA && eB) eloP = expected(predElo(eA, surface), predElo(eB, surface));
@@ -210,7 +213,7 @@ async function run() {
   for (const p of store.predictions) {
     if (p.status !== 'pending') continue;
     const ctx = ctxByTour[p.tour];
-    const pred = predict(ctx, { id: p.p1, name: p.name1 }, { id: p.p2, name: p.name2 }, p.surface);
+    const pred = predict(ctx, { id: p.p1, name: p.name1 }, { id: p.p2, name: p.name2 }, p.surface, p.bestOf);
     if (!pred) continue;
     const { probA, engine } = pred;
     p.probP1 = Math.round(probA * 1000) / 1000;
@@ -237,20 +240,24 @@ async function run() {
       const d = new Date(today); d.setDate(d.getDate() + i);
       const games = await fetchSchedule(league, ymd(d));
       for (const g of games) {
-        if (!isGrandSlam(g.eventName)) continue; // Slams only
+        // The events registry is the allowlist: slams + the six combined
+        // 1000s. Anything else (exhibitions, 500s, team events) never locks.
+        const ev = matchEvent(g.eventName);
+        if (!ev) continue;
         const a = matchRoster(g.names[0], ctx.roster);
         const b = matchRoster(g.names[1], ctx.roster);
         if (!a || !b || a.id === b.id) continue;
         const key = dayKey(league, a.id, b.id, g.date);
         if (seen.has(key)) continue;
-        const surface = surfaceFromEventName(g.eventName);
-        const pred = predict(ctx, a, b, surface);
+        const bestOf = ev.bestOf[league] || ctx.bestOf;
+        const pred = predict(ctx, a, b, ev.surface, bestOf);
         if (pred == null) continue;
         const { probA, engine } = pred;
         const favorite = probA >= 0.5 ? a.id : b.id;
         const favProb = probA >= 0.5 ? probA : 1 - probA;
         store.predictions.push({
-          id: g.id, tour: league, surface, event: g.eventName, date: g.date,
+          id: g.id, tour: league, surface: ev.surface, event: ev.label, date: g.date,
+          tier: ev.tier, bestOf,
           p1: a.id, p2: b.id, name1: a.name, name2: b.name,
           probP1: Math.round(probA * 1000) / 1000,
           favorite, favName: favorite === a.id ? a.name : b.name,

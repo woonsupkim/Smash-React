@@ -384,7 +384,11 @@ export default function Home() {
           <div className="home-section-head">
             {picks.list.length > 0 && <span className="home-live-dot" />}
             <h2 className="home-section-title">{picks.list.length > 0 ? 'Happening Now' : 'Tournament Watch'}</h2>
-            {picks.list.length > 0 && <span className="home-section-sub">{picks.list[0].event}</span>}
+            {picks.list.length > 0 && (
+              <span className="home-section-sub">
+                {new Set(picks.list.map((p) => p.event)).size === 1 ? picks.list[0].event : 'on tour this week'}
+              </span>
+            )}
             {scorecard?.yesterday?.n > 0 && (
               <Link to="/track-record" className="home-board-yday">
                 Yesterday: {scorecard.yesterday.correct}/{scorecard.yesterday.n} ✓
@@ -458,6 +462,9 @@ export default function Home() {
                     <div className="home-board-top">
                       <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
                       <span className={`home-board-surface s-${p.surface}`}>{p.surface}</span>
+                      {p.tier && p.tier !== 'slam' && (
+                        <span className="home-board-event">{p.event}</span>
+                      )}
                       {when && (
                         <span className={`home-board-when${when.soon ? ' soon' : ''}${when.past ? ' past' : ''}`}>
                           {when.label}

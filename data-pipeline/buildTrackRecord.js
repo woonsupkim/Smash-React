@@ -113,9 +113,17 @@ function evaluate(ctx, rec) {
   const { season, upset, preElo, bestOf, tour } = ctx;
   const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB } = rec;
 
+  // Per-match format: ATP is best-of-five at slams ONLY - Masters and the
+  // rest of the tour play best-of-three. The API's best_of field is always
+  // null, so DERIVE it from the completed result: a winner with three sets
+  // played best-of-five, with two played best-of-three (exact for full
+  // matches; retirements fall back to the tour default).
+  const { setsW: boSetsW } = parseSets(m.result, String(m.match_winner) === p1Id);
+  const bo = boSetsW >= 3 ? 5 : boSetsW === 2 ? 3 : bestOf;
+
   // 1. season model - closed-form match probability + exact set-score
   // distribution (no Monte Carlo noise; see lib/analyticProb.js)
-  const sum = matchDetail(probsFromRow(rowA), probsFromRow(rowB), bestOf);
+  const sum = matchDetail(probsFromRow(rowA), probsFromRow(rowB), bo);
   const probP1 = sum.probP1;
   const favorite = probP1 >= 0.5 ? p1 : p2;
   const favProb = probP1 >= 0.5 ? probP1 : 1 - probP1;
@@ -123,7 +131,7 @@ function evaluate(ctx, rec) {
   // 2. upset model
   const upA = upset[surface].get(p1) || rowA;
   const upB = upset[surface].get(p2) || rowB;
-  const upsetProbP1 = matchProb(probsFromRow(upA), probsFromRow(upB), bestOf);
+  const upsetProbP1 = matchProb(probsFromRow(upA), probsFromRow(upB), bo);
   const upsetFavorite = upsetProbP1 >= 0.5 ? p1 : p2;
 
   // 3. rank baseline
@@ -196,7 +204,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1' });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1' });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {

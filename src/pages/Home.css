@@ -659,3 +659,15 @@
 .home-summer-title { font-size: 0.95rem; font-weight: 700; color: var(--text-1); }
 .home-summer-sub { font-size: 0.82rem; color: var(--text-3); }
 .home-summer-go { margin-left: auto; color: var(--accent-brand); font-weight: 800; }
+
+/* Non-slam event chip on board cards (slam cards lean on the section header) */
+.home-board-event {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-pill);
+  padding: 0.12rem 0.5rem;
+}

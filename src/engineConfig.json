@@ -3,10 +3,10 @@
   "_calibrationComment": "One-parameter Platt recalibration applied to the SMASH blend only: p' = sigmoid(a * logit(p)). The intercept is pinned at 0 by symmetry (which side is p1 is arbitrary), so a pick can never flip, only its stated confidence moves. a is refit per tour by tuneWeights.js on walk-forward out-of-fold predictions at every retune; a < 1 compresses overconfident tails. Replaced the hand-fit knee/factor tail shrink (validated equal-or-better in data-pipeline/experiments.js).",
   "calibration": {
     "atp": {
-      "a": 1.02
+      "a": 0.98
     },
     "wta": {
-      "a": 0.7
+      "a": 0.88
     }
   },
   "_eloComment": "Elo hyperparameters, validated by walk-forward log loss (experiments.js): rho = weight on overall vs surface rating in the predicting blend (0.5 beat 0.65/0.8 on both tours); marginK scales rating updates by set dominance (straight-sets wins move ratings more than deciding-set escapes) and improved log loss on both tours.",
@@ -23,8 +23,8 @@
         "wr": 0.4
       },
       "clay": {
-        "ws": 0.5,
-        "we": 0.1,
+        "ws": 0.45,
+        "we": 0.15,
         "wr": 0.4
       },
       "grass": {
@@ -35,21 +35,21 @@
     },
     "wta": {
       "hard": {
-        "ws": 0,
-        "we": 0.7,
-        "wr": 0.3
+        "ws": 0.25,
+        "we": 0.35,
+        "wr": 0.4
       },
       "clay": {
-        "ws": 0.05,
-        "we": 0.75,
-        "wr": 0.2
+        "ws": 0.4,
+        "we": 0.1,
+        "wr": 0.5
       },
       "grass": {
-        "ws": 0.15,
-        "we": 0.85,
-        "wr": 0
+        "ws": 0.55,
+        "we": 0.3,
+        "wr": 0.15
       }
     }
   },
-  "tunedAt": "2026-07-14T08:47:49.605Z"
+  "tunedAt": "2026-07-15T14:03:54.632Z"
 }
