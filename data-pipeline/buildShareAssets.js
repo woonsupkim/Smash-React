@@ -96,7 +96,11 @@ function splitHeadline(s) {
 
 // ── Chrome for TYPOGRAPHIC cards (gradient + court + ghost + vignette) ─────
 function chrome(w, h, t, { ghost = null, ghostY = null, ghostSize = null } = {}) {
-  const gs = ghostSize || Math.min(w * 0.62, 660);
+  // Width-aware ghost sizing: the watermark word must live INSIDE the
+  // canvas, not bleed off both edges (0.58em/char covers the condensed
+  // face in CI and the wider local fallback).
+  const gsRaw = ghostSize || Math.min(w * 0.62, 660);
+  const gs = ghost ? Math.min(gsRaw, Math.floor((w * 0.94) / (String(ghost).length * 0.58))) : gsRaw;
   const open = `
 <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -413,7 +417,7 @@ async function coverCard(picks, sc, file) {
   <text x="${SQ / 2}" y="418" text-anchor="middle" font-family="${D}" font-size="196" font-weight="800" fill="#ffffff">TODAY'S</text>
   <text x="${SQ / 2}" y="588" text-anchor="middle" font-family="${D}" font-size="196" font-weight="800" fill="${LIME}">CALLS</text>
   <text x="${SQ / 2}" y="688" text-anchor="middle" font-family="${U}" font-size="35" font-weight="600" fill="rgba(255,255,255,0.85)">${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before play${upsets ? ` · ${upsets} upset pick${upsets > 1 ? 's' : ''}` : ''}</text>
-  ${pill(SQ / 2, 742, `SEASON: ${sc.season.acc}% OF WINNERS CALLED`, LIME)}
+  ${pill(SQ / 2, 742, sc.proofPill, LIME)}
   <text x="${SQ / 2}" y="884" text-anchor="middle" font-family="${U}" font-size="29" font-weight="700" letter-spacing="5" fill="rgba(255,255,255,0.6)">SWIPE FOR THE PICKS &#8594;</text>
 ${c.close}`;
   await render(file, base);
@@ -472,7 +476,7 @@ async function slateStory(picks, sc, file) {
   ${rows}
   <rect x="90" y="${footY}" width="${ST_W - 180}" height="176" rx="20" fill="rgba(0,0,0,0.4)" stroke="${LIME}" stroke-width="3"/>
   <text x="${ST_W / 2}" y="${footY + 76}" text-anchor="middle" font-family="${D}" font-size="66" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)} if every call hits</text>
-  <text x="${ST_W / 2}" y="${footY + 132}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">at fair odds · season: ${sc.season.acc}% of winners called</text>
+  <text x="${ST_W / 2}" y="${footY + 132}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">at fair odds · ${esc(sc.proofLine)}</text>
 ${c.close}`;
   await render(file, base);
 }
@@ -490,7 +494,7 @@ async function resultsCard(sc, file) {
   <text x="${SQ / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="238" font-weight="800" fill="#ffffff">${y ? `${y.correct} OF ${y.n}` : ''}</text>
   <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called before play</text>
   ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="29" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
-  ${pill(SQ / 2, 812, `SEASON: ${sc.season.correct.toLocaleString()} OF ${sc.season.n.toLocaleString()} · ${sc.season.acc}%`, LIME)}
+  ${pill(SQ / 2, 812, sc.proofPill, LIME)}
 ${c.close}`;
   await render(file, base);
 }
@@ -570,6 +574,121 @@ ${c.close}`;
   await render(file, base, comps);
 }
 
+// ── DRAW & BRACKETS: the bracket itself as content ─────────────────────────
+const roundLabel = (resulting) =>
+  resulting === 1 ? 'TITLE' : resulting === 2 ? 'FINAL' : resulting === 4 ? 'SF' : resulting === 8 ? 'QF' : `R${resulting}`;
+
+// Survival board: the top 8 title contenders with their round-by-round
+// chances - the draw page's survival table as a square card.
+async function drawRoadCard(o, tour, file) {
+  const { field, survival } = o.draw;
+  const nRounds = survival[0]?.length || 0;
+  if (!nRounds || field.length < 4) return false;
+  const cols = Math.min(4, nRounds);
+  const colStart = nRounds - cols;
+  const labels = [];
+  for (let r = colStart; r < nRounds; r++) labels.push(roundLabel(field.length / Math.pow(2, r + 1)));
+
+  const rows = field.map((p, i) => ({ ...p, surv: survival[i] || [] }))
+    .sort((a, b) => (b.surv[nRounds - 1] || 0) - (a.surv[nRounds - 1] || 0))
+    .slice(0, 8);
+
+  const t = theme(o.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'DRAW', ghostY: 700 });
+  const colX = (j) => 588 + j * 116;
+  let grid = '';
+  labels.forEach((l, j) => {
+    grid += `<text x="${colX(j) + 48}" y="330" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="2" fill="rgba(255,255,255,0.55)">${esc(l)}</text>`;
+  });
+  const comps = [];
+  for (let i = 0; i < rows.length; i++) {
+    const p = rows[i];
+    const y = 368 + i * 70;
+    const lastName = (p.name || '').split(' ').pop().toUpperCase();
+    grid += `<text x="176" y="${y + 38}" font-family="${D}" font-size="42" font-weight="700" fill="#ffffff">${esc(lastName)}</text>`;
+    for (let j = 0; j < cols; j++) {
+      const v = p.surv[colStart + j] ?? 0;
+      const pct = v >= 0.995 ? '&gt;99' : v < 0.005 ? '&lt;1' : Math.round(v * 100);
+      const alpha = Math.min(0.85, 0.06 + v * 0.85);
+      grid += `
+      <rect x="${colX(j)}" y="${y}" width="96" height="52" rx="10" fill="${LIME}" opacity="${alpha.toFixed(2)}"/>
+      <text x="${colX(j) + 48}" y="${y + 36}" text-anchor="middle" font-family="${D}" font-size="30" font-weight="800" fill="${v >= 0.4 ? INK : '#ffffff'}">${pct}%</text>`;
+    }
+    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 56), left: 104, top: y - 2 });
+  }
+  const foot = o.status === 'projection'
+    ? "projected field from today's rankings · re-priced with every refresh"
+    : o.status === 'live'
+      ? 'the remaining draw, simulated 2,000 times daily'
+      : 'our last look at the bracket before it was decided';
+  const base = `${c.open}
+  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · the draw`, t.accent)}
+  <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE ROAD TO <tspan fill="${LIME}">THE TITLE</tspan></text>
+  ${grid}
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(foot)}</text>
+${c.close}`;
+  await render(file, base, comps);
+  return true;
+}
+
+// The favorite's path: their chance at each remaining round, photo-panel
+// treatment (championCard's layout family).
+async function drawPathCard(o, tour, file) {
+  const { field, survival } = o.draw;
+  const nRounds = survival[0]?.length || 0;
+  if (!nRounds) return false;
+  const ranked = field.map((p, i) => ({ p, surv: survival[i] || [] }))
+    .filter((x) => x.p.id)
+    .sort((a, b) => (b.surv[nRounds - 1] || 0) - (a.surv[nRounds - 1] || 0));
+  const fav = ranked[0];
+  if (!fav || !(fav.surv[nRounds - 1] > 0.02)) return false;
+
+  const cols = Math.min(4, nRounds);
+  const colStart = nRounds - cols;
+  const lastName = fav.p.name.split(' ').pop().toUpperCase();
+  const bg = await stadiumBg(o.surface, SQ, SQ);
+  const composites = [];
+
+  let steps = '';
+  for (let j = 0; j < cols; j++) {
+    const v = fav.surv[colStart + j] ?? 0;
+    const y = 470 + j * 108;
+    const label = roundLabel(field.length / Math.pow(2, colStart + j + 1));
+    const w = Math.max(12, v * 300);
+    steps += `
+  <text x="64" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.65)">${esc(label)}</text>
+  <rect x="64" y="${y + 14}" width="${w.toFixed(0)}" height="20" rx="10" fill="${LIME}" opacity="0.9"/>
+  <text x="${64 + w + 18}" y="${y + 32}" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">${v >= 0.995 ? '&gt;99' : Math.round(v * 100)}%</text>`;
+  }
+
+  const baseSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  ${photoScrim(SQ, SQ)}
+  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour} · the favorite`.toUpperCase())}</text>
+  <text x="60" y="330" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">${esc(lastName)}'S</text>
+  <text x="60" y="428" font-family="${D}" font-size="96" font-weight="800" fill="${LIME}">PATH</text>
+  ${steps}
+</svg>`;
+  composites.push({ input: Buffer.from(baseSvg), left: 0, top: 0 });
+  const PW = 420, PH = 590, PY = 300;
+  const PX = SQ - 64 - PW;
+  composites.push({
+    input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/></svg>`),
+    left: 0, top: 0,
+  });
+  composites.push({ input: await panelPhoto(photoPath(tour, fav.p.id), PW, PH), left: PX, top: PY });
+  composites.push({
+    input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/></svg>`),
+    left: 0, top: 0,
+  });
+  composites.push({
+    input: Buffer.from(`<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">${bottomBar(SQ, 'THE FULL DRAW, ROUND BY ROUND', { y: 968 })}</svg>`),
+    left: 0, top: 0,
+  });
+  await renderOn(file, bg, composites);
+  return true;
+}
+
 // ── PROMO cards ────────────────────────────────────────────────────────────
 async function proofCard(track, file) {
   const ms = track.matches || [];
@@ -619,7 +738,7 @@ ${c.close}`;
     `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">real serve and return stats, per surface, recency-weighted</text>`));
   await render(file2, slide(2, 'PICK', 'THEN WE CALL IT,', 'IN PUBLIC', 'win probability · exact score · upset risk',
     `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">locked before play - no edits, no take-backs</text>`));
-  await render(file3, slide(3, `${sc.season.acc}%`, 'THEN THE RESULTS', 'GRADE US', `${sc.season.acc}% of winners called across ${sc.season.n.toLocaleString()} matches`,
+  await render(file3, slide(3, `${sc.season.acc}%`, 'THEN THE RESULTS', 'GRADE US', sc.proofLine,
     `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">every hit and every miss on the record, updated daily</text>`));
 }
 
@@ -801,6 +920,22 @@ async function run() {
     : { events: {} };
   const ranks = { atp: loadRanks('atp'), wta: loadRanks('wta') };
 
+  // Honest proof framing, mirroring the app's forward-test hero: once the
+  // locked-before-play record has 25+ verified calls it IS the proof line;
+  // until then the season number appears, labeled as the resimulated
+  // benchmark it is. Cards and captions read these off sc.
+  const fwdDecided = (preds.predictions || []).filter((p) => p.status !== 'pending');
+  const fwd = { n: fwdDecided.length, correct: fwdDecided.filter((p) => p.correct).length };
+  fwd.acc = fwd.n ? Math.round((fwd.correct / fwd.n) * 100) : 0;
+  const fwdArmed = fwd.n >= 25;
+  sc.proofPill = fwdArmed
+    ? `BEFORE PLAY: ${fwd.correct}/${fwd.n} CALLED · ${fwd.acc}%`
+    : `SEASON BENCHMARK: ${sc.season.acc}% OF WINNERS`;
+  sc.proofLine = fwdArmed
+    ? `${fwd.acc}% of winners called before play (${fwd.correct} of ${fwd.n} verified, no take-backs)`
+    : `season benchmark: ${sc.season.acc}% of winners called across ${sc.season.n.toLocaleString()} matches, re-simulated daily`;
+  sc.proofLabel = fwdArmed ? 'called before play, verified' : 'season benchmark · re-simulated daily';
+
   const assets = [];
   const add = (file, type, format, category, caption) => assets.push({ file, type, format, category, caption });
   const tags = '#tennis #atp #wta #tennisprediction';
@@ -830,7 +965,7 @@ async function run() {
   // ── DAILY layer ─────────────────────────────────────────────────────────
   if (picks.length) {
     await coverCard(picks, sc, 'cover.png');
-    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. Season: ${sc.season.acc}% of winners called. All of today: ${todayLink()} ${tags}`);
+    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`);
 
     // Career h2h + our pair record enrich every match card.
     const h2hAll = fs.existsSync(path.join(DATA, 'h2h.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'h2h.json'), 'utf8')) : {};
@@ -911,7 +1046,7 @@ async function run() {
 
   if (sc.yesterday?.n > 0) {
     await resultsCard(sc, 'results.png');
-    add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners before play. Season: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
+    add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners before play. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
 
   // ── WRAP: tournament report card (a few days after a slam ends) ─────────
@@ -941,6 +1076,26 @@ async function run() {
       file,
     });
     add(file, 'wrap', 'square', 'wrap', `${o.event} ${tour.toUpperCase()} report card: ${correct} of ${evMs.length} winners called before play${beat ? `, ${beat} wins over the bookies` : ''}, ${exact} exact scorelines. ${o.champion.name} takes the title. ${SITE}/track-record ${tags}`);
+  }
+
+  // ── DRAW & BRACKETS: the bracket itself as content ──────────────────────
+  for (const tour of ['atp', 'wta']) {
+    const o = titleOdds.events?.[tour];
+    if (!o?.draw?.field?.length || !o?.draw?.survival?.length) continue;
+    const statusBit = o.status === 'projection'
+      ? `The projected ${o.event} ${tour.toUpperCase()} field from today's rankings, re-priced with every refresh until the real draw drops.`
+      : o.status === 'live'
+        ? `The ${o.event} ${tour.toUpperCase()} draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily.`
+        : `Our last look at the ${o.event} ${tour.toUpperCase()} bracket before it was decided.`;
+    const roadFile = `draw-road-${tour}.png`;
+    if (await drawRoadCard(o, tour, roadFile)) {
+      add(roadFile, 'draw-road', 'square', 'draw', `${statusBit} Every line of the bracket: ${SITE}/draw ${tags}`);
+    }
+    const pathFile = `draw-path-${tour}.png`;
+    if (await drawPathCard(o, tour, pathFile)) {
+      const fav = o.odds?.[0];
+      add(pathFile, 'draw-path', 'square', 'draw', `${fav ? `${fav.name}'s path` : 'The favorite\'s path'}, round by round. ${statusBit} ${SITE}/draw ${tags}`);
+    }
   }
 
   // Previous run's manifest: the weekly carry-over below and the MOMENTS
@@ -981,13 +1136,13 @@ async function run() {
           { value: `${correct} OF ${weekMs.length}`, label: 'winners called this week' },
           ...(beat ? [{ value: `${beat}`, label: 'wins over the bookies' }] : []),
           ...(bold ? [{ value: `${boldName} · ${Math.round(Math.max(bold.smashProbP1, 1 - bold.smashProbP1) * 100)}%`, label: 'boldest call that hit' }] : []),
-          { value: `${sc.season.acc}%`, label: 'season accuracy, all public' },
+          { value: `${sc.season.acc}%`, label: 'season benchmark, all public' },
         ],
         footNote: 'new recap every Monday · every call graded',
         themeKey: 'brand',
         file: 'weekly.png',
       });
-      add('weekly.png', 'weekly', 'square', 'weekly', `The week in calls: ${correct} of ${weekMs.length} winners called${beat ? `, ${beat} wins over the bookies` : ''}. Season: ${sc.season.acc}%. ${SITE}/track-record ${tags}`);
+      add('weekly.png', 'weekly', 'square', 'weekly', `The week in calls: ${correct} of ${weekMs.length} winners called${beat ? `, ${beat} wins over the bookies` : ''}. Season benchmark: ${sc.season.acc}%. ${SITE}/track-record ${tags}`);
     }
   }
 
@@ -1000,14 +1155,14 @@ async function run() {
       headline1: `${mark.toLocaleString()}`,
       headline2: 'MATCHES GRADED',
       stats: [
-        { value: `${sc.season.acc}%`, label: 'of winners called correctly' },
+        { value: `${sc.season.acc}%`, label: sc.proofLabel },
         { value: 'ZERO', label: 'deletions, edits, or excuses' },
       ],
       footNote: 'every prediction on the public record',
       themeKey: 'brand',
       file: 'milestone.png',
     });
-    add('milestone.png', 'milestone', 'square', 'moments', `${mark.toLocaleString()} matches graded in public - ${sc.season.acc}% of winners called, zero deletions. ${SITE}/track-record ${tags}`);
+    add('milestone.png', 'milestone', 'square', 'moments', `${mark.toLocaleString()} matches graded in public - season benchmark ${sc.season.acc}%, zero deletions. ${SITE}/track-record ${tags}`);
   }
   if (sc.yesterday && sc.yesterday.n >= 3 && sc.yesterday.correct === sc.yesterday.n) {
     await reportCard({
@@ -1016,7 +1171,7 @@ async function run() {
       headline2: 'FLAWLESS',
       stats: [
         { value: `${sc.yesterday.n}`, label: 'winners called before play' },
-        { value: `${sc.season.acc}%`, label: 'season accuracy' },
+        { value: `${sc.season.acc}%`, label: 'season benchmark' },
       ],
       footNote: 'locked before play, graded after - no take-backs',
       themeKey: 'brand',
@@ -1027,15 +1182,15 @@ async function run() {
 
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
-  add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.season.acc}% of winners called across ${sc.season.n.toLocaleString()} matches, all graded in public. ${tags}`);
+  add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.proofLine}, all graded in public. ${tags}`);
 
   await howItWorks(sc, 'how-it-works-1.png', 'how-it-works-2.png', 'how-it-works-3.png');
   add('how-it-works-1.png', 'explainer', 'square', 'promo', `How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. ${tags}`);
   add('how-it-works-2.png', 'explainer', 'square', 'promo', `How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. ${tags}`);
-  add('how-it-works-3.png', 'explainer', 'square', 'promo', `How Smash works, 3 of 3: then the results grade us. ${sc.season.acc}% of winners called across ${sc.season.n.toLocaleString()} matches. ${tags}`);
+  add('how-it-works-3.png', 'explainer', 'square', 'promo', `How Smash works, 3 of 3: then the results grade us. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${tags}`);
 
   await poolPromoCard('pool-promo.png');
-  add('pool-promo.png', 'feature', 'square', 'promo', `Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. ${tags}`);
+  add('pool-promo.png', 'feature', 'square', 'draw', `Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. ${tags}`);
 
   for (const tour of ['atp', 'wta']) {
     const hot = await hotStreakCard(tour, `hot-streak-${tour}.png`);
@@ -1054,7 +1209,7 @@ async function run() {
     const posts = [];
     posts.push(
       `Today at the ${picks[0].event}: ${picks.length} call${picks.length === 1 ? '' : 's'}, every one locked before play. ` +
-      `Season so far: ${sc.season.correct.toLocaleString()} of ${sc.season.n.toLocaleString()} winners called (${sc.season.acc}%). Picks below.`
+      `${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. Picks below.`
     );
     picks.forEach((p, i) => {
       const opp = p.favorite === p.p1 ? p.name2 : p.name1;

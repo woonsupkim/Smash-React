@@ -1,14 +1,72 @@
 {
+<<<<<<< Updated upstream
   "generatedAt": "2026-07-15T07:54:22.804Z",
   "seasonN": 2802,
   "thread": null,
+=======
+  "generatedAt": "2026-07-15T02:30:20.071Z",
+  "seasonN": 2372,
+  "thread": [
+    "Today at the Wimbledon: 2 calls, every one locked before play. Season benchmark: 67% of winners called across 2,372 matches, re-simulated daily. Picks below.",
+    "1/2 Karolina Muchova over Linda Noskova at 56% on grass. /match/linda-noskova-vs-karolina-muchova-177707",
+    "2/2 Jannik Sinner over Alexander Zverev at 52% on grass. /match/alexander-zverev-vs-jannik-sinner-177491",
+    "If every call hits, $10 at fair odds returns $34. Not betting advice, just the math on our own confidence.",
+    "Every call graded in public, wins and misses alike. Today's board: /today #tennis #atp #wta #tennisprediction"
+  ],
+>>>>>>> Stashed changes
   "assets": [
     {
       "file": "called-1.png",
       "type": "called-it",
       "format": "square",
       "category": "daily",
+<<<<<<< Updated upstream
       "caption": "We called it: Jannik Sinner over Alexander Zverev at 52%, locked before play. Final: Jannik Sinner won 6-7(7) 7-6(2) 6-3 6-4. Receipts: /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "Today's calls at the Wimbledon: 2 matches, locked before play. Swipe for every pick. Season benchmark: 67% of winners called across 2,372 matches, re-simulated daily. All of today: /today #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "match-1.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Karolina Muchova over Linda Noskova at 56%, Wimbledon (grass). Full breakdown: /match/linda-noskova-vs-karolina-muchova-177707 #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "match-2.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Jannik Sinner over Alexander Zverev at 52%, Wimbledon (grass). Full breakdown: /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "rivalry.png",
+      "type": "rivalry",
+      "format": "square",
+      "category": "daily",
+      "caption": "Zverev vs Sinner, meeting number 11. Career: 1-9. We've called 4 of 4 of their matches right. /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "parlay.png",
+      "type": "carousel-closer",
+      "format": "square",
+      "category": "daily",
+      "caption": "If every call today hits, $10 at fair odds returns $34. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "slate-story.png",
+      "type": "slate",
+      "format": "story",
+      "category": "daily",
+      "caption": "The full slate for Jul 11: every call with win probability and flags. All of today: /today #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "poll.png",
+      "type": "poll",
+      "format": "square",
+      "category": "daily",
+      "caption": "Zverev or Sinner at the Wimbledon? Our model already picked a side - drop yours below, answer tomorrow. /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "title-odds-atp.png",
@@ -29,21 +87,61 @@
       "type": "results",
       "format": "square",
       "category": "daily",
+<<<<<<< Updated upstream
       "caption": "Receipts from 2026-07-14: called 2 of 4 winners before play. Season: 66%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "Receipts from 2026-07-10: called 2 of 2 winners before play. Season benchmark: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
+<<<<<<< Updated upstream
       "caption": "Wimbledon ATP report card: 62 of 87 winners called before play, 2 wins over the bookies, 26 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "Wimbledon ATP report card: 58 of 81 winners called before play, 2 wins over the bookies, 23 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
+<<<<<<< Updated upstream
       "caption": "Wimbledon WTA report card: 67 of 90 winners called before play, 41 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "Wimbledon WTA report card: 66 of 87 winners called before play, 34 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "draw-road-atp.png",
+      "type": "draw-road",
+      "format": "square",
+      "category": "draw",
+      "caption": "Our last look at the Wimbledon ATP bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "draw-path-atp.png",
+      "type": "draw-path",
+      "format": "square",
+      "category": "draw",
+      "caption": "Jannik Sinner's path, round by round. Our last look at the Wimbledon ATP bracket before it was decided. /draw #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "draw-road-wta.png",
+      "type": "draw-road",
+      "format": "square",
+      "category": "draw",
+      "caption": "Our last look at the Wimbledon WTA bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction"
+    },
+    {
+      "file": "draw-path-wta.png",
+      "type": "draw-path",
+      "format": "square",
+      "category": "draw",
+      "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. /draw #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "weekly.png",
@@ -57,7 +155,11 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
+<<<<<<< Updated upstream
       "caption": "The 2026 receipts: 66% of winners called across 2,802 matches, all graded in public. #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "The 2026 receipts: season benchmark: 67% of winners called across 2,372 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "how-it-works-1.png",
@@ -78,13 +180,17 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
+<<<<<<< Updated upstream
       "caption": "How Smash works, 3 of 3: then the results grade us. 66% of winners called across 2,802 matches. #tennis #atp #wta #tennisprediction"
+=======
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 67% of winners called across 2,372 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
+>>>>>>> Stashed changes
     },
     {
       "file": "pool-promo.png",
       "type": "feature",
       "format": "square",
-      "category": "promo",
+      "category": "draw",
       "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction"
     },
     {

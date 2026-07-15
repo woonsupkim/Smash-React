@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.179a0079.css",
-    "main.js": "/static/js/main.5f5f5e3d.js",
+    "main.js": "/static/js/main.f5e3a732.js",
     "static/media/smash2b.jpg": "/static/media/smash2b.971e2895b6e69c2dd0a8.jpg",
     "static/media/smash1.jpg": "/static/media/smash1.23e558eeb2688dfac3fd.jpg",
     "static/media/logo_rg.png": "/static/media/logo_rg.f497d9850246b3ab85a7.png",
@@ -182,10 +182,10 @@
     "static/media/svito.png": "/static/media/svito.b490b9135f8d243885fd.png",
     "index.html": "/index.html",
     "main.179a0079.css.map": "/static/css/main.179a0079.css.map",
-    "main.5f5f5e3d.js.map": "/static/js/main.5f5f5e3d.js.map"
+    "main.f5e3a732.js.map": "/static/js/main.f5e3a732.js.map"
   },
   "entrypoints": [
     "static/css/main.179a0079.css",
-    "static/js/main.5f5f5e3d.js"
+    "static/js/main.f5e3a732.js"
   ]
 }

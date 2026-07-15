@@ -145,6 +145,7 @@ export default function Admin() {
             )}
             {[
               ['daily', "Today's posts"],
+              ['draw', 'Draw & brackets'],
               ['wrap', 'Tournament wrap'],
               ['weekly', 'Weekly recap'],
               ['moments', 'Moments'],
