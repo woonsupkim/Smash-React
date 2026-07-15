@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-14T14:15:06.747Z",
-  "seasonN": 2786,
+  "generatedAt": "2026-07-15T07:54:22.804Z",
+  "seasonN": 2802,
   "thread": null,
   "assets": [
     {
@@ -29,7 +29,7 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-14: called 1 of 2 winners before play. Season: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-14: called 2 of 4 winners before play. Season: 66%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-atp.png",
@@ -53,18 +53,11 @@
       "caption": "The week in calls: 8 of 12 winners called. Season: 67%. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
-      "format": "square",
-      "category": "moments",
-      "caption": "2,750 matches graded in public - 67% of winners called, zero deletions. /track-record #tennis #atp #wta #tennisprediction"
-    },
-    {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: 67% of winners called across 2,786 matches, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: 66% of winners called across 2,802 matches, all graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "how-it-works-1.png",
@@ -85,7 +78,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. 67% of winners called across 2,786 matches. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. 66% of winners called across 2,802 matches. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "pool-promo.png",
@@ -113,7 +106,7 @@
       "type": "countdown",
       "format": "square",
       "category": "promo",
-      "caption": "41 days until the US Open. Title odds from day one of the draw - the model is warming up. #tennis #atp #wta #tennisprediction"
+      "caption": "40 days until the US Open. Title odds from day one of the draw - the model is warming up. #tennis #atp #wta #tennisprediction"
     }
   ]
 }

@@ -2201,7 +2201,7 @@
   },
   "molca": {
     "country": "SVK",
-    "age": null,
+    "age": 28,
     "yearRecord": {
       "hard": {
         "w": 3,
@@ -2223,7 +2223,7 @@
   },
   "molca1": {
     "country": "SVK",
-    "age": null,
+    "age": 28,
     "yearRecord": {
       "hard": {
         "w": 3,
@@ -2245,7 +2245,7 @@
   },
   "wu": {
     "country": "CHN",
-    "age": null,
+    "age": 26,
     "yearRecord": {
       "hard": {
         "w": 13,
@@ -2267,7 +2267,7 @@
   },
   "popyr": {
     "country": "AUS",
-    "age": null,
+    "age": 26,
     "yearRecord": {
       "hard": {
         "w": 2,
@@ -2289,7 +2289,7 @@
   },
   "vukic": {
     "country": "AUS",
-    "age": null,
+    "age": 30,
     "yearRecord": {
       "hard": {
         "w": 7,
@@ -2311,7 +2311,7 @@
   },
   "dzumh": {
     "country": "BIH",
-    "age": null,
+    "age": 34,
     "yearRecord": {
       "hard": {
         "w": 2,
@@ -2333,7 +2333,7 @@
   },
   "damm": {
     "country": "USA",
-    "age": null,
+    "age": 22,
     "yearRecord": {
       "hard": {
         "w": 11,
@@ -2355,7 +2355,7 @@
   },
   "yunch": {
     "country": "CHN",
-    "age": null,
+    "age": 24,
     "yearRecord": {
       "hard": {
         "w": 12,
@@ -2377,7 +2377,7 @@
   },
   "wong": {
     "country": "HKG",
-    "age": null,
+    "age": 22,
     "yearRecord": {
       "hard": {
         "w": 22,
@@ -2399,7 +2399,7 @@
   },
   "wawri": {
     "country": "SUI",
-    "age": null,
+    "age": 41,
     "yearRecord": {
       "hard": {
         "w": 6,
@@ -2421,7 +2421,7 @@
   },
   "ofner": {
     "country": "AUT",
-    "age": null,
+    "age": 30,
     "yearRecord": {
       "hard": {
         "w": 11,
@@ -2443,7 +2443,7 @@
   },
   "basil": {
     "country": "GEO",
-    "age": null,
+    "age": 34,
     "yearRecord": {
       "hard": {
         "w": 5,
@@ -2465,7 +2465,7 @@
   },
   "svrci": {
     "country": "CZE",
-    "age": null,
+    "age": 23,
     "yearRecord": {
       "hard": {
         "w": 7,
@@ -2487,7 +2487,7 @@
   },
   "kypso": {
     "country": "USA",
-    "age": null,
+    "age": 26,
     "yearRecord": {
       "hard": {
         "w": 8,
@@ -2509,7 +2509,7 @@
   },
   "fery": {
     "country": "GBR",
-    "age": null,
+    "age": 24,
     "yearRecord": {
       "hard": {
         "w": 8,
@@ -2531,7 +2531,7 @@
   },
   "opelk": {
     "country": "USA",
-    "age": null,
+    "age": 28,
     "yearRecord": {
       "hard": {
         "w": 6,
@@ -2553,7 +2553,7 @@
   },
   "drogu": {
     "country": "FRA",
-    "age": null,
+    "age": 25,
     "yearRecord": {
       "hard": {
         "w": 13,
@@ -2575,7 +2575,7 @@
   },
   "riedi": {
     "country": "SUI",
-    "age": null,
+    "age": 24,
     "yearRecord": {
       "hard": {
         "w": 14,
@@ -2597,7 +2597,7 @@
   },
   "gasto": {
     "country": "FRA",
-    "age": null,
+    "age": 25,
     "yearRecord": {
       "hard": {
         "w": 9,
@@ -2619,7 +2619,7 @@
   },
   "ruiz": {
     "country": "ESP",
-    "age": null,
+    "age": 23,
     "yearRecord": {
       "hard": {
         "w": 7,
