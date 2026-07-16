@@ -92,6 +92,8 @@ export default function AdvancedSimPanel({
   liveLog,
   isWatching,
   engine = 'smash',   // labels the detailed sim to match the selected engine
+  engineOptions = null, // [{id, label, acc, recommended}] - renders the manual engine picker
+  onEngineChange = null,
   engineWinProbA = null, // authoritative engine P(A wins) from the shared batch - pie/headline render this so it matches the MatchHero number exactly
   onSimulate,
   onWatchMatch,
@@ -314,6 +316,25 @@ export default function AdvancedSimPanel({
     <div className="advanced-sim-panel mt-4">
         <div className="advanced-panel-card">
           <div className="adv-panel-heading">Detailed simulation</div>
+          {engineOptions && onEngineChange && (
+            <div className="adv-engine-row" role="group" aria-label="Prediction engine">
+              <span className="adv-engine-label">Engine</span>
+              {engineOptions.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={`adv-engine-btn${engine === o.id ? ' active' : ''}`}
+                  onClick={() => onEngineChange(o.id)}
+                  disabled={isRunning || isWatching}
+                  title={o.acc != null ? `${o.acc}% of winners called this season (${surfaceLabel.toLowerCase()})` : undefined}
+                >
+                  {o.label}
+                  {o.acc != null && <span className="adv-engine-acc">{o.acc}%</span>}
+                  {o.recommended && <span className="adv-engine-star" aria-label="most accurate here">★</span>}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="adv-controls-col adv-controls-centered">
               <Form.Group controlId="simCount" className="mb-2">
                 <Form.Label className="text-white">Times we play the match</Form.Label>

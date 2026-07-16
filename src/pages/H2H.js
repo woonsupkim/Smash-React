@@ -139,17 +139,17 @@ export default function H2H({ tour = 'atp' }) {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
-  // The studio auto-selects the strongest engine for this tour+surface
-  // (chosen by log loss with a Smart Blend default - see buildTrackRecord)
-  // (from the backtest), the same behavior the old page had. No manual picker;
-  // the "Powered by" line keeps it transparent.
+  // The studio auto-selects the most accurate engine for this tour+surface
+  // (same selector the deployed calls use); the Detailed simulation drawer
+  // has a manual picker to run any engine, and switching tour or surface
+  // snaps back to the recommended one.
   const [engine, setEngine]               = useState('smash');
   const [engineAcc, setEngineAcc]         = useState(null);
   const [featuredPair, setFeaturedPair]   = useState(null); // {a,b} ids of the auto-picked "matchup of the day"
   const [loadError, setLoadError]         = useState(false); // roster CSV failed to load
   // The "Hot Streak" engine (upset) simulates on heavy-recency 7-day stats
   // instead of the season CSV - selecting it re-seeds the sliders.
-  const upsetMode = engine === 'upset'; // always false in the redesign; kept so the seeding effect below reads cleanly
+  const upsetMode = engine === 'upset'; // picking Hot Streak re-seeds the sliders with 7-day stats
   const watchTimeoutRef = useRef(null);
   const prevDataDirRef                    = useRef(dataDir);
   const poolDirRef                        = useRef(dataDir); // which tour's CSV the current pool came from
@@ -249,6 +249,20 @@ export default function H2H({ tour = 'atp' }) {
   const bestEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
   const bestEngineAccPct = engineAcc?.[tour]?.[config.surfaceKey]?.[bestEngine] ?? null;
   useEffect(() => { setEngine(bestEngine); }, [bestEngine]);
+
+  // Manual engine picker options for the Detailed simulation drawer: the
+  // five engines with their season accuracy in THIS tour x surface cell,
+  // the recommended (deployed) one starred.
+  const engineOptions = useMemo(() => {
+    const cell = engineAcc?.[tour]?.[config.surfaceKey] || {};
+    return [
+      { id: 'smash', label: 'Smart Blend' },
+      { id: 'sim', label: 'Point Sim' },
+      { id: 'elo', label: 'Form' },
+      { id: 'upset', label: 'Hot Streak' },
+      { id: 'rank', label: 'Rankings' },
+    ].map((e) => ({ ...e, acc: cell[e.id] ?? null, recommended: e.id === bestEngine }));
+  }, [engineAcc, tour, config.surfaceKey, bestEngine]);
 
   // Onboarding: on the first load with nothing picked, preselect a
   // deterministic "matchup of the day" so the landing screen shows a live
@@ -544,7 +558,7 @@ export default function H2H({ tour = 'atp' }) {
       return Math.abs(fp - favProb) <= 0.07;
     });
     const acc = band.length ? Math.round((band.filter((m) => m[F.correct]).length / band.length) * 100) : null;
-    const examples = band.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map((m) => {
+    const examples = band.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map((m) => {
       const wIsP1 = m.winner === m.p1;
       return { wName: wIsP1 ? m.name1 : m.name2, lName: wIsP1 ? m.name2 : m.name1, score: m.score, right: m[F.correct] };
     });
@@ -933,6 +947,8 @@ export default function H2H({ tour = 'atp' }) {
                   liveLog={liveLog}
                   isWatching={isWatching}
                   engine={engine}
+                  engineOptions={engineOptions}
+                  onEngineChange={setEngine}
                   engineWinProbA={engineProbA}
                   onSimulate={handleSimulate}
                   onWatchMatch={handleWatchMatch}
