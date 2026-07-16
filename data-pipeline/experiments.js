@@ -691,6 +691,276 @@ function cmdDecay() {
   }
 }
 
+// ── Frontier 2: research-inspired engine candidates ───────────────────────
+// Three pre-match engines borrowed from the literature, all leak-free:
+//   - Common-Opponent (Knottenbelt et al. 2012): compare how thoroughly A
+//     and B dominated the opponents they BOTH played (share of total points
+//     won), a style-adjusted signal.
+//   - PageRank (Radicchi 2011): a recency-decayed who-beat-whom graph over
+//     the whole tour; beating good players ripples through the network.
+//     Monthly point-in-time snapshots.
+//   - Dominance form: the form-tilt idea, but tilting Elo by the gap in
+//     share of POINTS won over the last 10 matches instead of W/L (the
+//     recurring lesson of the 2024-25 momentum papers: fine-grained
+//     dominance beats win/loss form).
+// Single free parameters are fit sequentially (earlier folds only).
+
+function frontier2Enrich(tour) {
+  const bundle = loadTourRaw(tour);
+  const cases = withElo(bundle, loadCases(tour), {});
+
+  // Per-player chronological box-score log: date, opponent, share of total
+  // points won in that match.
+  const logByPlayer = new Map();
+  for (const [ourId, matches] of bundle.files) {
+    const apiId = String(bundle.idMap[ourId]);
+    const log = [];
+    for (const m of matches) {
+      if (m.result_type !== 'completed' || !m.date || !m.stats) continue;
+      const isP1 = String(m.player1Id) === apiId;
+      const my = isP1 ? m.stats.player1 : m.stats.player2;
+      const op = isP1 ? m.stats.player2 : m.stats.player1;
+      if (!my || !op) continue;
+      const mySv = Number(my.firstServeOf) || 0, opSv = Number(op.firstServeOf) || 0;
+      const myWon = (Number(my.winningOnFirstServe) || 0) + (Number(my.winningOnSecondServe) || 0);
+      const opWon = (Number(op.winningOnFirstServe) || 0) + (Number(op.winningOnSecondServe) || 0);
+      const pts = mySv + opSv;
+      if (pts < 40) continue;
+      const dom = (myWon + (opSv - opWon)) / pts;
+      log.push({ id: String(m.id), t: new Date(m.date).getTime(), opp: String(isP1 ? m.player2Id : m.player1Id), dom });
+    }
+    log.sort((a, b) => a.t - b.t);
+    logByPlayer.set(ourId, log);
+  }
+
+  // PageRank snapshots: one per calendar month seen in the cases, built from
+  // all completed tour matches strictly before that month, edge weights
+  // decayed with a one-year half-life. Damping 0.85, 60 iterations.
+  const tl = timelineMatches(bundle).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const months = [...new Set(cases.map((c) => c.date.slice(0, 7)))].sort();
+  const prByMonth = new Map();
+  for (const mo of months) {
+    const cutoff = new Date(`${mo}-01T00:00:00Z`).getTime();
+    const edges = new Map();
+    const nodes = new Set();
+    for (const m of tl) {
+      const t = new Date(m.date).getTime();
+      if (t >= cutoff) break;
+      const w = Math.pow(0.5, (cutoff - t) / (365 * 864e5));
+      if (w < 1e-4) continue;
+      nodes.add(m.winnerId); nodes.add(m.loserId);
+      if (!edges.has(m.loserId)) edges.set(m.loserId, new Map());
+      const em = edges.get(m.loserId);
+      em.set(m.winnerId, (em.get(m.winnerId) || 0) + w);
+    }
+    const ids = [...nodes];
+    const idx = new Map(ids.map((x, i) => [x, i]));
+    let pr = new Array(ids.length).fill(1 / ids.length);
+    const D = 0.85;
+    for (let it = 0; it < 60; it++) {
+      const nx = new Array(ids.length).fill((1 - D) / ids.length);
+      let dangling = 0;
+      for (let i = 0; i < ids.length; i++) {
+        const em = edges.get(ids[i]);
+        if (!em || !em.size) { dangling += pr[i]; continue; }
+        let tot = 0;
+        for (const w of em.values()) tot += w;
+        for (const [win, w] of em) nx[idx.get(win)] += D * pr[i] * (w / tot);
+      }
+      const add = (D * dangling) / ids.length;
+      for (let i = 0; i < ids.length; i++) nx[i] += add;
+      pr = nx;
+    }
+    const map = new Map();
+    for (let i = 0; i < ids.length; i++) map.set(ids[i], pr[i]);
+    prByMonth.set(mo, map);
+  }
+
+  // Case id -> player ids (the cache stores none).
+  const byId = new Map();
+  for (const [, matches] of bundle.files) {
+    for (const m of matches) {
+      if (m.result_type !== 'completed' || !m.date) continue;
+      const p1 = bundle.apiToOur.get(String(m.player1Id)), p2 = bundle.apiToOur.get(String(m.player2Id));
+      if (!p1 || !p2 || byId.has(String(m.id))) continue;
+      byId.set(String(m.id), { p1, p2, api1: String(m.player1Id), api2: String(m.player2Id) });
+    }
+  }
+
+  const out = [];
+  for (const c of cases) {
+    const raw = byId.get(c.id);
+    if (!raw) continue;
+    const t = new Date(c.date).getTime();
+    const logA = (logByPlayer.get(raw.p1) || []).filter((r) => r.t < t && r.id !== c.id);
+    const logB = (logByPlayer.get(raw.p2) || []).filter((r) => r.t < t && r.id !== c.id);
+
+    const domOf = (log) => {
+      const last = log.slice(-10);
+      if (last.length < 4) return null;
+      return last.reduce((s, r) => s + r.dom, 0) / last.length;
+    };
+    const dA = domOf(logA), dB = domOf(logB);
+
+    const byOpp = (log) => {
+      const m = new Map();
+      for (const r of log) {
+        if (!m.has(r.opp)) m.set(r.opp, { s: 0, n: 0 });
+        const e = m.get(r.opp);
+        e.s += r.dom; e.n++;
+      }
+      return m;
+    };
+    const oppA = byOpp(logA), oppB = byOpp(logB);
+    let coSum = 0, coW = 0, coN = 0;
+    for (const [opp, ea] of oppA) {
+      if (opp === raw.api1 || opp === raw.api2) continue;
+      const eb = oppB.get(opp);
+      if (!eb) continue;
+      const w = Math.min(ea.n, eb.n);
+      coSum += w * (ea.s / ea.n - eb.s / eb.n);
+      coW += w; coN++;
+    }
+    const coGap = coN >= 2 ? coSum / coW : null;
+
+    const prMap = prByMonth.get(c.date.slice(0, 7));
+    let prGap = null;
+    if (prMap) {
+      const a = prMap.get(raw.api1), b = prMap.get(raw.api2);
+      if (a && b) prGap = Math.log(a) - Math.log(b);
+    }
+
+    out.push({ ...c, probP1: c.ana, domGap: dA != null && dB != null ? dA - dB : null, coGap, coN, prGap });
+  }
+  return out;
+}
+
+// Form-tilted Elo (the frontier-1 winner, benched for grass): Elo nudged by
+// the last-10 W/L gap, beta fit only on earlier folds. Kept here as the
+// reference line the new candidates must beat.
+function formEloSequential(rows, { minTrain = 150 } = {}) {
+  const withForm = rows.filter((r) => r.form1 != null && r.form2 != null)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const folds = new Map();
+  for (const r of withForm) { const k = evalCore.foldKey(r.date); if (!folds.has(k)) folds.set(k, []); folds.get(k).push(r); }
+  const oof = [], train = [];
+  for (const [k, test] of folds) {
+    if (train.length >= minTrain) {
+      let best = { beta: 0, ll: Infinity };
+      for (let beta = -1; beta <= 1.001; beta += 0.05) {
+        const ll = evalCore.logLoss(train.map((r) => ({ p: evalCore.sigmoid(evalCore.logit(r.eloProbP1) + beta * (r.form1 - r.form2)), won: r.p1Won ? 1 : 0 })));
+        if (ll < best.ll) best = { beta, ll };
+      }
+      for (const m of test) oof.push({ ...m, p: evalCore.sigmoid(evalCore.logit(m.eloProbP1) + best.beta * (m.form1 - m.form2)), won: m.p1Won ? 1 : 0, fold: k });
+    }
+    train.push(...test);
+  }
+  return oof;
+}
+
+// Sequential single-parameter fits (earlier folds only, quarter folds).
+// seqTilt: p = sigmoid(logit(base) + beta * feature); missing feature = 0.
+function seqTilt(rows, feat, grid, base = (r) => r.eloProbP1) {
+  const sorted = [...rows].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const folds = new Map();
+  for (const r of sorted) { const k = evalCore.foldKey(r.date); if (!folds.has(k)) folds.set(k, []); folds.get(k).push(r); }
+  const oof = [], train = [];
+  for (const [k, test] of folds) {
+    const fitRows = train.filter((r) => feat(r) != null);
+    if (fitRows.length >= 150) {
+      let best = { beta: 0, ll: Infinity };
+      for (const beta of grid) {
+        const ll = evalCore.logLoss(fitRows.map((r) => ({ p: evalCore.sigmoid(evalCore.logit(base(r)) + beta * feat(r)), won: r.p1Won ? 1 : 0 })));
+        if (ll < best.ll) best = { beta, ll };
+      }
+      for (const m of test) oof.push({ ...m, p: evalCore.sigmoid(evalCore.logit(base(m)) + best.beta * (feat(m) ?? 0)), won: m.p1Won ? 1 : 0, fold: k });
+    }
+    train.push(...test);
+  }
+  return oof;
+}
+
+// seqStandalone: p = sigmoid(kk * feature) on rows where the feature exists.
+function seqStandalone(rows, feat, grid) {
+  const usable = rows.filter((r) => feat(r) != null).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const folds = new Map();
+  for (const r of usable) { const k = evalCore.foldKey(r.date); if (!folds.has(k)) folds.set(k, []); folds.get(k).push(r); }
+  const oof = [], train = [];
+  for (const [k, test] of folds) {
+    if (train.length >= 150) {
+      let best = { kk: 0, ll: Infinity };
+      for (const kk of grid) {
+        const ll = evalCore.logLoss(train.map((r) => ({ p: evalCore.sigmoid(kk * feat(r)), won: r.p1Won ? 1 : 0 })));
+        if (ll < best.ll) best = { kk, ll };
+      }
+      for (const m of test) oof.push({ ...m, p: evalCore.sigmoid(best.kk * feat(m)), won: m.p1Won ? 1 : 0, fold: k });
+    }
+    train.push(...test);
+  }
+  return oof;
+}
+
+const gridRange = (lo, hi, step) => { const g = []; for (let x = lo; x <= hi + 1e-9; x += step) g.push(+x.toFixed(3)); return g; };
+
+function cmdFrontier2() {
+  const tours = process.env.TOUR ? [process.env.TOUR] : ['atp', 'wta'];
+  for (const tour of tours) {
+    console.log(`\n══ ${tour.toUpperCase()} - frontier 2 (research engines) ══`);
+    const rows = frontier2Enrich(tour);
+    const cov = (f) => rows.filter((r) => f(r) != null).length;
+    console.log(`enriched n=${rows.length} | coverage: domGap ${cov((r) => r.domGap)} | coGap ${cov((r) => r.coGap)} | prGap ${cov((r) => r.prGap)}`);
+
+    const oof3 = evalCore.walkForwardOOF(rows);
+    const ids = new Set(oof3.map((r) => r.id));
+    const inIds = (l) => l.filter((r) => ids.has(r.id));
+
+    const oofFE = inIds(formEloSequential(rows));
+    const oofDom = inIds(seqTilt(rows, (r) => r.domGap, gridRange(-20, 20, 0.5)));
+    const oofCoT = inIds(seqTilt(rows, (r) => r.coGap, gridRange(-20, 20, 0.5)));
+    const oofCoS = inIds(seqStandalone(rows, (r) => r.coGap, gridRange(0, 30, 0.5)));
+    const oofPrT = inIds(seqTilt(rows, (r) => r.prGap, gridRange(-2, 2, 0.05)));
+    const oofPrS = inIds(seqStandalone(rows, (r) => r.prGap, gridRange(0, 3, 0.05)));
+    // Double tilt: dominance + common-opponent on top of Elo, greedily
+    // (dominance beta first, then co beta on the residual).
+    const oofDuo = inIds(seqTilt(
+      oofDom.map((r) => ({ ...r, eloTilted: r.p })),
+      (r) => r.coGap, gridRange(-20, 20, 0.5), (r) => r.eloTilted
+    ));
+
+    if (process.env.DUMP_OOF) {
+      const slim = (l) => l.map((r) => ({ id: r.id, surface: r.surface, p: +r.p.toFixed(4), won: r.won }));
+      fs.writeFileSync(path.join(__dirname, 'output', `frontier2_oof_${tour}.json`), JSON.stringify({
+        oof3: slim(oof3), oofFE: slim(oofFE), oofDom: slim(oofDom), oofCoT: slim(oofCoT),
+        oofCoS: slim(oofCoS), oofPrT: slim(oofPrT), oofPrS: slim(oofPrS), oofDuo: slim(oofDuo),
+        engines: rows.filter((r) => ids.has(r.id)).map((r) => ({ id: r.id, surface: r.surface, won: r.p1Won ? 1 : 0, sim: r.probP1, elo: r.eloProbP1, rank: r.rankProbP1 })),
+      }));
+      console.log(`dumped OOF rows to output/frontier2_oof_${tour}.json`);
+    }
+
+    const line = (name, list) => {
+      if (!list.length) return;
+      console.log(`  ${name.padEnd(28)} | n=${String(list.length).padEnd(5)} | LL ${evalCore.logLoss(list).toFixed(4)} | acc ${(evalCore.accuracy(list) * 100).toFixed(1)}%`);
+    };
+    const block = (label, filter) => {
+      console.log(label);
+      const cell = rows.filter((r) => ids.has(r.id)).filter(filter);
+      const alone = (name, fn) => line(name, cell.map((r) => ({ p: fn(r), won: r.p1Won ? 1 : 0 })).filter((x) => x.p != null));
+      alone('elo', (r) => r.eloProbP1);
+      alone('sim (ana)', (r) => r.probP1);
+      line('blend3 (production)', oof3.filter((r) => filter(r)));
+      line('form-tilted elo (bench)', oofFE.filter((r) => filter(r)));
+      line('dominance-tilted elo', oofDom.filter((r) => filter(r)));
+      line('common-opp tilted elo', oofCoT.filter((r) => filter(r)));
+      line('common-opp standalone', oofCoS.filter((r) => filter(r)));
+      line('pagerank-tilted elo', oofPrT.filter((r) => filter(r)));
+      line('pagerank standalone', oofPrS.filter((r) => filter(r)));
+      line('dom + common-opp tilt', oofDuo.filter((r) => filter(r)));
+    };
+    block('-- tour level --', () => true);
+    for (const s of ['hard', 'clay', 'grass']) block(`-- ${s} --`, (r) => r.surface === s);
+  }
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -705,4 +975,5 @@ else if (cmd === 'stack') cmdStack();
 else if (cmd === 'window') cmdWindow();
 else if (cmd === 'calibselect') cmdCalibSelect();
 else if (cmd === 'decay') cmdDecay();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window');
+else if (cmd === 'frontier2') cmdFrontier2();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2');
