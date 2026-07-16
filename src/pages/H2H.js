@@ -139,7 +139,8 @@ export default function H2H({ tour = 'atp' }) {
   const [isWatching, setIsWatching]       = useState(false);
   const [h2hData, setH2hData]             = useState(null);
   const [eloData, setEloData]             = useState(null);
-  // The studio auto-selects the most accurate engine for this tour+surface
+  // The studio auto-selects the strongest engine for this tour+surface
+  // (chosen by log loss with a Smart Blend default - see buildTrackRecord)
   // (from the backtest), the same behavior the old page had. No manual picker;
   // the "Powered by" line keeps it transparent.
   const [engine, setEngine]               = useState('smash');
@@ -760,7 +761,7 @@ export default function H2H({ tour = 'atp' }) {
                     )}
                     <div className="verdict-powered">
                       Powered by <strong>{ENGINE_LABELS[engine] || 'Smart Blend'}</strong>
-                      {bestEngineAccPct != null ? `, the most accurate model on ${config.surfaceLabel.toLowerCase()} (${bestEngineAccPct}% on our record)` : ''}.
+                      {bestEngineAccPct != null ? `, our strongest engine on ${config.surfaceLabel.toLowerCase()} (${bestEngineAccPct}% of winners on our record)` : ''}.
                     </div>
                     {receipts && receipts.acc != null && receipts.n >= 8 && (
                       <div className="verdict-credibility">
@@ -782,7 +783,7 @@ export default function H2H({ tour = 'atp' }) {
                   <p className="studio-card-sub">
                     {engine === 'smash'
                       ? 'What pushes the Smart Blend toward each player, in probability points.'
-                      : `How each model signal leans. The headline uses ${ENGINE_LABELS[engine]}, the most accurate model on ${config.surfaceLabel.toLowerCase()}.`}
+                      : `How each model signal leans. The headline uses ${ENGINE_LABELS[engine]}, our strongest engine on ${config.surfaceLabel.toLowerCase()}.`}
                   </p>
                   <div className="why-attr">
                     {attribution.map((c) => {

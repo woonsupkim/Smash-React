@@ -19,6 +19,8 @@ export const CHANGELOG = [
       'Format fix: every match is now simulated in its real format. ATP is best-of-five at slams only; Masters and the rest of the tour are best-of-three. Previously the season benchmark priced all ATP matches as best-of-five, which never changed a pick (format only amplifies confidence) but overstated confidence on non-slam matches. Weights and calibration refit on the corrected probabilities.',
       'Daily data refreshes now run during the combined-1000 weeks too, so those calls lock and grade on the same rhythm as slam calls.',
       'Called-it receipt cards in the share kit include the new events; a Cincinnati receipt is US Open proof.',
+      'Engine selection fixed: the engine that locks forward picks is now chosen by log loss with the Smart Blend as the default, replacing per-cell max accuracy (which was crowning noise, and a rankings baseline flattered by grading old matches with current rankings). Under the honest rule the Smart Blend wins every tour and surface.',
+      'The tuner now trains on a rolling 24-month window with recency decay (nine-month half-life, chosen from a sweep where any decay beat a flat window and 180-270 days formed the best plateau) instead of the current season alone: better walk-forward accuracy and log loss on both tours, and no cold start each January. The calibration layer is auto-selected per retune between none and per-tour (finer schemes trialed and rejected); under the rolling window, none wins - the weighted fit is already calibrated.',
     ],
   },
   {

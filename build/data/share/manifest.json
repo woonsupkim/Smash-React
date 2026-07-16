@@ -1,15 +1,8 @@
 {
-  "generatedAt": "2026-07-15T13:07:43.932Z",
-  "seasonN": 2802,
+  "generatedAt": "2026-07-15T20:45:17.444Z",
+  "seasonN": 2819,
   "thread": null,
   "assets": [
-    {
-      "file": "called-1.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Jannik Sinner over Alexander Zverev at 52%, locked before play. Final: Jannik Sinner won 6-7(7) 7-6(2) 6-3 6-4. Receipts: /match/alexander-zverev-vs-jannik-sinner-177491 #tennis #atp #wta #tennisprediction"
-    },
     {
       "file": "title-odds-atp.png",
       "type": "champion",
@@ -29,21 +22,21 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-14: called 2 of 4 winners before play. Season benchmark: 66%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-15: called 7 of 10 winners before play. Season benchmark: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 57 of 82 winners called before play, 2 wins over the bookies, 23 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon ATP report card: 51 of 71 winners called before play, 2 wins over the bookies, 21 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 65 of 88 winners called before play, 39 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Wimbledon WTA report card: 49 of 76 winners called before play, 1 wins over the bookies, 27 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "draw-road-atp.png",
@@ -78,7 +71,7 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 66% of winners called across 2,802 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: season benchmark: 67% of winners called across 2,819 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "how-it-works-1.png",
@@ -99,7 +92,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 66% of winners called across 2,802 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 67% of winners called across 2,819 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "pool-promo.png",
@@ -134,7 +127,7 @@
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1248 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "The US Open is played on hard - and hard is where we've graded 1250 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "hype-story.png",

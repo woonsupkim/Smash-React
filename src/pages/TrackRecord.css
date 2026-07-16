@@ -409,6 +409,12 @@
   border-top: 1px dashed var(--border-2);
   opacity: 0.85;
 }
+/* One demarcation line: only the first baseline row draws the divider */
+.track-compare-row.baseline + .track-compare-row.baseline {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
 .track-compare-row.baseline .track-compare-bar { background: repeating-linear-gradient(45deg, #566173, #566173 4px, #45505f 4px, #45505f 8px); }
 .track-compare-baseline-tag {
   display: inline-block;

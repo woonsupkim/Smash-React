@@ -42,16 +42,20 @@ function weightGrid(step = 0.05) {
 }
 
 // Fits blend weights on a training list by log loss. Rows need
-// {probP1, eloProbP1, rankProbP1, p1Won}.
-function fitWeights(list, step = 0.05) {
+// {probP1, eloProbP1, rankProbP1, p1Won}. Optional per-row weights turn
+// this into a recency-weighted fit (rolling-window tuner).
+function fitWeights(list, step = 0.05, wts = null) {
   let best = null;
   for (const w of weightGrid(step)) {
-    let s = 0;
-    for (const m of list) {
+    let s = 0, W = 0;
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      const wt = wts ? wts[i] : 1;
       const p = clampP(w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1);
-      s += -(m.p1Won ? Math.log(p) : Math.log(1 - p));
+      s += wt * -(m.p1Won ? Math.log(p) : Math.log(1 - p));
+      W += wt;
     }
-    const ll = s / list.length;
+    const ll = s / W;
     if (!best || ll < best.logLoss) best = { ...w, logLoss: ll };
   }
   return best;

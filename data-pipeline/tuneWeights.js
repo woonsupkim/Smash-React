@@ -1,26 +1,27 @@
 /**
- * Tunes the Smart Blend in src/engineConfig.json: the per tour x surface
- * weights AND the per-tour Platt calibration.
+ * Tunes the Smart Blend in src/engineConfig.json: per tour x surface weights
+ * plus the calibration layer.
  *
- * Objective: LOG LOSS, not accuracy - accuracy can't tell a 55% call from a
- * 95% call; log loss is exactly the penalty for stated confidence.
+ * Objective: LOG LOSS. Protocol: walk-forward over the season's months -
+ * weights are fitted only on matches strictly before each fold and scored
+ * on the fold, never the reverse.
  *
- * Protocol: walk-forward. The season's matches fold by calendar month;
- * weights are fitted only on months strictly before each fold and scored on
- * the fold, never the reverse. The pooled out-of-fold predictions are what
- * the Platt `a` is fitted on (so the calibration never sees its own
- * training data), and the walk-forward log loss is the honest headline
- * number reported to the PR. The SHIPPED weights are then refitted on the
- * full season (standard practice: validation tells you the expected error,
- * the final model uses all available data).
+ * Training window: ROLLING 24 MONTHS with one-year-half-life recency
+ * weighting (a match from last month counts fully, one from 18 months ago
+ * about a third). Validated on the harness (experiments.js window): +1.2pt
+ * ATP walk-forward accuracy vs season-only tuning, better log loss on both
+ * tours, and no January cold start. Prior-season components come from
+ * data-pipeline/output/tuner_history.json (built by buildTunerHistory.js in
+ * the refresh workflow); with the artifact missing the tuner degrades
+ * gracefully to season-only.
  *
- * Also reports the gap to the bookmakers' closing odds - the north-star
- * benchmark for whether a change was real.
+ * Calibration: SELECTED per retune between "none" and a per-tour Platt `a`,
+ * scored sequentially on the out-of-fold predictions (fold k calibrated
+ * only with earlier folds). Finer schemes (per-surface, per-format) were
+ * trialed and lost to both (experiments.js calibselect). The winner ships;
+ * "none" writes a=1. Calibration never flips a pick.
  *
- * Reads the already-simulated per-match component probabilities from
- * public/data/track_record.json. Run AFTER a track-record build; the full
- * re-simulation with new weights happens automatically on the next refresh
- * (buildTrackRecord fingerprints the model config via modelKey).
+ * Also reports the gap to the bookmakers' closing odds on the season OOF.
  *
  * Scheduled by .github/workflows/retune-weights.yml just before each slam,
  * which opens a PR for human review instead of committing directly.
@@ -29,47 +30,97 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { logLoss, accuracy, fitWeights, fitCalib, applyCalib, walkForwardOOF, marketProb } = require('./lib/evalCore');
+const { logLoss, accuracy, fitWeights, fitCalib, applyCalib, foldKey, marketProb } = require('./lib/evalCore');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'src', 'engineConfig.json');
 const TR_PATH = path.join(__dirname, '..', 'public', 'data', 'track_record.json');
+const HIST_PATH = path.join(__dirname, 'output', 'tuner_history.json');
+
+const WINDOW_DAYS = 730;
+// Swept on the harness (experiments.js decay): any decay beats a flat
+// window, and 180-270d is a plateau marginally better than 365d on both
+// tours. 270 is the plateau center - robust rather than argmin-chasing.
+const HALF_LIFE_DAYS = 270;
+const decayWeight = (dateStr, asOf) => {
+  const age = (asOf - new Date(dateStr)) / 864e5;
+  return age >= 0 && age <= WINDOW_DAYS ? Math.pow(0.5, age / HALF_LIFE_DAYS) : 0;
+};
 
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-const matches = JSON.parse(fs.readFileSync(TR_PATH, 'utf8')).matches;
+const seasonRows = JSON.parse(fs.readFileSync(TR_PATH, 'utf8')).matches;
+const history = fs.existsSync(HIST_PATH) ? JSON.parse(fs.readFileSync(HIST_PATH, 'utf8')) : null;
+if (!history) console.log('No tuner_history.json - tuning on the season alone (run buildTunerHistory.js in the refresh to enable the rolling window).');
 
-const tours = ['atp', 'wta'];
 const surfaces = ['hard', 'clay', 'grass'];
+const usable = (m) => typeof m.probP1 === 'number' && typeof m.eloProbP1 === 'number' && typeof m.rankProbP1 === 'number';
 
-for (const tour of tours) {
-  const list = matches.filter((m) => m.tour === tour &&
-    typeof m.probP1 === 'number' && typeof m.eloProbP1 === 'number' && typeof m.rankProbP1 === 'number');
-  if (list.length < 60) {
-    console.log(`${tour}: only ${list.length} matches - keeping existing weights and calibration.`);
+for (const tour of ['atp', 'wta']) {
+  const season = seasonRows.filter((m) => m.tour === tour && usable(m));
+  const seasonIds = new Set(season.map((m) => m.id));
+  const prior = (history?.matches || []).filter((m) => m.tour === tour && usable(m) && !seasonIds.has(m.id));
+  const pool = [...prior, ...season].sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (season.length < 60) {
+    console.log(`${tour}: only ${season.length} season matches - keeping existing weights and calibration.`);
     continue;
   }
 
-  // 1. Honest expected performance + calibration data: walk-forward OOF.
-  const oof = walkForwardOOF(list, { minTrain: 100, minSurface: 40, foldBy: 'month' });
-  const oofLL = logLoss(oof);
-  const oofAcc = accuracy(oof);
+  // Weighted fit helpers over the rolling window as of a date.
+  const fitAt = (list, asOf) => {
+    const pairs = list.map((m) => [m, decayWeight(m.date, asOf)]).filter(([, w]) => w > 0);
+    if (pairs.length < 40) return null;
+    return fitWeights(pairs.map(([m]) => m), 0.05, pairs.map(([, w]) => w));
+  };
 
-  // 2. Platt `a` fitted on the OOF predictions only.
-  const a = fitCalib(oof);
-  const calLL = logLoss(oof.map((r) => ({ p: applyCalib(r.p, a), won: r.won })));
+  // 1. Walk-forward over season months: honest expected performance + the
+  // OOF the calibration selection runs on.
+  const folds = new Map();
+  for (const m of season) {
+    const k = foldKey(m.date, 'month');
+    if (!folds.has(k)) folds.set(k, []);
+    folds.get(k).push(m);
+  }
+  const oof = [];
+  for (const [k, test] of folds) {
+    const foldStart = new Date(`${k}-01T00:00:00Z`);
+    const train = pool.filter((m) => new Date(m.date) < foldStart);
+    const tourFit = fitAt(train, foldStart);
+    if (!tourFit) continue;
+    const bySurf = {};
+    for (const s of surfaces) {
+      bySurf[s] = fitAt(train.filter((m) => m.surface === s), foldStart) || tourFit;
+    }
+    for (const m of test) {
+      const w = bySurf[m.surface] || tourFit;
+      oof.push({ ...m, fold: k, p: w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1, won: m.p1Won ? 1 : 0 });
+    }
+  }
+  const rawLL = logLoss(oof);
+  const rawAcc = accuracy(oof);
+
+  // 2. Calibration selection: none vs per-tour Platt, scored sequentially.
+  const foldOrder = [...new Set(oof.map((r) => r.fold))];
+  const seqPerTour = [];
+  for (const fk of foldOrder) {
+    const past = oof.filter((r) => foldOrder.indexOf(r.fold) < foldOrder.indexOf(fk));
+    const a = fitCalib(past);
+    for (const r of oof.filter((r) => r.fold === fk)) seqPerTour.push({ p: applyCalib(r.p, a), won: r.won });
+  }
+  const perTourLL = logLoss(seqPerTour);
+  const useCalib = perTourLL < rawLL - 1e-4;
+  const a = useCalib ? fitCalib(oof) : 1;
   config.calibration = config.calibration || {};
   config.calibration[tour] = { a };
 
-  // 3. Shipped weights: refit on the full season by log loss.
-  const tourFit = fitWeights(list);
+  // 3. Shipped weights: rolling-window weighted fit as of today.
+  const now = new Date();
+  const tourFinal = fitAt(pool, now);
   for (const surface of surfaces) {
-    const slist = list.filter((m) => m.surface === surface);
-    const fit = slist.length >= 40 ? fitWeights(slist) : tourFit;
+    const fit = fitAt(pool.filter((m) => m.surface === surface), now) || tourFinal;
     config.weights[tour][surface] = { ws: fit.ws, we: fit.we, wr: fit.wr };
-    console.log(`${tour} ${surface} (n=${slist.length}): ws=${fit.ws} we=${fit.we} wr=${fit.wr} (in-sample LL ${fit.logLoss.toFixed(4)})`);
+    console.log(`${tour} ${surface}: ws=${fit.ws} we=${fit.we} wr=${fit.wr}`);
   }
 
-  // 4. Benchmarks on the OOF set.
-  const rankLL = logLoss(oof.map((r) => ({ p: r.rankProbP1, won: r.won })));
+  // 4. Report card for the PR body.
   const priced = oof.filter((r) => r.od1 && r.od2);
   let marketLine = 'no odds coverage';
   if (priced.length >= 50) {
@@ -78,8 +129,9 @@ for (const tour of tours) {
     marketLine = `model ${ourLL.toFixed(4)} vs market ${mLL.toFixed(4)} (gap ${(ourLL - mLL).toFixed(4)}, n=${priced.length})`;
   }
   console.log(
-    `${tour} walk-forward: raw LL ${oofLL.toFixed(4)} -> calibrated ${calLL.toFixed(4)} (a=${a}) | ` +
-    `acc ${(oofAcc * 100).toFixed(1)}% | rank baseline LL ${rankLL.toFixed(4)} | closing odds: ${marketLine}`
+    `${tour} walk-forward (rolling ${history ? '24mo window' : 'SEASON-ONLY fallback'}): ` +
+    `acc ${(rawAcc * 100).toFixed(1)}% | LL raw ${rawLL.toFixed(4)} vs per-tour calib ${perTourLL.toFixed(4)} ` +
+    `-> shipping ${useCalib ? `a=${a}` : 'no calibration (a=1)'} | training pool ${pool.length} (${prior.length} prior + ${season.length} season) | closing odds: ${marketLine}`
   );
 }
 

@@ -234,12 +234,15 @@ export default function TrackRecord() {
       return { profit, k, roi: k ? (profit / k) * 100 : 0 };
     };
     const eloFav = (m) => (m.eloProbP1 >= 0.5 ? m.p1 : m.p2);
+    // Same names and order as the "Five ways to pick a winner" panel below,
+    // so the two sections read as one comparison. "Rankings" IS the
+    // higher-rank-wins baseline (identical picks), hence the tag.
     const returns = [
       { id: 'smash', label: 'Smart Blend', ...roiFor((m) => m.smashFavorite) },
       { id: 'sim', label: 'Point Sim', ...roiFor((m) => m.favorite) },
       { id: 'elo', label: 'Form', ...roiFor(eloFav) },
       { id: 'upset', label: 'Hot Streak', ...roiFor((m) => m.upsetFavorite) },
-      { id: 'rank', label: 'Higher rank', baseline: true, ...roiFor((m) => m.rankPick) },
+      { id: 'rank', label: 'Rankings', baseline: true, ...roiFor((m) => m.rankPick) },
       { id: 'odd', label: "The bookies' favorite", baseline: true, ...roiFor((m) => m.oddFav) },
     ];
     const bestReturn = returns.reduce((b, r) => (r.profit > b.profit ? r : b), returns[0]);
@@ -529,17 +532,22 @@ export default function TrackRecord() {
               <div className="track-panel">
                 <div className="track-section-label">Five ways to pick a winner · {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}, same matches</div>
                 <div className="track-compare">
+                  {/* Same names and order as the betting panel above.
+                      Rankings doubles as the baseline: its picks ARE
+                      "higher rank wins" (the probability it carries only
+                      matters inside the blend). */}
                   {[
                     { id: 'smash', label: 'Smart Blend', desc: 'Our best: a mix of everything below', acc: stats.smash },
                     { id: 'sim', label: 'Point Sim', desc: 'The match, played 1,000 times', acc: stats.season },
                     { id: 'elo', label: 'Form', desc: "Who's been winning on this surface", acc: stats.elo },
-                    { id: 'rank', label: 'Rankings', desc: 'Just trust the world rankings', acc: stats.rank },
                     { id: 'upset', label: 'Hot Streak', desc: "Who's hot in the last few weeks", acc: stats.upset },
+                    { id: 'rank', label: 'Rankings', desc: 'Just pick the higher-ranked player', acc: stats.rank, baseline: true },
                   ].map((mo) => (
-                    <div className={`track-compare-row${mo.id === stats.bestEngine ? ' primary' : ''}`} key={mo.id}>
+                    <div className={`track-compare-row${mo.id === stats.bestEngine ? ' primary' : ''}${mo.baseline ? ' baseline' : ''}`} key={mo.id}>
                       <div className="track-compare-name">
                         {mo.label}
                         {mo.id === stats.bestEngine && <span className="track-compare-best">Most accurate</span>}
+                        {mo.baseline && <span className="track-compare-baseline-tag">Baseline</span>}
                         <span className="track-compare-desc">{mo.desc}</span>
                       </div>
                       <div className="track-compare-bar-wrap">
@@ -548,19 +556,6 @@ export default function TrackRecord() {
                       <div className="track-compare-acc">{mo.acc}%</div>
                     </div>
                   ))}
-
-                  {/* Baseline - deliberately set apart from the engines */}
-                  <div className="track-compare-row baseline">
-                    <div className="track-compare-name">
-                      Higher rank wins
-                      <span className="track-compare-baseline-tag">Baseline</span>
-                      <span className="track-compare-desc">Just pick the higher-ranked player</span>
-                    </div>
-                    <div className="track-compare-bar-wrap">
-                      <div className="track-compare-bar" style={{ width: `${stats.rank}%` }} />
-                    </div>
-                    <div className="track-compare-acc">{stats.rank}%</div>
-                  </div>
 
                   {/* Second baseline: always back the bookmaker's favorite
                       (shortest odds). Only over matches that carry odds. */}

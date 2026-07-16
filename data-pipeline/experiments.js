@@ -479,6 +479,218 @@ function cmdStack() {
   }
 }
 
+// ── Rolling training window: should the tuner see more than this season? ──
+// Weighted log-loss grid fit (same grid as evalCore.fitWeights, each match's
+// loss scaled by a recency weight).
+function fitWeightsW(list, wts, step = 0.05) {
+  let best = null;
+  for (const w of evalCore.weightGrid(step)) {
+    let s = 0, W = 0;
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      const p = Math.min(0.999, Math.max(0.001, w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1));
+      s += wts[i] * -(m.p1Won ? Math.log(p) : Math.log(1 - p));
+      W += wts[i];
+    }
+    const ll = s / W;
+    if (!best || ll < best.logLoss) best = { ...w, logLoss: ll };
+  }
+  return best;
+}
+
+function cmdWindow() {
+  const VARIANTS = {
+    'season-only': (m) => (m.date >= '2026-01-01' ? 1 : 0),
+    'window-24mo': (m, foldStart) => ((foldStart - new Date(m.date)) / 864e5 <= 730 ? 1 : 0),
+    'decay-12mo': (m, foldStart) => {
+      const age = (foldStart - new Date(m.date)) / 864e5;
+      return age <= 730 ? Math.pow(0.5, age / 365) : 0;
+    },
+  };
+  for (const tour of ['atp', 'wta']) {
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true })
+      .filter((r) => r.ana != null)
+      .map((r) => ({ ...r, probP1: r.ana }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Evaluate on 2026 monthly folds; each variant trains on everything
+    // strictly earlier, filtered/weighted its own way.
+    const folds = new Map();
+    for (const r of rows) {
+      if (r.date < '2026-01-01') continue;
+      const k = evalCore.foldKey(r.date, 'month');
+      if (!folds.has(k)) folds.set(k, []);
+      folds.get(k).push(r);
+    }
+
+    const oofByVariant = {};
+    for (const [vName, weightFn] of Object.entries(VARIANTS)) {
+      const oof = new Map();
+      for (const [k, test] of folds) {
+        const foldStart = new Date(`${k}-01T00:00:00Z`);
+        const pool = rows.filter((m) => new Date(m.date) < foldStart);
+        const pairs = pool.map((m) => [m, weightFn(m, foldStart)]).filter(([, w]) => w > 0);
+        if (pairs.length < 100) continue;
+        const train = pairs.map(([m]) => m);
+        const tw = pairs.map(([, w]) => w);
+        const tourFit = fitWeightsW(train, tw);
+        const bySurf = {};
+        for (const s of ['hard', 'clay', 'grass']) {
+          const sp = pairs.filter(([m]) => m.surface === s);
+          bySurf[s] = sp.length >= 40 ? fitWeightsW(sp.map(([m]) => m), sp.map(([, w]) => w)) : tourFit;
+        }
+        for (const m of test) {
+          const w = bySurf[m.surface] || tourFit;
+          oof.set(m.id, { p: w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1, won: m.p1Won ? 1 : 0 });
+        }
+      }
+      oofByVariant[vName] = oof;
+    }
+
+    const names = Object.keys(oofByVariant);
+    const common = [...oofByVariant[names[0]].keys()].filter((id) => names.every((n) => oofByVariant[n].has(id)));
+    console.log(`\n══ ${tour.toUpperCase()} - tuning window (2026 walk-forward; common n=${common.length}) ══`);
+    for (const n of names) {
+      const all = [...oofByVariant[n].values()];
+      const com = common.map((id) => oofByVariant[n].get(id));
+      console.log(
+        `${n.padEnd(12)} | common folds: acc ${(evalCore.accuracy(com) * 100).toFixed(1)}% LL ${evalCore.logLoss(com).toFixed(4)}` +
+        ` | full coverage: n=${all.length} acc ${(evalCore.accuracy(all) * 100).toFixed(1)}% LL ${evalCore.logLoss(all).toFixed(4)}`
+      );
+    }
+  }
+}
+
+// ── Calibration scheme selection on the decay-12mo rolling-window OOF ─────
+// Every scheme is fitted SEQUENTIALLY (fold k calibrated only with folds
+// strictly before k), so the comparison is honest. Calibration never flips
+// a pick, so the metric is log loss.
+function cmdCalibSelect() {
+  const decayW = (m, foldStart) => {
+    const age = (foldStart - new Date(m.date)) / 864e5;
+    return age <= 730 ? Math.pow(0.5, age / 365) : 0;
+  };
+  for (const tour of ['atp', 'wta']) {
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true })
+      .filter((r) => r.ana != null)
+      .map((r) => ({ ...r, probP1: r.ana }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Decay-12mo walk-forward OOF over 2026 months, keeping metadata.
+    const folds = new Map();
+    for (const r of rows) {
+      if (r.date < '2026-01-01') continue;
+      const k = evalCore.foldKey(r.date, 'month');
+      if (!folds.has(k)) folds.set(k, []);
+      folds.get(k).push(r);
+    }
+    const oof = [];
+    for (const [k, test] of folds) {
+      const foldStart = new Date(`${k}-01T00:00:00Z`);
+      const pairs = rows.filter((m) => new Date(m.date) < foldStart)
+        .map((m) => [m, decayW(m, foldStart)]).filter(([, w]) => w > 0);
+      if (pairs.length < 100) continue;
+      const train = pairs.map(([m]) => m);
+      const tw = pairs.map(([, w]) => w);
+      const tourFit = fitWeightsW(train, tw);
+      const bySurf = {};
+      for (const s of ['hard', 'clay', 'grass']) {
+        const sp = pairs.filter(([m]) => m.surface === s);
+        bySurf[s] = sp.length >= 40 ? fitWeightsW(sp.map(([m]) => m), sp.map(([, w]) => w)) : tourFit;
+      }
+      for (const m of test) {
+        const w = bySurf[m.surface] || tourFit;
+        oof.push({
+          fold: k, surface: m.surface, bestOf: m.bestOf,
+          p: w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1,
+          won: m.p1Won ? 1 : 0,
+        });
+      }
+    }
+
+    // Sequential scoring under each scheme: fold k uses a's fitted on the
+    // OOF from earlier folds only, grouped by the scheme's key.
+    const groupers = {
+      none: null,
+      'per-tour': () => 'all',
+      'per-surface': (r) => r.surface,
+      'per-format': (r) => `bo${r.bestOf}`,
+    };
+    console.log(`\n══ ${tour.toUpperCase()} - calibration schemes on decay-12mo OOF (n=${oof.length}) ══`);
+    const foldOrder = [...new Set(oof.map((r) => r.fold))];
+    for (const [name, keyFn] of Object.entries(groupers)) {
+      const scored = [];
+      for (const fk of foldOrder) {
+        const past = oof.filter((r) => foldOrder.indexOf(r.fold) < foldOrder.indexOf(fk));
+        const test = oof.filter((r) => r.fold === fk);
+        for (const r of test) {
+          if (!keyFn) { scored.push({ p: r.p, won: r.won }); continue; }
+          const group = past.filter((q) => keyFn(q) === keyFn(r));
+          const a = evalCore.fitCalib(group);
+          scored.push({ p: evalCore.applyCalib(r.p, a), won: r.won });
+        }
+      }
+      console.log(`${name.padEnd(12)} | LL ${evalCore.logLoss(scored).toFixed(4)} | acc ${(evalCore.accuracy(scored) * 100).toFixed(1)}%`);
+    }
+  }
+}
+
+// ── Recency half-life sweep (24-month window fixed, decay varied) ─────────
+function cmdDecay() {
+  const HALF_LIVES = [90, 180, 270, 365, 550, Infinity]; // days; Infinity = flat window
+  for (const tour of ['atp', 'wta']) {
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true })
+      .filter((r) => r.ana != null)
+      .map((r) => ({ ...r, probP1: r.ana }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const folds = new Map();
+    for (const r of rows) {
+      if (r.date < '2026-01-01') continue;
+      const k = evalCore.foldKey(r.date, 'month');
+      if (!folds.has(k)) folds.set(k, []);
+      folds.get(k).push(r);
+    }
+    const oofByHl = {};
+    for (const hl of HALF_LIVES) {
+      const weightFn = (m, foldStart) => {
+        const age = (foldStart - new Date(m.date)) / 864e5;
+        if (age > 730) return 0;
+        return hl === Infinity ? 1 : Math.pow(0.5, age / hl);
+      };
+      const oof = new Map();
+      for (const [k, test] of folds) {
+        const foldStart = new Date(`${k}-01T00:00:00Z`);
+        const pairs = rows.filter((m) => new Date(m.date) < foldStart)
+          .map((m) => [m, weightFn(m, foldStart)]).filter(([, w]) => w > 0);
+        if (pairs.length < 100) continue;
+        const train = pairs.map(([m]) => m);
+        const tw = pairs.map(([, w]) => w);
+        const tourFit = fitWeightsW(train, tw);
+        const bySurf = {};
+        for (const s of ['hard', 'clay', 'grass']) {
+          const sp = pairs.filter(([m]) => m.surface === s);
+          bySurf[s] = sp.length >= 40 ? fitWeightsW(sp.map(([m]) => m), sp.map(([, w]) => w)) : tourFit;
+        }
+        for (const m of test) {
+          const w = bySurf[m.surface] || tourFit;
+          oof.set(m.id, { p: w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1, won: m.p1Won ? 1 : 0 });
+        }
+      }
+      oofByHl[hl] = oof;
+    }
+    const keys = Object.keys(oofByHl);
+    const common = [...oofByHl[keys[0]].keys()].filter((id) => keys.every((k) => oofByHl[k].has(id)));
+    console.log(`\n══ ${tour.toUpperCase()} - half-life sweep (24mo window; paired n=${common.length}) ══`);
+    for (const hl of HALF_LIVES) {
+      const com = common.map((id) => oofByHl[hl].get(id));
+      console.log(`half-life ${String(hl === Infinity ? 'flat' : hl + 'd').padEnd(6)} | acc ${(evalCore.accuracy(com) * 100).toFixed(1)}% | LL ${evalCore.logLoss(com).toFixed(4)}`);
+    }
+  }
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -490,4 +702,7 @@ else if (cmd === 'fatigue') cmdFatigue();
 else if (cmd === 'market') cmdMarket();
 else if (cmd === 'ana') cmdAna();
 else if (cmd === 'stack') cmdStack();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack');
+else if (cmd === 'window') cmdWindow();
+else if (cmd === 'calibselect') cmdCalibSelect();
+else if (cmd === 'decay') cmdDecay();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window');

@@ -133,6 +133,11 @@ jobs:
       - name: Rebuild Track Record (precomputed predictions)
         run: npm run build-track-record
 
+      # Prior-season components for the rolling-window tuner (the retune
+      # workflow reads this committed artifact - it has no raw data itself).
+      - name: Build tuner history
+        run: npm run build-tuner-history
+
       # Forward test: grade any locked predictions whose results have landed,
       # then lock new ones for upcoming matches.
       - name: Update forward predictions

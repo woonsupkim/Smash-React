@@ -297,15 +297,29 @@ console.log(`Wrote ${all.length} matches to ${outPath}`);
 // Both the Track Record page and the H2H "Recommended" tag read this to know
 // which engine is most accurate for a given tour/surface.
 const ENGINE_FIELD = { smash: 'smashCorrect', sim: 'correct', elo: 'eloCorrect', rank: 'rankCorrect', upset: 'upsetCorrect' };
+const ENGINE_PROB = { smash: 'smashProbP1', sim: 'probP1', elo: 'eloProbP1', rank: 'rankProbP1', upset: 'upsetProbP1' };
 function summarize(list) {
   if (!list.length) return null;
   const out = { n: list.length };
+  const lls = {};
   for (const [id, field] of Object.entries(ENGINE_FIELD)) {
     out[id] = Math.round((list.filter((m) => m[field]).length / list.length) * 100);
+    const ll = logLoss(list.map((m) => ({ p: m[ENGINE_PROB[id]], won: m.p1Won })));
+    lls[id] = ll != null ? +ll.toFixed(4) : null;
   }
-  // Best selectable engine (Smart Blend wins ties - it's the deployed default).
-  const order = ['smash', 'sim', 'elo', 'rank', 'upset'];
-  out.best = order.reduce((b, id) => (out[id] > out[b] ? id : b), 'smash');
+  out.logLoss = lls;
+  // Best selectable engine: the Smart Blend by default - it's the deployed,
+  // tuned model. A challenger takes over only by beating the blend's LOG
+  // LOSS by a real margin (accuracy at cell sizes of a few hundred matches
+  // has a multi-point noise floor, and the retro rank engine is flattered
+  // by using current rankings on past matches - max-accuracy selection was
+  // crowning noise). 0.01 log loss is roughly the noise floor at these n.
+  const MARGIN = 0.01;
+  const challengers = ['sim', 'elo', 'rank', 'upset']
+    .filter((id) => lls[id] != null && lls.smash != null && lls[id] < lls.smash - MARGIN);
+  out.best = challengers.length
+    ? challengers.reduce((a, b) => (lls[a] <= lls[b] ? a : b))
+    : 'smash';
   return out;
 }
 const accuracy = {};
