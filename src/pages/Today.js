@@ -32,7 +32,7 @@ export default function Today() {
       <h1 className="today-title">Locked before play</h1>
       {season && (
         <p className="today-season">
-          Season so far: {season.correct.toLocaleString()} of {season.n.toLocaleString()} winners
+          Season benchmark: {season.correct.toLocaleString()} of {season.n.toLocaleString()} winners
           called ({season.acc}%), every one <Link to="/track-record">on the record</Link>.
         </p>
       )}

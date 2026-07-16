@@ -1,11 +1,16 @@
 /**
  * Builds public/data/track_record.json - every completed 2026 tour-level
  * singles match where BOTH players are in the SMASH roster, for both tours,
- * across all surfaces. For each match we PRECOMPUTE four predictions:
- *   1. season model  - point simulation on recency-weighted surface stats
- *   2. upset model    - point simulation on 7-day hot-form stats
- *   3. rank baseline  - higher-ranked player wins
- *   4. sim + Elo blend - 50/50 blend of the season sim and a surface Elo
+ * across all surfaces. For each match we PRECOMPUTE five predictions:
+ *   1. sim (Point Sim)   - closed-form match probability on recency-weighted
+ *                          season surface stats, real per-event format
+ *   2. upset (Hot Streak) - the same math on 7-day hot-form stats
+ *   3. rank baseline      - higher-ranked player wins
+ *   4. elo (Form)         - surface Elo win probability
+ *   5. smash (Smart Blend) - sim + elo + rank mixed with per-tour-x-surface
+ *                          tuned weights from engineConfig.json
+ * Then every row is annotated with the DEPLOYED pick: the call made by the
+ * most accurate engine for that tour x surface (pickEngine/pickCorrect/...).
  * The Elo uses leak-free PRE-MATCH ratings (replayed chronologically), so the
  * blend is measured honestly. The page just reads this JSON - no client sim.
  *
@@ -223,7 +228,10 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 2 });
+// `row` versions the per-row SCHEMA (fields like predScoreP1Win that the
+// annotation pass depends on): bump it whenever a new per-row field is
+// added, or incremental reuse resurrects rows missing that field.
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 2, row: 1 });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {

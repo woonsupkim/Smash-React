@@ -209,7 +209,7 @@ async function recapReel() {
   <text x="${W / 2}" y="560" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="${LIME}" opacity="${a.toFixed(2)}">${esc(dateLabel.toUpperCase())}</text>
   <text x="${W / 2}" y="720" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">YESTERDAY,</text>
   <text x="${W / 2}" y="880" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">GRADED.</text>
-  <text x="${W / 2}" y="1010" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)" opacity="${a.toFixed(2)}">every call locked before play</text>`));
+  <text x="${W / 2}" y="1010" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)" opacity="${a.toFixed(2)}">every call graded in public</text>`));
   }
 
   // One segment per match (~1.8s each)
@@ -258,7 +258,7 @@ async function recapReel() {
 
   return {
     dir, file: 'recap-reel.mp4',
-    caption: `Yesterday, graded: ${sc.yesterday.correct} of ${sc.yesterday.n} winners called right. Every pick locked before play, receipts public.`,
+    caption: `Yesterday, graded: ${sc.yesterday.correct} of ${sc.yesterday.n} winners called right. Every call graded in public, wins and misses both.`,
     type: 'recap-video',
   };
 }

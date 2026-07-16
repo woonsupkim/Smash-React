@@ -143,6 +143,13 @@ jobs:
       - name: Update forward predictions
         run: npm run build-predictions
 
+      # Model guardrails: per tour x surface, compare the deployed engine's
+      # recent accuracy against the season, the rankings baseline, and a coin
+      # flip. Writes public/data/guardrails.json; a later step opens an alert
+      # issue if anything tripped.
+      - name: Check model guardrails
+        run: npm run check-guardrails
+
       # Championship odds: simulate the live slam draw to completion and
       # append today's snapshot to the odds history.
       - name: Compute championship title odds
@@ -209,6 +216,32 @@ jobs:
           ")
           curl -s -X POST -H 'Content-Type: application/json' \
             -d "$PAYLOAD" "$WEBHOOK" || echo "Webhook post failed (non-fatal)."
+
+      # Model quality alert: if any guardrail tripped (a tour x surface cell
+      # or the forward test going cold), open an issue so it gets seen. Same
+      # dedupe pattern as the failure alert below - one open issue collects
+      # daily updates instead of piling up duplicates.
+      - name: Open an issue if a model guardrail tripped
+        # Alerting is best-effort: a gh API blip after a successful refresh
+        # must not mark the whole (already pushed) run as failed.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ALERTS=$(node -e "try { const g = require('./public/data/guardrails.json'); console.log((g.alerts || []).join('\n')); } catch {}")
+          if [ -z "$ALERTS" ]; then echo "All model guardrails green."; exit 0; fi
+          TITLE="Model guardrail alert"
+          BODY="One or more accuracy guardrails tripped on $(date -u +%Y-%m-%d):
+
+          $ALERTS
+
+          Details: public/data/guardrails.json in the latest data commit. Run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' --repo "${{ github.repository }}")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY" --repo "${{ github.repository }}"
+          else
+            gh issue create --title "$TITLE" --body "$BODY" --repo "${{ github.repository }}"
+          fi
 
       # Fail loudly and privately: a broken refresh during a slam should open
       # an issue (which GitHub emails to watchers), never rot silently while

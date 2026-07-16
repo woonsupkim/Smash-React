@@ -94,24 +94,29 @@ function predict(ctx, a, b, surface, bestOf) {
 
   const best = ACC?.[ctx.tour]?.[surface]?.best || 'smash';
 
+  // Closed-form match probability on the SEASON stats - deterministic by
+  // construction, so the locked number equals the live H2H number to the
+  // digit with no seeding gymnastics (the H2H engine probability computes
+  // the same expression). Kept separate from the hot-form sim below so the
+  // Smart Blend and the 'sim' engine always see season stats.
+  const pA = probsFromRow(rowA), pB = probsFromRow(rowB);
+  const simP = matchProb(pA, pB, bo);
+
   // The Hot Streak (upset) engine runs the point sim on heavy-recency stats,
   // per-player falling back to the season stats when a player has no hot-form
   // row - exactly what the H2H page's slider seeding does.
-  let pA = probsFromRow(rowA), pB = probsFromRow(rowB);
+  let upsetP = simP;
   if (best === 'upset' && ctx.upsetBySurface) {
     const uA = ctx.upsetBySurface[surface].get(a.id);
     const uB = ctx.upsetBySurface[surface].get(b.id);
-    if (uA) pA = probsFromRow(uA);
-    if (uB) pB = probsFromRow(uB);
+    upsetP = matchProb(uA ? probsFromRow(uA) : pA, uB ? probsFromRow(uB) : pB, bo);
   }
 
-  // Closed-form match probability - deterministic by construction, so the
-  // locked number equals the live H2H number to the digit with no seeding
-  // gymnastics (the H2H engine probability computes the same expression).
-  const simP = matchProb(pA, pB, bo);
+  // Missing Elo falls back to the point sim (the convention buildTitleOdds
+  // and the client's engine picker both use) - never a hardcoded 0.5, which
+  // would lock an arbitrary slot-order "favorite" on elo-best cells.
   const eA = ctx.elo[a.id], eB = ctx.elo[b.id];
-  let eloP = 0.5;
-  if (eA && eB) eloP = expected(predElo(eA, surface), predElo(eB, surface));
+  const eloP = (eA && eB) ? expected(predElo(eA, surface), predElo(eB, surface)) : simP;
   const rankA = Number(rowA.us_seed) || 999, rankB = Number(rowB.us_seed) || 999;
   const rankP = 1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale));
   const w = (ENGINE.weights[ctx.tour] && ENGINE.weights[ctx.tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
@@ -120,9 +125,7 @@ function predict(ctx, a, b, surface, bestOf) {
   const calibA = ENGINE.calibration && ENGINE.calibration[ctx.tour] && ENGINE.calibration[ctx.tour].a;
   const smashP = applyCalib(w.ws * simP + w.we * eloP + w.wr * rankP, calibA);
 
-  // For 'upset', simP already reflects the hot-form point sim (matches the H2H
-  // pickEngineProb('upset') result); for 'sim' it is the season point sim.
-  const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP, upset: simP };
+  const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP, upset: upsetP };
   const engine = probs[best] != null ? best : 'smash';
   return { probA: probs[engine], engine };
 }

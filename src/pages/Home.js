@@ -421,12 +421,13 @@ export default function Home() {
                 <div className="home-off-body">
                   {season?.n > 0 && (
                     <div className="home-off-season">
-                      Season so far: <strong>{season.correct.toLocaleString()} of {season.n.toLocaleString()}</strong> winners
-                      called ({season.acc}%), locked before play and graded in public.
+                      Season benchmark: <strong>{season.correct.toLocaleString()} of {season.n.toLocaleString()}</strong> winners
+                      called ({season.acc}%), every match graded in public.
                     </div>
                   )}
                   <div className="home-off-sub">
-                    Predictions return the moment the {next ? next.name : 'next slam'} draw drops.
+                    Predictions return the moment the {next ? next.name : 'next big event'} draw drops,
+                    and daily calls lock for the big combined events along the way.
                     Until then the projected field above re-prices with every refresh as rankings move.
                   </div>
                   <div className="home-off-links">

@@ -492,7 +492,7 @@
 /* ── Match log ────────────────────────────────────────────────────────── */
 .track-row {
   display: grid;
-  grid-template-columns: 90px 1fr 190px;
+  grid-template-columns: 112px 1fr 190px;
   gap: 1rem;
   align-items: center;
   border-bottom: 1px solid var(--border-1);
@@ -649,7 +649,8 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
 .track-arming-count { color: var(--accent-brand) !important; }
 .track-arming-lock { flex-shrink: 0; }
 
-/* Tour + event label on match-log rows */
+/* Tour + event label on match-log rows. Wraps instead of truncating so
+   long tournament names ("Cincinnati Open") are never cut off. */
 .track-row-event {
   display: block;
   font-size: 0.64rem;
@@ -658,8 +659,7 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
   text-transform: uppercase;
   color: var(--text-3);
   margin-top: 0.15rem;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: break-word;
 }

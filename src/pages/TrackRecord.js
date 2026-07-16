@@ -2,9 +2,9 @@
 //
 // Retrospective model performance: every completed 2026 tour-level match
 // between two ranked players, across all surfaces. Predictions are
-// PRECOMPUTED offline (data-pipeline/buildTrackRecord.js runs the same Monte
-// Carlo sim), so this page just reads track_record.json and renders - no
-// client-side simulation, instant load.
+// PRECOMPUTED offline (data-pipeline/buildTrackRecord.js runs the same
+// closed-form engine), so this page just reads track_record.json and
+// renders - no client-side simulation, instant load.
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { countryFlagUrl } from '../components/countryFlags';
@@ -98,7 +98,12 @@ export default function TrackRecord() {
     const list = (predictions?.predictions || []).filter((p) => (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface));
     const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
     const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
-    return { pending, decided, correct: decided.filter((p) => p.correct).length };
+    // Graded calls only guest-star here briefly: after a few days they live
+    // in the match log below (every graded call lands there), and this panel
+    // stays focused on fresh calls. The record count keeps ALL of them.
+    const RECENT_DAYS = 3;
+    const recent = decided.filter((p) => (Date.now() - new Date(p.date).getTime()) < RECENT_DAYS * 864e5);
+    return { pending, decided, recent, correct: decided.filter((p) => p.correct).length };
   }, [predictions, tour, surface]);
 
   // Unfiltered forward record for the hero: the locked-before-play claim is
@@ -347,20 +352,30 @@ export default function TrackRecord() {
                   </div>
                 )}
               </div>
-              {forward.pending.map((p) => (
+              {forward.pending.slice(0, 8).map((p) => (
                 <Link className="track-forward-row pending" to={`/match/${matchSlug(p)}`} key={p.id}>
                   <span className="track-forward-status">⏳ Upcoming</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Backing {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
                 </Link>
               ))}
-              {forward.decided.slice(0, 5).map((p) => (
+              {forward.pending.length > 8 && (
+                <div className="track-note" style={{ marginTop: '0.4rem' }}>
+                  Plus {forward.pending.length - 8} more locked calls · <Link to="/today">see all of today's</Link>
+                </div>
+              )}
+              {forward.recent.slice(0, 5).map((p) => (
                 <Link className={`track-forward-row ${p.correct ? 'hit' : 'miss'}`} to={`/match/${matchSlug(p)}`} key={p.id}>
                   <span className="track-forward-status">{p.correct ? '✓' : '✗'}</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Called {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
                 </Link>
               ))}
+              {forward.decided.length > Math.min(forward.recent.length, 5) && (
+                <div className="track-note" style={{ marginTop: '0.4rem' }}>
+                  Older graded calls have moved down to the match log. The running record above counts every one.
+                </div>
+              )}
               {forward.pending.length > 0 && forward.decided.length === 0 && (
                 <div className="track-note" style={{ marginTop: '0.6rem' }}>
                   These calls are on the record now. When the matches finish we score them
@@ -401,7 +416,7 @@ export default function TrackRecord() {
                     </div>
                   </div>
                   <div className="track-panel track-benchmark">
-                    <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
+                    <div className="track-benchmark-chip">SEASON BENCHMARK · SIMULATED</div>
                     <div className="track-benchmark-row">
                       <span className="track-benchmark-val">{stats.deployed}%</span>
                       <span className="track-benchmark-text">
@@ -420,7 +435,7 @@ export default function TrackRecord() {
                     <div className="track-hero-detail">
                       <div className="track-hero-label">of winners called correctly</div>
                       <div className="track-hero-sub">{stats.deployedCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
-                      <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
+                      <div className="track-benchmark-chip">SEASON BENCHMARK · SIMULATED</div>
                       <div className="track-hero-ci">
                         How our calls score when re-run across every completed match this
                         season, each match called with the strongest engine for its tour and
@@ -441,7 +456,7 @@ export default function TrackRecord() {
                       <strong>The forward test is arming.</strong> Every call locked before
                       play{forwardAll.since ? ` since ${forwardAll.since.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : ''}
                       {forwardAll.n > 0 ? <> · <strong className="track-arming-count">{forwardAll.correct} of {forwardAll.n} verified</strong></> : null} · it
-                      fills up match by match at the next grand slam, then takes over this page's headline.
+                      fills up match by match at the next big tournament, then takes over this page's headline.
                     </span>
                   </div>
                 </>
@@ -548,7 +563,7 @@ export default function TrackRecord() {
                       matters inside the blend). */}
                   {[
                     { id: 'smash', label: 'Smart Blend', desc: 'Our best: a mix of everything below', acc: stats.smash },
-                    { id: 'sim', label: 'Point Sim', desc: 'The match, played 1,000 times', acc: stats.season },
+                    { id: 'sim', label: 'Point Sim', desc: 'The match, played out point by point', acc: stats.season },
                     { id: 'elo', label: 'Form', desc: "Who's been winning on this surface", acc: stats.elo },
                     { id: 'upset', label: 'Hot Streak', desc: "Who's hot in the last few weeks", acc: stats.upset },
                     { id: 'rank', label: 'Rankings', desc: 'Just pick the higher-ranked player', acc: stats.rank, baseline: true },

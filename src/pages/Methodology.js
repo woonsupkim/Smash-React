@@ -108,16 +108,20 @@ export default function Methodology() {
               Recent matches count for more than old ones (exponential time decay), so form matters.
             </p>
             <p>
-              The <strong>Point Sim</strong> engine plays out a full best-of-5 (ATP) or best-of-3 (WTA)
-              match point by point, thousands of times, and counts how often each player wins. That
-              gives both a win probability and a distribution of likely scorelines.
+              The <strong>Point Sim</strong> engine plays the match out point by point in its real
+              format (best-of-five for ATP grand slams, best-of-three everywhere else) and computes
+              each player's win probability exactly - closed-form math over every possible path,
+              rather than an average over random simulations. That gives both a win probability and
+              a distribution of likely scorelines, with zero simulation noise.
             </p>
             <p>
               Two other signals sharpen it: a <strong>surface Elo</strong> rating (how a player has
               actually been winning and losing on this surface) and a <strong>ranking-implied</strong>
-              probability. The deployed <strong>Smart Blend</strong> combines all three with weights
-              tuned separately for each tour and surface - clay rewards ranking and grind, grass rewards
-              serve, and the mix reflects that.
+              probability. The <strong>Smart Blend</strong> combines all three with weights tuned
+              separately for each tour and surface - clay rewards ranking and grind, grass rewards
+              serve, and the mix reflects that. The site then deploys whichever engine has been most
+              accurate for that tour and surface: usually the Smart Blend, but if a simpler engine is
+              genuinely reading a surface better, it gets the call there.
             </p>
           </section>
 
@@ -146,9 +150,11 @@ export default function Methodology() {
           <section className="method-section">
             <h2>In-sample vs. the forward test</h2>
             <p>
-              The blend weights are fit on the 2026 season the retrospective page also displays. That
-              is useful for comparing engines, but it flatters the model - it has, in a sense, seen the
-              answers. The honest number is the <strong>locked forward record</strong>: a prediction is
+              The blend weights are fit on a rolling 24-month window with recency decay, and the
+              deployed engine for each tour and surface is chosen on the same season the
+              retrospective page displays. That is useful for comparing engines, but it flatters the
+              model - it has, in a sense, seen the answers. The honest number is the{' '}
+              <strong>locked forward record</strong>: a prediction is
               published <em>before</em> a match is played, then graded automatically when the result
               lands. No hindsight, no retuning. That record is the one that counts.
             </p>
@@ -173,9 +179,9 @@ export default function Methodology() {
           <section className="method-section">
             <h2>Honest limitations</h2>
             <ul className="method-limits">
-              <li>Weights are fit on a single season, so in-sample accuracy overstates real-world edge - read the locked forward record.</li>
+              <li>The deployed engine per tour and surface is chosen on the season being displayed, so in-sample accuracy overstates real-world edge - read the locked forward record.</li>
               <li>Each player's cache holds only their recent matches, so a very old head-to-head can be missed.</li>
-              <li>The forward record is Slam-focused and built on a top-50 roster, so it fills in gradually.</li>
+              <li>The forward record covers the grand slams and the six big combined events, on a top-50 roster, so it fills in gradually.</li>
               <li>Betting-market comparisons only cover matches that carried odds (about half the sample).</li>
               <li>This is a statistical model for entertainment and analysis. It is not betting advice.</li>
             </ul>

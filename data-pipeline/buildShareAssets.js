@@ -502,7 +502,7 @@ async function resultsCard(sc, file) {
   const base = `${c.open}
   ${eyebrow(SQ, 150, `receipts · ${y?.date || ''}`, t.accent)}
   <text x="${SQ / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="238" font-weight="800" fill="#ffffff">${y ? `${y.correct} OF ${y.n}` : ''}</text>
-  <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called before play</text>
+  <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called on yesterday's matches</text>
   ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="29" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
   ${pill(SQ / 2, 812, sc.proofPill, LIME)}
 ${c.close}`;
@@ -1104,7 +1104,7 @@ async function run() {
 
   if (sc.yesterday?.n > 0) {
     await resultsCard(sc, 'results.png');
-    add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners before play. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
+    add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
 
   // ── WRAP: tournament report card (a few days after a slam ends) ─────────
@@ -1112,8 +1112,12 @@ async function run() {
     const o = titleOdds.events?.[tour];
     if (!o || o.status !== 'final' || !o.champion) continue;
     if (Date.now() - new Date(o.updatedAt).getTime() > 4 * 864e5) continue;
+    // Same tour + surface within the slam window, EXCLUDING rows labeled as a
+    // different event (warm-up finals share the surface; unlabeled rows pass
+    // because the names cache backfills labels gradually).
     const evMs = (track.matches || []).filter((m) =>
-      m.tour === tour && m.surface === o.surface && (Date.now() - new Date(m.date).getTime()) < 16 * 864e5);
+      m.tour === tour && m.surface === o.surface && (Date.now() - new Date(m.date).getTime()) < 16 * 864e5
+      && (!m.event || m.event === o.event));
     if (evMs.length < 8) continue;
     const correct = evMs.filter((m) => pickCorrect(m)).length;
     const beat = evMs.filter((m) => pickCorrect(m) && m.oddCorrect === false).length;
@@ -1124,16 +1128,16 @@ async function run() {
       headline1: 'HOW WE',
       headline2: 'SCORED',
       stats: [
-        { value: `${correct} OF ${evMs.length}`, label: 'winners called before play' },
+        { value: `${correct} OF ${evMs.length}`, label: 'winners called across the event' },
         ...(beat ? [{ value: `${beat}`, label: 'times we beat the bookies' }] : []),
         { value: `${exact}`, label: 'exact set scores called' },
         { value: last(o.champion.name).toUpperCase(), label: 'your champion' },
       ],
-      footNote: 'every call locked before play and graded in public',
+      footNote: 'every match graded in public · wins and misses both',
       themeKey: o.surface,
       file,
     });
-    add(file, 'wrap', 'square', 'wrap', `${o.event} ${tour.toUpperCase()} report card: ${correct} of ${evMs.length} winners called before play${beat ? `, ${beat} wins over the bookies` : ''}, ${exact} exact scorelines. ${o.champion.name} takes the title. ${SITE}/track-record ${tags}`);
+    add(file, 'wrap', 'square', 'wrap', `${o.event} ${tour.toUpperCase()} report card: ${correct} of ${evMs.length} winners called${beat ? `, ${beat} wins over the bookies` : ''}, ${exact} exact scorelines. ${o.champion.name} takes the title. ${SITE}/track-record ${tags}`);
   }
 
   // ── DRAW & BRACKETS: the bracket itself as content ──────────────────────
@@ -1235,14 +1239,14 @@ async function run() {
       headline1: `${sc.yesterday.correct}/${sc.yesterday.n}`,
       headline2: 'FLAWLESS',
       stats: [
-        { value: `${sc.yesterday.n}`, label: 'winners called before play' },
+        { value: `${sc.yesterday.n}`, label: 'matches called, all graded' },
         { value: `${sc.season.acc}%`, label: 'season benchmark' },
       ],
-      footNote: 'locked before play, graded after - no take-backs',
+      footNote: 'every match graded in public - wins and misses both',
       themeKey: 'brand',
       file: 'perfect-day.png',
     });
-    add('perfect-day.png', 'perfect-day', 'square', 'moments', `Perfect day: ${sc.yesterday.correct}/${sc.yesterday.n} winners called before play on ${sc.yesterday.date}. ${SITE}/track-record ${tags}`);
+    add('perfect-day.png', 'perfect-day', 'square', 'moments', `Perfect day: ${sc.yesterday.correct}/${sc.yesterday.n} winners called on ${sc.yesterday.date}. ${SITE}/track-record ${tags}`);
   }
 
   // ── PROMO layer ─────────────────────────────────────────────────────────

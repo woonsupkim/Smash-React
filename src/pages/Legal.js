@@ -25,8 +25,8 @@ export function Terms() {
       <h2>What Smash is</h2>
       <p>
         Smash is a statistical analysis and simulation tool for professional tennis.
-        It estimates match outcomes from public match data using Monte Carlo
-        simulation, surface-specific form ratings, and world rankings. All output is
+        It estimates match outcomes from public match data using point-by-point
+        match modeling, surface-specific form ratings, and world rankings. All output is
         a probability estimate, not a statement of fact and not a guarantee of any
         outcome.
       </p>

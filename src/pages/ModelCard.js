@@ -68,11 +68,17 @@ export default function ModelCard() {
       <section className="mc-section">
         <h2>What it is</h2>
         <p>
-          Every probability is a blend of three signals: a point-by-point Monte Carlo
-          simulation built from serve and return stats, a surface-aware Elo rating,
-          and the official world rankings. The mix is tuned separately for each tour
-          and surface, then passed through a one-parameter calibration that tempers
-          overconfidence without ever changing the pick.
+          Five engines compete: an exact point-by-point match calculation built from
+          serve and return stats (closed-form, not sampled), a surface-aware Elo
+          rating, the official world rankings, a hot-form variant of the point
+          calculation, and the Smart Blend that mixes the first three with weights
+          tuned separately for each tour and surface. The site deploys whichever
+          engine has been most accurate for each tour and surface. A one-parameter
+          recalibration is refit at every retune; it can temper stated confidence
+          but never changes a pick
+          {(CONFIG.calibration?.atp?.a ?? 1) === 1 && (CONFIG.calibration?.wta?.a ?? 1) === 1
+            ? ' (currently a=1 on both tours, meaning no adjustment is needed)'
+            : ` (currently a=${CONFIG.calibration?.atp?.a ?? 1} ATP, a=${CONFIG.calibration?.wta?.a ?? 1} WTA)`}.
         </p>
         <div className="mc-weights">
           {['atp', 'wta'].map((tour) => (

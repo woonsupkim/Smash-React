@@ -106,7 +106,7 @@ export default function Admin() {
           Runs automatically just before each grand slam; use this for an
           off-schedule retune. Never changes the model directly: if the weights
           move, a pull request opens on GitHub for your review, and merging it
-          re-simulates the full track record on the next refresh.
+          recomputes the full track record on the next refresh.
         </p>
         <Button className="cta-primary admin-trigger" disabled={!password || !!busy} onClick={() => trigger('retune', 'Retune triggered')}>
           {busy === 'retune' ? 'Triggering…' : 'Trigger retune'}
