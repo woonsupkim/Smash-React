@@ -86,7 +86,7 @@ function run() {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const fRecent = decided.slice(-WINDOW);
   const fAcc = pct(fRecent, (p) => p.correct);
-  const forward = { n: decided.length, recentN: fRecent.length, recentAcc: fAcc, status: 'ok' };
+  const forward = { n: decided.length, recentN: fRecent.length, recentAcc: fAcc, status: fRecent.length < MIN_N ? 'insufficient' : 'ok' };
   if (fRecent.length >= MIN_N && fAcc < 50) {
     forward.status = 'alert';
     alerts.push(`Forward test: locked-before-play accuracy ${fAcc}% is below a coin flip over the last ${fRecent.length} verified calls`);
