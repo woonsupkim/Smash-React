@@ -28,6 +28,15 @@ const { slamsForYear } = require('./lib/slamCalendar');
 // (fetchSurfaces backfills it over a few runs), else a slam-window
 // heuristic (a grass match inside the Wimbledon fortnight IS Wimbledon),
 // else null - the UI falls back to the format chip.
+// ESPN tournament names carry a " - City" suffix ("Wimbledon - London",
+// "Nordea Open - Bastad"). Strip it so cache names and the slam-window
+// heuristic agree on one label per event (no "Wimbledon" AND
+// "Wimbledon - London" splitting the same tournament in filters).
+function cleanEventName(name) {
+  if (!name) return name;
+  return String(name).replace(/\s+-\s+[^-]+$/, '').trim() || name;
+}
+
 function slamLabel(dateStr, surface) {
   const d = new Date(dateStr);
   if (isNaN(d)) return null;
@@ -115,7 +124,7 @@ function loadTour(tour) {
       if (!winner || evalMatches.has(id)) continue;
       const rowA = season[surface].get(p1), rowB = season[surface].get(p2);
       if (!rowA || !rowB) continue;
-      const eventName = tournamentNames[String(m.tournamentId)] || slamLabel(m.date, surface);
+      const eventName = cleanEventName(tournamentNames[String(m.tournamentId)]) || slamLabel(m.date, surface);
       evalMatches.set(id, { m, id, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB, eventName });
     }
   }
@@ -253,7 +262,9 @@ for (const tour of ['atp', 'wta']) {
     if (existing.has(r.id)) {
       const row = existing.get(r.id);
       // Backfill the event label on reused rows as tournament names arrive
-      // (labels are metadata, not predictions - the locked numbers stay).
+      // (labels are metadata, not predictions - the locked numbers stay),
+      // and re-normalize labels written before cleanEventName existed.
+      if (row.event) row.event = cleanEventName(row.event);
       if (!row.event && r.eventName) row.event = r.eventName;
       all.push(row);
     } else {

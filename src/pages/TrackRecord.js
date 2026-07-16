@@ -79,6 +79,7 @@ function MiniScore({ wName, lName, wFlag, lFlag, wPhoto, lPhoto, wId, lId, tour,
 export default function TrackRecord() {
   const [tour, setTour] = useState('all');
   const [surface, setSurface] = useState('all');
+  const [eventF, setEventF] = useState('all');
   const [data, setData] = useState(null);
   const [predictions, setPredictions] = useState(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -94,8 +95,22 @@ export default function TrackRecord() {
       .catch(() => setPredictions({ predictions: [] }));
   }, []);
 
+  // Distinct event names present in the graded data, most recent first.
+  // Labels backfill over a few refreshes, so unlabeled rows only appear
+  // under "All events".
+  const events = useMemo(() => {
+    const latest = new Map();
+    for (const m of data?.matches || []) {
+      if (!m.event) continue;
+      if (!latest.has(m.event) || m.date > latest.get(m.event)) latest.set(m.event, m.date);
+    }
+    return [...latest.entries()].sort((a, b) => (a[1] < b[1] ? 1 : -1)).map(([name]) => name);
+  }, [data]);
+
   const forward = useMemo(() => {
-    const list = (predictions?.predictions || []).filter((p) => (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface));
+    const list = (predictions?.predictions || []).filter((p) =>
+      (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface)
+      && (eventF === 'all' || p.event === eventF));
     const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
     const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
     // Graded calls only guest-star here briefly: after a few days they live
@@ -104,7 +119,7 @@ export default function TrackRecord() {
     const RECENT_DAYS = 3;
     const recent = decided.filter((p) => (Date.now() - new Date(p.date).getTime()) < RECENT_DAYS * 864e5);
     return { pending, decided, recent, correct: decided.filter((p) => p.correct).length };
-  }, [predictions, tour, surface]);
+  }, [predictions, tour, surface, eventF]);
 
   // Unfiltered forward record for the hero: the locked-before-play claim is
   // the page's headline once it has enough verified calls behind it.
@@ -126,14 +141,15 @@ export default function TrackRecord() {
   const forwardHero = forwardAll.n >= FORWARD_HERO_MIN;
 
   // Reset pagination whenever the filters change
-  useEffect(() => { setVisible(PAGE_SIZE); }, [tour, surface]);
+  useEffect(() => { setVisible(PAGE_SIZE); }, [tour, surface, eventF]);
 
   const filtered = useMemo(() => {
     if (!data) return [];
     return data.matches
-      .filter((m) => (tour === 'all' || m.tour === tour) && (surface === 'all' || m.surface === surface))
+      .filter((m) => (tour === 'all' || m.tour === tour) && (surface === 'all' || m.surface === surface)
+        && (eventF === 'all' || m.event === eventF))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [data, tour, surface]);
+  }, [data, tour, surface, eventF]);
 
   const stats = useMemo(() => {
     const n = filtered.length;
@@ -144,7 +160,8 @@ export default function TrackRecord() {
     // highlight in the engine panel below - and names that engine on the card
     // so the figure is never quietly cherry-picked. Smart Blend wins ties.
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
-      const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s);
+      const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s
+        && (eventF === 'all' || m.event === eventF));
       const accOf = (key) => (list.length ? Math.round((list.filter((m) => m[key]).length / list.length) * 100) : 0);
       const best = [
         { label: 'Smart Blend', acc: accOf('smashCorrect') },
@@ -281,7 +298,7 @@ export default function TrackRecord() {
       perSurface,
       buckets,
     };
-  }, [filtered, data, tour]);
+  }, [filtered, data, tour, eventF]);
 
   const isLoading = !data;
   const shown = filtered.slice(0, visible);
@@ -337,6 +354,17 @@ export default function TrackRecord() {
                 </button>
               ))}
             </div>
+            {events.length > 0 && (
+              <select
+                className={`track-event-select${eventF !== 'all' ? ' active' : ''}`}
+                aria-label="Event"
+                value={eventF}
+                onChange={(e) => setEventF(e.target.value)}
+              >
+                <option value="all">All events</option>
+                {events.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            )}
           </div>
 
           {/* Forward record - predictions LOCKED before the match was played.

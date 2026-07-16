@@ -961,6 +961,78 @@ function cmdFrontier2() {
   }
 }
 
+// ── Selector policies: how should each cell pick its deployed engine? ─────
+// Simulates the DEPLOYMENT decision walk-forward, month by month: at each
+// month, each tour x surface cell picks an engine using only strictly
+// earlier results, then that engine's picks are graded on the month.
+// Policies: always Smart Blend, season-to-date accuracy best (production
+// today), and recency-decayed accuracy best at several half-lives.
+// The smash engine is represented by the honest walk-forward blend OOF
+// probability. Hot Streak is excluded (no cached point-in-time probs; it
+// has never led a cell).
+function cmdSelector() {
+  const POLICIES = [
+    { id: 'always-smash', type: 'fixed' },
+    { id: 'season-best', type: 'season' },
+    { id: 'decay-45d', type: 'decay', hl: 45 },
+    { id: 'decay-90d', type: 'decay', hl: 90 },
+    { id: 'decay-180d', type: 'decay', hl: 180 },
+  ];
+  for (const tour of ['atp', 'wta']) {
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), {}).map((r) => ({ ...r, probP1: r.ana }));
+    const oof3 = evalCore.walkForwardOOF(rows);
+    const univ = oof3.map((r) => ({
+      id: r.id, date: r.date, surface: r.surface, won: r.won,
+      probs: { smash: r.p, sim: r.probP1, elo: r.eloProbP1, rank: r.rankProbP1 },
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const folds = new Map();
+    for (const r of univ) { const k = evalCore.foldKey(r.date, 'month'); if (!folds.has(k)) folds.set(k, []); folds.get(k).push(r); }
+    const ENGINES = ['smash', 'sim', 'elo', 'rank']; // smash first: wins ties
+    console.log(`\n══ ${tour.toUpperCase()} - selector policies (n=${univ.length}) ══`);
+    for (const pol of POLICIES) {
+      const graded = [];
+      const train = [];
+      let switches = 0;
+      const lastPick = {};
+      for (const [k, test] of folds) {
+        if (train.length >= 200) {
+          const foldStart = new Date(`${k}-01T00:00:00Z`).getTime();
+          for (const s of ['hard', 'clay', 'grass']) {
+            let cell = train.filter((r) => r.surface === s);
+            let wts = null;
+            if (pol.type === 'season') {
+              const sameYear = cell.filter((r) => r.date.slice(0, 4) === k.slice(0, 4));
+              if (sameYear.length >= 30) cell = sameYear;
+            } else if (pol.type === 'decay') {
+              wts = cell.map((r) => Math.pow(0.5, (foldStart - new Date(r.date).getTime()) / 864e5 / pol.hl));
+            }
+            let pick = 'smash';
+            if (pol.type !== 'fixed' && cell.length >= 30) {
+              let best = -1;
+              for (const e of ENGINES) {
+                let num = 0, den = 0;
+                for (let i = 0; i < cell.length; i++) {
+                  const w = wts ? wts[i] : 1;
+                  num += w * ((cell[i].probs[e] >= 0.5) === !!cell[i].won ? 1 : 0);
+                  den += w;
+                }
+                const acc = den ? num / den : 0;
+                if (acc > best + 1e-9) { best = acc; pick = e; }
+              }
+            }
+            if (lastPick[s] && lastPick[s] !== pick) switches++;
+            lastPick[s] = pick;
+            for (const r of test.filter((x) => x.surface === s)) graded.push({ p: r.probs[pick], won: r.won });
+          }
+        }
+        train.push(...test);
+      }
+      console.log(`  ${pol.id.padEnd(14)} | n=${graded.length} | acc ${(evalCore.accuracy(graded) * 100).toFixed(1)}% | LL ${evalCore.logLoss(graded).toFixed(4)} | engine switches ${switches}`);
+    }
+  }
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -976,4 +1048,5 @@ else if (cmd === 'window') cmdWindow();
 else if (cmd === 'calibselect') cmdCalibSelect();
 else if (cmd === 'decay') cmdDecay();
 else if (cmd === 'frontier2') cmdFrontier2();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2');
+else if (cmd === 'selector') cmdSelector();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2|selector');

@@ -489,6 +489,22 @@
 .track-calib-actual { font-size: 0.8rem; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
 .track-calib-n { font-size: 0.72rem; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Event filter - styled to sit beside the segmented controls */
+.track-event-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.track-event-select.active { color: var(--accent-brand); border-color: var(--accent-brand); }
+.track-event-select:focus-visible { outline: 2px solid var(--accent-brand); outline-offset: 2px; }
+.track-event-select option { background: #14181f; color: #e8eaee; }
+
 /* ── Match log ────────────────────────────────────────────────────────── */
 .track-row {
   display: grid;
