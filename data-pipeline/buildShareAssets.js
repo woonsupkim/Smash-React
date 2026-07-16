@@ -47,6 +47,15 @@ try {
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
 const OUT = path.join(DATA, 'share');
+
+// Deployed-call accessors for graded track-record rows: the pick made by
+// the best engine for that match's tour x surface (annotated by
+// buildTrackRecord), with a Smart Blend fallback for rows that predate the
+// annotation. Every "we called it" claim on a card grades these.
+const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
+const pickFav = (m) => m.pickFavorite || m.smashFavorite;
+const pickProbP1 = (m) => (m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1);
+const pickFavProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
 const SQ = 1080;
 const ST_W = 1080, ST_H = 1920;
 const MAX_MATCH_CARDS = 8;
@@ -694,12 +703,12 @@ async function drawPathCard(o, tour, file) {
 async function proofCard(track, file) {
   const ms = track.matches || [];
   const n = ms.length;
-  const acc = n ? Math.round(ms.filter((m) => m.smashCorrect).length / n * 100) : 0;
+  const acc = n ? Math.round(ms.filter((m) => pickCorrect(m)).length / n * 100) : 0;
   const odds = ms.filter((m) => m.oddCorrect != null);
-  const us = odds.length ? Math.round(odds.filter((m) => m.smashCorrect).length / odds.length * 100) : null;
+  const us = odds.length ? Math.round(odds.filter((m) => pickCorrect(m)).length / odds.length * 100) : null;
   const them = odds.length ? Math.round(odds.filter((m) => m.oddCorrect).length / odds.length * 100) : null;
-  const dis = odds.filter((m) => m.smashFavorite !== m.oddFav);
-  const disWin = dis.length ? Math.round(dis.filter((m) => m.smashCorrect).length / dis.length * 100) : null;
+  const dis = odds.filter((m) => pickFav(m) !== m.oddFav);
+  const disWin = dis.length ? Math.round(dis.filter((m) => pickCorrect(m)).length / dis.length * 100) : null;
   const t = theme('brand');
   const c = chrome(SQ, SQ, t, { ghost: `${acc}%`, ghostY: 680 });
   const base = `${c.open}
@@ -806,7 +815,7 @@ function scorelineHit(m) {
   if (!sets.length) return null;
   const w = sets.filter((x) => +x[1] > +x[2]).length;
   const l = sets.length - w;
-  const favWon = m.smashFavorite === m.winner;
+  const favWon = pickFav(m) === m.winner;
   const actualFav = favWon ? `${w}–${l}` : `${l}–${w}`;
   return m.predScore === actualFav;
 }
@@ -1025,7 +1034,7 @@ async function run() {
       const firstIsP1 = [p.p1, p.p2].sort()[0] === p.p1;
       const h2h = rec ? { w1: firstIsP1 ? rec.winsA : rec.winsB, w2: firstIsP1 ? rec.winsB : rec.winsA } : null;
       const pairMs = track2.filter((m) => (m.p1 === p.p1 && m.p2 === p.p2) || (m.p1 === p.p2 && m.p2 === p.p1));
-      return { h2h, pair: { n: pairMs.length, correct: pairMs.filter((m) => m.smashCorrect).length } };
+      return { h2h, pair: { n: pairMs.length, correct: pairMs.filter((m) => pickCorrect(m)).length } };
     };
 
     for (let i = 0; i < picks.length; i++) {
@@ -1106,8 +1115,8 @@ async function run() {
     const evMs = (track.matches || []).filter((m) =>
       m.tour === tour && m.surface === o.surface && (Date.now() - new Date(m.date).getTime()) < 16 * 864e5);
     if (evMs.length < 8) continue;
-    const correct = evMs.filter((m) => m.smashCorrect).length;
-    const beat = evMs.filter((m) => m.smashCorrect && m.oddCorrect === false).length;
+    const correct = evMs.filter((m) => pickCorrect(m)).length;
+    const beat = evMs.filter((m) => pickCorrect(m) && m.oddCorrect === false).length;
     const exact = evMs.filter((m) => scorelineHit(m) === true).length;
     const file = `wrap-${tour}.png`;
     await reportCard({
@@ -1179,11 +1188,11 @@ async function run() {
   if (new Date().getUTCDay() === 1 || process.env.FORCE_WEEKLY === '1') {
     const weekMs = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5);
     if (weekMs.length >= 5) {
-      const correct = weekMs.filter((m) => m.smashCorrect).length;
-      const beat = weekMs.filter((m) => m.smashCorrect && m.oddCorrect === false).length;
-      const bold = weekMs.filter((m) => m.smashCorrect)
-        .sort((a, b) => Math.max(a.smashProbP1, 1 - a.smashProbP1) - Math.max(b.smashProbP1, 1 - b.smashProbP1))[0];
-      const boldName = bold ? last(bold.smashFavorite === bold.p1 ? bold.name1 : bold.name2) : null;
+      const correct = weekMs.filter((m) => pickCorrect(m)).length;
+      const beat = weekMs.filter((m) => pickCorrect(m) && m.oddCorrect === false).length;
+      const bold = weekMs.filter((m) => pickCorrect(m))
+        .sort((a, b) => pickFavProb(a) - pickFavProb(b))[0];
+      const boldName = bold ? last(pickFav(bold) === bold.p1 ? bold.name1 : bold.name2) : null;
       await reportCard({
         eyebrowText: 'the week in calls',
         headline1: 'WEEKLY',
@@ -1191,7 +1200,7 @@ async function run() {
         stats: [
           { value: `${correct} OF ${weekMs.length}`, label: 'winners called this week' },
           ...(beat ? [{ value: `${beat}`, label: 'wins over the bookies' }] : []),
-          ...(bold ? [{ value: `${boldName} · ${Math.round(Math.max(bold.smashProbP1, 1 - bold.smashProbP1) * 100)}%`, label: 'boldest call that hit' }] : []),
+          ...(bold ? [{ value: `${boldName} · ${Math.round(pickFavProb(bold) * 100)}%`, label: 'boldest call that hit' }] : []),
           { value: `${sc.season.acc}%`, label: 'season benchmark, all public' },
         ],
         footNote: 'new recap every Monday · every call graded',
@@ -1263,7 +1272,7 @@ async function run() {
     // The model's record on the slam's own surface (season benchmark).
     const surfRecs = ['atp', 'wta'].map((tour) => {
       const list = (track.matches || []).filter((m) => m.tour === tour && m.surface === nextMajor.surface);
-      const correct = list.filter((m) => m.smashCorrect).length;
+      const correct = list.filter((m) => pickCorrect(m)).length;
       return { tour, n: list.length, acc: list.length ? Math.round((correct / list.length) * 100) : 0 };
     }).filter((r) => r.n >= 30);
     if (surfRecs.length) {

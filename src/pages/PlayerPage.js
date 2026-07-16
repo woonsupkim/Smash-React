@@ -9,6 +9,7 @@ import { useParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
+import { pickCorrect } from '../utils/deployedPick';
 import './PlayerPage.css';
 
 // Tiny lime polyline of a value series (same visual family as the Home
@@ -56,7 +57,7 @@ export default function PlayerPage() {
           .filter((m) => m.tour === tour && (m.p1 === id || m.p2 === id))
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         const won = mine.filter((m) => m.winner === id).length;
-        const called = mine.filter((m) => m.smashCorrect).length;
+        const called = mine.filter((m) => pickCorrect(m)).length;
         setRecord({ n: mine.length, won, called });
 
         // Last 10 tracked results, with the opponent for tooltips.
@@ -72,7 +73,7 @@ export default function PlayerPage() {
           const list = mine.filter((m) => m.surface === s);
           if (!list.length) return null;
           const w = list.filter((m) => m.winner === id).length;
-          const c = list.filter((m) => m.smashCorrect).length;
+          const c = list.filter((m) => pickCorrect(m)).length;
           return { surface: s, w, l: list.length - w, calledPct: Math.round((c / list.length) * 100) };
         }).filter(Boolean);
         setSurfaces(splits);

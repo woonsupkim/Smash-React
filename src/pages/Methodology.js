@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
+import { pickCorrect, pickFavProb } from '../utils/deployedPick';
 import './Methodology.css';
 
 function wilson(k, n) {
@@ -39,21 +40,20 @@ export default function Methodology() {
   const stats = useMemo(() => {
     const matches = data?.matches || [];
     const n = matches.length;
-    const k = matches.filter((m) => m.smashCorrect).length;
+    const k = matches.filter((m) => pickCorrect(m)).length;
     const ci = wilson(k, n);
     const acc = n ? Math.round((k / n) * 100) : 0;
     const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
 
     const buckets = CALIB_BUCKETS.map((b) => {
-      const fav = (m) => (m.smashProbP1 >= 0.5 ? m.smashProbP1 : 1 - m.smashProbP1);
-      const inB = matches.filter((m) => fav(m) >= b.lo && fav(m) < b.hi);
-      const won = inB.filter((m) => m.smashCorrect).length;
+      const inB = matches.filter((m) => pickFavProb(m) >= b.lo && pickFavProb(m) < b.hi);
+      const won = inB.filter((m) => pickCorrect(m)).length;
       return { ...b, n: inB.length, rate: inB.length ? Math.round((won / inB.length) * 100) : null };
     });
 
     const oddList = matches.filter((m) => m.oddCorrect != null);
     const marketAcc = oddList.length ? Math.round((oddList.filter((m) => m.oddCorrect).length / oddList.length) * 100) : null;
-    const smashOnOdds = oddList.length ? Math.round((oddList.filter((m) => m.smashCorrect).length / oddList.length) * 100) : null;
+    const smashOnOdds = oddList.length ? Math.round((oddList.filter((m) => pickCorrect(m)).length / oddList.length) * 100) : null;
 
     return { n, acc, ciHalf, buckets, marketAcc, smashOnOdds, oddsN: oddList.length };
   }, [data]);

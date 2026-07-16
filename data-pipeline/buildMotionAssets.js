@@ -215,11 +215,15 @@ async function recapReel() {
   // One segment per match (~1.8s each)
   for (let i = 0; i < dayMatches.length; i++) {
     const m = dayMatches[i];
-    const favIsP1 = m.smashFavorite === m.p1;
+    // The DEPLOYED call: best engine for this tour x surface (falls back to
+    // the Smart Blend on rows that predate the annotation).
+    const pFav = m.pickFavorite || m.smashFavorite;
+    const pProb = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
+    const favIsP1 = pFav === m.p1;
     const pickName = favIsP1 ? m.name1 : m.name2;
-    const pct = Math.round(Math.max(m.smashProbP1, 1 - m.smashProbP1) * 100);
+    const pct = Math.round(Math.max(pProb, 1 - pProb) * 100);
     const winName = m.winner === m.p1 ? m.name1 : m.name2;
-    const hit = m.smashCorrect;
+    const hit = m.pickCorrect != null ? m.pickCorrect : m.smashCorrect;
     const stampText = hit ? 'CALLED IT' : 'MISSED';
     const stampColor = hit ? LIME : '#ff5d5d';
     for (let f = 0; f < 22; f++) {

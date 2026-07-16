@@ -10,6 +10,7 @@ import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, localKickoff, idFromSlug } from '../utils/matchTime';
 import { castCall, fetchTally, matchCallKey } from '../utils/matchCalls';
+import { pickCorrect } from '../utils/deployedPick';
 import './MatchPage.css';
 
 const SURFACE_ACCENTS = { clay: '#e8694a', grass: '#3ddc84', hard: '#5b8cff' };
@@ -75,7 +76,7 @@ export default function MatchPage() {
       .then((d) => {
         const pair = (d.matches || []).filter((m) =>
           (m.p1 === pred.p1 && m.p2 === pred.p2) || (m.p1 === pred.p2 && m.p2 === pred.p1));
-        setPairG({ n: pair.length, correct: pair.filter((m) => m.smashCorrect).length });
+        setPairG({ n: pair.length, correct: pair.filter((m) => pickCorrect(m)).length });
       })
       .catch(() => setPairG(null));
     return () => { alive = false; };

@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CONFIG from '../engineConfig.json';
 import { MODEL_VERSION } from '../data/changelog';
+import { pickCorrect, pickFavProb } from '../utils/deployedPick';
 import './ModelCard.css';
 
 const SURFACES = ['hard', 'clay', 'grass'];
@@ -21,14 +22,16 @@ function calibrationBuckets(matches, tour) {
     { label: '80%+', lo: 0.8, hi: 1.01 },
   ];
   return buckets.map((b) => {
+    // Bucketed on the DEPLOYED call's stated confidence (the number the
+    // site actually showed), graded on the deployed pick.
     const list = matches.filter((m) => {
       if (m.tour !== tour) return false;
-      const fav = Math.max(m.smashProbP1, 1 - m.smashProbP1);
+      const fav = pickFavProb(m);
       return fav >= b.lo && fav < b.hi;
     });
-    const won = list.filter((m) => m.smashCorrect).length;
+    const won = list.filter((m) => pickCorrect(m)).length;
     const stated = list.length
-      ? list.reduce((s, m) => s + Math.max(m.smashProbP1, 1 - m.smashProbP1), 0) / list.length
+      ? list.reduce((s, m) => s + pickFavProb(m), 0) / list.length
       : null;
     return { ...b, n: list.length, actual: list.length ? won / list.length : null, stated };
   });

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
+import { pickCorrect } from '../utils/deployedPick';
 import './Home.css';
 
 // Tiny inline sparkline for a player's title-odds history.
@@ -145,19 +146,19 @@ export default function Home() {
       .then((d) => {
         const ms = d.matches || [];
         const n = ms.length;
-        const k = ms.filter((m) => m.smashCorrect).length;
+        const k = ms.filter((m) => pickCorrect(m)).length;
         const odds = ms.filter((m) => m.oddCorrect != null);
         // "Between the slams": everything graded since the last slam ended -
         // the proof strip for the quiet weeks (fed by the weekly refresh).
         const prev = prevSlam();
         const between = prev ? ms.filter((m) => new Date(m.date) >= prev.end) : [];
-        const bCorrect = between.filter((m) => m.smashCorrect).length;
+        const bCorrect = between.filter((m) => pickCorrect(m)).length;
         setProof({
           state: 'ready',
           n,
           acc: n ? Math.round((k / n) * 100) : 0,
           ciHalf: wilsonHalf(k, n),
-          smashOnOdds: odds.length ? Math.round((odds.filter((m) => m.smashCorrect).length / odds.length) * 100) : null,
+          smashOnOdds: odds.length ? Math.round((odds.filter((m) => pickCorrect(m)).length / odds.length) * 100) : null,
           marketAcc: odds.length ? Math.round((odds.filter((m) => m.oddCorrect).length / odds.length) * 100) : null,
           between: between.length >= 5 ? {
             n: between.length,

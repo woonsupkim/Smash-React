@@ -11,6 +11,7 @@ import { countryFlagUrl } from '../components/countryFlags';
 import { playerPhoto } from '../utils/playerPhotos';
 import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
+import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
 import './TrackRecord.css';
 
 const SURFACES = {
@@ -150,17 +151,16 @@ export default function TrackRecord() {
       return { key: s, ...SURFACES[s], n: list.length, acc: best.acc, engine: best.label };
     });
 
-    // Confidence calibration buckets on the favorite's modeled probability
+    // Confidence calibration buckets on the DEPLOYED call's probability
+    // (the number the site actually showed for each match).
     const buckets = [
       { label: '50–60%', lo: 0.5, hi: 0.6, mid: 55 },
       { label: '60–70%', lo: 0.6, hi: 0.7, mid: 65 },
       { label: '70–85%', lo: 0.7, hi: 0.85, mid: 77 },
       { label: '85%+', lo: 0.85, hi: 1.01, mid: 92 },
     ].map((b) => {
-      // Calibrate on the blended probability the app actually shows
-      const blendFav = (m) => (m.smashProbP1 >= 0.5 ? m.smashProbP1 : 1 - m.smashProbP1);
-      const inB = filtered.filter((m) => blendFav(m) >= b.lo && blendFav(m) < b.hi);
-      const won = inB.filter((m) => m.smashCorrect).length;
+      const inB = filtered.filter((m) => pickFavProb(m) >= b.lo && pickFavProb(m) < b.hi);
+      const won = inB.filter((m) => pickCorrect(m)).length;
       return { ...b, n: inB.length, rate: inB.length ? Math.round((won / inB.length) * 100) : null };
     });
 
@@ -179,20 +179,21 @@ export default function TrackRecord() {
     const oddList = filtered.filter((m) => m.oddCorrect != null);
     const oddAcc = oddList.length ? Math.round((oddList.filter((m) => m.oddCorrect).length / oddList.length) * 100) : null;
 
-    // Head-to-head vs the market on the SAME odds-carrying matches, plus how
-    // often we were right when we disagreed with the market ("beat the line").
-    const smashOnOdds = oddList.length ? Math.round((oddList.filter((m) => m.smashCorrect).length / oddList.length) * 100) : null;
-    const disagree = oddList.filter((m) => m.smashFavorite !== m.oddFav);
+    // Head-to-head vs the market on the SAME odds-carrying matches, scored
+    // on the DEPLOYED calls, plus how often we were right when we disagreed
+    // with the market ("beat the line").
+    const smashOnOdds = oddList.length ? Math.round((oddList.filter((m) => pickCorrect(m)).length / oddList.length) * 100) : null;
+    const disagree = oddList.filter((m) => pickFavorite(m) !== m.oddFav);
     const market = {
       n: oddList.length,
       marketAcc: oddAcc,
       smashAcc: smashOnOdds,
       disagreeN: disagree.length,
-      disagreeWin: disagree.length ? Math.round((disagree.filter((m) => m.smashCorrect).length / disagree.length) * 100) : null,
+      disagreeWin: disagree.length ? Math.round((disagree.filter((m) => pickCorrect(m)).length / disagree.length) * 100) : null,
     };
 
-    // 95% Wilson interval on the headline (Smart Blend) accuracy.
-    const smashK = filtered.filter((m) => m.smashCorrect).length;
+    // 95% Wilson interval on the headline (deployed calls) accuracy.
+    const smashK = filtered.filter((m) => pickCorrect(m)).length;
     const ci = wilson(smashK, n);
     const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
 
@@ -207,7 +208,7 @@ export default function TrackRecord() {
         if (!sets.length) continue;
         const wSets = sets.filter((s) => s.w > s.l).length;
         const lSets = sets.filter((s) => s.l > s.w).length;
-        const favWon = m.smashFavorite === m.winner;
+        const favWon = pickFavorite(m) === m.winner;
         const actualFav = favWon ? `${wSets}–${lSets}` : `${lSets}–${wSets}`;
         total += 1;
         if (m.predScore === actualFav) hits += 1;
@@ -247,10 +248,17 @@ export default function TrackRecord() {
     ];
     const bestReturn = returns.reduce((b, r) => (r.profit > b.profit ? r : b), returns[0]);
 
+    // Deployed calls: the pick the site actually showed for each match (best
+    // engine for that tour x surface, annotated by the pipeline). These drive
+    // the headline; the per-engine numbers below stay pure.
+    const deployedCorrect = filtered.filter((m) => pickCorrect(m)).length;
+
     return {
       n,
       correct: filtered.filter((m) => m.correct).length,
       smashCorrect: filtered.filter((m) => m.smashCorrect).length,
+      deployedCorrect,
+      deployed: n ? Math.round((deployedCorrect / n) * 100) : 0,
       smash: engines.smash,
       season: engines.sim,
       elo: engines.elo,
@@ -395,10 +403,11 @@ export default function TrackRecord() {
                   <div className="track-panel track-benchmark">
                     <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
                     <div className="track-benchmark-row">
-                      <span className="track-benchmark-val">{stats.smash}%</span>
+                      <span className="track-benchmark-val">{stats.deployed}%</span>
                       <span className="track-benchmark-text">
                         of winners across {stats.n.toLocaleString()} matches ({tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}),
-                        today's model re-run over the full season. A model benchmark, not locked picks.
+                        calling each match with the strongest engine for its tour and surface,
+                        re-run over the full season. A model benchmark, not locked picks.
                         {stats.scoreline.n > 0 ? ` Exact set score called in ${stats.scoreline.pct}%.` : ''}
                       </span>
                     </div>
@@ -407,15 +416,16 @@ export default function TrackRecord() {
               ) : (
                 <>
                   <div className="track-hero-stat">
-                    <div className="track-hero-value">{stats.smash}%</div>
+                    <div className="track-hero-value">{stats.deployed}%</div>
                     <div className="track-hero-detail">
                       <div className="track-hero-label">of winners called correctly</div>
-                      <div className="track-hero-sub">{stats.smashCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
+                      <div className="track-hero-sub">{stats.deployedCorrect} of {stats.n} matches · {tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}</div>
                       <div className="track-benchmark-chip">SEASON BENCHMARK · RESIMULATED</div>
                       <div className="track-hero-ci">
-                        How today's model scores when re-run across every completed match this
-                        season, give or take {stats.ciHalf} points. The locked-before-play record below is
-                        the one that can only be earned.
+                        How our calls score when re-run across every completed match this
+                        season, each match called with the strongest engine for its tour and
+                        surface, give or take {stats.ciHalf} points. The locked-before-play
+                        record below is the one that can only be earned.
                       </div>
                       {stats.scoreline.n > 0 && (
                         <div className="track-hero-scoreline">
@@ -451,7 +461,7 @@ export default function TrackRecord() {
                   <div className="track-market-row">
                     <div className="track-market-cell">
                       <div className="track-market-val">{stats.market.smashAcc}%</div>
-                      <div className="track-market-cap">Smart Blend</div>
+                      <div className="track-market-cap">Our calls</div>
                     </div>
                     <div className="track-market-vs">vs</div>
                     <div className="track-market-cell">
@@ -614,18 +624,22 @@ export default function TrackRecord() {
                   const lName = winnerIsP1 ? m.name2 : m.name1;
                   const wFlag = countryFlagUrl(winnerIsP1 ? m.country1 : m.country2);
                   const lFlag = countryFlagUrl(winnerIsP1 ? m.country2 : m.country1);
-                  const blendFavProb = m.smashProbP1 >= 0.5 ? m.smashProbP1 : 1 - m.smashProbP1;
-                  const favName = (m.smashFavorite === m.p1 ? m.name1 : m.name2).split(' ').pop();
+                  // The DEPLOYED call for this match: the pick made by the
+                  // best engine for its tour x surface.
+                  const callCorrect = pickCorrect(m);
+                  const callFav = pickFavorite(m);
+                  const callProb = pickFavProb(m);
+                  const favName = (callFav === m.p1 ? m.name1 : m.name2).split(' ').pop();
                   // Predicted scoreline (stored, favorite's perspective) vs the
                   // real result, also from the favorite's perspective.
                   const sets = parseScore(m.score);
                   const wSets = sets.filter((s) => s.w > s.l).length;
                   const lSets = sets.filter((s) => s.l > s.w).length;
-                  const favWon = m.smashFavorite === m.winner;
+                  const favWon = callFav === m.winner;
                   const actualFav = sets.length ? (favWon ? `${wSets}–${lSets}` : `${lSets}–${wSets}`) : null;
                   const scoreHit = m.predScore && actualFav && m.predScore === actualFav;
                   return (
-                    <div className={`track-row${m.smashCorrect ? '' : ' miss'}`} key={m.id}>
+                    <div className={`track-row${callCorrect ? '' : ' miss'}`} key={m.id}>
                       <div className="track-row-meta">
                         <span className="track-row-surface" style={{ color: (SURFACES[m.surface] || {}).accent }}>
                           {(SURFACES[m.surface] || { label: m.surface }).label}
@@ -648,8 +662,8 @@ export default function TrackRecord() {
                         />
                       </div>
                       <div className="track-row-model">
-                        <span className={`track-verdict ${m.smashCorrect ? 'hit' : 'miss'}`}>
-                          {m.smashCorrect ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(blendFavProb * 100)}%
+                        <span className={`track-verdict ${callCorrect ? 'hit' : 'miss'}`}>
+                          {callCorrect ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(callProb * 100)}%
                         </span>
                         {m.predScore && actualFav && (
                           <span className={`track-scorecompare${scoreHit ? ' hit' : ''}`}>

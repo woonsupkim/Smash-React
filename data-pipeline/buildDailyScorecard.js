@@ -46,26 +46,33 @@ function run() {
   const ranks = { atp: loadRanks('atp'), wta: loadRanks('wta') };
 
   const ms = track.matches || [];
+  // Deployed-call accessors: the pick made by the best engine for each
+  // match's tour x surface (annotated by buildTrackRecord), with a Smart
+  // Blend fallback for rows that predate the annotation.
+  const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
+  const pickFav = (m) => m.pickFavorite || m.smashFavorite;
+  const pickProbP1 = (m) => (m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1);
+
   const season = {
     n: ms.length,
-    correct: ms.filter((m) => m.smashCorrect).length,
-    acc: ms.length ? Math.round((ms.filter((m) => m.smashCorrect).length / ms.length) * 100) : 0,
+    correct: ms.filter((m) => pickCorrect(m)).length,
+    acc: ms.length ? Math.round((ms.filter((m) => pickCorrect(m)).length / ms.length) * 100) : 0,
   };
 
   // "Yesterday" = the most recent day with completed matches in the record.
   const latestDate = ms.reduce((max, m) => (m.date > max ? m.date : max), '');
   const day = latestDate.slice(0, 10);
   const dayMatches = ms.filter((m) => m.date.slice(0, 10) === day);
-  const fav = (m) => (m.smashFavorite === m.p1 ? m.name1 : m.name2);
-  const dog = (m) => (m.smashFavorite === m.p1 ? m.name2 : m.name1);
-  const favProb = (m) => Math.max(m.smashProbP1, 1 - m.smashProbP1);
+  const fav = (m) => (pickFav(m) === m.p1 ? m.name1 : m.name2);
+  const dog = (m) => (pickFav(m) === m.p1 ? m.name2 : m.name1);
+  const favProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
 
-  const hits = dayMatches.filter((m) => m.smashCorrect);
+  const hits = dayMatches.filter((m) => pickCorrect(m));
   const beatBookies = hits.filter((m) => m.oddCorrect === false);
   // Boldest correct call = lowest stated confidence that still hit.
   const boldest = hits.length ? hits.reduce((b, m) => (favProb(m) < favProb(b) ? m : b)) : null;
   // The miss we own = highest stated confidence that missed.
-  const misses = dayMatches.filter((m) => !m.smashCorrect);
+  const misses = dayMatches.filter((m) => !pickCorrect(m));
   const worstMiss = misses.length ? misses.reduce((w, m) => (favProb(m) > favProb(w) ? m : w)) : null;
 
   const yesterday = {

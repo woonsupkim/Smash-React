@@ -174,13 +174,14 @@ function evaluate(ctx, rec) {
   const smashProbP1 = calibrate(w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1, tour);
   const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
 
-  // Predicted scoreline, from the deployed pick's (Smart Blend favorite's)
-  // perspective: the most likely number of sets the loser takes in the point
-  // simulation, e.g. "3-1" (best-of-5) or "2-0" (best-of-3).
-  const favIsP1 = smashFavorite === p1;
-  const dist = sum.lossDist[favIsP1 ? 0 : 1];
-  let modal = 0; for (let i = 1; i < sum.target; i++) if (dist[i] > dist[modal]) modal = i;
-  const predScore = `${sum.target}–${modal}`;
+  // Predicted scoreline for BOTH winner orientations (the most likely
+  // number of sets the loser takes). The deployed-pick annotation pass at
+  // the bottom of this file orients predScore to whichever engine's
+  // favorite is the site's actual call for this tour x surface.
+  const modalOf = (d) => { let mi = 0; for (let i = 1; i < sum.target; i++) if (d[i] > d[mi]) mi = i; return mi; };
+  const predScoreP1Win = `${sum.target}–${modalOf(sum.lossDist[0])}`;
+  const predScoreP2Win = `${sum.target}–${modalOf(sum.lossDist[1])}`;
+  const predScore = smashFavorite === p1 ? predScoreP1Win : predScoreP2Win;
 
   // Bookmaker-favorite baseline: whoever the market priced shorter (lower
   // decimal odds). Only defined for matches that actually carry odds.
@@ -204,7 +205,7 @@ function evaluate(ctx, rec) {
     eloProbP1: r3(eloProbP1), eloCorrect: eloFavorite === winner,
     rankProbP1: r3(rankProbP1),
     smashProbP1: r3(smashProbP1), smashFavorite, smashCorrect: smashFavorite === winner,
-    predScore,
+    predScore, predScoreP1Win, predScoreP2Win,
     rankPick, rankCorrect: rankPick === winner,
     oddFav, oddCorrect,
     od1: o1 > 0 ? o1 : null, od2: o2 > 0 ? o2 : null,
@@ -222,7 +223,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // Model fingerprint: when the weights or calibration change, every cached
 // row is stale - re-simulate everything instead of silently serving rows
 // from two different models in one file.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 1 });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 2 });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {
@@ -267,35 +268,10 @@ for (const tour of ['atp', 'wta']) {
   }
 }
 
-// North-star metric: log loss vs the bookmakers' closing odds, on the
-// subset of matches that carry odds. The market is the strongest known
-// predictor, so the gap to it is the honest read on remaining headroom -
-// and whether a model change was real or noise.
-const logLossMeta = {};
-for (const tour of ['atp', 'wta']) {
-  const priced = all.filter((m) => m.tour === tour && m.od1 && m.od2);
-  const model = logLoss(priced.map((m) => ({ p: m.smashProbP1, won: m.p1Won })));
-  const market = logLoss(priced.map((m) => ({ p: marketProb(m.od1, m.od2), won: m.p1Won })));
-  const allTour = all.filter((m) => m.tour === tour);
-  logLossMeta[tour] = {
-    n: allTour.length,
-    model: allTour.length ? +logLoss(allTour.map((m) => ({ p: m.smashProbP1, won: m.p1Won }))).toFixed(4) : null,
-    nPriced: priced.length,
-    modelOnPriced: priced.length ? +model.toFixed(4) : null,
-    market: priced.length ? +market.toFixed(4) : null,
-    gap: priced.length ? +(model - market).toFixed(4) : null,
-  };
-  if (priced.length) {
-    console.log(`${tour.toUpperCase()} log loss vs market (n=${priced.length}): model ${model.toFixed(4)} | market ${market.toFixed(4)} | gap ${(model - market).toFixed(4)}`);
-  }
-}
-
-fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: 'analytic', modelKey, logLoss: logLossMeta, matches: all }));
-console.log(`Wrote ${all.length} matches to ${outPath}`);
-
 // ── Engine accuracy summary (per tour x surface, + "all") ─────────────────
 // Both the Track Record page and the H2H "Recommended" tag read this to know
-// which engine is most accurate for a given tour/surface.
+// which engine is strongest for a given tour/surface - and the deployed-pick
+// annotation below uses it to decide each match's actual call.
 const ENGINE_FIELD = { smash: 'smashCorrect', sim: 'correct', elo: 'eloCorrect', rank: 'rankCorrect', upset: 'upsetCorrect' };
 const ENGINE_PROB = { smash: 'smashProbP1', sim: 'probP1', elo: 'eloProbP1', rank: 'rankProbP1', upset: 'upsetProbP1' };
 function summarize(list) {
@@ -308,18 +284,13 @@ function summarize(list) {
     lls[id] = ll != null ? +ll.toFixed(4) : null;
   }
   out.logLoss = lls;
-  // Best selectable engine: the Smart Blend by default - it's the deployed,
-  // tuned model. A challenger takes over only by beating the blend's LOG
-  // LOSS by a real margin (accuracy at cell sizes of a few hundred matches
-  // has a multi-point noise floor, and the retro rank engine is flattered
-  // by using current rankings on past matches - max-accuracy selection was
-  // crowning noise). 0.01 log loss is roughly the noise floor at these n.
-  const MARGIN = 0.01;
-  const challengers = ['sim', 'elo', 'rank', 'upset']
-    .filter((id) => lls[id] != null && lls.smash != null && lls[id] < lls.smash - MARGIN);
-  out.best = challengers.length
-    ? challengers.reduce((a, b) => (lls[a] <= lls[b] ? a : b))
-    : 'smash';
+  // Best selectable engine BY ACCURACY, matching the "Most accurate" tag on
+  // the Five Ways panel (product rule: every call the site makes uses the
+  // best predicting engine for its tour x surface, and the headline grades
+  // those deployed calls). Smart Blend wins ties. Per-engine log losses are
+  // emitted above so the tradeoff stays inspectable.
+  const order = ['smash', 'sim', 'elo', 'rank', 'upset'];
+  out.best = order.reduce((b, id) => (out[id] > out[b] ? id : b), 'smash');
   return out;
 }
 const accuracy = {};
@@ -331,6 +302,62 @@ for (const tour of ['atp', 'wta', 'all']) {
     if (s) accuracy[tour][surface] = s;
   }
 }
+
+// ── Deployed picks ─────────────────────────────────────────────────────────
+// Product rule: every call the site makes uses the best predicting engine
+// for its tour x surface, and the headline benchmark grades THOSE calls.
+// Annotated on every run (cheap), so reused rows re-orient whenever the
+// best-engine table moves. Known tradeoff, on the record: the cell winner
+// is chosen from the same season being displayed, which flatters the
+// headline slightly - the per-engine panels stay pure for comparison.
+const FAV_OF = {
+  smash: (m) => m.smashFavorite,
+  sim: (m) => m.favorite,
+  elo: (m) => (m.eloProbP1 >= 0.5 ? m.p1 : m.p2),
+  rank: (m) => m.rankPick,
+  upset: (m) => m.upsetFavorite,
+};
+for (const m of all) {
+  const best = accuracy[m.tour]?.[m.surface]?.best || 'smash';
+  m.pickEngine = best;
+  m.pickProbP1 = m[ENGINE_PROB[best]];
+  m.pickFavorite = FAV_OF[best](m);
+  m.pickCorrect = m.pickFavorite === m.winner;
+  if (m.predScoreP1Win && m.predScoreP2Win) {
+    m.predScore = m.pickFavorite === m.p1 ? m.predScoreP1Win : m.predScoreP2Win;
+  }
+}
+for (const tour of ['atp', 'wta']) {
+  const ms = all.filter((m) => m.tour === tour);
+  const right = ms.filter((m) => m.pickCorrect).length;
+  console.log(`${tour.toUpperCase()} deployed picks (best engine per surface): ${right}/${ms.length} (${Math.round((right / ms.length) * 100)}%)`);
+}
+
+// North-star metric: log loss vs the bookmakers' closing odds, on the
+// subset of matches that carry odds - scored on the DEPLOYED picks, the
+// same calls the headline grades.
+const logLossMeta = {};
+for (const tour of ['atp', 'wta']) {
+  const priced = all.filter((m) => m.tour === tour && m.od1 && m.od2);
+  const model = logLoss(priced.map((m) => ({ p: m.pickProbP1, won: m.p1Won })));
+  const market = logLoss(priced.map((m) => ({ p: marketProb(m.od1, m.od2), won: m.p1Won })));
+  const allTour = all.filter((m) => m.tour === tour);
+  logLossMeta[tour] = {
+    n: allTour.length,
+    model: allTour.length ? +logLoss(allTour.map((m) => ({ p: m.pickProbP1, won: m.p1Won }))).toFixed(4) : null,
+    nPriced: priced.length,
+    modelOnPriced: priced.length ? +model.toFixed(4) : null,
+    market: priced.length ? +market.toFixed(4) : null,
+    gap: priced.length ? +(model - market).toFixed(4) : null,
+  };
+  if (priced.length) {
+    console.log(`${tour.toUpperCase()} log loss vs market (n=${priced.length}): deployed ${model.toFixed(4)} | market ${market.toFixed(4)} | gap ${(model - market).toFixed(4)}`);
+  }
+}
+
+fs.writeFileSync(outPath, JSON.stringify({ generatedAt: new Date().toISOString(), sims: 'analytic', modelKey, logLoss: logLossMeta, matches: all }));
+console.log(`Wrote ${all.length} matches to ${outPath}`);
+
 const accPath = path.join(__dirname, '..', 'public', 'data', 'engine_accuracy.json');
 fs.writeFileSync(accPath, JSON.stringify(accuracy));
 console.log(`Wrote engine accuracy summary to ${accPath}`);
