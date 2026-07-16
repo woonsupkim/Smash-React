@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T20:45:17.444Z",
+  "generatedAt": "2026-07-16T05:41:41.681Z",
   "seasonN": 2819,
   "thread": null,
   "assets": [
@@ -22,21 +22,7 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-15: called 7 of 10 winners before play. Season benchmark: 67%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "wrap-atp.png",
-      "type": "wrap",
-      "format": "square",
-      "category": "wrap",
-      "caption": "Wimbledon ATP report card: 51 of 71 winners called before play, 2 wins over the bookies, 21 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction"
-    },
-    {
-      "file": "wrap-wta.png",
-      "type": "wrap",
-      "format": "square",
-      "category": "wrap",
-      "caption": "Wimbledon WTA report card: 49 of 76 winners called before play, 1 wins over the bookies, 27 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-15: called 6 of 10 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "draw-road-atp.png",
@@ -71,7 +57,7 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 67% of winners called across 2,819 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 2,819 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "how-it-works-1.png",
@@ -92,7 +78,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 67% of winners called across 2,819 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 2,819 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "pool-promo.png",
@@ -120,7 +106,7 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "47 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "46 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction"
     },
     {
       "file": "hype-surface.png",
@@ -134,7 +120,7 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "47 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction"
+      "caption": "46 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction"
     }
   ]
 }

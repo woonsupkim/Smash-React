@@ -66,15 +66,17 @@ function nextSlam(now = new Date()) {
   const all = [...slamsIn(now.getFullYear()), ...slamsIn(now.getFullYear() + 1)];
   return all.find((s) => s.start > now);
 }
-// The most recent slam already underway or finished, with its (approximate)
-// end date - a fortnight after the start. Everything graded after that is
-// "between the slams": the summer/spring swings the weekly refresh feeds in.
+// The most recent slam already underway or finished. Slams start on a
+// Monday and the final lands on the second Sunday (start + 13 days), so
+// "ended" = the Monday after (start + 14 days). Everything dated from that
+// Monday on is "between the slams": the summer/spring swings the weekly
+// refresh feeds in.
 function prevSlam(now = new Date()) {
   const all = [...slamsIn(now.getFullYear() - 1), ...slamsIn(now.getFullYear())];
   const past = all.filter((s) => s.start <= now);
   const last = past[past.length - 1];
   if (!last) return null;
-  return { ...last, end: new Date(last.start.getTime() + 15 * 864e5) };
+  return { ...last, end: new Date(last.start.getTime() + 14 * 864e5) };
 }
 
 // Wilson 95% interval - same as the Track Record / Methodology headline, so

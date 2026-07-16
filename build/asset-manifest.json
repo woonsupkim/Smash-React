@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.478eed8d.css",
-    "main.js": "/static/js/main.19eee3ca.js",
+    "main.js": "/static/js/main.88d17b5e.js",
     "static/media/smash2b.jpg": "/static/media/smash2b.971e2895b6e69c2dd0a8.jpg",
     "static/media/smash1.jpg": "/static/media/smash1.23e558eeb2688dfac3fd.jpg",
     "static/media/logo_rg.png": "/static/media/logo_rg.f497d9850246b3ab85a7.png",
@@ -72,6 +72,7 @@
     "static/media/wu.png": "/static/media/wu.50a4ca3eb78029da4b66.png",
     "static/media/birre.png": "/static/media/birre.8420c94a6543e73d0aeb.png",
     "static/media/perri.png": "/static/media/perri.c67a9a52219a34d7a13e.png",
+    "static/media/zakha.png": "/static/media/zakha.af3856abeeebaa90c5b5.png",
     "static/media/vukic.png": "/static/media/vukic.170066658fad3f8652d1.png",
     "static/media/halys.png": "/static/media/halys.b3f339330eb9472d4646.png",
     "static/media/jong.png": "/static/media/jong.7df8b342bf4bfe20b646.png",
@@ -80,6 +81,7 @@
     "static/media/maroz.png": "/static/media/maroz.015b7aa1d5d3d7150979.png",
     "static/media/grach.png": "/static/media/grach.d0623d3ba4e094cab7d9.png",
     "static/media/cirst.png": "/static/media/cirst.045651dc1dc09c94571e.png",
+    "static/media/towns.png": "/static/media/towns.f242308d7307ff69768a.png",
     "static/media/ruiz.png": "/static/media/ruiz.228c3963c33e873be6b7.png",
     "static/media/ruzic.png": "/static/media/ruzic.986df7b27dfa19cb7375.png",
     "static/media/darde.png": "/static/media/darde.1fddf6f7f2c313f4f104.png",
@@ -98,6 +100,7 @@
     "static/media/kovac.png": "/static/media/kovac.d9d2f1e94ab9c71353a1.png",
     "static/media/andre.png": "/static/media/andre.d1a9f70bf1130074cc4b.png",
     "static/media/nava.png": "/static/media/nava.49d36bfdd7a53346b288.png",
+    "static/media/sun.png": "/static/media/sun.7f0425f6926ac25584d6.png",
     "static/media/krejc.png": "/static/media/krejc.6744a56af693cdb269f5.png",
     "static/media/struf.png": "/static/media/struf.e8ad0cbd1cb5ea9edc16.png",
     "static/media/tarar.png": "/static/media/tarar.0974730b7375e513db67.png",
@@ -265,10 +268,10 @@
     "static/media/svito.png": "/static/media/svito.b490b9135f8d243885fd.png",
     "index.html": "/index.html",
     "main.478eed8d.css.map": "/static/css/main.478eed8d.css.map",
-    "main.19eee3ca.js.map": "/static/js/main.19eee3ca.js.map"
+    "main.88d17b5e.js.map": "/static/js/main.88d17b5e.js.map"
   },
   "entrypoints": [
     "static/css/main.478eed8d.css",
-    "static/js/main.19eee3ca.js"
+    "static/js/main.88d17b5e.js"
   ]
 }

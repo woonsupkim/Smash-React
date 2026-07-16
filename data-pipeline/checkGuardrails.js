@@ -30,6 +30,10 @@ const MIN_N = 25;    // below this, report but never alert
 // Deployed-call accessor (Smart Blend fallback for pre-annotation rows).
 const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
 
+// Every engine's graded field, so each cell's report can answer "would a
+// different engine have done better on the same recent matches?" directly.
+const ENGINE_FIELD = { smash: 'smashCorrect', sim: 'correct', elo: 'eloCorrect', rank: 'rankCorrect', upset: 'upsetCorrect' };
+
 const pct = (list, fn) => (list.length ? Math.round((list.filter(fn).length / list.length) * 100) : null);
 
 function run() {
@@ -75,7 +79,17 @@ function run() {
         : reasons.length ? 'alert'
         : (seasonAcc != null && recentAcc < seasonAcc - 8) ? 'watch'
         : 'ok';
-      cells.push({ tour, surface, engine, status, n: cell.length, seasonAcc, recentN: recent.length, recentAcc, rankRecentAcc, reasons });
+      // All five engines on the SAME recent window, plus which one led it -
+      // the first thing to check when a cell goes cold.
+      const recentEngines = {};
+      for (const [id, f] of Object.entries(ENGINE_FIELD)) recentEngines[id] = pct(recent, (m) => m[f]);
+      const bestRecent = Object.entries(recentEngines)
+        .filter(([, v]) => v != null)
+        .reduce((b, e) => (b && b[1] >= e[1] ? b : e), null);
+      cells.push({
+        tour, surface, engine, status, n: cell.length, seasonAcc, recentN: recent.length, recentAcc, rankRecentAcc,
+        recentEngines, bestRecent: bestRecent ? { engine: bestRecent[0], acc: bestRecent[1] } : null, reasons,
+      });
       for (const r of reasons) alerts.push(`${label} (${engine}): ${r}`);
     }
   }
