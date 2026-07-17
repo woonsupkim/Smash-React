@@ -10,6 +10,7 @@ import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect } from '../utils/deployedPick';
+import EloChart from '../components/EloChart';
 import './PlayerPage.css';
 
 // Tiny lime polyline of a value series (same visual family as the Home
@@ -28,71 +29,6 @@ function Spark({ values, w = 110, h = 26 }) {
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
       <polyline points={pts.join(' ')} fill="none" stroke="var(--accent-brand)" strokeWidth="2" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// Grand slam start dates (same calendar rules as Home/pipeline) for the
-// Elo chart's event markers.
-function slamMarks(fromMs, toMs) {
-  const nthMonday = (y, mo, n) => {
-    const d = new Date(Date.UTC(y, mo, 1));
-    return Date.UTC(y, mo, 1 + ((8 - d.getUTCDay()) % 7) + (n - 1) * 7);
-  };
-  const lastWeekday = (y, mo, wd) => {
-    const d = new Date(Date.UTC(y, mo + 1, 0));
-    return Date.UTC(y, mo, d.getUTCDate() - ((d.getUTCDay() - wd + 7) % 7));
-  };
-  const out = [];
-  for (let y = new Date(fromMs).getUTCFullYear(); y <= new Date(toMs).getUTCFullYear(); y++) {
-    out.push(
-      { t: nthMonday(y, 0, 3), label: 'AO' },
-      { t: lastWeekday(y, 4, 0), label: 'RG' },
-      { t: lastWeekday(y, 5, 1), label: 'W' },
-      { t: lastWeekday(y, 7, 1), label: 'UO' },
-    );
-  }
-  return out.filter((s) => s.t >= fromMs && s.t <= toMs);
-}
-
-// Full-width Elo form curve with slam markers - the Form engine's visible
-// story. Same hand-rolled SVG family as Spark, just bigger.
-function EloChart({ points }) {
-  if (!points || points.length < 8) return null;
-  const W = 640, H = 190, PAD = { l: 46, r: 54, t: 14, b: 26 };
-  const series = points.map(([d, r]) => ({ t: new Date(d + 'T00:00:00Z').getTime(), r }));
-  const t0 = series[0].t, t1 = series[series.length - 1].t;
-  const rMin = Math.min(...series.map((p) => p.r)), rMax = Math.max(...series.map((p) => p.r));
-  const span = Math.max(rMax - rMin, 40);
-  const lo = rMin - span * 0.12, hi = rMax + span * 0.12;
-  const x = (t) => PAD.l + ((t - t0) / Math.max(t1 - t0, 1)) * (W - PAD.l - PAD.r);
-  const y = (r) => H - PAD.b - ((r - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
-  const pts = series.map((p) => `${x(p.t).toFixed(1)},${y(p.r).toFixed(1)}`).join(' ');
-  const marks = slamMarks(t0, t1);
-  const last = series[series.length - 1];
-  const grid = [Math.round(rMin / 50) * 50, Math.round(((rMin + rMax) / 2) / 50) * 50, Math.round(rMax / 50) * 50];
-  return (
-    <svg
-      className="player-elo-chart"
-      viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label={`Form rating over time, from ${series[0].r} to ${last.r}, with grand slam starts marked`}
-    >
-      {grid.map((g) => (
-        <g key={g}>
-          <line x1={PAD.l} y1={y(g)} x2={W - PAD.r} y2={y(g)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-          <text x={PAD.l - 6} y={y(g) + 3} textAnchor="end" fontSize="10" fill="var(--text-3)">{g}</text>
-        </g>
-      ))}
-      {marks.map((s) => (
-        <g key={s.t}>
-          <line x1={x(s.t)} y1={PAD.t} x2={x(s.t)} y2={H - PAD.b} stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeDasharray="3 4" />
-          <text x={x(s.t)} y={H - PAD.b + 14} textAnchor="middle" fontSize="10" fill="var(--text-3)">{s.label}</text>
-        </g>
-      ))}
-      <polyline points={pts} fill="none" stroke="var(--accent-brand)" strokeWidth="2.5" strokeLinejoin="round" />
-      <circle cx={x(last.t)} cy={y(last.r)} r="3.5" fill="var(--accent-brand)" />
-      <text x={Math.min(x(last.t) + 8, W - 4)} y={y(last.r) + 4} fontSize="12" fontWeight="700" fill="var(--accent-brand)">{last.r}</text>
     </svg>
   );
 }
@@ -280,7 +216,7 @@ export default function PlayerPage() {
       {eloHist && eloHist.length >= 8 && (
         <div className="player-elo">
           <div className="player-fact-label">Form rating, match by match</div>
-          <EloChart points={eloHist} />
+          <EloChart series={[{ points: eloHist, color: 'var(--accent-brand)', label: row?.name || id }]} />
           <div className="player-fact-sub">
             the Elo curve behind the Form engine · one point per match since Jan 2025 · dashed lines mark grand slam starts
           </div>

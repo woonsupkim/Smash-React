@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@sentry/react": "^10.66.0",
     "@supabase/supabase-js": "^2.78.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -60,7 +61,10 @@
     "build-title-odds": "node data-pipeline/buildTitleOdds.js",
     "build-daily-scorecard": "node data-pipeline/buildDailyScorecard.js",
     "build-share-assets": "node data-pipeline/buildShareAssets.js",
-    "build-motion-assets": "node data-pipeline/buildMotionAssets.js"
+    "build-motion-assets": "node data-pipeline/buildMotionAssets.js",
+    "build-sitemap": "node data-pipeline/buildSitemap.js",
+    "build-digest": "node data-pipeline/buildDigest.js",
+    "post-social": "node data-pipeline/postSocial.js"
   },
   "eslintConfig": {
     "extends": [

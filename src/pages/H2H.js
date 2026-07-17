@@ -18,6 +18,7 @@ import { currentSlamSurface } from '../utils/currentSlam';
 import { castCall, fetchTally } from '../utils/matchCalls';
 import defaultAvatar from '../assets/player-default.png';
 import { playerPhoto } from '../utils/playerPhotos';
+import EloChart from '../components/EloChart';
 import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
@@ -244,6 +245,18 @@ export default function H2H({ tour = 'atp' }) {
     fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')
       .then((r) => r.json()).then(setEngineAcc).catch(() => setEngineAcc(null));
   }, []);
+
+  // Elo form curves for the why-panel overlay ("their form lines crossed
+  // three weeks ago" is the visual argument for a Form-engine pick).
+  const [eloHistAll, setEloHistAll] = useState(null);
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + dataDir + '/elo_history.json')
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(setEloHistAll)
+      .catch(() => setEloHistAll(null));
+  }, [dataDir]);
+  const eloHistA = playerA ? eloHistAll?.[playerA.id] : null;
+  const eloHistB = playerB ? eloHistAll?.[playerB.id] : null;
   const bestEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
   const bestEngineAccPct = engineAcc?.[tour]?.[config.surfaceKey]?.[bestEngine] ?? null;
   useEffect(() => { setEngine(bestEngine); }, [bestEngine]);
@@ -816,6 +829,26 @@ export default function H2H({ tour = 'atp' }) {
                       ? `Bars toward ${favPlayer.name.split(' ').pop()} (right) and ${dogPlayer.name.split(' ').pop()} (left) sum to the ${favPct}% call.`
                       : `The signals feeding our models: right leans to ${favPlayer.name.split(' ').pop()}, left to ${dogPlayer.name.split(' ').pop()}.`}
                   </div>
+
+                  {/* Form curves overlaid: the Form engine's story for this pair */}
+                  {eloHistA && eloHistB && eloHistA.length >= 4 && eloHistB.length >= 4 && (
+                    <div className="why-form-curves">
+                      <EloChart
+                        height={170}
+                        series={[
+                          { points: eloHistA, color: config.accentColor, label: playerA.name.split(' ').pop() },
+                          { points: eloHistB, color: 'rgba(255,255,255,0.85)', label: playerB.name.split(' ').pop() },
+                        ]}
+                      />
+                      <div className="why-attr-legend">
+                        Elo form since Jan 2025 ·{' '}
+                        <span style={{ color: config.accentColor, fontWeight: 700 }}>{playerA.name.split(' ').pop()}</span>
+                        {' vs '}
+                        <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{playerB.name.split(' ').pop()}</span>
+                        {' '}· dashed lines mark grand slam starts
+                      </div>
+                    </div>
+                  )}
 
                   {/* Stat comparison: the raw evidence */}
                   <div className="why-stats">

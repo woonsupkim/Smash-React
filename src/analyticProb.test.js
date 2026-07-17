@@ -1,4 +1,4 @@
-import { pointProb, gameProb, setProb, matchProb, matchDetail } from './analyticProb';
+import { pointProb, gameProb, setProb, setProbFrom, matchProb, matchProbLive, matchDetail } from './analyticProb';
 
 // Real roster stat lines (p1..p6): Sinner, Alcaraz, Zverev on hard.
 const SINNER = [0.63, 0.94, 0.32, 0.52, 0.45, 0.19];
@@ -60,6 +60,35 @@ describe('analytic match probability', () => {
     expect(d.probP1).toBeCloseTo(matchProb(SINNER, ALCARAZ, 5), 9);
     expect(d.target).toBe(3);
     expect(d.lossDist[0]).toHaveLength(3);
+  });
+
+  test('live probability from a fresh match equals the pre-match number', () => {
+    expect(matchProbLive(SINNER, ALCARAZ, 5, {})).toBeCloseTo(matchProb(SINNER, ALCARAZ, 5), 9);
+    const qA = pointProb(SINNER, ALCARAZ), qB = pointProb(ALCARAZ, SINNER);
+    expect(setProbFrom(qA, qB, 0, 0, null)).toBeCloseTo(setProb(qA, qB), 9);
+  });
+
+  test('live probability responds to the score the right way', () => {
+    const pre = matchProb(SINNER, ALCARAZ, 5);
+    const upSet = matchProbLive(SINNER, ALCARAZ, 5, { setsA: 1, setsB: 0 });
+    const downSet = matchProbLive(SINNER, ALCARAZ, 5, { setsA: 0, setsB: 1 });
+    expect(upSet).toBeGreaterThan(pre);
+    expect(downSet).toBeLessThan(pre);
+    // Up a break inside the set beats level inside the set.
+    const upBreak = matchProbLive(SINNER, ALCARAZ, 5, { gamesA: 3, gamesB: 1, serverNext: 0 });
+    const level = matchProbLive(SINNER, ALCARAZ, 5, { gamesA: 2, gamesB: 2, serverNext: 0 });
+    expect(upBreak).toBeGreaterThan(level);
+    // Decided states are certainties.
+    expect(matchProbLive(SINNER, ALCARAZ, 5, { setsA: 3, setsB: 1 })).toBe(1);
+    expect(matchProbLive(SINNER, ALCARAZ, 5, { setsA: 0, setsB: 3 })).toBe(0);
+  });
+
+  test('in-set probabilities stay coherent at set point', () => {
+    const qA = pointProb(SINNER, ALCARAZ), qB = pointProb(ALCARAZ, SINNER);
+    // Serving for the set at 5-4 is a strong favorite to close.
+    expect(setProbFrom(qA, qB, 5, 4, 0)).toBeGreaterThan(0.8);
+    // Down 4-5 with the opponent serving next is the mirror image.
+    expect(setProbFrom(qA, qB, 4, 5, 1)).toBeLessThan(0.5);
   });
 
   test('scoreline temperature reshapes the distribution but never the win prob', () => {

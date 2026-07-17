@@ -12,6 +12,7 @@ const PAGES = [
   ['/model', 'model card'],
   ['/player/atp/sinne', 'player page'],
   ['/today', 'today'],
+  ['/pickem', 'pickem'],
 ];
 
 for (const [path, name] of PAGES) {

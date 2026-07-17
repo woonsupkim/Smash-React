@@ -1,23 +1,21 @@
-// Centralized error reporting hook. Today it captures uncaught errors and
-// unhandled promise rejections to the console; it is the single place to wire
-// a hosted error tracker (Sentry, etc.) when a DSN is available, so the rest
-// of the app never imports the vendor SDK directly.
+// Centralized error reporting. Without a DSN this stays a console tracker
+// (nothing to break, no account required). With REACT_APP_SENTRY_DSN set,
+// the Sentry SDK loads as a lazy chunk (never in the main bundle) and every
+// uncaught error, unhandled rejection, and report() call flows there too.
 //
-// To enable Sentry later:
-//   1. npm install @sentry/react
-//   2. set REACT_APP_SENTRY_DSN in the environment
-//   3. replace the body of report() with Sentry.captureException(err)
-//      and initialize Sentry inside initMonitoring().
-//
-// Left as a no-op tracker until then, so there is nothing to break and no
-// account/key required to ship.
+// Enable: set REACT_APP_SENTRY_DSN in the environment (Vercel project env +
+// .env locally) and redeploy. That's the whole switch.
 
 const DSN = process.env.REACT_APP_SENTRY_DSN || '';
+
+let sentry = null; // set once the lazy SDK import resolves
 
 export function report(err, context = {}) {
   // eslint-disable-next-line no-console
   console.error('[monitoring]', err, context);
-  // When wired: if (DSN) Sentry.captureException(err, { extra: context });
+  if (sentry) {
+    try { sentry.captureException(err instanceof Error ? err : new Error(String(err)), { extra: context }); } catch { /* never rethrow from the reporter */ }
+  }
 }
 
 export function initMonitoring() {
@@ -25,7 +23,17 @@ export function initMonitoring() {
   window.addEventListener('error', (e) => report(e.error || e.message, { kind: 'window.error' }));
   window.addEventListener('unhandledrejection', (e) => report(e.reason, { kind: 'unhandledrejection' }));
   if (DSN) {
-    // eslint-disable-next-line no-console
-    console.info('[monitoring] DSN configured; ready to initialize a hosted tracker.');
+    import('@sentry/react')
+      .then((Sentry) => {
+        Sentry.init({
+          dsn: DSN,
+          // Light sampling: errors are the point; perf traces are a bonus.
+          tracesSampleRate: 0.1,
+        });
+        sentry = Sentry;
+        // eslint-disable-next-line no-console
+        console.info('[monitoring] Sentry initialized');
+      })
+      .catch(() => { /* SDK failed to load; console tracking continues */ });
   }
 }

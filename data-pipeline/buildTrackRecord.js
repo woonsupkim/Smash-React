@@ -28,6 +28,9 @@ const { slamsForYear } = require('./lib/slamCalendar');
 // (fetchSurfaces backfills it over a few runs), else a slam-window
 // heuristic (a grass match inside the Wimbledon fortnight IS Wimbledon),
 // else null - the UI falls back to the format chip.
+// The season is the current calendar year everywhere in this file.
+const SEASON_YEAR = new Date().getUTCFullYear();
+
 // ESPN tournament names carry a " - City" suffix ("Wimbledon - London",
 // "Nordea Open - Bastad"). Strip it so cache names and the slam-window
 // heuristic agree on one label per event (no "Wimbledon" AND
@@ -117,7 +120,9 @@ function loadTour(tour) {
       }
 
       const d = new Date(m.date);
-      if (isNaN(d) || d < new Date('2026-01-01') || d >= new Date('2027-01-01')) continue;
+      // Current calendar year = the season. Rolls over automatically each
+      // January (the benchmark resets and refills; see docs/SEASON-ROLLOVER.md).
+      if (isNaN(d) || d < new Date(`${SEASON_YEAR}-01-01`) || d >= new Date(`${SEASON_YEAR + 1}-01-01`)) continue;
       const p1 = apiToShort.get(p1Id), p2 = apiToShort.get(p2Id);
       if (!p1 || !p2) continue;
       const winner = apiToShort.get(winId);

@@ -1,0 +1,101 @@
+/* Pick'em - beat the model */
+.pickem-page { max-width: 860px; margin: 0 auto; padding: 5.5rem 1rem 3rem; }
+/* Inline links: brand color + underline (bootstrap's default blue fails
+   contrast on the dark theme, and color alone can't mark a link). */
+.pickem-page a { color: var(--accent-brand); text-decoration: underline; text-underline-offset: 2px; }
+.pickem-page a.pickem-match { text-decoration: none; }
+.pickem-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0.2rem 0 0.6rem;
+}
+.pickem-sub { color: var(--text-2); max-width: 60ch; margin-bottom: 1.5rem; }
+
+.pickem-signin {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(198, 255, 28, 0.08);
+  border: 1px solid var(--accent-brand);
+  border-radius: var(--radius-md);
+  color: var(--accent-brand);
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+.pickem-mine {
+  padding: 0.7rem 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+}
+.pickem-section-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 1.5rem 0 0.6rem;
+}
+.pickem-empty {
+  padding: 1.2rem;
+  border: 1px dashed var(--border-1);
+  border-radius: var(--radius-md);
+  color: var(--text-3);
+}
+.pickem-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.pickem-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+}
+.pickem-row-meta { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 220px; }
+.pickem-event { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text-3); text-transform: uppercase; }
+.pickem-match { font-weight: 700; color: var(--text-1); text-decoration: none; }
+.pickem-match:hover { color: var(--accent-brand); }
+.pickem-model { font-size: 0.74rem; color: var(--text-3); }
+.pickem-btns { display: flex; gap: 0.4rem; }
+.pickem-btn {
+  padding: 0.4rem 0.9rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  color: var(--text-1);
+  font-weight: 700;
+  cursor: pointer;
+}
+.pickem-btn:hover:not(:disabled) { border-color: var(--accent-brand); }
+.pickem-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.pickem-btn.picked {
+  background: rgba(198, 255, 28, 0.12);
+  border-color: var(--accent-brand);
+  color: var(--accent-brand);
+  opacity: 1;
+}
+.pickem-locked { font-size: 0.72rem; font-weight: 700; color: var(--accent-brand); }
+
+.pickem-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.pickem-table th {
+  text-align: left;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border-1);
+}
+.pickem-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border-1); color: var(--text-1); font-variant-numeric: tabular-nums; }
+.pickem-table td.ahead { color: var(--accent-brand); font-weight: 700; }
+.pickem-table td.behind { color: var(--text-3); }
+.pickem-note { margin-top: 0.8rem; font-size: 0.78rem; color: var(--text-3); }

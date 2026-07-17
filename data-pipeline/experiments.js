@@ -31,6 +31,8 @@ const ENGINE = require('../src/engineConfig.json');
 const SHRINK_VARIANTS = [0, 200, 400, 800];
 const SIMS = 400;
 const EVAL_FROM = '2024-01-01';
+// Current season boundary for the window/decay/calibselect trials.
+const SEASON_START = `${new Date().getUTCFullYear()}-01-01`;
 const SURFACE_DISPLAY = { hard: 'Hard', clay: 'Clay', grass: 'Grass' };
 const normSurf = (raw) => {
   const s = String(raw || '').toLowerCase();
@@ -506,7 +508,7 @@ function fitWeightsW(list, wts, step = 0.05) {
 
 function cmdWindow() {
   const VARIANTS = {
-    'season-only': (m) => (m.date >= '2026-01-01' ? 1 : 0),
+    'season-only': (m) => (m.date >= SEASON_START ? 1 : 0),
     'window-24mo': (m, foldStart) => ((foldStart - new Date(m.date)) / 864e5 <= 730 ? 1 : 0),
     'decay-12mo': (m, foldStart) => {
       const age = (foldStart - new Date(m.date)) / 864e5;
@@ -524,7 +526,7 @@ function cmdWindow() {
     // strictly earlier, filtered/weighted its own way.
     const folds = new Map();
     for (const r of rows) {
-      if (r.date < '2026-01-01') continue;
+      if (r.date < SEASON_START) continue;
       const k = evalCore.foldKey(r.date, 'month');
       if (!folds.has(k)) folds.set(k, []);
       folds.get(k).push(r);
@@ -587,7 +589,7 @@ function cmdCalibSelect() {
     // Decay-12mo walk-forward OOF over 2026 months, keeping metadata.
     const folds = new Map();
     for (const r of rows) {
-      if (r.date < '2026-01-01') continue;
+      if (r.date < SEASON_START) continue;
       const k = evalCore.foldKey(r.date, 'month');
       if (!folds.has(k)) folds.set(k, []);
       folds.get(k).push(r);
@@ -654,7 +656,7 @@ function cmdDecay() {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
     const folds = new Map();
     for (const r of rows) {
-      if (r.date < '2026-01-01') continue;
+      if (r.date < SEASON_START) continue;
       const k = evalCore.foldKey(r.date, 'month');
       if (!folds.has(k)) folds.set(k, []);
       folds.get(k).push(r);

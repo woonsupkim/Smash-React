@@ -10,6 +10,19 @@ export const MODEL_VERSION = '3.3';
 
 export const CHANGELOG = [
   {
+    version: '3.4',
+    date: '2026-07-17',
+    type: 'product',
+    title: 'Live win probability, pick\'em, and a faster, louder Smash',
+    notes: [
+      'Match pages now show a LIVE win probability while a match is in progress: the point model re-priced on the actual score every 45 seconds, with the locked number alongside for the receipts. It switches itself on at the Canada Masters.',
+      'Pick\'em is live: pick winners on the same locked matches the model calls, under the same no-take-backs rules, and climb a public leaderboard graded against the same record that grades us.',
+      'The H2H why-panel overlays both players\' Elo form curves - when the form lines crossed is now something you can see, not just read.',
+      'Faster everywhere: pages load on demand (the first-visit bundle shrank by 60%) and images went on a diet (8MB lighter).',
+      'For the crawlers and the inbox: a full sitemap of every match and player page, a weekly email digest, and an auto-posting bridge for the daily share cards.',
+    ],
+  },
+  {
     version: '3.3',
     date: '2026-07-17',
     type: 'model',

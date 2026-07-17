@@ -214,6 +214,10 @@
 .why-attr-val.neg { color: var(--accent-negative); }
 .why-attr-legend { font-size: 0.74rem; color: var(--text-3); margin-bottom: 1.25rem; }
 
+/* Overlaid Elo form curves inside the why panel */
+.why-form-curves { margin: 0.5rem 0 1.25rem; }
+.why-form-curves .elo-chart { width: 100%; height: auto; display: block; margin-bottom: 0.35rem; }
+
 /* ── Why: stat comparison ───────────────────────────────────────────── */
 .why-stats { display: flex; flex-direction: column; gap: 0.5rem; }
 .why-stat-row { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; gap: 0.6rem; }

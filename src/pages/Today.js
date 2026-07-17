@@ -34,6 +34,7 @@ export default function Today() {
         <p className="today-season">
           Season benchmark: {season.correct.toLocaleString()} of {season.n.toLocaleString()} winners
           called ({season.acc}%), every one <Link to="/track-record">on the record</Link>.
+          Think you can do better? <Link to="/pickem">Play pick'em against the model</Link>.
         </p>
       )}
 

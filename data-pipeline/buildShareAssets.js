@@ -59,6 +59,7 @@ const pickFavProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
 const SQ = 1080;
 const ST_W = 1080, ST_H = 1920;
 const MAX_MATCH_CARDS = 8;
+const SEASON_YEAR = new Date().getUTCFullYear();
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const D = 'Barlow Condensed, Arial Narrow, DejaVu Sans Condensed, DejaVu Sans, sans-serif';
@@ -791,7 +792,7 @@ async function proofCard(track, file) {
   const t = theme('brand');
   const c = chrome(SQ, SQ, t, { ghost: `${acc}%`, ghostY: 680 });
   const base = `${c.open}
-  ${eyebrow(SQ, 130, 'the receipts · 2026 season', LIME)}
+  ${eyebrow(SQ, 130, `the receipts · ${SEASON_YEAR} season`, LIME)}
   ${heroNum(SQ / 2, 360, `${acc}%`, 250, LIME)}
   <text x="${SQ / 2}" y="438" text-anchor="middle" font-family="${U}" font-size="33" fill="#ffffff">of winners called correctly · ${n.toLocaleString()} matches, all public</text>
   ${us != null ? `
@@ -884,7 +885,7 @@ async function hotStreakCard(tour, file) {
   <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="url(#hotFoil2)" stroke-width="6"/>
   <rect x="28" y="28" width="${SQ - 56}" height="${SQ - 56}" rx="34" fill="none" stroke="url(#hotFoil2)" stroke-width="7"/>
   <rect x="44" y="44" width="${SQ - 88}" height="${SQ - 88}" rx="26" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
-  <text x="${SQ - 52}" y="${SQ / 2}" text-anchor="middle" font-family="${U}" font-size="21" font-weight="800" letter-spacing="5" fill="rgba(255,255,255,0.55)" transform="rotate(90 ${SQ - 52} ${SQ / 2})">SMASH SERIES · 2026${hot.rank ? ` · NO. ${hot.rank}` : ''}</text>
+  <text x="${SQ - 52}" y="${SQ / 2}" text-anchor="middle" font-family="${U}" font-size="21" font-weight="800" letter-spacing="5" fill="rgba(255,255,255,0.55)" transform="rotate(90 ${SQ - 52} ${SQ / 2})">SMASH SERIES · ${SEASON_YEAR}${hot.rank ? ` · NO. ${hot.rank}` : ''}</text>
   ${bottomBar(SQ, hot.name.toUpperCase(), { y: 950 })}
 </svg>`;
   await renderOn(file, bg, [
@@ -1318,7 +1319,7 @@ async function proofPortrait(track, sc, file) {
   const t = theme('brand');
   const c = chrome(PT_W, PT_H, t, { ghost: `${acc}%`, ghostY: 860 });
   const base = `${c.open}
-  ${eyebrow(PT_W, 250, 'the receipts · 2026 season', LIME)}
+  ${eyebrow(PT_W, 250, `the receipts · ${SEASON_YEAR} season`, LIME)}
   ${heroNum(PT_W / 2, 560, `${acc}%`, 300, LIME)}
   <text x="${PT_W / 2}" y="650" text-anchor="middle" font-family="${U}" font-size="34" fill="#ffffff">of winners called correctly</text>
   <text x="${PT_W / 2}" y="702" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">${n.toLocaleString()} matches, every one public</text>
@@ -1707,10 +1708,10 @@ async function run() {
 
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
-  add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.proofLine}, all graded in public. ${tags}`,
+  add('proof.png', 'proof', 'square', 'promo', `The ${SEASON_YEAR} receipts: ${sc.proofLine}, all graded in public. ${tags}`,
     'Season receipts card: overall accuracy versus the bookmakers.');
   await proofPortrait(track, sc, 'proof-45.png');
-  add('proof-45.png', 'proof', 'portrait', 'promo', `The 2026 receipts in 4:5: ${sc.proofLine}. ${tags}`,
+  add('proof-45.png', 'proof', 'portrait', 'promo', `The ${SEASON_YEAR} receipts in 4:5: ${sc.proofLine}. ${tags}`,
     'Season receipts card, portrait format.');
   await bannerWide(sc, 'banner.png');
   add('banner.png', 'banner', 'wide', 'promo', `Every call public. Every miss too. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${SITE}/track-record ${tags}`,

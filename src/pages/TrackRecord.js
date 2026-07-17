@@ -321,10 +321,10 @@ export default function TrackRecord() {
       <div className="overlay track-overlay">
         <div className="track-page">
           <div className="track-header">
-            <div className="eyebrow">MODEL PERFORMANCE · 2026 SEASON</div>
+            <div className="eyebrow">MODEL PERFORMANCE · {new Date().getFullYear()} SEASON</div>
             <h1 className="track-title">Track Record</h1>
             <p className="track-sub">
-              Every completed 2026 tour match between two ranked players, scored
+              Every completed {new Date().getFullYear()} tour match between two ranked players, scored
               against what actually happened. No cherry-picking. Every match counts.
             </p>
             <div className="track-header-meta">

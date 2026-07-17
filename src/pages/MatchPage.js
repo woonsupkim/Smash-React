@@ -11,6 +11,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, localKickoff, idFromSlug } from '../utils/matchTime';
 import { castCall, fetchTally, matchCallKey } from '../utils/matchCalls';
 import { pickCorrect } from '../utils/deployedPick';
+import LiveWinProb from '../components/LiveWinProb';
 import './MatchPage.css';
 
 const SURFACE_ACCENTS = { clay: '#e8694a', grass: '#3ddc84', hard: '#5b8cff' };
@@ -168,6 +169,10 @@ export default function MatchPage() {
           </>
         )}
       </div>
+
+      {/* Live win probability - appears only while the match is actually
+          in progress (the component polls the scoreboard and self-hides). */}
+      {!decided && <LiveWinProb pred={pred} />}
 
       <div className="match-players">
         {playerCard(pred.p1, pred.name1, favIsP1)}

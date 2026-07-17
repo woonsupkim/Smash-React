@@ -85,6 +85,56 @@ function setProb(qA, qB) {
   return 0.5 * (fromStart(0) + fromStart(1));
 }
 
+// P(A wins a set from an arbitrary in-set score (mirrors src/analyticProb).
+function setProbFrom(qA, qB, gamesA = 0, gamesB = 0, serverNext = null) {
+  const holdA = gameProb(qA), holdB = gameProb(qB);
+  const played = gamesA + gamesB;
+  const solve = (srvNext) => {
+    const starter = played % 2 === 0 ? srvNext : 1 - srvNext;
+    const memo = new Map();
+    function P(ga, gb) {
+      if (ga === 6 && gb === 6) return tiebreakProb(qA, qB, starter);
+      if (ga >= 6 && ga - gb >= 2) return 1;
+      if (gb >= 6 && gb - ga >= 2) return 0;
+      if (ga === 7) return 1;
+      if (gb === 7) return 0;
+      const key = ga * 8 + gb;
+      if (memo.has(key)) return memo.get(key);
+      const server = (ga + gb) % 2 === 0 ? starter : 1 - starter;
+      const pAGame = server === 0 ? holdA : 1 - holdB;
+      const v = pAGame * P(ga + 1, gb) + (1 - pAGame) * P(ga, gb + 1);
+      memo.set(key, v);
+      return v;
+    }
+    return P(gamesA, gamesB);
+  };
+  if (serverNext === 0 || serverNext === 1) return solve(serverNext);
+  return 0.5 * (solve(0) + solve(1));
+}
+
+// LIVE match win probability from a mid-match score state (mirrors src).
+function matchProbLive(probsA, probsB, bestOf = 3, state = {}) {
+  const qA = pointProb(probsA, probsB);
+  const qB = pointProb(probsB, probsA);
+  const s = setProb(qA, qB);
+  const target = Math.ceil(bestOf / 2);
+  const memo = new Map();
+  const fromSets = (a, b) => {
+    if (a >= target) return 1;
+    if (b >= target) return 0;
+    const k = a * 8 + b;
+    if (memo.has(k)) return memo.get(k);
+    const v = s * fromSets(a + 1, b) + (1 - s) * fromSets(a, b + 1);
+    memo.set(k, v);
+    return v;
+  };
+  const { setsA = 0, setsB = 0, gamesA = 0, gamesB = 0, serverNext = null } = state;
+  if (setsA >= target) return 1;
+  if (setsB >= target) return 0;
+  const pSet = setProbFrom(qA, qB, gamesA, gamesB, serverNext);
+  return pSet * fromSets(setsA + 1, setsB) + (1 - pSet) * fromSets(setsA, setsB + 1);
+}
+
 // P(A wins the match), best of 3 or 5 independent sets.
 function matchProb(probsA, probsB, bestOf = 3) {
   const qA = pointProb(probsA, probsB);
@@ -124,4 +174,4 @@ function matchDetail(probsA, probsB, bestOf = 3, setTemp = 1) {
   return { probP1, target, lossDist: [distA, distB] };
 }
 
-module.exports = { pointProb, gameProb, tiebreakProb, setProb, matchProb, matchDetail };
+module.exports = { pointProb, gameProb, tiebreakProb, setProb, setProbFrom, matchProb, matchProbLive, matchDetail };

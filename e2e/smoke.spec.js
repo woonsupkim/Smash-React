@@ -69,7 +69,26 @@ test('player page: profile, record, and elo form curve', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/player/atp/sinne');
   await expect(page.getByText(/sinner/i).first()).toBeVisible({ timeout: 15000 });
-  await expect(page.locator('.player-elo-chart')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.player-elo .elo-chart')).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('pickem renders the game and degrades honestly without accounts', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/pickem');
+  await expect(page.getByRole('heading', { name: /pick'em/i })).toBeVisible();
+  // Model's forward record loads from predictions.json.
+  await expect(page.getByText(/model's locked record|locked record/i).first()).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('h2h why panel shows the form-curve overlay', async ({ page }) => {
+  const errors = collectErrors(page);
+  // Deep link a known pair: the daily featured matchup rotates and a player
+  // freshly renamed in the roster can lack seed history until the next
+  // data refresh.
+  await page.goto('/h2h?surface=hard&a=sinne&b=zvere');
+  await expect(page.locator('.why-form-curves .elo-chart')).toBeVisible({ timeout: 20000 });
   expect(errors).toEqual([]);
 });
 

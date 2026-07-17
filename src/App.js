@@ -1,21 +1,8 @@
 // src/App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 
 import Home from './pages/Home';
-import H2H from './pages/H2H';
-import DreamBrackets from './pages/DreamBrackets';
-import TrackRecord from './pages/TrackRecord';
-import Methodology from './pages/Methodology';
-import Changelog from './pages/Changelog';
-import Admin from './pages/Admin';
-import NotFound from './pages/NotFound';
-import MatchPage from './pages/MatchPage';
-import PlayerPage from './pages/PlayerPage';
-import Today from './pages/Today';
-import DrawPage from './pages/DrawPage';
-import ModelCard from './pages/ModelCard';
-import { Terms, Privacy, Disclaimer } from './pages/Legal';
 import SiteFooter from './components/SiteFooter';
 import TabBar from './components/TabBar';
 
@@ -31,6 +18,25 @@ import { motion } from 'framer-motion';
 import logoHome from './assets/ball.png';
 
 import './App.css';
+
+// Route-level code splitting: Home stays eager (it IS the first paint);
+// every other page loads on demand so the landing bundle stays small.
+const H2H = lazy(() => import('./pages/H2H'));
+const DreamBrackets = lazy(() => import('./pages/DreamBrackets'));
+const TrackRecord = lazy(() => import('./pages/TrackRecord'));
+const Methodology = lazy(() => import('./pages/Methodology'));
+const Changelog = lazy(() => import('./pages/Changelog'));
+const Admin = lazy(() => import('./pages/Admin'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const MatchPage = lazy(() => import('./pages/MatchPage'));
+const PlayerPage = lazy(() => import('./pages/PlayerPage'));
+const Today = lazy(() => import('./pages/Today'));
+const DrawPage = lazy(() => import('./pages/DrawPage'));
+const ModelCard = lazy(() => import('./pages/ModelCard'));
+const Pickem = lazy(() => import('./pages/Pickem'));
+const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
+const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Disclaimer })));
 
 initMonitoring();
 
@@ -137,6 +143,7 @@ function App() {
 
       <main id="main" className="page-content">
         <ErrorBoundary>
+        <Suspense fallback={<div className="route-loading" aria-hidden="true"><div className="skeleton route-loading-skel" /></div>}>
         <Routes>
           {/* Home is tour-agnostic (covers ATP + WTA together); the /women
               mirror stays only so the tour toggle and old links keep working */}
@@ -177,6 +184,7 @@ function App() {
           <Route path="/match/:slug" element={<MatchPage />} />
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
+          <Route path="/pickem" element={<Pickem />} />
 
           {/* The live slam draw (both tours inside) and the model card */}
           <Route path="/draw" element={<DrawPage />} />
@@ -188,6 +196,7 @@ function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
         </ErrorBoundary>
       </main>
       <SiteFooter />

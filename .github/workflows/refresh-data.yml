@@ -150,6 +150,25 @@ jobs:
       - name: Check model guardrails
         run: npm run check-guardrails
 
+      # Sitemap + robots: enumerate every match and player page for crawlers.
+      # Runs after build-predictions so new match pages are included.
+      - name: Build sitemap
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: npm run build-sitemap
+
+      # Weekly email digest: Mondays only, matching the off-season heartbeat
+      # cron. Send is optional - without RESEND_API_KEY/DIGEST_TO it just
+      # writes public/data/digest.html + digest.txt.
+      - name: Build and send weekly digest (Mondays)
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          DIGEST_FROM: ${{ secrets.DIGEST_FROM }}
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then npm run build-digest; else echo "Not Monday; skipping digest."; fi
+
       # Championship odds: simulate the live slam draw to completion and
       # append today's snapshot to the odds history.
       - name: Compute championship title odds
@@ -185,7 +204,7 @@ jobs:
         run: |
           git config user.name "smash-data-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add public/data data-pipeline/output src/assets/players src/assets/players-women
+          git add public/data public/sitemap.xml public/robots.txt data-pipeline/output src/assets/players src/assets/players-women
           git diff --cached --quiet && exit 0
           git commit -m "Automated data refresh"
           for attempt in 1 2 3; do
@@ -195,6 +214,17 @@ jobs:
           done
           echo "Could not push after 3 attempts" >&2
           exit 1
+
+      # Image-centric autopost: hands the day's best share cards (cover,
+      # results, moments) to a Buffer/Zapier/Make-style webhook. Runs AFTER
+      # the commit so the posted imageUrls are live once Vercel deploys.
+      # Without the secret it dry-runs and no-ops.
+      - name: Post share cards to autopost webhook (optional)
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          AUTOPOST_WEBHOOK_URL: ${{ secrets.AUTOPOST_WEBHOOK_URL }}
+        run: npm run post-social
 
       # Optional publicity: if a SOCIAL_WEBHOOK_URL secret is configured (a
       # Slack/Discord/Zapier-style JSON webhook), post the day's scorecard

@@ -48,6 +48,40 @@
 .match-result-chip.hit { color: var(--accent-positive); border-color: rgba(76, 175, 125, 0.5); background: rgba(76, 175, 125, 0.1); }
 .match-result-chip.miss { color: var(--accent-negative); border-color: rgba(224, 86, 86, 0.5); background: rgba(224, 86, 86, 0.1); }
 
+/* Live win probability strip (broadcast graphic) */
+.live-prob {
+  margin: 1rem 0 1.25rem;
+  padding: 0.85rem 1rem;
+  background: rgba(198, 255, 28, 0.06);
+  border: 1px solid rgba(198, 255, 28, 0.35);
+  border-radius: var(--radius-md);
+}
+.live-prob-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; }
+.live-prob-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em;
+  color: var(--accent-brand);
+}
+.live-prob-badge.done { color: var(--text-2); }
+.live-prob-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent-brand);
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+.live-prob-badge.done .live-prob-dot { animation: none; background: var(--text-3); }
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .live-prob-dot { animation: none; } }
+.live-prob-score { font-size: 0.9rem; font-weight: 700; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.live-prob-main { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.live-prob-pct {
+  font-family: var(--font-display);
+  font-size: 2.4rem; font-weight: 800; line-height: 1;
+  color: var(--accent-brand);
+}
+.live-prob-who { font-size: 0.85rem; color: var(--text-2); }
+.live-prob-delta { color: var(--text-3); }
+.live-prob-note { margin-top: 0.35rem; font-size: 0.72rem; color: var(--text-3); }
+
 .match-players {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

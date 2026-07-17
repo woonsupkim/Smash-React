@@ -117,6 +117,10 @@ button:focus-visible {
 }
 
 /* ── Skeleton shimmer - shared loading primitive ─────────────────────── */
+/* Route-level Suspense fallback while a lazy page chunk loads */
+.route-loading { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+.route-loading-skel { height: 320px; border-radius: var(--radius-md); }
+
 .skeleton {
   position: relative;
   overflow: hidden;
