@@ -21,9 +21,20 @@ export default function SiteFooter() {
       .catch(() => setMeta(null));
   }, []);
 
-  const refreshed = meta?.refreshedAt
-    ? new Date(meta.refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : null;
+  // Site-wide freshness: relative when recent, dated and amber when stale.
+  // Enterprise feel is legibility of operations - this line IS the ops page.
+  const freshness = (() => {
+    if (!meta?.refreshedAt) return null;
+    const t = new Date(meta.refreshedAt).getTime();
+    const h = (Date.now() - t) / 36e5;
+    if (h < 1) return { label: 'data refreshed just now', stale: false };
+    if (h < 24) return { label: `data refreshed ${Math.round(h)}h ago`, stale: false };
+    const days = Math.round(h / 24);
+    return {
+      label: `last refresh ${new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${days}d ago)`,
+      stale: days > 3,
+    };
+  })();
 
   return (
     <footer className="site-footer">
@@ -34,21 +45,39 @@ export default function SiteFooter() {
             Grand slam prediction engine. Every call graded in public.
           </p>
           <p className="site-footer-sla">
-            Model v{MODEL_VERSION} · data updated daily during grand slams
-            {refreshed && <> · last refresh {refreshed}</>}
+            Model v{MODEL_VERSION}
+            {freshness && (
+              <>
+                {' · '}
+                <span className={`site-footer-status${freshness.stale ? ' stale' : ''}`}>
+                  <span className="site-footer-dot" aria-hidden="true" />
+                  {freshness.stale ? 'data may be stale · ' : ''}{freshness.label}
+                </span>
+              </>
+            )}
           </p>
         </div>
 
-        <nav className="site-footer-col" aria-label="Product">
-          <div className="site-footer-head">Product</div>
+        <nav className="site-footer-col" aria-label="Predict">
+          <div className="site-footer-head">Predict</div>
           <Link to="/today">Today's Calls</Link>
+          <Link to={prefix('/h2h')}>H2H Studio</Link>
           <Link to="/draw">The Draw</Link>
-          <Link to={prefix('/h2h')}>Head to Head</Link>
-          <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
-          <Link to={prefix('/track-record')}>Track Record</Link>
+          <Link to="/rivalries">Rivalries</Link>
+        </nav>
+
+        <nav className="site-footer-col" aria-label="Prove">
+          <div className="site-footer-head">Prove</div>
+          <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
+          <Link to="/model">The Engine Room · Model</Link>
           <Link to="/methodology">Methodology</Link>
-          <Link to="/model">Model Card</Link>
           <Link to="/changelog">Changelog</Link>
+        </nav>
+
+        <nav className="site-footer-col" aria-label="Play">
+          <div className="site-footer-head">Play</div>
+          <Link to="/pickem">Pick'em</Link>
+          <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
         </nav>
 
         <nav className="site-footer-col" aria-label="Legal">

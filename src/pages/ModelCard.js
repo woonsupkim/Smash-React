@@ -72,7 +72,7 @@ export default function ModelCard() {
 
   return (
     <div className="mc-page">
-      <div className="eyebrow">MODEL CARD</div>
+      <div className="eyebrow">THE ENGINE ROOM · MODEL CARD</div>
       <h1 className="mc-title">Smash v{MODEL_VERSION}</h1>
       <p className="mc-lede">
         The full spec sheet: what the model is, what it learns from, how honest its
@@ -146,7 +146,12 @@ export default function ModelCard() {
 
       <section className="mc-section">
         <h2>Scorecard</h2>
-        {failed && <p className="mc-fine">The graded record could not be loaded right now.</p>}
+        {failed && (
+          <p className="mc-fine">
+            The scorecard didn't load - probably a hiccup on our side, not yours.
+            Refresh in a moment; the numbers are still being graded in public either way.
+          </p>
+        )}
         {!tr && !failed && <div className="skeleton mc-skel" />}
         {tr?.logLoss && (
           <div className="mc-scoreboard">

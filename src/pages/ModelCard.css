@@ -60,11 +60,12 @@
 .mc-guard-table { margin-top: 0.85rem; }
 .mc-guard-table td { border-bottom: 1px solid var(--border-1); }
 .mc-guard-table tr:last-child td { border-bottom: none; }
+/* Chip-system metrics (see App.css .chip) */
 .mc-guard-chip {
   display: inline-block;
-  padding: 0.12rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.62rem;
+  padding: 0.14rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;

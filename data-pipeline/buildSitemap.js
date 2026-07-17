@@ -115,6 +115,33 @@ function main() {
     console.log(`Added ${seen.size} match pages from ${preds.length} predictions.`);
   }
 
+  // ── Rivalry pages: the hub plus the top pairings per tour (3+ meetings,
+  // ranked by meetings and combined ranking - the SAME rule
+  // src/pages/Rivalries.js uses, so the sitemap and the board agree).
+  urls.push({ loc: `${SITE}/rivalries`, lastmod: today });
+  const TOP_RIVALRIES = 25;
+  for (const { tour, file } of rosters) {
+    const h2h = readJson(path.join(DATA, tour === 'wta' ? 'women' : '', 'h2h.json')) || {};
+    let roster = [];
+    try {
+      roster = Papa.parse(fs.readFileSync(file, 'utf8'), { header: true, skipEmptyLines: true }).data.filter((r) => r.id && r.name);
+    } catch { /* no roster, no rivalry pages */ }
+    const byId = new Map(roster.map((r) => [r.id, r]));
+    const pairs = [];
+    for (const [key, rec] of Object.entries(h2h)) {
+      const [ia, ib] = key.split('_');
+      const a = byId.get(ia), b = byId.get(ib);
+      if (!a || !b) continue;
+      const meetings = (rec.winsA || 0) + (rec.winsB || 0);
+      if (meetings < 3) continue;
+      const rankSum = (Number(a.us_seed) || 200) + (Number(b.us_seed) || 200);
+      pairs.push({ score: meetings * 10 - rankSum * 0.5, slug: `${slugify(a.name)}-vs-${slugify(b.name)}` });
+    }
+    const top = pairs.sort((x, y) => y.score - x.score).slice(0, TOP_RIVALRIES);
+    for (const p of top) urls.push({ loc: `${SITE}/rivalry/${tour}/${p.slug}`, lastmod: null });
+    console.log(`Added ${top.length} ${tour.toUpperCase()} rivalry pages.`);
+  }
+
   // ── Write sitemap.xml.
   const body = urls
     .map((u) => {

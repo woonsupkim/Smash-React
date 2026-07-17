@@ -13,6 +13,8 @@ const PAGES = [
   ['/player/atp/sinne', 'player page'],
   ['/today', 'today'],
   ['/pickem', 'pickem'],
+  ['/rivalries', 'rivalries board'],
+  ['/rivalry/atp/jannik-sinner-vs-alexander-zverev', 'rivalry page'],
 ];
 
 for (const [path, name] of PAGES) {

@@ -225,15 +225,16 @@
   gap: 0.4rem;
   flex-wrap: wrap;
 }
+/* Chip-system metrics (see App.css .chip) */
 .track-roi-best-tag {
-  font-size: 0.6rem;
-  font-weight: 700;
+  font-size: 0.64rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: #06130d;
   background: var(--accent-positive);
-  padding: 0.08rem 0.4rem;
-  border-radius: 999px;
+  padding: 0.14rem 0.6rem;
+  border-radius: var(--radius-pill);
 }
 .track-roi-track {
   position: relative;
@@ -390,14 +391,14 @@
 
 .track-compare-best {
   display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #0d2117;
   background: var(--accent-positive);
-  border-radius: 999px;
-  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-pill);
+  padding: 0.14rem 0.6rem;
   width: fit-content;
   margin: 0.1rem 0;
 }
@@ -418,14 +419,14 @@
 .track-compare-row.baseline .track-compare-bar { background: repeating-linear-gradient(45deg, #566173, #566173 4px, #45505f 4px, #45505f 8px); }
 .track-compare-baseline-tag {
   display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-3);
   border: 1px dashed var(--border-2);
-  border-radius: 999px;
-  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-pill);
+  padding: 0.14rem 0.6rem;
   width: fit-content;
   margin: 0.1rem 0;
 }
@@ -630,14 +631,14 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
 
 .track-benchmark-chip {
   display: inline-block;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 800;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
   border-radius: var(--radius-pill);
-  padding: 0.18rem 0.6rem;
+  padding: 0.14rem 0.6rem;
   margin: 0.45rem 0 0.2rem;
 }
 .track-benchmark { margin-top: 0.75rem; }

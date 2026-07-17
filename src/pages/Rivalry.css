@@ -1,0 +1,117 @@
+/* Rivalry pages + the rivalries board */
+.rivalry-page { max-width: 900px; margin: 0 auto; padding: 5.5rem 1rem 3rem; }
+.rivalry-skel { height: 360px; border-radius: var(--radius-md); }
+.rivalries-skel { height: 180px; border-radius: var(--radius-md); }
+
+.rivalry-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0.2rem 0 0.5rem;
+}
+.rivalry-vs { color: var(--text-3); font-size: 0.6em; margin: 0 0.3rem; }
+.rivalry-sub { color: var(--text-2); max-width: 62ch; margin-bottom: 1.5rem; }
+
+.rivalry-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+}
+.rivalry-face { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.rivalry-face img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--border-2); }
+.rivalry-face a { color: var(--text-1); font-weight: 700; text-decoration: none; }
+.rivalry-face a:hover { color: var(--accent-brand); }
+.rivalry-h2h { text-align: center; }
+.rivalry-h2h-score {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-1);
+}
+.rivalry-h2h-dash { color: var(--text-3); margin: 0 0.15em; }
+.rivalry-h2h-cap { font-size: 0.74rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.rivalry-section { margin-bottom: 1.75rem; }
+.rivalry-section-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.6rem;
+}
+.rivalry-section .elo-chart { width: 100%; height: auto; display: block; }
+
+.rivalry-reads { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; }
+.rivalry-read {
+  padding: 0.8rem;
+  text-align: center;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+}
+.rivalry-read-surface { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3); }
+.rivalry-read-pct { font-family: var(--font-display); font-size: 2.1rem; font-weight: 800; color: var(--accent-brand); line-height: 1.1; }
+.rivalry-read-who { font-size: 0.82rem; font-weight: 700; color: var(--text-1); }
+.rivalry-read-na { font-size: 0.74rem; color: var(--text-3); padding: 0.6rem 0; }
+.rivalry-note { font-size: 0.82rem; color: var(--text-3); margin-top: 0.6rem; }
+.rivalry-note a { color: var(--accent-brand); text-decoration: underline; text-underline-offset: 2px; }
+.rivalry-key { font-weight: 700; color: rgba(255, 255, 255, 0.85); }
+
+.rivalry-meetings { display: flex; flex-direction: column; }
+.rivalry-meeting {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-1);
+  font-size: 0.86rem;
+}
+.rivalry-meeting:last-child { border-bottom: none; }
+.rivalry-meeting-date { color: var(--text-3); min-width: 180px; }
+.rivalry-meeting-result { color: var(--text-1); font-weight: 600; flex: 1; }
+.rivalry-meeting-call.hit { color: var(--accent-positive); font-weight: 700; }
+.rivalry-meeting-call.miss { color: var(--accent-negative); font-weight: 700; }
+
+.rivalry-ctas { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.rivalry-cta {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: var(--accent-brand);
+  color: #0c0f14;
+  font-weight: 800;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+.rivalry-cta.secondary { background: transparent; color: var(--accent-brand); border: 1px solid var(--accent-brand); }
+
+/* board */
+.rivalries-tour { margin-bottom: 2rem; }
+.rivalries-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.6rem; }
+.rivalries-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: var(--transition-base);
+}
+.rivalries-card:hover { border-color: var(--accent-brand); transform: translateY(-1px); }
+.rivalries-faces { display: flex; }
+.rivalries-faces img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--border-2); }
+.rivalries-faces img + img { margin-left: -10px; }
+.rivalries-names { color: var(--text-1); font-weight: 700; font-size: 0.9rem; flex: 1; }
+.rivalries-names em { font-style: normal; color: var(--text-3); font-size: 0.75em; margin: 0 0.15rem; }
+.rivalries-meta { font-size: 0.72rem; color: var(--text-3); white-space: nowrap; }

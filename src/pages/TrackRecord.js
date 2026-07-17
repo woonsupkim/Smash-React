@@ -321,7 +321,7 @@ export default function TrackRecord() {
       <div className="overlay track-overlay">
         <div className="track-page">
           <div className="track-header">
-            <div className="eyebrow">MODEL PERFORMANCE · {new Date().getFullYear()} SEASON</div>
+            <div className="eyebrow">THE LEDGER · {new Date().getFullYear()} SEASON</div>
             <h1 className="track-title">Track Record</h1>
             <p className="track-sub">
               Every completed {new Date().getFullYear()} tour match between two ranked players, scored
@@ -373,7 +373,7 @@ export default function TrackRecord() {
           {(forward.pending.length > 0 || forward.decided.length > 0) && (
             <div className="track-panel track-forward">
               <div className="track-forward-head">
-                <div className="track-section-label" style={{ margin: 0 }}>🔒 Called before the match · no take-backs</div>
+                <div className="track-section-label" style={{ margin: 0 }}><span aria-hidden="true">🔒 </span>THE RECEIPTS · called before the match, no take-backs</div>
                 {forward.decided.length > 0 && (
                   <div className="track-forward-record">
                     {Math.round((forward.correct / forward.decided.length) * 100)}% · {forward.correct}/{forward.decided.length} verified
@@ -720,7 +720,13 @@ export default function TrackRecord() {
                     </div>
                   );
                 })}
-                {filtered.length === 0 && <div className="track-empty">No matches recorded yet for this filter.</div>}
+                {filtered.length === 0 && (
+                  <div className="track-empty">
+                    The Ledger has no entries for this filter yet. Every match that
+                    fits will be graded here the moment it finishes - widen the filter
+                    or check back after the next round of play.
+                  </div>
+                )}
                 {visible < filtered.length && (
                   <button className="track-more" onClick={() => setVisible((v) => v + 20)}>
                     See more history ({filtered.length - visible} more)

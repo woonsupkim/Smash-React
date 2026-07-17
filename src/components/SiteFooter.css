@@ -31,6 +31,18 @@
   margin-bottom: 0.6rem;
 }
 
+/* Freshness status line: the one-glance ops signal */
+.site-footer-status { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--text-2); }
+.site-footer-status.stale { color: #ffb74d; }
+.site-footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-positive);
+  display: inline-block;
+}
+.site-footer-status.stale .site-footer-dot { background: #ffb74d; }
+
 .site-footer-sla {
   font-size: 0.72rem;
   color: var(--text-3);

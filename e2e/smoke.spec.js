@@ -92,6 +92,24 @@ test('h2h why panel shows the form-curve overlay', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('rivalry page renders h2h, verdict reads, and form curves', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/rivalry/atp/jannik-sinner-vs-alexander-zverev');
+  await expect(page.getByRole('heading', { name: /sinner.*zverev/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.rivalry-h2h-score')).toBeVisible();
+  await expect(page.locator('.rivalry-read-pct').first()).toHaveText(/%/, { timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('nav pillars open and navigate', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Prove' }).click();
+  await page.locator('.nav-pillar-menu').getByRole('link', { name: /the ledger/i }).click();
+  await expect(page.getByRole('heading', { name: /track record/i })).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
 test('today page renders calls or the honest empty state', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/today');

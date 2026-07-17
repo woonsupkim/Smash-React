@@ -87,7 +87,11 @@ export default function DrawPage() {
       </div>
 
       {failed && (
-        <div className="draw-empty">Draw data has not been generated yet. It appears with the next data refresh.</div>
+        <div className="draw-empty">
+          The bracket isn't priced yet - the moment draw data lands, we simulate it
+          2,000 times and publish every player's path here. Until then, the H2H studio
+          will happily run any matchup you're curious about.
+        </div>
       )}
       {!data && !failed && <div className="skeleton draw-skel" />}
 
@@ -170,7 +174,9 @@ export default function DrawPage() {
             </div>
           ) : (
             <div className="draw-empty">
-              No bracket snapshot for this event yet. It appears with the next data refresh.
+              No bracket snapshot for this event yet - it lands with the next data
+              refresh, already simulated 2,000 times. The projected field above
+              re-prices with every refresh in the meantime.
             </div>
           )}
 

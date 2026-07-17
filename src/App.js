@@ -34,23 +34,41 @@ const Today = lazy(() => import('./pages/Today'));
 const DrawPage = lazy(() => import('./pages/DrawPage'));
 const ModelCard = lazy(() => import('./pages/ModelCard'));
 const Pickem = lazy(() => import('./pages/Pickem'));
+const Rivalry = lazy(() => import('./pages/Rivalry'));
+const Rivalries = lazy(() => import('./pages/Rivalries'));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Disclaimer })));
 
 initMonitoring();
 
-// Methodology lives in the footer (a visit-once trust page); Today is the
-// daily-habit page and earns the nav slot instead.
-const NAV_ITEMS = [
-  { to: '/', label: 'Home' },
-  { to: '/today', label: 'Today', tourAgnostic: true },
-  // The real slam draw with round-by-round survival odds (both tours inside).
-  { to: '/draw', label: 'Draw', tourAgnostic: true },
-  // No surface query: H2H itself defaults to the live/upcoming slam.
-  { to: '/h2h', label: 'H2H' },
-  { to: '/dream-brackets', label: 'Brackets' },
-  { to: '/track-record', label: 'Track Record' },
+// Three product pillars instead of a flat list of pages: Predict is the
+// daily habit, Prove is the trust surface, Play is the games. Methodology
+// and the model card live in the footer's trust cluster; the Engine Room
+// also appears under Prove because it earns it.
+const NAV_GROUPS = [
+  {
+    label: 'Predict',
+    items: [
+      { to: '/today', label: 'Today', tourAgnostic: true },
+      { to: '/h2h', label: 'H2H Studio' },
+      { to: '/draw', label: 'Draw', tourAgnostic: true },
+    ],
+  },
+  {
+    label: 'Prove',
+    items: [
+      { to: '/track-record', label: 'The Ledger · Track Record' },
+      { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
+    ],
+  },
+  {
+    label: 'Play',
+    items: [
+      { to: '/pickem', label: "Pick'em", tourAgnostic: true },
+      { to: '/dream-brackets', label: 'Brackets' },
+    ],
+  },
 ];
 
 // Prefixes a men's-side path with /women, or strips it back off - the single
@@ -75,22 +93,30 @@ function NavBar() {
   // mobile. State + the .show class (styled by Bootstrap's CSS) fixes it
   // without shipping Bootstrap's JS for one toggle.
   const [navOpen, setNavOpen] = useState(false);
+  // Which pillar dropdown is open on desktop (click-to-open, esc/blur close).
+  const [openGroup, setOpenGroup] = useState(null);
 
-  // Close the menu whenever navigation happens (link tap, back button).
-  useEffect(() => { setNavOpen(false); }, [location.pathname, location.search]);
+  // Close everything whenever navigation happens (link tap, back button).
+  useEffect(() => { setNavOpen(false); setOpenGroup(null); }, [location.pathname, location.search]);
 
-  // NavLink's default isActive match ignores the query string, so "Clay",
-  // "Grass", and "Hard" (all pointing at /h2h with a different ?surface=)
-  // would otherwise all light up together regardless of which one is
-  // actually selected - compare the query string too for items that have one.
+  // Click-away closes an open pillar menu.
+  useEffect(() => {
+    if (!openGroup) return undefined;
+    const onDoc = (e) => { if (!e.target.closest('.nav-pillar')) setOpenGroup(null); };
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, [openGroup]);
+
   const isLinkActive = (to) => {
     const [toPath, toQuery] = to.split('?');
     if (location.pathname !== toPath) return false;
     return !toQuery || location.search === `?${toQuery}`;
   };
+  const groupActive = (group) =>
+    group.items.some(({ to, tourAgnostic }) => isLinkActive(tourAgnostic ? to : withTour(to, isWomen)));
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" onKeyDown={(e) => { if (e.key === 'Escape') setOpenGroup(null); }}>
       <div className="container">
         <NavLink to={withTour('/', isWomen)} className="navbar-brand d-flex align-items-center">
           <span className="brand-dot"><motion.img layoutId="home-intro-logo" src={logoHome} alt="" /></span>
@@ -108,19 +134,35 @@ function NavBar() {
         </button>
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
-            {NAV_ITEMS.map(({ to, label, tourAgnostic }) => {
-              const target = tourAgnostic ? to : withTour(to, isWomen);
-              return (
-                <li className="nav-item" key={to}>
-                  <NavLink
-                    to={target}
-                    className={`nav-link${isLinkActive(target) ? ' active' : ''}`}
-                  >
-                    {label}
-                  </NavLink>
-                </li>
-              );
-            })}
+            {NAV_GROUPS.map((group) => (
+              <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
+                <button
+                  type="button"
+                  className={`nav-link nav-pillar-btn${groupActive(group) ? ' active' : ''}`}
+                  aria-expanded={openGroup === group.label}
+                  aria-haspopup="true"
+                  onClick={() => setOpenGroup((g) => (g === group.label ? null : group.label))}
+                >
+                  {group.label}
+                  <span className="nav-pillar-caret" aria-hidden="true">▾</span>
+                </button>
+                <ul className="nav-pillar-menu" hidden={openGroup !== group.label}>
+                  {group.items.map(({ to, label, tourAgnostic }) => {
+                    const target = tourAgnostic ? to : withTour(to, isWomen);
+                    return (
+                      <li key={to}>
+                        <NavLink
+                          to={target}
+                          className={`nav-pillar-link${isLinkActive(target) ? ' active' : ''}`}
+                        >
+                          {label}
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            ))}
             <li className="nav-item">
               <AccountButton />
             </li>
@@ -185,6 +227,8 @@ function App() {
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
           <Route path="/pickem" element={<Pickem />} />
+          <Route path="/rivalries" element={<Rivalries />} />
+          <Route path="/rivalry/:tour/:slug" element={<Rivalry />} />
 
           {/* The live slam draw (both tours inside) and the model card */}
           <Route path="/draw" element={<DrawPage />} />

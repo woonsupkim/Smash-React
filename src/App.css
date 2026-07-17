@@ -90,6 +90,33 @@ body {
 /* Numbers align in columns wherever they appear (records, percentages) */
 body { font-variant-numeric: tabular-nums; }
 
+/* ── Chip system: ONE vocabulary for every pill/tag/badge ────────────────
+   Every labeled chip on the site shares this base (metrics, casing, weight)
+   and differs only by semantic variant. Legacy page-specific chip classes
+   are being converged onto these metrics; new chips use these classes
+   directly: <span className="chip chip-accent">…</span> */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.14rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-1);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chip-accent { color: var(--accent-brand); border-color: rgba(198, 255, 28, 0.4); }
+.chip-solid  { color: #0c0f14; background: var(--accent-brand); border-color: var(--accent-brand); }
+.chip-muted  { color: var(--text-3); }
+.chip-pos    { color: var(--accent-positive); border-color: rgba(76, 175, 125, 0.45); }
+.chip-neg    { color: var(--accent-negative); border-color: rgba(224, 86, 86, 0.45); }
+.chip-warn   { color: #ffb74d; border-color: rgba(255, 183, 77, 0.4); }
+.chip-gold   { color: #e9c96b; border-color: rgba(233, 201, 107, 0.45); }
+
 /* Visually hidden but available to screen readers (chart summaries, etc.) */
 .sr-only {
   position: absolute;
@@ -181,6 +208,56 @@ h1, h2, h3, .heading-xl, .heading-lg,
 .navbar .nav-link.active,
 .navbar .nav-link:hover {
   color: var(--accent-brand) !important;
+}
+
+/* ── Pillar navigation: Predict / Prove / Play dropdowns ─────────────── */
+.nav-pillar { position: relative; }
+.nav-pillar-btn {
+  background: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+.nav-pillar-caret { font-size: 0.6rem; opacity: 0.7; transition: transform 0.15s ease; }
+.nav-pillar.open .nav-pillar-caret { transform: rotate(180deg); }
+.nav-pillar-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 230px;
+  background: #14181f;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  z-index: 1050;
+}
+.nav-pillar-link {
+  display: block;
+  padding: 0.5rem 0.7rem;
+  color: var(--text-2);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.nav-pillar-link:hover { background: var(--surface-2); color: var(--text-1); }
+.nav-pillar-link.active { color: var(--accent-brand); }
+@media (max-width: 991px) {
+  /* Inside the mobile collapse the menus render inline, grouped under
+     their pillar label - no floating panels on small screens. */
+  .nav-pillar-menu {
+    position: static;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    padding: 0 0 0.3rem 1.2rem;
+    min-width: 0;
+  }
 }
 
 /* ── De-Bootstrap: retheme stock variants to the design system ─────────
