@@ -15,6 +15,10 @@
     "marginK": true
   },
   "rankScale": 2,
+  "_scorelineComment": "Set-probability temperature for the exact-score distribution ONLY (win probabilities untouched). Real sets are positively correlated - favorites sweep more often than independent-sets math implies - so best-of-five scorelines sharpen the set prob before the negative binomial. Fitted walk-forward (experiments.js scoreline): bo5 exact-score accuracy 24.4% -> 30.4%; best-of-three is structurally insensitive (modal is 2-0 whenever the favorite clears 0.5) and stays untempered.",
+  "scoreline": {
+    "bo5Temp": 2.35
+  },
   "weights": {
     "atp": {
       "hard": {

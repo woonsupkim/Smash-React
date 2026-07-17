@@ -83,16 +83,23 @@ export function matchProb(probsA, probsB, bestOf = 3) {
 
 // Match prob plus the exact set-score distribution (negative binomial over
 // independent sets). Mirrors data-pipeline/lib/analyticProb.js matchDetail.
-export function matchDetail(probsA, probsB, bestOf = 3) {
+// setTemp sharpens the SET probability for the score distribution only
+// (win probability untouched) - validated walk-forward for best-of-five,
+// where real sets are positively correlated and sweeps outrun iid math.
+export function matchDetail(probsA, probsB, bestOf = 3, setTemp = 1) {
   const qA = pointProb(probsA, probsB);
   const qB = pointProb(probsB, probsA);
   const p = setProb(qA, qB), r = 1 - p;
   const target = Math.ceil(bestOf / 2);
+  const probP1 = bestOf >= 5 ? p ** 3 * (1 + 3 * r + 6 * r * r) : p * p * (1 + 2 * r);
+  const clamp = (x) => Math.min(0.999, Math.max(0.001, x));
+  const ps = setTemp === 1 ? p : 1 / (1 + Math.exp(-setTemp * Math.log(clamp(p) / (1 - clamp(p)))));
+  const rs = 1 - ps;
   const choose = (n, k) => { let c = 1; for (let i = 0; i < k; i++) c = (c * (n - i)) / (i + 1); return c; };
   const distA = [], distB = [];
   for (let k = 0; k < target; k++) {
-    distA.push(choose(target - 1 + k, k) * p ** target * r ** k);
-    distB.push(choose(target - 1 + k, k) * r ** target * p ** k);
+    distA.push(choose(target - 1 + k, k) * ps ** target * rs ** k);
+    distB.push(choose(target - 1 + k, k) * rs ** target * ps ** k);
   }
-  return { probP1: distA.reduce((s, v) => s + v, 0), target, lossDist: [distA, distB] };
+  return { probP1, target, lossDist: [distA, distB] };
 }

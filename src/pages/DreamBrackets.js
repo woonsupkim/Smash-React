@@ -23,6 +23,7 @@ import { poolKey, getPool, savePool, clearMine, addFriendEntry, encodeEntry, dec
 import { isPoolId, createPoolWithEntries, joinPool, fetchPool, fetchMyLatestPool } from '../utils/cloudPool';
 import { currentSlamCsv } from '../utils/currentSlam';
 import defaultAvatar from '../assets/player-default.png';
+import { playerPhoto } from '../utils/playerPhotos';
 import { useAuth } from '../auth/AuthContext';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
@@ -36,10 +37,8 @@ import bgClay from '../assets/bracket-clay.jpg';
 import bgGrass from '../assets/bracket-grass.jpg';
 import bgHard from '../assets/bracket-hard.jpg';
 
-const playerImgsByTour = {
-  atp: require.context('../assets/players', false, /\.png$/),
-  wta: require.context('../assets/players-women', false, /\.png$/),
-};
+// Headshots come from the shared bundled lookup (utils/playerPhotos);
+// webpack's require.context died with the Vite migration.
 
 // Plain gray-circle SVG, used when a player has no headshot and the
 // public/assets/players/default.png fallback isn't present in this env.
@@ -237,16 +236,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
   const dataDir = isWta ? '/data/women' : '/data';
-  const playerImgs = playerImgsByTour[tour];
 
   const getPlayerImageSrc = (player) => {
     if (!player) return BLANK_AVATAR;
-    const key = `./${player.id}.png`;
-    const keys = playerImgs.keys ? playerImgs.keys() : [];
-    if (keys.includes(key)) return playerImgs(key);
-    // Bundled fallback: /public/assets is gitignored, so a public-path
-    // default.png never reaches production.
-    return defaultAvatar;
+    // Bundled lookup with the bundled default as fallback: /public/assets is
+    // gitignored, so a public-path default.png never reaches production.
+    return playerPhoto(tour, player.id);
   };
 
   const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);

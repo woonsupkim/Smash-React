@@ -326,6 +326,7 @@ export default function AdvancedSimPanel({
                   className={`adv-engine-btn${engine === o.id ? ' active' : ''}`}
                   onClick={() => onEngineChange(o.id)}
                   disabled={isRunning || isWatching}
+                  aria-pressed={engine === o.id}
                   title={o.acc != null ? `${o.acc}% of winners called this season (${surfaceLabel.toLowerCase()})` : undefined}
                 >
                   {o.label}

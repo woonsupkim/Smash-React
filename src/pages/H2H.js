@@ -17,16 +17,15 @@ import { eloProb, engineProbs, pickEngineProb, ENGINE_LABELS } from '../engines'
 import { currentSlamSurface } from '../utils/currentSlam';
 import { castCall, fetchTally } from '../utils/matchCalls';
 import defaultAvatar from '../assets/player-default.png';
+import { playerPhoto } from '../utils/playerPhotos';
 import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import './H2HStudio.css';
 
-const playerImgsByTour = {
-  atp: require.context('../assets/players', false, /\.png$/),
-  wta: require.context('../assets/players-women', false, /\.png$/),
-};
+// Headshots come from the shared bundled lookup (utils/playerPhotos);
+// webpack's require.context died with the Vite migration.
 
 // Dark-themed react-select styling - control + the open dropdown menu/options
 // all match the app's dark surfaces instead of react-select's default white.
@@ -107,7 +106,6 @@ export default function H2H({ tour = 'atp' }) {
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
   const dataDir = isWta ? '/data/women' : '/data';
-  const playerImgs = playerImgsByTour[tour];
 
   const handleSurfaceChange = (value) => {
     const next = new URLSearchParams(searchParams);
@@ -647,10 +645,7 @@ export default function H2H({ tour = 'atp' }) {
   const getPlayerImageSrc = (player) => {
     if (!player) return null;
     if (player.imageSrc) return player.imageSrc;
-    const key = `./${player.id}.png`;
-    const keys = playerImgs.keys ? playerImgs.keys() : [];
-    if (keys.includes(key)) return playerImgs(key);
-    return DEFAULT_IMG;
+    return playerPhoto(tour, player.id);
   };
 
   const selectStyles = SELECT_STYLES;

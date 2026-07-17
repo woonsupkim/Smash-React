@@ -82,6 +82,16 @@
 .player-fact-val-sm { font-size: 1.3rem !important; }
 
 /* Surface splits */
+/* Elo form curve card */
+.player-elo {
+  margin-bottom: 1.75rem;
+  padding: 0.9rem 1rem 0.75rem;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+}
+.player-elo-chart { width: 100%; height: auto; display: block; margin-top: 0.4rem; }
+
 .player-surfaces { margin-bottom: 1.75rem; }
 .player-surfaces-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
 .player-surface-cell {

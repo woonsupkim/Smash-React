@@ -153,8 +153,11 @@ function evaluate(ctx, rec) {
   const bo = boSetsW >= 3 ? 5 : boSetsW === 2 ? 3 : bestOf;
 
   // 1. season model - closed-form match probability + exact set-score
-  // distribution (no Monte Carlo noise; see lib/analyticProb.js)
-  const sum = matchDetail(probsFromRow(rowA), probsFromRow(rowB), bo);
+  // distribution (no Monte Carlo noise; see lib/analyticProb.js). Best-of-
+  // five scorelines use the fitted set-probability temperature: sweeps
+  // outrun iid set math (+6pts exact-score accuracy walk-forward).
+  const setTemp = bo >= 5 ? (ENGINE.scoreline?.bo5Temp || 1) : 1;
+  const sum = matchDetail(probsFromRow(rowA), probsFromRow(rowB), bo, setTemp);
   const probP1 = sum.probP1;
   const favorite = probP1 >= 0.5 ? p1 : p2;
   const favProb = probP1 >= 0.5 ? probP1 : 1 - probP1;
@@ -240,7 +243,7 @@ const outPath = path.join(__dirname, '..', 'public', 'data', 'track_record.json'
 // `row` versions the per-row SCHEMA (fields like predScoreP1Win that the
 // annotation pass depends on): bump it whenever a new per-row field is
 // added, or incremental reuse resurrects rows missing that field.
-const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sim: 'analytic-v1', bo: 'derived-v1', evt: 2, row: 1 });
+const modelKey = JSON.stringify({ w: ENGINE.weights, cal: ENGINE.calibration || null, elo: ENGINE.elo || null, rs: ENGINE.rankScale, sl: ENGINE.scoreline || null, sim: 'analytic-v1', bo: 'derived-v1', evt: 2, row: 1 });
 const forceFull = process.env.FULL === '1';
 let existing = new Map();
 if (!forceFull && fs.existsSync(outPath)) {

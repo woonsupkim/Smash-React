@@ -48,7 +48,21 @@ function run(tour) {
   const apiToShort = new Map(Object.entries(idMap).map(([shortId, apiId]) => [String(apiId), shortId]));
   const surfaces = JSON.parse(fs.readFileSync(path.join(RAW, 'tournament-surfaces.json'), 'utf8'));
 
-  const ratings = buildTimeline(collectMatches(RAW, surfaces));
+  // Replay chronologically, capturing each roster player's overall rating
+  // as it evolves - the curve the player pages chart. (The callback fires
+  // with PRE-match ratings; good enough for a form curve, and leak-free by
+  // construction.)
+  const HISTORY_FROM = '2025-01-01';
+  const history = {};
+  const record = (apiId, date, rating) => {
+    const shortId = apiToShort.get(String(apiId));
+    if (!shortId || date < HISTORY_FROM) return;
+    (history[shortId] = history[shortId] || []).push([String(date).slice(0, 10), Math.round(rating)]);
+  };
+  const ratings = buildTimeline(collectMatches(RAW, surfaces), (m, rw, rl) => {
+    record(m.winnerId, m.date, rw.all);
+    record(m.loserId, m.date, rl.all);
+  });
 
   const out = {};
   for (const [apiId, r] of ratings.entries()) {
@@ -62,7 +76,8 @@ function run(tour) {
   const dir = path.join(__dirname, '..', 'public', 'data', ns);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'elo.json'), JSON.stringify(out));
-  console.log(`  ${tour}: wrote Elo for ${Object.keys(out).length} players`);
+  fs.writeFileSync(path.join(dir, 'elo_history.json'), JSON.stringify(history));
+  console.log(`  ${tour}: wrote Elo for ${Object.keys(out).length} players (+history for ${Object.keys(history).length})`);
   // Sanity: show the top 5 by overall rating
   const top = Object.entries(out).sort((a, b) => b[1].all - a[1].all).slice(0, 5);
   console.log('   top:', top.map(([id, r]) => `${id} ${r.all}`).join(', '));

@@ -98,18 +98,30 @@ function matchProb(probsA, probsB, bestOf = 3) {
 // independent sets). Shape mirrors the simulator's simSummary: lossDist[0]
 // = P(A wins taking-k-sets-from-B is the score), lossDist[1] likewise for B
 // - as probabilities rather than sim counts (argmax works the same).
-function matchDetail(probsA, probsB, bestOf = 3) {
+//
+// setTemp: a temperature on the SET probability used for the score
+// distribution only (win probability stays untouched). Sets within a real
+// match are positively correlated - favorites close out more sweeps than
+// independent sets imply - and a fitted setTemp > 1 compensates. Validated
+// walk-forward for best-of-five (experiments.js scoreline: +6pts exact-score
+// accuracy); best-of-three is structurally insensitive (modal is 2-0
+// whenever the favorite's set prob clears 0.5), so it ships with temp 1.
+function matchDetail(probsA, probsB, bestOf = 3, setTemp = 1) {
   const qA = pointProb(probsA, probsB);
   const qB = pointProb(probsB, probsA);
   const p = setProb(qA, qB), r = 1 - p;
   const target = Math.ceil(bestOf / 2);
+  const probP1 = bestOf >= 5 ? p ** 3 * (1 + 3 * r + 6 * r * r) : p * p * (1 + 2 * r);
+  const clamp = (x) => Math.min(0.999, Math.max(0.001, x));
+  const ps = setTemp === 1 ? p : 1 / (1 + Math.exp(-setTemp * Math.log(clamp(p) / (1 - clamp(p)))));
+  const rs = 1 - ps;
   const choose = (n, k) => { let c = 1; for (let i = 0; i < k; i++) c = (c * (n - i)) / (i + 1); return c; };
   const distA = [], distB = [];
   for (let k = 0; k < target; k++) {
-    distA.push(choose(target - 1 + k, k) * p ** target * r ** k);
-    distB.push(choose(target - 1 + k, k) * r ** target * p ** k);
+    distA.push(choose(target - 1 + k, k) * ps ** target * rs ** k);
+    distB.push(choose(target - 1 + k, k) * rs ** target * ps ** k);
   }
-  return { probP1: distA.reduce((s, v) => s + v, 0), target, lossDist: [distA, distB] };
+  return { probP1, target, lossDist: [distA, distB] };
 }
 
 module.exports = { pointProb, gameProb, tiebreakProb, setProb, matchProb, matchDetail };

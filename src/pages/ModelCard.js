@@ -194,7 +194,13 @@ export default function ModelCard() {
           </p>
           <table className="mc-table mc-guard-table">
             <thead>
-              <tr><th>Cell</th><th>Deployed engine</th><th>Season</th><th>Recent</th><th>Status</th></tr>
+              <tr>
+                <th scope="col">Cell</th>
+                <th scope="col">Deployed engine</th>
+                <th scope="col">Season</th>
+                <th scope="col">Recent</th>
+                <th scope="col">Status</th>
+              </tr>
             </thead>
             <tbody>
               {guard.cells.map((c) => (

@@ -24,7 +24,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
 const { buildTimeline, predElo, expected, setEloParams, parseSets } = require('./eloCore');
-const { matchProb } = require('./lib/analyticProb');
+const { matchProb, pointProb, setProb } = require('./lib/analyticProb');
 const evalCore = require('./lib/evalCore');
 const ENGINE = require('../src/engineConfig.json');
 
@@ -101,8 +101,12 @@ const HALF_LIFE = { hard: 270, clay: 365, grass: 270 };
 function casesPath(tour) { return path.join(__dirname, 'output', `evalcases_${tour}.json`); }
 
 function precompute(tour) {
+  // LITE=1 skips the Monte Carlo shrink variants (the slow part) and keeps
+  // only the closed-form `ana` probability - everything the frontier2 bench
+  // trials need. Used by the retune workflow, where minutes matter.
+  const LITE = process.env.LITE === '1';
   const bundle = loadTourRaw(tour);
-  const { simulateBatch } = loadSimulatorAsCjs();
+  const { simulateBatch } = LITE ? { simulateBatch: null } : loadSimulatorAsCjs();
 
   // Case list: intra-roster completed matches from EVAL_FROM.
   const seen = new Set();
@@ -223,12 +227,14 @@ function precompute(tour) {
     const sim = {};
     let ok = true;
     let ana = null;
-    for (const cshrink of SHRINK_VARIANTS) {
+    for (const cshrink of (LITE ? [0] : SHRINK_VARIANTS)) {
       const pa = deriveProbabilities(aggA, tourAvgs[surface], 200, cshrink);
       const pb = deriveProbabilities(aggB, tourAvgs[surface], 200, cshrink);
       if (!pa || !pb) { ok = false; break; }
-      const { matchWins } = simulateBatch(pa, pb, SIMS);
-      sim[`c${cshrink}`] = +(matchWins[0] / SIMS).toFixed(4);
+      if (!LITE) {
+        const { matchWins } = simulateBatch(pa, pb, SIMS);
+        sim[`c${cshrink}`] = +(matchWins[0] / SIMS).toFixed(4);
+      }
       if (cshrink === 0) ana = +matchProb(pa, pb, bestOf).toFixed(4);
     }
     if (!ok) continue;
@@ -1033,6 +1039,144 @@ function cmdSelector() {
   }
 }
 
+// Current-snapshot tour averages per surface (constant across variants so
+// comparisons stay fair - same convention as precompute).
+function tourAvgsSnapshot(bundle) {
+  const avgs = {};
+  for (const s of ['hard', 'clay', 'grass']) {
+    const totals = emptyAgg();
+    for (const [ourId, matches] of bundle.files) {
+      const apiId = bundle.idMap[ourId];
+      for (const m of matches) {
+        const ms = bundle.surfaceMap[String(m.tournamentId)];
+        if ((ms === 'I.hard' ? 'Hard' : ms) !== SURFACE_DISPLAY[s]) continue;
+        accumulateMatch(emptyAgg(), totals, m, apiId, new Date(), HALF_LIFE[s]);
+      }
+    }
+    avgs[s] = deriveTourAverages(totals);
+  }
+  return avgs;
+}
+
+// ── Scoreline: can a set-probability temperature beat the raw modal score? ─
+// The exact-score pick comes from the negative-binomial set distribution,
+// whose only input is s = P(favorite wins a set). A temperature t on
+// logit(s) shifts the modal thresholds (bo5: 3-0 iff s > 2/3, 3-1 iff
+// s > 1/2), so it can genuinely change picks. Fit t walk-forward per tour
+// and format, grade exact-score accuracy like production does.
+function cmdScoreline() {
+  for (const tour of ['atp', 'wta']) {
+    const bundle = loadTourRaw(tour);
+    const cases = loadCases(tour);
+    const tourAvgs = tourAvgsSnapshot(bundle);
+    const byId = new Map();
+    for (const [, matches] of bundle.files) {
+      for (const m of matches) {
+        if (m.result_type !== 'completed' || !m.date) continue;
+        const p1 = bundle.apiToOur.get(String(m.player1Id)), p2 = bundle.apiToOur.get(String(m.player2Id));
+        if (!p1 || !p2 || byId.has(String(m.id))) continue;
+        byId.set(String(m.id), { m, p1, p2 });
+      }
+    }
+    const aggFor = (ourId, excludeId, asOf, surface) => {
+      const apiId = bundle.idMap[ourId];
+      const agg = emptyAgg();
+      for (const m of bundle.files.get(ourId) || []) {
+        if (m.id === excludeId) continue;
+        const ms = bundle.surfaceMap[String(m.tournamentId)];
+        if ((ms === 'I.hard' ? 'Hard' : ms) !== SURFACE_DISPLAY[surface]) continue;
+        accumulateMatch(agg, null, m, apiId, asOf, HALF_LIFE[surface]);
+      }
+      return agg;
+    };
+
+    // Enrich: per case, the favorite's set-win prob + the actual set score.
+    const rows = [];
+    for (const c of cases) {
+      const raw = byId.get(c.id);
+      if (!raw) continue;
+      const target = Math.ceil(c.bestOf / 2);
+      if (c.setsW !== target) continue; // retirements can't grade a scoreline
+      const asOf = new Date(c.date);
+      const pa = deriveProbabilities(aggFor(raw.p1, c.id, asOf, c.surface), tourAvgs[c.surface], 200, 0);
+      const pb = deriveProbabilities(aggFor(raw.p2, c.id, asOf, c.surface), tourAvgs[c.surface], 200, 0);
+      if (!pa || !pb) continue;
+      const sP1 = setProb(pointProb(pa, pb), pointProb(pb, pa));
+      const favIsP1 = c.ana >= 0.5;
+      rows.push({
+        date: c.date, bestOf: c.bestOf, target,
+        sFav: favIsP1 ? sP1 : 1 - sP1,
+        favWon: favIsP1 === !!c.p1Won,
+        lostSets: c.setsL, // sets the winner conceded
+      });
+    }
+
+    // Modal loser-sets for a favorite with set prob s (conditional on win).
+    const modalK = (s, target) => {
+      const choose = (n, k) => { let x = 1; for (let i = 0; i < k; i++) x = (x * (n - i)) / (i + 1); return x; };
+      let best = 0, bestV = -1;
+      for (let k = 0; k < target; k++) {
+        const v = choose(target - 1 + k, k) * Math.pow(1 - s, k);
+        if (v > bestV) { bestV = v; best = k; }
+      }
+      return best;
+    };
+    const hitRate = (list, t) => {
+      let hit = 0;
+      for (const r of list) {
+        const s = evalCore.sigmoid(t * evalCore.logit(r.sFav));
+        if (r.favWon && modalK(s, r.target) === r.lostSets) hit++;
+      }
+      return hit / list.length;
+    };
+
+    // Walk-forward: fit t per format bucket on all earlier quarters.
+    const sorted = rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const folds = new Map();
+    for (const r of sorted) { const k = evalCore.foldKey(r.date); if (!folds.has(k)) folds.set(k, []); folds.get(k).push(r); }
+    const GRID = [];
+    for (let t = 0.4; t <= 2.501; t += 0.05) GRID.push(+t.toFixed(2));
+    const buckets = tour === 'atp' ? [3, 5] : [3];
+    const oofBase = [], oofCal = [];
+    const train = [];
+    for (const [, test] of folds) {
+      if (train.length >= 200) {
+        const tFor = {};
+        for (const bo of buckets) {
+          const tr = train.filter((r) => r.bestOf === bo);
+          let best = { t: 1, acc: tr.length ? hitRate(tr, 1) : 0 };
+          for (const t of GRID) {
+            const acc = tr.length ? hitRate(tr, t) : 0;
+            if (acc > best.acc + 1e-9) best = { t, acc };
+          }
+          tFor[bo] = best.t;
+        }
+        for (const r of test) {
+          oofBase.push({ ...r, t: 1 });
+          oofCal.push({ ...r, t: tFor[r.bestOf] ?? 1 });
+        }
+      }
+      train.push(...test);
+    }
+    const score = (list) => {
+      let hit = 0;
+      for (const r of list) {
+        const s = evalCore.sigmoid(r.t * evalCore.logit(r.sFav));
+        if (r.favWon && modalK(s, r.target) === r.lostSets) hit++;
+      }
+      return (hit / list.length) * 100;
+    };
+    console.log(`\n══ ${tour.toUpperCase()} - scoreline temperature (n=${oofBase.length} graded walk-forward) ══`);
+    console.log(`  raw modal (t=1)      | exact-score acc ${score(oofBase).toFixed(1)}%`);
+    console.log(`  fitted temperature   | exact-score acc ${score(oofCal).toFixed(1)}%`);
+    for (const bo of buckets) {
+      const b = oofBase.filter((r) => r.bestOf === bo), c2 = oofCal.filter((r) => r.bestOf === bo);
+      const lastT = c2.length ? c2[c2.length - 1].t : 1;
+      if (b.length) console.log(`    bo${bo}: raw ${score(b).toFixed(1)}% vs fitted ${score(c2).toFixed(1)}% (n=${b.length}, final fitted t=${lastT})`);
+    }
+  }
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -1049,4 +1193,5 @@ else if (cmd === 'calibselect') cmdCalibSelect();
 else if (cmd === 'decay') cmdDecay();
 else if (cmd === 'frontier2') cmdFrontier2();
 else if (cmd === 'selector') cmdSelector();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2|selector');
+else if (cmd === 'scoreline') cmdScoreline();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2|selector|scoreline');

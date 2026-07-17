@@ -1,0 +1,7 @@
+{
+  "framework": "vite",
+  "outputDirectory": "build",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

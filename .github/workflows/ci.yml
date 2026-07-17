@@ -19,17 +19,21 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint (same rule set the CRA builds enforced)
+        run: npm run lint
 
       - name: Unit tests (simulator math, engines, credible intervals)
-        run: npm test -- --watchAll=false
-        env:
-          CI: true
+        run: npm test
 
       - name: Pipeline parser tests (ESPN schedule -> roster matching)
         run: node --test data-pipeline/lib/
 
-      - name: Production build
+      - name: Production build (vite)
         run: npm run build
-        env:
-          CI: false # treat CRA build warnings as warnings, not errors
+
+      - name: E2E smoke tests (five key pages against the real bundle)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e

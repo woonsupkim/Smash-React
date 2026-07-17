@@ -6,9 +6,21 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '3.2';
+export const MODEL_VERSION = '3.3';
 
 export const CHANGELOG = [
+  {
+    version: '3.3',
+    date: '2026-07-17',
+    type: 'model',
+    title: 'Sharper best-of-five scorelines, and the lab runs itself',
+    notes: [
+      'Exact-score calls in best-of-five got a real upgrade: sets inside a match are positively correlated (favorites close out in straight sets more often than independent-set math implies), so the score distribution now sharpens the set probability with a temperature fitted walk-forward. Best-of-five exact-score accuracy improved from 24.4% to 30.4% on 672 held-out matches. Win probabilities are untouched, and best-of-three is structurally insensitive to the fix, so it stays as is.',
+      'The bench engines (form-tilted Elo for ATP grass, common-opponent for WTA clay) are now revalidated automatically at every pre-slam retune: the retune pull request carries their fresh walk-forward verdicts, so promotion is a review decision, not a research project.',
+      'Player pages chart every player\'s Elo form curve match by match since January 2025, with grand slam starts marked - the Form engine\'s story, visible.',
+      'Under the hood: the app moved from create-react-app to Vite (builds in seconds instead of minutes), and a Playwright smoke-plus-accessibility suite now guards the five key pages in CI on every push.',
+    ],
+  },
   {
     version: '3.2',
     date: '2026-07-15',

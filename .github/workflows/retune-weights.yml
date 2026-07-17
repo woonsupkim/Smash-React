@@ -35,6 +35,17 @@ jobs:
 
       - run: npm ci --legacy-peer-deps
 
+      # The raw match caches (saved by the refresh workflow) power the bench
+      # trials below. restore-keys prefix-matches the newest cache; if none
+      # exists the bench step degrades gracefully.
+      - name: Restore raw match-history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data-pipeline/raw
+          key: raw-matches-${{ github.run_id }}
+          restore-keys: |
+            raw-matches-
+
       - name: Retune weights on the season-to-date record
         id: tune
         run: |
@@ -49,6 +60,22 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Bench revalidation: rerun the frontier trials (form-tilted Elo,
+      # common-opponent, PageRank, dominance) on fresh data so the PR carries
+      # their up-to-date verdicts. Promotion stays a human decision; this
+      # just makes the evidence free. Non-fatal by design - a missing raw
+      # cache should never block a retune.
+      - name: Bench trials (frontier2 on the walk-forward harness)
+        if: steps.tune.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          if [ ! -f data-pipeline/raw/player-id-map.json ]; then
+            echo "No raw match cache restored - skipping bench trials." | tee bench.log
+            exit 0
+          fi
+          LITE=1 node data-pipeline/experiments.js precompute
+          node data-pipeline/experiments.js frontier2 | tee bench.log
 
       - name: Open a pull request with the new weights
         if: steps.tune.outputs.changed == 'true'
@@ -69,6 +96,17 @@ jobs:
             cat tune.log
             echo '```'
             echo
+            if [ -s bench.log ]; then
+              echo "<details><summary><b>Bench revalidation</b> (form-tilted Elo, common-opponent, PageRank, dominance - walk-forward)</summary>"
+              echo
+              echo '```'
+              cat bench.log
+              echo '```'
+              echo
+              echo "Promotion rule: a bench engine earns a production slot only if it beats every incumbent in a cell on BOTH accuracy and log loss with a coherent story. See src/pages/ModelCard.js and data-pipeline/experiments.js (frontier2)."
+              echo "</details>"
+              echo
+            fi
             echo "**Before merging:** bump \`MODEL_VERSION\` and add a changelog entry in \`src/data/changelog.js\`."
             echo "**After merging:** the model fingerprint changes, so the next daily refresh re-simulates the full track record with these weights automatically."
           } > pr-body.md

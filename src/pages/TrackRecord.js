@@ -382,7 +382,7 @@ export default function TrackRecord() {
               </div>
               {forward.pending.slice(0, 8).map((p) => (
                 <Link className="track-forward-row pending" to={`/match/${matchSlug(p)}`} key={p.id}>
-                  <span className="track-forward-status">⏳ Upcoming</span>
+                  <span className="track-forward-status"><span aria-hidden="true">⏳ </span>Upcoming</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Backing {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
                 </Link>
@@ -394,7 +394,10 @@ export default function TrackRecord() {
               )}
               {forward.recent.slice(0, 5).map((p) => (
                 <Link className={`track-forward-row ${p.correct ? 'hit' : 'miss'}`} to={`/match/${matchSlug(p)}`} key={p.id}>
-                  <span className="track-forward-status">{p.correct ? '✓' : '✗'}</span>
+                  <span className="track-forward-status">
+                    <span aria-hidden="true">{p.correct ? '✓' : '✗'}</span>
+                    <span className="sr-only">{p.correct ? 'correct' : 'missed'}</span>
+                  </span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
                   <span className="track-forward-call">Called {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
                 </Link>

@@ -489,6 +489,9 @@
 .track-calib-actual { font-size: 0.8rem; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums; }
 .track-calib-n { font-size: 0.72rem; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
 
+/* Inline links inside note text: underline so color isn't the only cue. */
+.track-note a { color: var(--accent-brand); text-decoration: underline; text-underline-offset: 2px; }
+
 /* Event filter - styled to sit beside the segmented controls */
 .track-event-select {
   background: rgba(255, 255, 255, 0.05);

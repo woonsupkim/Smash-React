@@ -13,7 +13,9 @@
   margin-bottom: 0.5rem;
 }
 .today-season { color: var(--text-3); font-size: 0.9rem; margin-bottom: 1.5rem; }
-.today-season a { color: var(--accent-brand); text-decoration: none; }
+/* Inline text links stay underlined: color alone doesn't distinguish them
+   for color-blind readers (axe link-in-text-block). */
+.today-season a { color: var(--accent-brand); text-decoration: underline; text-underline-offset: 2px; }
 .today-skel { height: 220px; border-radius: var(--radius-md); }
 .today-empty {
   padding: 1.5rem;

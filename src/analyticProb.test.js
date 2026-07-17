@@ -61,4 +61,17 @@ describe('analytic match probability', () => {
     expect(d.target).toBe(3);
     expect(d.lossDist[0]).toHaveLength(3);
   });
+
+  test('scoreline temperature reshapes the distribution but never the win prob', () => {
+    const raw = matchDetail(SINNER, NEUTRAL, 5);
+    const hot = matchDetail(SINNER, NEUTRAL, 5, 2.35);
+    // Win probability is untouched by design.
+    expect(hot.probP1).toBeCloseTo(raw.probP1, 9);
+    // Sharpening shifts conditional mass toward the sweep for the favorite.
+    const shareSweep = (d) => d.lossDist[0][0] / d.lossDist[0].reduce((s, v) => s + v, 0);
+    expect(shareSweep(hot)).toBeGreaterThan(shareSweep(raw));
+    // Temperature 1 is the identity.
+    const t1 = matchDetail(SINNER, NEUTRAL, 5, 1);
+    expect(t1.lossDist[0][1]).toBeCloseTo(raw.lossDist[0][1], 12);
+  });
 });
