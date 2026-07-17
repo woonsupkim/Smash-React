@@ -20,12 +20,18 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-async function apiGet(urlPath) {
-  const res = await fetch(`https://${HOST}${urlPath}`, {
-    headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+// Retries transient statuses (rate limit, 5xx) with a growing pause before
+// giving up - keep in step with the same helper in fetch.js.
+async function apiGet(urlPath, tries = 3) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`https://${HOST}${urlPath}`, {
+      headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
+    });
+    if (res.ok) return res.json();
+    const transient = [429, 500, 502, 503].includes(res.status);
+    if (!transient || attempt >= tries) throw new Error(`HTTP ${res.status}`);
+    await new Promise((r) => setTimeout(r, 4000 * attempt));
+  }
 }
 
 function ageFromBirthday(birthday) {
@@ -51,14 +57,21 @@ async function main() {
   const missing = ids.filter((id) => !cache[id]);
   console.log(`${ids.length} roster players, ${missing.length} need a profile lookup.`);
 
+  let consecFails = 0;
   for (const ourId of missing) {
+    if (consecFails >= 8) {
+      console.warn('Aborting profile lookups: 8 consecutive failures (API down or quota-blocked). Resuming next run.');
+      break;
+    }
     const apiId = idMap[ourId];
     try {
       const { data } = await apiGet(`/tennis/v2/${TOUR}/player/profile/${apiId}`);
       const age = ageFromBirthday(data?.birthday);
       cache[ourId] = { age, birthday: data?.birthday || null };
+      consecFails = 0;
       console.log(`  ${ourId}: age ${age}`);
     } catch (err) {
+      consecFails++;
       console.warn(`  ${ourId}: failed (${err.message})`);
     }
     await new Promise((r) => setTimeout(r, 300)); // be polite to the API

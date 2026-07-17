@@ -36,12 +36,18 @@ function loadActivePlayerNames() {
   return [...names].map((s) => JSON.parse(s));
 }
 
-async function apiGet(urlPath) {
-  const res = await fetch(`https://${HOST}${urlPath}`, {
-    headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
-  });
-  if (!res.ok) throw new Error(`${urlPath} -> HTTP ${res.status}`);
-  return res.json();
+// Retries transient statuses (rate limit, 5xx) with a growing pause before
+// giving up - a quota-blocked or flaky API must not kill the whole refresh.
+async function apiGet(urlPath, tries = 3) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`https://${HOST}${urlPath}`, {
+      headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
+    });
+    if (res.ok) return res.json();
+    const transient = [429, 500, 502, 503].includes(res.status);
+    if (!transient || attempt >= tries) throw new Error(`${urlPath} -> HTTP ${res.status}`);
+    await new Promise((r) => setTimeout(r, 4000 * attempt));
+  }
 }
 
 // Names differ slightly between our roster and the API (e.g. "Alex De
@@ -62,14 +68,21 @@ async function resolveApiIds(players) {
   const byKey = new Map();
   let pageNo = 1;
   // Rankings cover the current tour's notable players; paginate until we've
-  // matched everyone we need or run out of pages.
-  while (need.some((p) => !byKey.has(nameKey(p.name))) && pageNo <= 30) {
-    const { data } = await apiGet(`/tennis/v2/${TOUR}/ranking/singles?pageSize=100&pageNo=${pageNo}`);
-    if (!data || data.length === 0) break;
-    for (const entry of data) {
-      if (entry.player?.name) byKey.set(nameKey(entry.player.name), entry.player.id);
+  // matched everyone we need or run out of pages. Non-fatal on API failure:
+  // whatever ids are already cached still let the rest of the run proceed
+  // (an unresolved player is simply skipped by the fetch loop) - this was
+  // the one spot where a quota-blocked API could kill the entire refresh.
+  try {
+    while (need.some((p) => !byKey.has(nameKey(p.name))) && pageNo <= 30) {
+      const { data } = await apiGet(`/tennis/v2/${TOUR}/ranking/singles?pageSize=100&pageNo=${pageNo}`);
+      if (!data || data.length === 0) break;
+      for (const entry of data) {
+        if (entry.player?.name) byKey.set(nameKey(entry.player.name), entry.player.id);
+      }
+      pageNo++;
     }
-    pageNo++;
+  } catch (err) {
+    console.warn(`Rankings lookup failed (${err.message}); continuing with ${Object.keys(cached).length} cached ids.`);
   }
 
   for (const p of need) {
@@ -104,7 +117,14 @@ async function fetchPlayerMatches(ourId, apiId) {
   if (fs.existsSync(dest) && Date.now() - fs.statSync(dest).mtimeMs < MAX_CACHE_AGE_MS) {
     return null; // fresh cache, skip
   }
-  const existing = fs.existsSync(dest) ? JSON.parse(fs.readFileSync(dest, 'utf8')) : [];
+  // A corrupt cache file (truncated write, cache-transfer glitch) rebuilds
+  // from scratch instead of erroring this player forever.
+  let existing = [];
+  if (fs.existsSync(dest)) {
+    try { existing = JSON.parse(fs.readFileSync(dest, 'utf8')); } catch {
+      console.warn(`  corrupt cache for ${ourId}; re-bootstrapping`);
+    }
+  }
   const knownIds = new Set(existing.map((m) => String(m.id)));
   const isBootstrap = existing.length === 0;
 
@@ -143,13 +163,23 @@ async function main() {
   const idMap = await resolveApiIds(players);
 
   console.log(`Fetching match history for ${players.length} players (tour=${TOUR})...`);
+  // Circuit breaker: when the API fails for many players in a row (quota
+  // block, outage), stop burning requests - the cache serves this run and
+  // the gap closes next run.
+  let consecFails = 0;
   for (const p of players) {
+    if (consecFails >= 8) {
+      console.warn('Aborting match fetch: 8 consecutive failures (API down or quota-blocked). Cached data serves this run.');
+      break;
+    }
     const apiId = idMap[p.id];
     if (!apiId) continue;
     try {
       const r = await fetchPlayerMatches(p.id, apiId);
       console.log(`  ${p.name}: ${r ? `+${r.newCount} new in ${r.pages} page${r.pages === 1 ? '' : 's'} (${r.total} cached)` : 'cached (fresh)'}`);
+      consecFails = 0;
     } catch (err) {
+      consecFails++;
       console.warn(`  ${p.name}: failed (${err.message})`);
     }
   }

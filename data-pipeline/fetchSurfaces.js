@@ -21,21 +21,33 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-async function apiGet(urlPath) {
-  const res = await fetch(`https://${HOST}${urlPath}`, {
-    headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+// Retries transient statuses (rate limit, 5xx) with a growing pause before
+// giving up - keep in step with the same helper in fetch.js.
+async function apiGet(urlPath, tries = 3) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`https://${HOST}${urlPath}`, {
+      headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
+    });
+    if (res.ok) return res.json();
+    const transient = [429, 500, 502, 503].includes(res.status);
+    if (!transient || attempt >= tries) throw new Error(`HTTP ${res.status}`);
+    await new Promise((r) => setTimeout(r, 4000 * attempt));
+  }
 }
 
 function collectTournamentIds() {
   const ids = new Set();
   const files = fs.readdirSync(RAW_DIR).filter(
-    (f) => f.endsWith('.json') && f !== 'player-id-map.json' && f !== 'tournament-surfaces.json' && f !== 'player-profiles.json'
+    (f) => f.endsWith('.json') && f !== 'player-id-map.json' && f !== 'tournament-surfaces.json' && f !== 'player-profiles.json' && f !== 'tournament-names.json'
   );
   for (const f of files) {
-    const matches = JSON.parse(fs.readFileSync(path.join(RAW_DIR, f), 'utf8'));
+    // One truncated cache file (a killed run mid-write) must not take down
+    // the whole surface resolution - skip it; the next fetch repairs it.
+    let matches;
+    try { matches = JSON.parse(fs.readFileSync(path.join(RAW_DIR, f), 'utf8')); } catch {
+      console.warn(`  skipping corrupt cache file ${f}`);
+      continue;
+    }
     for (const m of matches) {
       if (m.tournamentId) ids.add(m.tournamentId);
     }
@@ -49,7 +61,9 @@ function collectTournamentIds() {
 const NAMES_PATH = path.join(RAW_DIR, 'tournament-names.json');
 // Backfilling ~2,000 historical tournaments at 1.5s per lookup would take
 // ~50 minutes in one run; cap per run and let it converge over a few runs.
-const NAME_BACKFILL_PER_RUN = 300;
+// 150 (was 300): halves the daily API spend of the backfill window - the
+// monthly quota is 10k requests and this loop is the biggest consumer.
+const NAME_BACKFILL_PER_RUN = 150;
 
 function extractName(data) {
   const n = data?.name || data?.title || data?.tournament?.name || null;
@@ -63,32 +77,53 @@ async function main() {
   const missing = ids.filter((id) => !(String(id) in cache));
   console.log(`${ids.length} unique tournaments referenced across cached matches, ${missing.length} need a surface lookup.`);
 
+  // Circuit breaker shared by both loops: a run of consecutive failures
+  // means the API is down or quota-blocked - stop burning requests, write
+  // what we have, and let the next run resume where this one stopped.
+  let consecFails = 0;
+  const CIRCUIT = 8;
+
   for (const id of missing) {
+    if (consecFails >= CIRCUIT) {
+      console.warn(`Aborting surface lookups: ${CIRCUIT} consecutive failures (API down or quota-blocked). Resuming next run.`);
+      break;
+    }
     try {
       const { data } = await apiGet(`/tennis/v2/${TOUR}/tournament/info/${id}`);
       cache[String(id)] = data?.court?.name || 'Unknown';
       const nm = extractName(data);
-      if (nm) names[String(id)] = nm;
+      // Cache the name EVEN WHEN NULL: a successful lookup with no name in
+      // the payload will never grow one - without the null marker these ids
+      // were re-queried every single run, forever (a real quota leak).
+      names[String(id)] = nm;
+      consecFails = 0;
       console.log(`  tournament ${id}: ${cache[String(id)]}${nm ? ` (${nm})` : ''}`);
     } catch (err) {
-      // Don't cache failures (e.g. rate limiting) as "Unknown" - that would
-      // permanently skip retrying them on the next run. Just leave them out
-      // of the cache so they're picked up again next time.
+      // Don't cache THROWN failures (rate limiting, outages) - those are
+      // worth retrying next run.
+      consecFails++;
       console.warn(`  tournament ${id}: failed (${err.message}), will retry next run`);
     }
     await new Promise((r) => setTimeout(r, 1500)); // be polite to the API
   }
 
   // Name backfill for tournaments whose surface was cached before names
-  // existed. Capped per run; converges over a handful of refreshes.
+  // existed. Capped per run; converges over a handful of refreshes (null
+  // markers included, so a no-name tournament is looked up exactly once).
   const nameless = ids.filter((id) => String(id) in cache && !(String(id) in names)).slice(0, NAME_BACKFILL_PER_RUN);
   if (nameless.length) console.log(`Backfilling names for ${nameless.length} tournaments (of ${ids.filter((id) => !(String(id) in names)).length} without one)...`);
   for (const id of nameless) {
+    if (consecFails >= CIRCUIT) {
+      console.warn(`Aborting name backfill: ${CIRCUIT} consecutive failures (API down or quota-blocked). Resuming next run.`);
+      break;
+    }
     try {
       const { data } = await apiGet(`/tennis/v2/${TOUR}/tournament/info/${id}`);
-      const nm = extractName(data);
-      if (nm) names[String(id)] = nm;
-    } catch { /* retry on a later run */ }
+      names[String(id)] = extractName(data);
+      consecFails = 0;
+    } catch {
+      consecFails++; // retry on a later run
+    }
     await new Promise((r) => setTimeout(r, 1500));
   }
 
