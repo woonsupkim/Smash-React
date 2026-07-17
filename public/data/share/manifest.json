@@ -1,6 +1,10 @@
 {
-  "generatedAt": "2026-07-16T05:41:41.681Z",
-  "seasonN": 2819,
+  "generatedAt": "2026-07-17T17:01:12.132Z",
+  "seasonN": 3308,
+  "lastStreak": {
+    "key": "atp|grass",
+    "len": 17
+  },
   "thread": null,
   "assets": [
     {
@@ -8,119 +12,192 @@
       "type": "champion",
       "format": "square",
       "category": "daily",
-      "caption": "Jannik Sinner wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction"
+      "caption": "Jannik Sinner wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction",
+      "alt": "Jannik Sinner wins the Wimbledon."
     },
     {
       "file": "title-odds-wta.png",
       "type": "champion",
       "format": "square",
       "category": "daily",
-      "caption": "Linda Noskova wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction"
+      "caption": "Linda Noskova wins the Wimbledon. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction",
+      "alt": "Linda Noskova wins the Wimbledon."
     },
     {
       "file": "results.png",
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-15: called 6 of 10 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction"
+      "caption": "Receipts from 2026-07-17: called 2 of 9 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-07-17: called 2 of 9 winners."
+    },
+    {
+      "file": "wrap-atp.png",
+      "type": "wrap",
+      "format": "square",
+      "category": "wrap",
+      "caption": "Wimbledon ATP report card: 45 of 60 winners called, 2 wins over the bookies, 24 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon ATP report card: 45 of 60 winners called, 2 wins over the bookies, 24 exact scorelines."
+    },
+    {
+      "file": "wrap-wta.png",
+      "type": "wrap",
+      "format": "square",
+      "category": "wrap",
+      "caption": "Wimbledon WTA report card: 43 of 61 winners called, 1 wins over the bookies, 16 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon WTA report card: 43 of 61 winners called, 1 wins over the bookies, 16 exact scorelines."
     },
     {
       "file": "draw-road-atp.png",
       "type": "draw-road",
       "format": "square",
       "category": "draw",
-      "caption": "Our last look at the Wimbledon ATP bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction"
+      "caption": "Our last look at the Wimbledon ATP bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction",
+      "alt": "Our last look at the Wimbledon ATP bracket before it was decided."
     },
     {
       "file": "draw-path-atp.png",
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Jannik Sinner's path, round by round. Our last look at the Wimbledon ATP bracket before it was decided. /draw #tennis #atp #wta #tennisprediction"
+      "caption": "Jannik Sinner's path, round by round. Our last look at the Wimbledon ATP bracket before it was decided. /draw #tennis #atp #wta #tennisprediction",
+      "alt": "Jannik Sinner's path, round by round."
     },
     {
       "file": "draw-road-wta.png",
       "type": "draw-road",
       "format": "square",
       "category": "draw",
-      "caption": "Our last look at the Wimbledon WTA bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction"
+      "caption": "Our last look at the Wimbledon WTA bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction",
+      "alt": "Our last look at the Wimbledon WTA bracket before it was decided."
     },
     {
       "file": "draw-path-wta.png",
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. /draw #tennis #atp #wta #tennisprediction"
+      "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. /draw #tennis #atp #wta #tennisprediction",
+      "alt": "Linda Noskova's path, round by round."
+    },
+    {
+      "file": "milestone.png",
+      "type": "milestone",
+      "format": "square",
+      "category": "moments",
+      "caption": "3,250 matches graded in public - season benchmark 68%, zero deletions. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "3,250 matches graded in public - season benchmark 68%, zero deletions."
+    },
+    {
+      "file": "streak.png",
+      "type": "streak",
+      "format": "square",
+      "category": "moments",
+      "caption": "17 straight ATP grass-court winners called. Deployed calls, graded in public - streaks end, receipts don't. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Streak card: 17 consecutive correct calls on ATP grass."
+    },
+    {
+      "file": "autopsy.png",
+      "type": "upset-autopsy",
+      "format": "square",
+      "category": "moments",
+      "caption": "Upset autopsy: No. 95 Halys takes down No. 11. What we said, what the market said, graded in public either way. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Upset autopsy card: rank 95 beat rank 11, with our call and the market's."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 2,819 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,308 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "Season receipts card: overall accuracy versus the bookmakers."
+    },
+    {
+      "file": "proof-45.png",
+      "type": "proof",
+      "format": "portrait",
+      "category": "promo",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "Season receipts card, portrait format."
+    },
+    {
+      "file": "banner.png",
+      "type": "banner",
+      "format": "wide",
+      "category": "promo",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wide banner: every call public, every miss too."
     },
     {
       "file": "how-it-works-1.png",
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. #tennis #atp #wta #tennisprediction",
+      "alt": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats."
     },
     {
       "file": "how-it-works-2.png",
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. #tennis #atp #wta #tennisprediction",
+      "alt": "How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk."
     },
     {
       "file": "how-it-works-3.png",
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 2,819 matches, re-simulated daily. #tennis #atp #wta #tennisprediction"
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
       "file": "pool-promo.png",
       "type": "feature",
       "format": "square",
       "category": "draw",
-      "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction"
+      "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction",
+      "alt": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool."
     },
     {
       "file": "hot-streak-atp.png",
       "type": "spotlight",
       "format": "square",
       "category": "promo",
-      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. Their full page: /player/atp/sinne #tennis #atp #wta #tennisprediction"
+      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 10-0 in recent matches. Their full page: /player/atp/sinne #tennis #atp #wta #tennisprediction",
+      "alt": "Hottest racket on the ATP right now: Jannik Sinner, 10-0 in recent matches."
     },
     {
       "file": "hot-streak-wta.png",
       "type": "spotlight",
       "format": "square",
       "category": "promo",
-      "caption": "Hottest racket on the WTA right now: Karolina Muchova, 9-1 in recent matches. Their full page: /player/wta/mucho #tennis #atp #wta #tennisprediction"
+      "caption": "Hottest racket on the WTA right now: Linda Noskova, 10-0 in recent matches. Their full page: /player/wta/nosko #tennis #atp #wta #tennisprediction",
+      "alt": "Hottest racket on the WTA right now: Linda Noskova, 10-0 in recent matches."
     },
     {
       "file": "hype-countdown.png",
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "46 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction"
+      "caption": "45 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "45 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1250 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction"
+      "caption": "The US Open is played on hard - and hard is where we've graded 1357 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1357 matches this season."
     },
     {
       "file": "hype-story.png",
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "46 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction"
+      "caption": "45 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "45 days to the US Open."
     }
   ]
 }
