@@ -25,6 +25,31 @@ const SURFACES = {
 
 const PAGE_SIZE = 10;
 
+// The events a casual tennis fan recognizes on sight: slams, the
+// Masters/WTA-1000 stops, and the season finals. Patterns match the
+// sponsor-heavy names the data actually carries ("BNP Paribas Open",
+// "Internazionali BNL d'Italia", "National Bank Open").
+const MAJOR_EVENT_RE = [
+  /australian open/i,
+  /french open|roland garros/i,
+  /wimbledon/i,
+  /us open/i,
+  /bnp paribas|indian wells/i,
+  /miami open/i,
+  /monte.carlo/i,
+  /madrid open/i,
+  /internazionali|italian open/i,
+  /national bank|canadian open|canada masters/i,
+  /cincinnati/i,
+  /shanghai/i,
+  /paris masters|rolex paris/i,
+  /qatar totalenergies|qatar open/i, // the WTA 1000; NOT the ATP Doha 250 ("Qatar ExxonMobil Open")
+  /dubai/i,
+  /china open/i,
+  /wuhan/i,
+  /atp finals|wta finals|tour finals/i,
+];
+
 // Wilson 95% score interval for a binomial proportion - defends the headline
 // accuracy against "that's just luck" by showing the sampling uncertainty.
 function wilson(k, n) {
@@ -102,16 +127,21 @@ export default function TrackRecord() {
       .catch(() => setPredictions({ predictions: [] }));
   }, []);
 
-  // Distinct event names present in the graded data, most recent first.
-  // Labels backfill over a few refreshes, so unlabeled rows only appear
-  // under "All events".
+  // Distinct event names present in the graded data, most recent first,
+  // limited to the tournaments a casual fan recognizes: the four slams, the
+  // Masters/1000-level stops, and the tour finals. Purely a dropdown-length
+  // decision - every match still counts in every stat, and rows from a
+  // 250 in Bastad still show under "All events".
   const events = useMemo(() => {
     const latest = new Map();
     for (const m of data?.matches || []) {
       if (!m.event) continue;
       if (!latest.has(m.event) || m.date > latest.get(m.event)) latest.set(m.event, m.date);
     }
-    return [...latest.entries()].sort((a, b) => (a[1] < b[1] ? 1 : -1)).map(([name]) => name);
+    return [...latest.entries()]
+      .filter(([name]) => MAJOR_EVENT_RE.some((re) => re.test(name)))
+      .sort((a, b) => (a[1] < b[1] ? 1 : -1))
+      .map(([name]) => name);
   }, [data]);
 
   const forward = useMemo(() => {

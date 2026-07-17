@@ -30,19 +30,96 @@ function loadRoster() {
   return [...byId.entries()];
 }
 
+const UA = { 'User-Agent': 'smash-react-data-pipeline/1.0' };
+const TENNIS_RE = /tennis/i;
+
+// Wikimedia rate-limits by IP and answers with an HTML/text page, which
+// used to surface as a JSON parse error ("Unexpected token Y..."). Detect
+// the non-JSON answer and wait it out once before giving up.
+async function wmJson(url) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(url, { headers: UA });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      if (attempt >= 2) throw new Error(`rate limited (HTTP ${res.status})`);
+      await new Promise((r) => setTimeout(r, 20000));
+    }
+  }
+}
+
+// Roster names miss Wikidata labels in predictable ways: CJK names are
+// surname-first on Wikidata ("Wang Xinyu" vs roster "Xinyu Wang"), Spanish
+// double surnames get shortened ("Daniel Merida Aguilar" -> "Daniel Mérida").
+// Try the plausible variants in order.
+function nameVariants(name) {
+  const parts = name.trim().split(/\s+/);
+  const v = [name];
+  if (parts.length === 2) v.push(`${parts[1]} ${parts[0]}`);
+  if (parts.length >= 3) {
+    v.push(parts.slice(0, 2).join(' '));
+    v.push(`${parts[0]} ${parts[parts.length - 1]}`);
+  }
+  return [...new Set(v)];
+}
+
 async function findWikidataImage(name) {
-  const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(name)}&language=en&format=json&type=item&limit=3`;
-  const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'smash-react-data-pipeline/1.0' } });
-  const search = await searchRes.json();
-  for (const candidate of search.search || []) {
-    const entityUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${candidate.id}&props=claims&format=json`;
-    const entityRes = await fetch(entityUrl, { headers: { 'User-Agent': 'smash-react-data-pipeline/1.0' } });
-    const entity = await entityRes.json();
-    const claims = entity.entities?.[candidate.id]?.claims;
-    const imageClaim = claims?.P18?.[0]?.mainsnak?.datavalue?.value;
-    if (imageClaim) return imageClaim; // Commons filename, e.g. "Jannik Sinner 2023.jpg"
+  for (const q of nameVariants(name)) {
+    const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(q)}&language=en&format=json&type=item&limit=5`;
+    const search = await wmJson(searchUrl);
+    // Only accept candidates Wikidata itself describes as tennis-related
+    // (or with no description at all but an exact-label match) - a bare
+    // name search can hit a same-named politician whose photo we must
+    // never ship on a player card.
+    const candidates = (search.search || []).filter((c) =>
+      TENNIS_RE.test(c.description || '') || (!c.description && (c.label || '').toLowerCase() === q.toLowerCase()));
+    for (const candidate of candidates) {
+      const entityUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${candidate.id}&props=claims&format=json`;
+      const entity = await wmJson(entityUrl);
+      const claims = entity.entities?.[candidate.id]?.claims;
+      const imageClaim = claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+      if (imageClaim) return imageClaim; // Commons filename, e.g. "Jannik Sinner 2023.jpg"
+    }
+    await new Promise((r) => setTimeout(r, 1200)); // pause between variant queries
   }
   return null;
+}
+
+const deburr = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// Second source: the player's English Wikipedia article lead image. Some
+// players have an infobox photo without a Wikidata P18 claim.
+// Two identity guards, both diacritic-insensitive: the article TITLE must
+// contain the player's surname (otherwise a "2019 French Open qualifying"
+// tournament article can win the search), and the image FILENAME must
+// contain some token of the player's name (a tournament article's lead
+// image is frequently a photo of a different player entirely).
+async function findWikipediaImage(name) {
+  const tokens = deburr(name).split(/\s+/).filter((t) => t.length >= 4);
+  const surname = deburr(name).split(/\s+/).pop();
+  for (const q of nameVariants(name)) {
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(`${q} tennis`)}&srlimit=3&format=json`;
+    const found = (await wmJson(searchUrl)).query?.search || [];
+    for (const hit of found) {
+      if (!TENNIS_RE.test(`${hit.title} ${hit.snippet || ''}`)) continue;
+      if (!deburr(hit.title).includes(surname)) continue;
+      const imgUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=original&titles=${encodeURIComponent(hit.title)}&format=json`;
+      const pages = (await wmJson(imgUrl)).query?.pages || {};
+      const original = Object.values(pages)[0]?.original?.source;
+      if (original && tokens.some((t) => deburr(decodeURIComponent(original)).includes(t))) return original;
+    }
+    await new Promise((r) => setTimeout(r, 1200));
+  }
+  return null;
+}
+
+async function downloadUrl(url, destPath) {
+  const res = await fetch(url, { headers: UA });
+  if (!res.ok) return false;
+  const buffer = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(destPath, buffer);
+  return true;
 }
 
 async function downloadCommonsImage(filename, destPath) {
@@ -76,19 +153,28 @@ async function main() {
     let ok = false;
     for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
       try {
+        const dest = path.join(PLAYERS_DIR, `${id}.png`);
         const filename = await findWikidataImage(name);
-        if (!filename) {
-          console.log(`  ${name}: no Wikidata image found`);
-          lastErr = null;
-          break;
-        }
-        const saved = await downloadCommonsImage(filename, path.join(PLAYERS_DIR, `${id}.png`));
-        if (saved) {
-          found++;
-          ok = true;
-          console.log(`  ${name}: saved (${filename})`);
+        if (filename) {
+          if (await downloadCommonsImage(filename, dest)) {
+            found++;
+            ok = true;
+            console.log(`  ${name}: saved (${filename})`);
+          } else {
+            console.log(`  ${name}: found a Commons filename but download failed`);
+          }
         } else {
-          console.log(`  ${name}: found a filename but download failed`);
+          // Wikidata came up empty: try the Wikipedia article lead image.
+          const url = await findWikipediaImage(name);
+          if (url && (await downloadUrl(url, dest))) {
+            found++;
+            ok = true;
+            console.log(`  ${name}: saved from Wikipedia (${url.split('/').pop()})`);
+          } else {
+            console.log(`  ${name}: no image on Wikidata or Wikipedia`);
+            lastErr = null;
+            break;
+          }
         }
         lastErr = null;
       } catch (err) {
