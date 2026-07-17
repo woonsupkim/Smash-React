@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil } from '../utils/matchTime';
+import useDocMeta from '../utils/useDocMeta';
 import './DrawPage.css';
 
 // Distinct line colors for the race chart, lime first (the leader).
@@ -45,6 +46,10 @@ export default function DrawPage() {
   }, []);
 
   const entry = data?.events?.[tour];
+  useDocMeta(
+    entry ? `${entry.event} Draw & Title Odds | Smash` : 'Tournament Draw & Title Odds | Smash',
+    'The live bracket simulated to completion: every player\'s path and title chance, updated daily.'
+  );
   const rounds = useMemo(() => {
     if (!entry?.draw) return [];
     const n = entry.draw.field.length;
@@ -86,7 +91,10 @@ export default function DrawPage() {
         </div>
       </div>
 
-      {failed && (
+      {/* Two honest empty states: the fetch failed, OR it loaded but has no
+          entry for this tour (e.g. one tour's odds missing from the file) -
+          without the second check that case rendered a silent blank page. */}
+      {(failed || (data && !entry)) && (
         <div className="draw-empty">
           The bracket isn't priced yet - the moment draw data lands, we simulate it
           2,000 times and publish every player's path here. Until then, the H2H studio

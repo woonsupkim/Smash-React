@@ -5,12 +5,14 @@
 // their next locked match. Linked from match pages and anywhere a face
 // appears. URL: /player/:tour/:id
 import React, { useEffect, useState } from 'react';
+import { lastName } from '../utils/names';
 import { useParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect } from '../utils/deployedPick';
 import EloChart from '../components/EloChart';
+import useDocMeta from '../utils/useDocMeta';
 import './PlayerPage.css';
 
 // Tiny lime polyline of a value series (same visual family as the Home
@@ -44,6 +46,11 @@ export default function PlayerPage() {
   const [oddsHist, setOddsHist] = useState(null); // title-odds history series
   const [eloHist, setEloHist] = useState(null);   // form-rating curve
 
+  useDocMeta(
+    row?.name ? `${row.name}: Record, Form & Title Odds | Smash` : null,
+    row?.name ? `${row.name}'s season on our record: graded predictions, last-10 form, Elo curve, and surface splits.` : null
+  );
+
   useEffect(() => {
     const dir = tour === 'wta' ? '/data/women' : '/data';
     fetch(process.env.PUBLIC_URL + dir + '/elo_history.json')
@@ -69,7 +76,7 @@ export default function PlayerPage() {
         // Last 10 tracked results, with the opponent for tooltips.
         setForm(mine.slice(-10).map((m) => ({
           won: m.winner === id,
-          opp: (m.p1 === id ? m.name2 : m.name1).split(' ').pop(),
+          opp: lastName(m.p1 === id ? m.name2 : m.name1),
           score: m.score,
           date: m.date,
         })));
@@ -227,7 +234,7 @@ export default function PlayerPage() {
           <div className="player-fact-label">Form rating, match by match</div>
           <EloChart series={[{ points: eloHist, color: 'var(--accent-brand)', label: row?.name || id }]} />
           <div className="player-fact-sub">
-            the Elo curve behind the Form engine · one point per match since Jan 2025 · dashed lines mark grand slam starts
+            the Elo curve behind the Form engine · one point per match since Jan {new Date().getUTCFullYear() - 1} · dashed lines mark grand slam starts
           </div>
         </div>
       )}
@@ -248,7 +255,7 @@ export default function PlayerPage() {
       )}
 
       <Link className="player-cta player-studio" to={`${tour === 'wta' ? '/women' : ''}/h2h?a=${id}`}>
-        Put {row.name.split(' ').pop()} in the studio →
+        Put {lastName(row.name)} in the studio →
       </Link>
     </div>
   );

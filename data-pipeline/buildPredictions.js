@@ -173,6 +173,9 @@ function ymd(d) {
 
 async function run() {
   const outPath = path.join(__dirname, '..', 'public', 'data', 'predictions.json');
+  // NOTE: if this file exists but is corrupt, we WANT the loud crash below -
+  // it is the locked forward ledger, and silently restarting it empty would
+  // erase the on-the-record history. The workflow keeps the old commit.
   const store = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : { predictions: [] };
 
   // Collapse any pre-existing duplicates (same tour + pair + day), preferring
@@ -285,4 +288,4 @@ async function run() {
   if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 
-run();
+run().catch((e) => { console.error(e); process.exit(1); });

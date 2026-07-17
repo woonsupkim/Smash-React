@@ -6,6 +6,7 @@
 // closed-form engine), so this page just reads track_record.json and
 // renders - no client-side simulation, instant load.
 import React, { useState, useEffect, useMemo } from 'react';
+import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { countryFlagUrl } from '../components/countryFlags';
 import { playerPhoto } from '../utils/playerPhotos';
@@ -13,6 +14,7 @@ import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
 import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
 import { cleanEvents } from '../utils/eventName';
+import useDocMeta from '../utils/useDocMeta';
 import './TrackRecord.css';
 
 const SURFACES = {
@@ -78,6 +80,10 @@ function MiniScore({ wName, lName, wFlag, lFlag, wPhoto, lPhoto, wId, lId, tour,
 }
 
 export default function TrackRecord() {
+  useDocMeta(
+    'The Ledger: Every Call Graded | Smash',
+    'Every prediction the model makes, graded in public: accuracy by tour, surface, and event, with the full match log.'
+  );
   const [tour, setTour] = useState('all');
   const [surface, setSurface] = useState('all');
   const [eventF, setEventF] = useState('all');
@@ -385,7 +391,7 @@ export default function TrackRecord() {
                 <Link className="track-forward-row pending" to={`/match/${matchSlug(p)}`} key={p.id}>
                   <span className="track-forward-status"><span aria-hidden="true">⏳ </span>Upcoming</span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
-                  <span className="track-forward-call">Backing {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                  <span className="track-forward-call">Backing {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
                 </Link>
               ))}
               {forward.pending.length > 8 && (
@@ -400,7 +406,7 @@ export default function TrackRecord() {
                     <span className="sr-only">{p.correct ? 'correct' : 'missed'}</span>
                   </span>
                   <span className="track-forward-match">{p.name1} vs {p.name2}</span>
-                  <span className="track-forward-call">Called {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                  <span className="track-forward-call">Called {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
                 </Link>
               ))}
               {forward.decided.length > Math.min(forward.recent.length, 5) && (
@@ -642,12 +648,14 @@ export default function TrackRecord() {
               {/* Calibration - redesigned as compact horizontal reliability bars */}
               <div className="track-panel">
                 <div className="track-section-label">Do the probabilities mean what they say?</div>
+                {/* Tooltip lives on the whole row: the bar track clips
+                    overflow, so a bubble on the tick itself would be cut off. */}
                 <div className="track-calib">
                   {stats.buckets.map((b) => (
-                    <div className="track-calib-row" key={b.label}>
+                    <div className="track-calib-row has-tip" key={b.label} tabIndex={0} data-tip={`White tick = ideal: a perfectly calibrated ${b.label} bucket wins ≈ ${b.mid}%`}>
                       <div className="track-calib-said">Said {b.label}</div>
                       <div className="track-calib-track">
-                        <div className="track-calib-ideal" style={{ left: `${b.mid}%` }} title={`Ideal ≈ ${b.mid}%`} />
+                        <div className="track-calib-ideal" style={{ left: `${b.mid}%` }} />
                         <div className="track-calib-fill" style={{ width: `${b.rate ?? 0}%` }} />
                       </div>
                       <div className="track-calib-actual">{b.rate == null ? '–' : `won ${b.rate}%`}</div>
@@ -676,7 +684,7 @@ export default function TrackRecord() {
                   const callCorrect = pickCorrect(m);
                   const callFav = pickFavorite(m);
                   const callProb = pickFavProb(m);
-                  const favName = (callFav === m.p1 ? m.name1 : m.name2).split(' ').pop();
+                  const favName = lastName(callFav === m.p1 ? m.name1 : m.name2);
                   // Predicted scoreline (stored, favorite's perspective) vs the
                   // real result, also from the favorite's perspective.
                   const sets = parseScore(m.score);

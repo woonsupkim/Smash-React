@@ -113,7 +113,7 @@ function run() {
   if (dayMatches.length) {
     lines.push(`Yesterday's scorecard (${day}): called ${hits.length} of ${dayMatches.length} winners.`);
     if (beatBookies.length) lines.push(`Beat the bookies on: ${beatBookies.map((m) => m.call).join('; ')}.`);
-    if (worstMiss) lines.push(`The one we own: ${worstMiss ? yesterday.worstMiss.call : ''} lost.`);
+    if (worstMiss) lines.push(`The one we own: ${yesterday.worstMiss.call} lost.`);
   }
   lines.push(`Season: ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} winners called (${season.acc}%), every call public.`);
   for (const u of upsetWatch) {

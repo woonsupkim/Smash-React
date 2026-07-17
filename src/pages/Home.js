@@ -1,6 +1,7 @@
 // src/pages/Home.js
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -247,9 +248,9 @@ export default function Home() {
           <div className="eyebrow">GRAND SLAM PREDICTION ENGINE · ATP + WTA</div>
           <h1 className="main-title">Simulate the Slams<br />in Seconds</h1>
           <p className="sub-title">
-            Pick any two players. We play the match 1,000 times, point by point,
-            and show you who wins, how often, and by what score. And we keep
-            score on ourselves in public, match after match.
+            Pick any two players. We compute the match point by point, every
+            path it can take, and show you who wins, how often, and by what
+            score. And we keep score on ourselves in public, match after match.
           </p>
           <div className="hero-ctas">
             <Button as={Link} to="/h2h" className="cta-primary">
@@ -487,7 +488,7 @@ export default function Home() {
                     </div>
                     <div className="home-board-call">
                       <span className="home-board-pct">{Math.round(p.favProb * 100)}%</span>
-                      <span className="home-board-callsub">model backs {p.favName.split(' ').pop()}</span>
+                      <span className="home-board-callsub">model backs {lastName(p.favName)}</span>
                     </div>
                     {upsetById.has(p.id) && (
                       <div className="home-board-upsetwatch">
@@ -511,7 +512,7 @@ export default function Home() {
             <Link to="/h2h" className="home-nav-card">
               <div className="home-nav-num">01</div>
               <div className="home-nav-name">Head to Head</div>
-              <p className="home-nav-desc">Any two players, any surface. We play it 1,000 times and show who wins, how often, and by what score.</p>
+              <p className="home-nav-desc">Any two players, any surface. Every point computed, showing who wins, how often, and by what score.</p>
               <span className="home-nav-go">Open the studio →</span>
             </Link>
             <Link to="/dream-brackets" className="home-nav-card">

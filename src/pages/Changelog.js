@@ -6,11 +6,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CHANGELOG, MODEL_VERSION } from '../data/changelog';
+import useDocMeta from '../utils/useDocMeta';
 import './Changelog.css';
 
 const TYPE_LABELS = { model: 'Model', product: 'Product', ops: 'Operations' };
 
 export default function Changelog() {
+  useDocMeta(
+    'Changelog: Model & Product Releases | Smash',
+    'Every change to the prediction engine and the product, dated and versioned.'
+  );
   return (
     <div className="changelog-page">
       <div className="eyebrow">RELEASE NOTES</div>

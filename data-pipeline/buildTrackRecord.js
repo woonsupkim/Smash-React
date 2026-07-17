@@ -42,8 +42,12 @@ function cleanEventName(name) {
   if (!name) return name;
   // Cut at the first SPACED hyphen: cities can contain unspaced hyphens
   // ("Monte-Carlo", "'s-Hertogenbosch") that a match-the-last-segment
-  // regex can't reach. Mirrored in src/utils/eventName.js - keep in sync.
-  return String(name).replace(/\s+-\s+.*$/, '').trim() || name;
+  // regex can't reach. Also drop a leading "The ": ESPN flips between
+  // "HSBC Championships" and "The HSBC Championships" across days of the
+  // same event, splitting it in filters. Mirrored in src/utils/eventName.js
+  // - keep in sync.
+  const cut = String(name).replace(/\s+-\s+.*$/, '').replace(/^The\s+/i, '').trim();
+  return cut || name;
 }
 
 function slamLabel(dateStr, surface) {

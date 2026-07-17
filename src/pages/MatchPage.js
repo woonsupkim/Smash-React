@@ -5,6 +5,7 @@
 // up, and (once played) how our call graded. Slug format:
 // /match/jannik-sinner-vs-alexander-zverev-177491 (trailing id is the key).
 import React, { useEffect, useMemo, useState } from 'react';
+import { lastName } from '../utils/names';
 import { useParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
@@ -12,6 +13,7 @@ import { timeUntil, localKickoff, idFromSlug } from '../utils/matchTime';
 import { castCall, fetchTally, matchCallKey } from '../utils/matchCalls';
 import { pickCorrect } from '../utils/deployedPick';
 import LiveWinProb from '../components/LiveWinProb';
+import useDocMeta from '../utils/useDocMeta';
 import './MatchPage.css';
 
 const SURFACE_ACCENTS = { clay: '#e8694a', grass: '#3ddc84', hard: '#5b8cff' };
@@ -31,6 +33,11 @@ export default function MatchPage() {
   const [rows, setRows] = useState(null);      // roster rows for ranks/form
   const [h2h, setH2h] = useState(null);
   const [pairRecord, setPairRecord] = useState(null);
+
+  useDocMeta(
+    pred?.name1 ? `${pred.name1} vs ${pred.name2}: Our Locked Call | Smash` : null,
+    pred?.name1 ? `Our prediction for ${pred.name1} vs ${pred.name2}, locked before play and graded after: the pick, the probability, and the why.` : null
+  );
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
@@ -127,7 +134,7 @@ export default function MatchPage() {
 
   const favIsP1 = pred.favorite === pred.p1;
   const favPct = Math.round(pred.favProb * 100);
-  const favLast = pred.favName.split(' ').pop();
+  const favLast = lastName(pred.favName);
   const decided = pred.status !== 'pending';
   const accent = SURFACE_ACCENTS[pred.surface] || '#fff';
   const studioHref = `${pred.tour === 'wta' ? '/women' : ''}/h2h?surface=${pred.surface}&a=${pred.p1}&b=${pred.p2}`;
@@ -204,14 +211,14 @@ export default function MatchPage() {
                   className={`match-call-btn${myPick === pid ? ' picked' : ''}`}
                   onClick={() => backPlayer(pid)}
                 >
-                  Back {name.split(' ').pop()}
+                  Back {lastName(name)}
                 </button>
               ))}
             </div>
           )}
           {myPick && !decided && (
             <span className="match-call-note">
-              You backed {(myPick === pred.p1 ? pred.name1 : pred.name2).split(' ').pop()},
+              You backed {lastName(myPick === pred.p1 ? pred.name1 : pred.name2)},
               {myPick === pred.favorite ? ' same as the model.' : ' fading the model.'}
             </span>
           )}
@@ -223,7 +230,7 @@ export default function MatchPage() {
             const leader = pctA >= 50 ? pred.name1 : pred.name2;
             return (
               <span className="match-call-tally">
-                Fans back <strong>{leader.split(' ').pop()} {Math.max(pctA, 100 - pctA)}%</strong> · {tot.toLocaleString()} call{tot === 1 ? '' : 's'}
+                Fans back <strong>{lastName(leader)} {Math.max(pctA, 100 - pctA)}%</strong> · {tot.toLocaleString()} call{tot === 1 ? '' : 's'}
               </span>
             );
           })()}
@@ -234,7 +241,7 @@ export default function MatchPage() {
         {h2h && (h2h.w1 + h2h.w2 > 0) && (
           <div className="match-fact">
             <div className="match-fact-label">Career head-to-head</div>
-            <div className="match-fact-val">{pred.name1.split(' ').pop()} {h2h.w1} - {h2h.w2} {pred.name2.split(' ').pop()}</div>
+            <div className="match-fact-val">{lastName(pred.name1)} {h2h.w1} - {h2h.w2} {lastName(pred.name2)}</div>
             {(h2h.form1 || h2h.form2) && (
               <div className="match-fact-sub">recent form: {h2h.form1 || '-'} vs {h2h.form2 || '-'}</div>
             )}
@@ -249,7 +256,7 @@ export default function MatchPage() {
         )}
         <div className="match-fact">
           <div className="match-fact-label">Run it yourself</div>
-          <Link className="match-cta" to={studioHref}>Play this match 1,000 times →</Link>
+          <Link className="match-cta" to={studioHref}>Run this matchup yourself →</Link>
           <div className="match-fact-sub">full breakdown: win odds, exact scores, upset risk</div>
         </div>
       </div>

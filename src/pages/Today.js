@@ -4,12 +4,18 @@
 // deliberately minimal - faces, the pick, the number, kickoff countdowns,
 // each row deep-linking to its match page.
 import React, { useEffect, useState } from 'react';
+import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
+import useDocMeta from '../utils/useDocMeta';
 import './Today.css';
 
 export default function Today() {
+  useDocMeta(
+    "Today's Calls, Locked Before Play | Smash",
+    "The model's picks for today's tennis, locked before play and graded in public."
+  );
   const [picks, setPicks] = useState(null);
   const [season, setSeason] = useState(null);
 
@@ -65,7 +71,7 @@ export default function Today() {
                 </span>
                 <span className="today-call">
                   <span className="today-pct">{Math.round(p.favProb * 100)}%</span>
-                  <span className="today-pick">{p.favName.split(' ').pop()}</span>
+                  <span className="today-pick">{lastName(p.favName)}</span>
                 </span>
               </Link>
             );

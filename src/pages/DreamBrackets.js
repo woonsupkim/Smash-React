@@ -12,6 +12,7 @@ import {
   Spinner,
   ProgressBar
 } from 'react-bootstrap';
+import useDocMeta from '../utils/useDocMeta';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
 import { pickEngineProb, eloProb as eloProbFn } from '../engines';
@@ -232,6 +233,10 @@ function parseEspnBracket(data, targetSlots) {
 }
 
 export default function DreamBrackets({ tour = 'atp' }) {
+  useDocMeta(
+    'Dream Brackets: Fantasy Slam Simulator | Smash',
+    'Seed your own fantasy slam and let the engine play out every round to a champion.'
+  );
   const navigate = useNavigate();
   const isWta = tour === 'wta';
   const bestOf = isWta ? 3 : 5;
@@ -994,8 +999,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
     const ciCaption = isWinner && winner && winner._ciLower != null
       ? (
         <div
-          className="bracket-ci-tag"
-          title={`Likely range ${Math.round(winner._ciLower * 100)}–${Math.round(winner._ciUpper * 100)}% across the simulated plays`}
+          className="bracket-ci-tag has-tip"
+          tabIndex={0}
+          data-tip={`Likely range ${Math.round(winner._ciLower * 100)}–${Math.round(winner._ciUpper * 100)}% across the simulated plays`}
         >
           wins {Math.round(winner._winProb * 100)}% of the time
         </div>

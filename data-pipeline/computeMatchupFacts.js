@@ -48,7 +48,7 @@ function main() {
   const idMap = JSON.parse(fs.readFileSync(ID_MAP_PATH, 'utf8')); // ourId -> apiId
   const surfaceMap = JSON.parse(fs.readFileSync(SURFACES_PATH, 'utf8')); // tournamentId -> "Hard"|"Clay"|"Grass"|...
   const apiToOur = new Map(Object.entries(idMap).map(([ourId, apiId]) => [String(apiId), ourId]));
-  const currentYear = new Date().getFullYear();
+  const currentYear = new Date().getUTCFullYear(); // UTC like the rest of the pipeline
 
   // --- per-player year record by surface + recent form ---
   const yearRecordBySurface = {}; // ourId -> { hard: {w,l}, clay: {w,l}, grass: {w,l} }
@@ -70,7 +70,7 @@ function main() {
 
     const record = { hard: { w: 0, l: 0 }, clay: { w: 0, l: 0 }, grass: { w: 0, l: 0 } };
     for (const m of matches) {
-      if (new Date(m.date).getFullYear() !== currentYear) continue;
+      if (new Date(m.date).getUTCFullYear() !== currentYear) continue;
       // "I.hard" (indoor hard) is a separate API label from outdoor "Hard"
       // but is the same court surface for stats purposes - fold it in.
       const rawSurface = surfaceMap[String(m.tournamentId)];

@@ -8,6 +8,12 @@ name: Retune blend weights
 # Merging the PR changes the model fingerprint in engineConfig.json, so the
 # next daily refresh re-simulates the full track record with the new weights
 # automatically (see modelKey in data-pipeline/buildTrackRecord.js).
+# One retune at a time: a manual dispatch during the scheduled run would
+# otherwise double-execute and open two PRs for the same date.
+concurrency:
+  group: retune-weights
+  cancel-in-progress: false
+
 on:
   workflow_dispatch: {}
   # ~4-7 days before play starts at each slam, 05:00 UTC (an hour ahead of

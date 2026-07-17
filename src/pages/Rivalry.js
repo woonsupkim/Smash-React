@@ -6,6 +6,7 @@
 // the shape people actually search. Everything renders from data files the
 // pipeline already publishes; zero extra API cost.
 import React, { useEffect, useMemo, useState } from 'react';
+import { lastName } from '../utils/names';
 import { useParams, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
@@ -110,7 +111,7 @@ export default function Rivalry() {
   const pairCalled = pairRows.filter((m) => pickCorrect(m)).length;
 
   const histA = eloHist?.[pA.id], histB = eloHist?.[pB.id];
-  const lastA = pA.name.split(' ').pop(), lastB = pB.name.split(' ').pop();
+  const lastA = lastName(pA.name), lastB = lastName(pB.name);
 
   return (
     <div className="rivalry-page">
@@ -172,7 +173,7 @@ export default function Rivalry() {
           <p className="rivalry-note">
             <span className="rivalry-key" style={{ color: 'var(--accent-brand)' }}>{lastA}</span>
             {' vs '}
-            <span className="rivalry-key">{lastB}</span> since January 2025 · dashed lines mark grand slam starts
+            <span className="rivalry-key">{lastB}</span> since January {new Date().getUTCFullYear() - 1} · dashed lines mark grand slam starts
           </p>
         </div>
       )}
@@ -199,7 +200,7 @@ export default function Rivalry() {
                       {new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       {m.event ? ` · ${m.event}` : ''}
                     </span>
-                    <span className="rivalry-meeting-result">{wName.split(' ').pop()} won{m.score ? ` ${m.score}` : ''}</span>
+                    <span className="rivalry-meeting-result">{lastName(wName)} won{m.score ? ` ${m.score}` : ''}</span>
                     <span className={`rivalry-meeting-call ${pickCorrect(m) ? 'hit' : 'miss'}`}>
                       {pickCorrect(m) ? '✓ called it' : '✗ missed'}
                     </span>

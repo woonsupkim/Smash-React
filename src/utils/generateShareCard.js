@@ -1,4 +1,5 @@
 // Shared canvas helpers - also used by generateBracketShareCard.js.
+import { lastName } from './names';
 
 // Clip image to a circle using the same crop as the app's player photos:
 // CSS object-fit: cover with object-position: top center - scale to cover the
@@ -388,7 +389,7 @@ export async function generateShareCard({
     chips.push({ text: '⚠ Low confidence', bg: 'rgba(255,160,0,0.20)', border: 'rgba(255,160,0,0.55)', color: '#ffb74d' });
   } else if (binom10 >= 0.10) {
     const loserObj = isWinnerA ? playerB : playerA;
-    const loserLast = loserObj.last || loserObj.name.split(' ').pop();
+    const loserLast = loserObj.last || lastName(loserObj.name);
     chips.push({ text: `⚡ ${loserLast} steals a short series ${Math.round(binom10 * 100)}% of the time`, bg: 'rgba(100,160,255,0.18)', border: 'rgba(100,160,255,0.5)', color: '#8ecfff' });
   } else if (favShare >= 0.70) {
     chips.push({ text: '✓ High confidence', bg: 'rgba(76,175,80,0.20)', border: 'rgba(76,175,80,0.55)', color: '#81c784' });

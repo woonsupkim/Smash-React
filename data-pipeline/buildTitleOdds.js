@@ -208,7 +208,9 @@ function buildProjection(tour) {
 
 async function run() {
   const outPath = path.join(__dirname, '..', 'public', 'data', 'title_odds.json');
-  const prev = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : { events: {} };
+  // A corrupt prior artifact must not kill the run - start fresh instead.
+  let prev = { events: {} };
+  try { prev = JSON.parse(fs.readFileSync(outPath, 'utf8')); } catch { /* first run or corrupt file */ }
   const out = { generatedAt: new Date().toISOString(), events: { ...prev.events } };
   const today = new Date().toISOString().slice(0, 10);
 
@@ -249,4 +251,4 @@ async function run() {
   console.log(`Wrote ${outPath}`);
 }
 
-run();
+run().catch((e) => { console.error(e); process.exit(1); });

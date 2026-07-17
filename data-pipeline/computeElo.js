@@ -52,7 +52,9 @@ function run(tour) {
   // as it evolves - the curve the player pages chart. (The callback fires
   // with PRE-match ratings; good enough for a form curve, and leak-free by
   // construction.)
-  const HISTORY_FROM = '2025-01-01';
+  // Chart window: from Jan 1 of last year, so the curve always shows the
+  // current season plus one season of run-up (rolls forward automatically).
+  const HISTORY_FROM = `${new Date().getUTCFullYear() - 1}-01-01`;
   const history = {};
   const record = (apiId, date, rating) => {
     const shortId = apiToShort.get(String(apiId));

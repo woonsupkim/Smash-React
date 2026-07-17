@@ -214,7 +214,6 @@ function App() {
           <Route path="/women/french-open" element={<Navigate to="/women/h2h?surface=clay" replace />} />
           <Route path="/women/wimbledon" element={<Navigate to="/women/h2h?surface=grass" replace />} />
           <Route path="/women/us-open" element={<Navigate to="/women/h2h?surface=hard" replace />} />
-          {/* <Route path="/about" element={<About />} /> */}
 
           {/* Release notes and legal - tour-agnostic */}
           <Route path="/changelog" element={<Changelog />} />

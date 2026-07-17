@@ -52,7 +52,7 @@ const readJson = (file) => {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const pct = (correct, n) => (n ? Math.round((100 * correct) / n) : 0);
 
-function main() {
+async function main() {
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
@@ -208,17 +208,18 @@ function main() {
     return;
   }
   const from = process.env.DIGEST_FROM || 'smash@updates.local';
-  fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: to.split(',').map((s) => s.trim()), subject, html, text: txt }),
-  })
-    .then(async (res) => {
-      console.log(`Resend response: ${res.status}${res.ok ? '' : ` ${await res.text().catch(() => '')}`}`);
-    })
-    .catch((err) => {
-      console.log(`Digest send failed (non-fatal): ${err.message}`);
+  // Awaited so the process doesn't exit before the send resolves and the
+  // status line actually reaches the workflow log. Still never fatal.
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: to.split(',').map((s) => s.trim()), subject, html, text: txt }),
     });
+    console.log(`Resend response: ${res.status}${res.ok ? '' : ` ${await res.text().catch(() => '')}`}`);
+  } catch (err) {
+    console.log(`Digest send failed (non-fatal): ${err.message}`);
+  }
 }
 
-main();
+main().catch((e) => { console.error(e); process.exit(1); });

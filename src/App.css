@@ -117,6 +117,38 @@ body { font-variant-numeric: tabular-nums; }
 .chip-warn   { color: #ffb74d; border-color: rgba(255, 183, 77, 0.4); }
 .chip-gold   { color: #e9c96b; border-color: rgba(233, 201, 107, 0.45); }
 
+/* Shared tooltip bubble: any element with class="has-tip" and a data-tip
+   attribute grows an instant bubble on hover, tap, and keyboard focus.
+   Replaces native title= tooltips, which never fire on touch, need a long
+   hover on desktop, and are invisible to keyboards. Non-focusable elements
+   should also get tabIndex={0}. */
+.has-tip { position: relative; }
+.has-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #14181f;
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 30;
+}
+.has-tip:hover::after,
+.has-tip:focus::after,
+.has-tip:focus-visible::after { opacity: 1; }
+
 /* Visually hidden but available to screen readers (chart summaries, etc.) */
 .sr-only {
   position: absolute;
@@ -439,12 +471,6 @@ h1, h2, h3, .heading-xl, .heading-lg,
 @media (max-width: 576px) {
   .page-content { padding-top: 60px; }
   .page-background { min-height: calc(100vh - 60px); }
-}
-
-/* About page specific */
-.about-page {
-  background-color: rgba(0, 0, 0, 0.5);
-  padding-bottom: 40px;
 }
 
 /* Broadcast/ESPN-style page title used on the tournament pages - set

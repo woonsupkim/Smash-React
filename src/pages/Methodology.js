@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import { pickCorrect, pickFavProb } from '../utils/deployedPick';
+import useDocMeta from '../utils/useDocMeta';
 import './Methodology.css';
 
 function wilson(k, n) {
@@ -27,6 +28,10 @@ const CALIB_BUCKETS = [
 ];
 
 export default function Methodology() {
+  useDocMeta(
+    'Methodology: How the Model Works | Smash',
+    'Exactly how the model makes a pick, what it is measured against, and where it falls short. No black box.'
+  );
   const [data, setData] = useState(null);
 
   const [failed, setFailed] = useState(false);

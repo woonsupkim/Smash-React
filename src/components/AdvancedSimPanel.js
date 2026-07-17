@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { lastName } from '../utils/names';
 import { Button, Form, Spinner, ProgressBar } from 'react-bootstrap';
 import {
   ResponsiveContainer,
@@ -323,11 +324,11 @@ export default function AdvancedSimPanel({
                 <button
                   key={o.id}
                   type="button"
-                  className={`adv-engine-btn${engine === o.id ? ' active' : ''}`}
+                  className={`adv-engine-btn has-tip${engine === o.id ? ' active' : ''}`}
                   onClick={() => onEngineChange(o.id)}
                   disabled={isRunning || isWatching}
                   aria-pressed={engine === o.id}
-                  title={o.acc != null ? `${o.acc}% of winners called this season (${surfaceLabel.toLowerCase()})` : undefined}
+                  data-tip={o.acc != null ? `${o.acc}% of winners called this season (${surfaceLabel.toLowerCase()})` : undefined}
                 >
                   {o.label}
                   {o.acc != null && <span className="adv-engine-acc">{o.acc}%</span>}
@@ -599,7 +600,7 @@ export default function AdvancedSimPanel({
                 </div>
                 {[['a', playerA], ['b', playerB]].map(([col, player]) => (
                   <div className="sim-scenario-row" key={col}>
-                    <span className="sim-scenario-name">{player.name.split(' ').pop()}</span>
+                    <span className="sim-scenario-name">{lastName(player.name)}</span>
                     {SCENARIO_PRESETS.map((p) => (
                       <button
                         key={p.key}

@@ -5,6 +5,7 @@
 // (/rivalry/:tour/:slug) - the crawlable hub behind the programmatic SEO
 // pages. Built entirely from data files the pipeline already publishes.
 import React, { useEffect, useMemo, useState } from 'react';
+import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
@@ -68,7 +69,7 @@ function RivalryList({ tour, title }) {
                 <img src={playerPhoto(tour, r.b.id)} alt="" loading="lazy" />
               </span>
               <span className="rivalries-names">
-                {r.a.name.split(' ').pop()} <em>vs</em> {r.b.name.split(' ').pop()}
+                {lastName(r.a.name)} <em>vs</em> {lastName(r.b.name)}
               </span>
               <span className="rivalries-meta">{r.winsA}–{r.winsB} · {r.meetings} meetings</span>
             </Link>

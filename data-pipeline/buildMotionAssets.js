@@ -15,6 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { nextSlam } = require('./lib/slamCalendar');
 
 let sharp;
 try {
@@ -80,16 +81,11 @@ function stitch(dir, outFile) {
 }
 
 // ── Countdown: animated ring sweeping around the day count ────────────────
+// Dates come from the canonical calendar rules in lib/slamCalendar.js, not a
+// hand-typed list that rots every January.
 function nextSlamStart(now = new Date()) {
-  const y = now.getFullYear();
-  const starts = [
-    { name: 'Australian Open', d: new Date(y, 0, 12), surface: 'hard' },
-    { name: 'French Open', d: new Date(y, 4, 24), surface: 'clay' },
-    { name: 'Wimbledon', d: new Date(y, 5, 29), surface: 'grass' },
-    { name: 'US Open', d: new Date(y, 7, 24), surface: 'hard' },
-    { name: 'Australian Open', d: new Date(y + 1, 0, 12), surface: 'hard' },
-  ];
-  return starts.find((s) => s.d > now);
+  const next = nextSlam(now);
+  return next ? { name: next.label, d: new Date(next.startsAt), surface: next.surface } : undefined;
 }
 
 function arcPath(cx, cy, r, deg) {

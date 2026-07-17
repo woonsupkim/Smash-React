@@ -7,11 +7,13 @@
 // picks themselves. Without Supabase configured the page explains the game
 // and degrades honestly.
 import React, { useEffect, useMemo, useState } from 'react';
+import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { supabase, cloudEnabled } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { toast } from '../components/ui/Toast';
 import { matchSlug } from '../utils/matchTime';
+import useDocMeta from '../utils/useDocMeta';
 import './Pickem.css';
 
 const displayNameFor = (user) => {
@@ -20,6 +22,10 @@ const displayNameFor = (user) => {
 };
 
 export default function Pickem() {
+  useDocMeta(
+    "Pick'em: Beat the Model | Smash",
+    'Pick winners before play, no edits after, and see if you read tennis better than the model.'
+  );
   const { user, openSignIn } = useAuth();
   const [preds, setPreds] = useState(null);
   const [allPicks, setAllPicks] = useState(null);
@@ -153,7 +159,7 @@ export default function Pickem() {
                     <Link className="pickem-match" to={`/match/${matchSlug(p)}`}>
                       {p.name1} vs {p.name2}
                     </Link>
-                    <span className="pickem-model">model: {p.favName.split(' ').pop()} {Math.round(p.favProb * 100)}%</span>
+                    <span className="pickem-model">model: {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
                   </div>
                   <div className="pickem-btns">
                     {[[p.p1, p.name1], [p.p2, p.name2]].map(([id, name]) => (
@@ -165,7 +171,7 @@ export default function Pickem() {
                         aria-pressed={mine === id}
                         onClick={() => cast(p, id)}
                       >
-                        {name.split(' ').pop()}
+                        {lastName(name)}
                       </button>
                     ))}
                   </div>

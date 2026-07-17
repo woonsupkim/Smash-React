@@ -48,7 +48,8 @@ async function apiGet(urlPath) {
 // Minaur" vs "Alex Minaur"), so match on last word + first letter rather
 // than exact string equality.
 function nameKey(name) {
-  const parts = name.trim().toLowerCase().split(/\s+/);
+  const parts = String(name || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
   return `${parts[0][0]}.${parts[parts.length - 1]}`;
 }
 

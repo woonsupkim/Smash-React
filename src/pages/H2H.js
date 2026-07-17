@@ -1,5 +1,6 @@
 // src/pages/H2H.js
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { lastName } from '../utils/names';
 import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
@@ -23,6 +24,7 @@ import CONFIG from '../engineConfig.json';
 import logoUS from '../assets/logo_us.png';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
+import useDocMeta from '../utils/useDocMeta';
 import './H2HStudio.css';
 
 // Headshots come from the shared bundled lookup (utils/playerPhotos);
@@ -97,6 +99,10 @@ const ENGINE_FIELDS = {
 };
 
 export default function H2H({ tour = 'atp' }) {
+  useDocMeta(
+    `${tour === 'wta' ? 'WTA' : 'ATP'} H2H Studio: Simulate Any Matchup | Smash`,
+    'Pick any two players and any surface: win probability, likely score, upset risk, and the why behind the call.'
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const surfaceParam = searchParams.get('surface');
   // No explicit surface in the URL: default to the slam that's live or up
@@ -502,7 +508,7 @@ export default function H2H({ tour = 'atp' }) {
       { name: 'the world rankings', agrees: agreesWithFav(probs.rank) },
     ].filter((c) => c.agrees != null);
     if (!comps.length) return null;
-    const fav = (favIsA ? playerA : playerB).name.split(' ').pop();
+    const fav = lastName((favIsA ? playerA : playerB).name);
     const list = (arr) => (arr.length === 1 ? arr[0] : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`);
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
     const agree = comps.filter((c) => c.agrees).map((c) => c.name);
@@ -736,7 +742,7 @@ export default function H2H({ tour = 'atp' }) {
               <div className="studio-live-row">
                 {livePicks.map((p) => (
                   <button key={p.id} type="button" className="studio-live-chip" onClick={() => pickLiveMatch(p)}>
-                    {p.name1.split(' ').pop()} vs {p.name2.split(' ').pop()}
+                    {lastName(p.name1)} vs {lastName(p.name2)}
                   </button>
                 ))}
               </div>
@@ -755,7 +761,7 @@ export default function H2H({ tour = 'atp' }) {
                 <div className="verdict-eyebrow">The verdict</div>
                 {favPct != null ? (
                   <div className="verdict-headline">
-                    <strong>{favPlayer.name.split(' ').pop()}</strong> is the pick
+                    <strong>{lastName(favPlayer.name)}</strong> is the pick
                     <span className="verdict-pct" style={{ color: config.accentColor }}>{favPct}%</span>
                   </div>
                 ) : (
@@ -775,11 +781,11 @@ export default function H2H({ tour = 'atp' }) {
                       <div className="verdict-bar-fill" style={{ width: `${100 - Math.round(probA * 100)}%`, background: !favoredIsA ? config.accentColor : 'var(--surface-3)' }} />
                     </div>
                     <div className="verdict-bar-labels">
-                      <span style={{ fontWeight: favoredIsA ? 700 : 400 }}>{playerA.name.split(' ').pop()} {Math.round(probA * 100)}%</span>
-                      <span style={{ fontWeight: !favoredIsA ? 700 : 400 }}>{playerB.name.split(' ').pop()} {100 - Math.round(probA * 100)}%</span>
+                      <span style={{ fontWeight: favoredIsA ? 700 : 400 }}>{lastName(playerA.name)} {Math.round(probA * 100)}%</span>
+                      <span style={{ fontWeight: !favoredIsA ? 700 : 400 }}>{lastName(playerB.name)} {100 - Math.round(probA * 100)}%</span>
                     </div>
                     {scoreline && (
-                      <div className="verdict-scoreline">Most likely: <strong>{favPlayer.name.split(' ').pop()}</strong> wins {scoreline} in sets</div>
+                      <div className="verdict-scoreline">Most likely: <strong>{lastName(favPlayer.name)}</strong> wins {scoreline} in sets</div>
                     )}
                     <div className="verdict-powered">
                       Powered by <strong>{ENGINE_LABELS[engine] || 'Smart Blend'}</strong>
@@ -800,7 +806,7 @@ export default function H2H({ tour = 'atp' }) {
               {/* ── Why ─────────────────────────────────────────────────── */}
               {attribution && favPct != null && (
                 <section className="studio-card">
-                  <div className="studio-card-title">Why {favPlayer.name.split(' ').pop()}</div>
+                  <div className="studio-card-title">Why {lastName(favPlayer.name)}</div>
                   {whySentence && <p className="why-sentence">{whySentence}</p>}
                   <p className="studio-card-sub">
                     {engine === 'smash'
@@ -826,8 +832,8 @@ export default function H2H({ tour = 'atp' }) {
                   </div>
                   <div className="why-attr-legend">
                     {engine === 'smash'
-                      ? `Bars toward ${favPlayer.name.split(' ').pop()} (right) and ${dogPlayer.name.split(' ').pop()} (left) sum to the ${favPct}% call.`
-                      : `The signals feeding our models: right leans to ${favPlayer.name.split(' ').pop()}, left to ${dogPlayer.name.split(' ').pop()}.`}
+                      ? `Bars toward ${lastName(favPlayer.name)} (right) and ${lastName(dogPlayer.name)} (left) sum to the ${favPct}% call.`
+                      : `The signals feeding our models: right leans to ${lastName(favPlayer.name)}, left to ${lastName(dogPlayer.name)}.`}
                   </div>
 
                   {/* Form curves overlaid: the Form engine's story for this pair */}
@@ -836,15 +842,15 @@ export default function H2H({ tour = 'atp' }) {
                       <EloChart
                         height={170}
                         series={[
-                          { points: eloHistA, color: config.accentColor, label: playerA.name.split(' ').pop() },
-                          { points: eloHistB, color: 'rgba(255,255,255,0.85)', label: playerB.name.split(' ').pop() },
+                          { points: eloHistA, color: config.accentColor, label: lastName(playerA.name) },
+                          { points: eloHistB, color: 'rgba(255,255,255,0.85)', label: lastName(playerB.name) },
                         ]}
                       />
                       <div className="why-attr-legend">
-                        Elo form since Jan 2025 ·{' '}
-                        <span style={{ color: config.accentColor, fontWeight: 700 }}>{playerA.name.split(' ').pop()}</span>
+                        Elo form since Jan {new Date().getUTCFullYear() - 1} ·{' '}
+                        <span style={{ color: config.accentColor, fontWeight: 700 }}>{lastName(playerA.name)}</span>
                         {' vs '}
-                        <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{playerB.name.split(' ').pop()}</span>
+                        <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>{lastName(playerB.name)}</span>
                         {' '}· dashed lines mark grand slam starts
                       </div>
                     </div>
@@ -872,9 +878,9 @@ export default function H2H({ tour = 'atp' }) {
                     })}
                   </div>
                   <div className="why-stats-legend">
-                    <span>{playerA.name.split(' ').pop()}</span>
+                    <span>{lastName(playerA.name)}</span>
                     <span className="why-stats-legend-hint">Edit these under Explore to run what-ifs</span>
-                    <span>{playerB.name.split(' ').pop()}</span>
+                    <span>{lastName(playerB.name)}</span>
                   </div>
                 </section>
               )}
@@ -900,8 +906,8 @@ export default function H2H({ tour = 'atp' }) {
                   </div>
                   {userPick && (
                     <div className="call-result">
-                      You backed <strong>{(userPick === playerA.id ? playerA : playerB).name.split(' ').pop()}</strong>.
-                      {' '}The model backs <strong>{favPlayer.name.split(' ').pop()}</strong>.
+                      You backed <strong>{lastName((userPick === playerA.id ? playerA : playerB).name)}</strong>.
+                      {' '}The model backs <strong>{lastName(favPlayer.name)}</strong>.
                       {userPick === (favoredIsA ? playerA.id : playerB.id)
                         ? ' You agree.'
                         : ' Bold call: you are fading the model.'}
@@ -923,7 +929,7 @@ export default function H2H({ tour = 'atp' }) {
                           <div className="call-tally-fill" style={{ width: `${pctA}%`, background: config.accentColor }} />
                         </div>
                         <div className="call-tally-line">
-                          Fans back <strong>{pctA >= 50 ? playerA.name.split(' ').pop() : playerB.name.split(' ').pop()} {Math.max(pctA, 100 - pctA)}%</strong>
+                          Fans back <strong>{pctA >= 50 ? lastName(playerA.name) : lastName(playerB.name)} {Math.max(pctA, 100 - pctA)}%</strong>
                           <span className="call-tally-n"> · {tot.toLocaleString()} call{tot === 1 ? '' : 's'} so far</span>
                         </div>
                       </div>
@@ -941,7 +947,7 @@ export default function H2H({ tour = 'atp' }) {
                     {receipts.examples.map((ex, i) => (
                       <div className="receipt-row" key={i}>
                         <span className={`receipt-mark ${ex.right ? 'hit' : 'miss'}`}>{ex.right ? <Check size={14} /> : <X size={14} />}</span>
-                        <span className="receipt-text"><strong>{ex.wName.split(' ').pop()}</strong> beat {ex.lName.split(' ').pop()} {ex.score}</span>
+                        <span className="receipt-text"><strong>{lastName(ex.wName)}</strong> beat {lastName(ex.lName)} {ex.score}</span>
                         <span className="receipt-verdict">{ex.right ? 'model right' : 'model wrong'}</span>
                       </div>
                     ))}
