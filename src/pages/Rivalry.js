@@ -11,6 +11,7 @@ import Papa from 'papaparse';
 import { playerPhoto } from '../utils/playerPhotos';
 import { slugify } from '../utils/slug';
 import { pickCorrect } from '../utils/deployedPick';
+import { cleanEvents } from '../utils/eventName';
 import { matchProb } from '../analyticProb';
 import EloChart from '../components/EloChart';
 import './Rivalry.css';
@@ -45,7 +46,7 @@ export default function Rivalry() {
       });
     }
     fetch(process.env.PUBLIC_URL + `${dataDir}/h2h.json`).then((r) => r.json()).then(setH2hAll).catch(() => setH2hAll({}));
-    fetch(process.env.PUBLIC_URL + '/data/track_record.json').then((r) => r.json()).then(setTrack).catch(() => setTrack({ matches: [] }));
+    fetch(process.env.PUBLIC_URL + '/data/track_record.json').then((r) => r.json()).then((d) => setTrack({ ...d, matches: cleanEvents(d.matches) })).catch(() => setTrack({ matches: [] }));
     fetch(process.env.PUBLIC_URL + `${dataDir}/elo_history.json`).then((r) => r.json()).then(setEloHist).catch(() => setEloHist({}));
   }, [dataDir]);
 

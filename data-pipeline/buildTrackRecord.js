@@ -40,7 +40,10 @@ const SLAM_NAMES = new Set(['Australian Open', 'French Open', 'Wimbledon', 'US O
 // "Wimbledon - London" splitting the same tournament in filters).
 function cleanEventName(name) {
   if (!name) return name;
-  return String(name).replace(/\s+-\s+[^-]+$/, '').trim() || name;
+  // Cut at the first SPACED hyphen: cities can contain unspaced hyphens
+  // ("Monte-Carlo", "'s-Hertogenbosch") that a match-the-last-segment
+  // regex can't reach. Mirrored in src/utils/eventName.js - keep in sync.
+  return String(name).replace(/\s+-\s+.*$/, '').trim() || name;
 }
 
 function slamLabel(dateStr, surface) {

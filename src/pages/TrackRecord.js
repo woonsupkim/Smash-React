@@ -12,6 +12,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
 import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
+import { cleanEvents } from '../utils/eventName';
 import './TrackRecord.css';
 
 const SURFACES = {
@@ -87,11 +88,11 @@ export default function TrackRecord() {
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/track_record.json')
       .then((r) => r.json())
-      .then(setData)
+      .then((d) => setData({ ...d, matches: cleanEvents(d.matches) }))
       .catch(() => setData({ matches: [] }));
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
-      .then(setPredictions)
+      .then((d) => setPredictions({ ...d, predictions: cleanEvents(d.predictions) }))
       .catch(() => setPredictions({ predictions: [] }));
   }, []);
 
