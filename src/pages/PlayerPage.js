@@ -156,17 +156,26 @@ export default function PlayerPage() {
         <div className="player-form">
           <div className="player-fact-label">Last {form.length} tracked matches</div>
           <div className="player-form-dots">
-            {form.map((f, i) => (
-              <span
-                key={i}
-                className={`player-form-dot ${f.won ? 'w' : 'l'}`}
-                title={`${f.won ? 'def.' : 'lost to'} ${f.opp}${f.score ? ` ${f.score}` : ''}`}
-              >
-                {f.won ? 'W' : 'L'}
-              </span>
-            ))}
+            {/* Real tooltips, not the native title attribute: title never
+                fires on touch, needs a long hover on desktop, and is
+                invisible to keyboards. Buttons + a CSS bubble work on
+                hover, tap, AND focus. */}
+            {form.map((f, i) => {
+              const tip = `${f.won ? 'def.' : 'lost to'} ${f.opp}${f.score ? ` ${f.score}` : ''}`;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`player-form-dot ${f.won ? 'w' : 'l'}`}
+                  data-tip={tip}
+                  aria-label={tip}
+                >
+                  {f.won ? 'W' : 'L'}
+                </button>
+              );
+            })}
           </div>
-          <div className="player-form-sub">oldest to newest · hover a result for the opponent</div>
+          <div className="player-form-sub">oldest to newest · hover or tap a result for the opponent</div>
         </div>
       )}
 

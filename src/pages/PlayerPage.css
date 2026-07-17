@@ -71,10 +71,46 @@
   border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 0.72rem; font-weight: 800;
-  cursor: default;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  font-family: inherit;
 }
 .player-form-dot.w { background: rgba(76, 175, 125, 0.18); color: var(--accent-positive); border: 1px solid rgba(76, 175, 125, 0.45); }
 .player-form-dot.l { background: rgba(224, 86, 86, 0.14); color: var(--accent-negative); border: 1px solid rgba(224, 86, 86, 0.4); }
+
+/* Instant tooltip bubble on hover, tap (focus), and keyboard focus */
+.player-form-dot::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #14181f;
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 30;
+}
+.player-form-dot:hover::after,
+.player-form-dot:focus::after,
+.player-form-dot:focus-visible::after {
+  opacity: 1;
+}
+/* The leftmost dots' bubbles must not clip off-screen on mobile */
+.player-form-dots .player-form-dot:first-child::after,
+.player-form-dots .player-form-dot:nth-child(2)::after {
+  left: 0;
+  transform: none;
+}
 .player-form-sub { font-size: 0.72rem; color: var(--text-3); }
 
 /* Title-odds history sparkline inside a fact card */

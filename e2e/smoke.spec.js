@@ -70,6 +70,16 @@ test('player page: profile, record, and elo form curve', async ({ page }) => {
   await page.goto('/player/atp/sinne');
   await expect(page.getByText(/sinner/i).first()).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.player-elo .elo-chart')).toBeVisible({ timeout: 15000 });
+
+  // Form-strip tooltip: hovering a result dot shows the opponent bubble
+  // (a CSS ::after, so assert its computed opacity, not visibility).
+  const dot = page.locator('.player-form-dot').first();
+  await expect(dot).toBeVisible({ timeout: 15000 });
+  await expect(dot).toHaveAttribute('data-tip', /def\.|lost to/);
+  await dot.hover();
+  await expect
+    .poll(() => dot.evaluate((el) => getComputedStyle(el, '::after').opacity))
+    .toBe('1');
   expect(errors).toEqual([]);
 });
 
