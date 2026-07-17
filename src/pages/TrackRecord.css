@@ -508,6 +508,18 @@
 .track-event-select.active { color: var(--accent-brand); border-color: var(--accent-brand); }
 .track-event-select:focus-visible { outline: 2px solid var(--accent-brand); outline-offset: 2px; }
 .track-event-select option { background: #14181f; color: #e8eaee; }
+/* Tier headers (optgroup) default to the browser's white menu chrome,
+   which is illegible against the dark options - theme them to match. */
+.track-event-select optgroup {
+  background: #14181f;
+  color: #9aa3b2;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.track-event-select optgroup option { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
 
 /* ── Match log ────────────────────────────────────────────────────────── */
 .track-row {
