@@ -26,29 +26,20 @@ const SURFACES = {
 const PAGE_SIZE = 10;
 
 // The events a casual tennis fan recognizes on sight: slams, the
-// Masters/WTA-1000 stops, and the season finals. Patterns match the
+// Masters/WTA-1000 stops, and the season finals - each tagged with the
+// tier that becomes its optgroup in the dropdown. Patterns match the
 // sponsor-heavy names the data actually carries ("BNP Paribas Open",
 // "Internazionali BNL d'Italia", "National Bank Open").
-const MAJOR_EVENT_RE = [
-  /australian open/i,
-  /french open|roland garros/i,
-  /wimbledon/i,
-  /us open/i,
-  /bnp paribas|indian wells/i,
-  /miami open/i,
-  /monte.carlo/i,
-  /madrid open/i,
-  /internazionali|italian open/i,
-  /national bank|canadian open|canada masters/i,
-  /cincinnati/i,
-  /shanghai/i,
-  /paris masters|rolex paris/i,
-  /qatar totalenergies|qatar open/i, // the WTA 1000; NOT the ATP Doha 250 ("Qatar ExxonMobil Open")
-  /dubai/i,
-  /china open/i,
-  /wuhan/i,
-  /atp finals|wta finals|tour finals/i,
+const MAJOR_EVENT_TIERS = [
+  { tier: 'Grand Slams', re: /australian open|french open|roland garros|wimbledon|us open/i },
+  {
+    tier: 'Masters & 1000s',
+    re: /bnp paribas|indian wells|miami open|monte.carlo|madrid open|internazionali|italian open|national bank|canadian open|canada masters|cincinnati|shanghai|paris masters|rolex paris|qatar totalenergies|qatar open|dubai|china open|wuhan/i,
+    // qatar totalenergies = the WTA 1000; NOT the ATP Doha 250 ("Qatar ExxonMobil Open")
+  },
+  { tier: 'Tour Finals', re: /atp finals|wta finals|tour finals/i },
 ];
+const eventTier = (name) => MAJOR_EVENT_TIERS.find(({ re }) => re.test(name))?.tier || null;
 
 // Wilson 95% score interval for a binomial proportion - defends the headline
 // accuracy against "that's just luck" by showing the sampling uncertainty.
@@ -138,10 +129,14 @@ export default function TrackRecord() {
       if (!m.event) continue;
       if (!latest.has(m.event) || m.date > latest.get(m.event)) latest.set(m.event, m.date);
     }
-    return [...latest.entries()]
-      .filter(([name]) => MAJOR_EVENT_RE.some((re) => re.test(name)))
-      .sort((a, b) => (a[1] < b[1] ? 1 : -1))
-      .map(([name]) => name);
+    const majors = [...latest.entries()]
+      .map(([name, date]) => ({ name, date, tier: eventTier(name) }))
+      .filter((e) => e.tier)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+    // Grouped for <optgroup>, in tier order; empty tiers drop out.
+    return MAJOR_EVENT_TIERS
+      .map(({ tier }) => ({ tier, items: majors.filter((e) => e.tier === tier).map((e) => e.name) }))
+      .filter((g) => g.items.length > 0);
   }, [data]);
 
   const forward = useMemo(() => {
@@ -399,7 +394,11 @@ export default function TrackRecord() {
                 onChange={(e) => setEventF(e.target.value)}
               >
                 <option value="all">All events</option>
-                {events.map((name) => <option key={name} value={name}>{name}</option>)}
+                {events.map(({ tier, items }) => (
+                  <optgroup key={tier} label={tier}>
+                    {items.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </optgroup>
+                ))}
               </select>
             )}
           </div>
