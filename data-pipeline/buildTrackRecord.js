@@ -31,6 +31,9 @@ const { slamsForYear } = require('./lib/slamCalendar');
 // The season is the current calendar year everywhere in this file.
 const SEASON_YEAR = new Date().getUTCFullYear();
 
+// The four labels the slam heuristic can produce (used by label healing).
+const SLAM_NAMES = new Set(['Australian Open', 'French Open', 'Wimbledon', 'US Open']);
+
 // ESPN tournament names carry a " - City" suffix ("Wimbledon - London",
 // "Nordea Open - Bastad"). Strip it so cache names and the slam-window
 // heuristic agree on one label per event (no "Wimbledon" AND
@@ -44,7 +47,10 @@ function slamLabel(dateStr, surface) {
   const d = new Date(dateStr);
   if (isNaN(d)) return null;
   for (const s of slamsForYear(d.getUTCFullYear())) {
-    if (s.surface === surface && d >= s.start && d < new Date(s.start.getTime() + 15 * 864e5)) return s.label;
+    // Window padded 2 days early: the calendar rule dates drift a little
+    // (the AO has started on a Sunday in recent years). Callers guard this
+    // with a tournament-span check, so the padding can't grab weekly events.
+    if (s.surface === surface && d >= new Date(s.start.getTime() - 2 * 864e5) && d < new Date(s.start.getTime() + 15 * 864e5)) return s.label;
   }
   return null;
 }
@@ -101,8 +107,9 @@ function loadTour(tour) {
   const upset = loadStats(tour, true);
 
   const allMatches = new Map();  // id -> {date,winnerId,loserId,surface} for the Elo timeline
-  const evalMatches = new Map(); // id -> rec for scoring (roster-vs-roster with stats, 2026)
-  for (const f of fs.readdirSync(RAW).filter((f) => f.endsWith('.json') && !/surfaces|map|profiles/.test(f))) {
+  const evalMatches = new Map(); // id -> rec for scoring (roster-vs-roster with stats, this season)
+  const tSpan = new Map();       // tournamentId -> {min,max} date span (for the label pass)
+  for (const f of fs.readdirSync(RAW).filter((f) => f.endsWith('.json') && !/surfaces|map|profiles|names/.test(f))) {
     let j;
     try { j = JSON.parse(fs.readFileSync(path.join(RAW, f), 'utf8')); } catch { continue; }
     for (const m of (Array.isArray(j) ? j : (j.matches || j.data || []))) {
@@ -113,6 +120,13 @@ function loadTour(tour) {
       if (!winId || (winId !== p1Id && winId !== p2Id)) continue;
       const surface = normSurface(surfaces[String(m.tournamentId)]);
       if (!surface) continue;
+
+      const tid = String(m.tournamentId);
+      if (m.date) {
+        const sp = tSpan.get(tid);
+        if (!sp) tSpan.set(tid, { min: m.date, max: m.date });
+        else { if (m.date < sp.min) sp.min = m.date; if (m.date > sp.max) sp.max = m.date; }
+      }
 
       if (!allMatches.has(id)) {
         const { setsW, setsL } = parseSets(m.result, winId === p1Id);
@@ -129,9 +143,22 @@ function loadTour(tour) {
       if (!winner || evalMatches.has(id)) continue;
       const rowA = season[surface].get(p1), rowB = season[surface].get(p2);
       if (!rowA || !rowB) continue;
-      const eventName = cleanEventName(tournamentNames[String(m.tournamentId)]) || slamLabel(m.date, surface);
-      evalMatches.set(id, { m, id, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB, eventName });
+      evalMatches.set(id, { m, id, tid, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB });
     }
+  }
+
+  // Label pass. The tournament-names cache is AUTHORITATIVE; the slam-window
+  // heuristic only fills gaps for tournaments whose own date span looks like
+  // a slam fortnight (9+ days). That guard is what stops weekly events that
+  // overlap a slam window (Abu Dhabi under the AO, post-final clay 250s
+  // inside the French window) from being mislabeled as the slam: a blank
+  // label is honest, a wrong one isn't.
+  for (const rec of evalMatches.values()) {
+    const cacheName = cleanEventName(tournamentNames[rec.tid]) || null;
+    const sp = tSpan.get(rec.tid);
+    const spanDays = sp ? (new Date(sp.max) - new Date(sp.min)) / 864e5 : 0;
+    rec.cacheName = cacheName;
+    rec.eventName = cacheName || (spanDays >= 9 ? slamLabel(rec.m.date, rec.surface) : null);
   }
 
   // Replay the full timeline, snapshotting pre-match predicting Elos for the
@@ -269,11 +296,23 @@ for (const tour of ['atp', 'wta']) {
   for (const r of recs) {
     if (existing.has(r.id)) {
       const row = existing.get(r.id);
-      // Backfill the event label on reused rows as tournament names arrive
-      // (labels are metadata, not predictions - the locked numbers stay),
-      // and re-normalize labels written before cleanEventName existed.
+      // Label healing on reused rows (labels are metadata, not predictions -
+      // the locked numbers stay untouched):
+      //   1. normalize labels written before cleanEventName existed,
+      //   2. the names cache OVERRIDES any older guess as it backfills,
+      //   3. blanks fill from the current heuristic (span-guarded),
+      //   4. a stored SLAM label that neither the cache nor the guarded
+      //      heuristic stands behind was an old loose-window mislabel
+      //      (Abu Dhabi under the AO window etc.) - drop it. Blank is
+      //      honest; the cache supplies the truth on a later run.
       if (row.event) row.event = cleanEventName(row.event);
-      if (!row.event && r.eventName) row.event = r.eventName;
+      if (r.cacheName) {
+        if (row.event !== r.cacheName) row.event = r.cacheName;
+      } else if (r.eventName) {
+        if (!row.event) row.event = r.eventName;
+      } else if (row.event && SLAM_NAMES.has(row.event)) {
+        row.event = null;
+      }
       all.push(row);
     } else {
       all.push(evaluate(ctx, r));
