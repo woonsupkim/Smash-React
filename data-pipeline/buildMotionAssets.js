@@ -263,6 +263,92 @@ async function recapReel() {
   };
 }
 
+// ── Match pulse: one locked pick, probability bar filling to the number ───
+// The single-match 3.5s loop - the most postable unit of the whole kit.
+async function matchPulseVideo() {
+  const predsPath = path.join(DATA, 'predictions.json');
+  if (!fs.existsSync(predsPath)) return null;
+  const preds = JSON.parse(fs.readFileSync(predsPath, 'utf8'));
+  const pick = (preds.predictions || [])
+    .filter((p) => p.status === 'pending')
+    .sort((a, b) => b.favProb - a.favProb)[0];
+  if (!pick) return null;
+
+  const t = THEMES[pick.surface] || THEMES.brand;
+  const opp = pick.favorite === pick.p1 ? pick.name2 : pick.name1;
+  const pct = Math.round(pick.favProb * 100);
+  const dir = path.join(TMP, 'pulse');
+  fs.mkdirSync(dir, { recursive: true });
+  const N = 42; // 3.5s at 12fps
+  const BARW = 760;
+  for (let f = 0; f < N; f++) {
+    const prog = easeInOut(Math.min(1, f / (N - 12)));   // fill, then hold
+    const shown = Math.round(pct * prog);
+    const w = Math.max(8, BARW * (pct / 100) * prog);
+    const svg = shell(SQ, SQ, t, `
+  <text x="${SQ / 2}" y="180" text-anchor="middle" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${pick.event} · our call`.toUpperCase())}</text>
+  <text x="${SQ / 2}" y="330" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">${esc(pick.favName.toUpperCase())}</text>
+  <text x="${SQ / 2}" y="400" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)">over ${esc(opp)}</text>
+  <text x="${SQ / 2}" y="620" text-anchor="middle" font-family="${D}" font-size="270" font-weight="800" fill="${LIME}">${shown}%</text>
+  <rect x="${(SQ - BARW) / 2}" y="700" width="${BARW}" height="34" rx="17" fill="rgba(255,255,255,0.12)"/>
+  <rect x="${(SQ - BARW) / 2}" y="700" width="${w.toFixed(1)}" height="34" rx="17" fill="${LIME}"/>
+  <text x="${SQ / 2}" y="820" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">to win · locked before play, graded after</text>`);
+    await writeFrame(dir, f, svg);
+  }
+  return {
+    dir, file: 'match-pulse.mp4',
+    caption: `Our call: ${pick.favName} over ${opp} at ${pct}%, ${pick.event}. Locked before play.`,
+    type: 'match-pulse-video',
+  };
+}
+
+// ── Coronation: gold champion reveal when a title is decided ───────────────
+async function coronationVideo() {
+  const toPath = path.join(DATA, 'title_odds.json');
+  if (!fs.existsSync(toPath)) return null;
+  const titleOdds = JSON.parse(fs.readFileSync(toPath, 'utf8'));
+  const GOLDC = '#e9c96b';
+  for (const tour of ['atp', 'wta']) {
+    const o = titleOdds.events?.[tour];
+    if (!o || o.status !== 'final' || !o.champion) continue;
+    if (Date.now() - new Date(o.updatedAt).getTime() > 3 * 864e5) continue;
+    const t = THEMES[o.surface] || THEMES.brand;
+    const dir = path.join(TMP, `crown-${tour}`);
+    fs.mkdirSync(dir, { recursive: true });
+    const N = 48; // 4s
+    const name = o.champion.name.toUpperCase();
+    const nameFs = Math.min(150, Math.floor(950 / (name.length * 0.58)));
+    for (let f = 0; f < N; f++) {
+      const a = easeInOut(Math.min(1, f / 10));
+      const scale = 0.85 + 0.15 * easeInOut(Math.min(1, f / 14));
+      const shine = (f / N) * (SQ + 800) - 400;
+      const svg = shell(SQ, SQ, t, `
+  <defs>
+    <linearGradient id="crownGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6e2a2"/><stop offset="0.5" stop-color="${GOLDC}"/><stop offset="1" stop-color="#b98f2f"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.35"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="${GOLDC}" opacity="${a.toFixed(2)}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
+  <g transform="translate(${SQ / 2} 520) scale(${scale.toFixed(3)}) translate(${-SQ / 2} -520)">
+    <text x="${SQ / 2}" y="470" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="url(#crownGold)" opacity="${a.toFixed(2)}">CHAMPION</text>
+    <text x="${SQ / 2}" y="${480 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">${esc(name)}</text>
+  </g>
+  <rect x="${shine.toFixed(0)}" y="300" width="240" height="420" fill="url(#shine)" transform="skewX(-18)"/>
+  <text x="${SQ / 2}" y="820" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.75)" opacity="${a.toFixed(2)}">we tracked the title odds every single day - in public</text>`);
+      await writeFrame(dir, f, svg);
+    }
+    return {
+      dir, file: `coronation-${tour}.mp4`,
+      caption: `${o.champion.name} wins the ${o.event}. We priced the whole draw daily, in public, start to finish.`,
+      type: 'coronation-video',
+    };
+  }
+  return null;
+}
+
 async function run() {
   fs.rmSync(TMP, { recursive: true, force: true });
   fs.mkdirSync(TMP, { recursive: true });
@@ -277,6 +363,10 @@ async function run() {
   }
   const rr = await recapReel();
   if (rr) jobs.push(rr);
+  const mp = await matchPulseVideo();
+  if (mp) jobs.push(mp);
+  const cv = await coronationVideo();
+  if (cv) jobs.push(cv);
 
   if (!jobs.length) {
     console.log('No motion assets to build right now (no countdown window, not enough odds history).');
@@ -286,7 +376,8 @@ async function run() {
 
   if (!hasFfmpeg()) {
     console.warn(`ffmpeg not found - ${jobs.length} video(s) skipped (frames rendered OK). CI has ffmpeg and will produce them.`);
-    fs.rmSync(TMP, { recursive: true, force: true });
+    if (!process.env.KEEP_FRAMES) fs.rmSync(TMP, { recursive: true, force: true });
+    else console.log('KEEP_FRAMES=1 - frame sequences left in', TMP);
     return;
   }
 

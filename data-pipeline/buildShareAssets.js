@@ -77,6 +77,54 @@ const THEMES = {
 };
 const theme = (s) => THEMES[s] || THEMES.hard;
 
+// Event identity: the slams get their own palette so a US Open card FEELS
+// like the US Open, not just "a hard court". Unknown events (Masters etc.)
+// fall back to their surface theme.
+const EVENT_THEMES = {
+  'Australian Open': { top: '#0e3f8c', bottom: '#04102a', accent: '#6f9dff' },
+  'French Open':     { top: '#7a3315', bottom: '#1c0903', accent: '#ff7a52' },
+  'Wimbledon':       { top: '#2d1f57', bottom: '#0a1a0d', accent: '#3ddc84' },
+  'US Open':         { top: '#0b2a6b', bottom: '#040c1e', accent: '#ffd54a' },
+};
+const eventTheme = (eventName, surfaceKey) => EVENT_THEMES[eventName] || theme(surfaceKey);
+
+// Metallic gold for champion / milestone moments (lime is for calls; gold
+// is for trophies).
+const GOLD = '#e9c96b';
+const goldGrad = (id = 'gold') => `
+  <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#f6e2a2"/><stop offset="0.5" stop-color="${GOLD}"/><stop offset="1" stop-color="#b98f2f"/>
+  </linearGradient>`;
+// Holographic foil for the trading-card frame.
+const foilGrad = (id = 'foil') => `
+  <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#7ee8fa"/><stop offset="0.35" stop-color="${LIME}"/>
+    <stop offset="0.65" stop-color="#e9c96b"/><stop offset="1" stop-color="#c77dff"/>
+  </linearGradient>`;
+
+// Hero numeral: tight tracking plus an offset outlined ghost twin behind it,
+// the signature treatment every big stat shares.
+const heroNum = (x, y, text, size, fill, anchor = 'middle') => `
+  <text x="${x + 9}" y="${y + 9}" text-anchor="${anchor}" font-family="${D}" font-size="${size}" font-weight="800" letter-spacing="-0.02em" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2">${esc(text)}</text>
+  <text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${D}" font-size="${size}" font-weight="800" letter-spacing="-0.02em" fill="${fill}">${esc(text)}</text>`;
+
+// ── Film grain: one deterministic RGBA noise tile, composited over every
+// card with 'overlay' - the single cheapest "premium" upgrade there is.
+let GRAIN_TILE = null;
+async function grainTile() {
+  if (GRAIN_TILE) return GRAIN_TILE;
+  const S = 256;
+  const px = Buffer.alloc(S * S * 4);
+  let seed = 987654321;
+  for (let i = 0; i < S * S; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const g = seed % 256;
+    px[i * 4] = g; px[i * 4 + 1] = g; px[i * 4 + 2] = g; px[i * 4 + 3] = 15;
+  }
+  GRAIN_TILE = await sharp(px, { raw: { width: S, height: S, channels: 4 } }).png().toBuffer();
+  return GRAIN_TILE;
+}
+
 const STADIUMS = {
   clay: 'bracket-clay.jpg',
   grass: 'bracket-grass.jpg',
@@ -182,6 +230,14 @@ function tag(x, y, text, color) {
   };
 }
 
+// Soft ambient glow behind a photo panel (replaces hard offset shadows with
+// stage lighting). Unique id per use.
+const glowSpot = (id, cx, cy, r, color, op = 0.2) => `
+  <defs><radialGradient id="${id}" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="${color}" stop-opacity="${op}"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+  </radialGradient></defs>
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${id})"/>`;
+
 function verdict(favProb, isUpset) {
   if (isUpset) return { headline: 'UPSET ALERT', sub: 'The model defies the rankings' };
   if (favProb < 0.55) return { headline: 'COIN-FLIP CLASSIC', sub: 'Flip a coin. Seriously.' };
@@ -253,22 +309,39 @@ function placeCutout(composites, cut, x, y) {
 // are rectangular crops, not silhouette cutouts, so panels are the treatment
 // that never breaks). Cutout PNGs get flattened onto a dark backing.
 async function panelPhoto(file, w, h, { dim = 1, radius = 24 } = {}) {
-  let ph = sharp(file)
+  // Unified treatment: every headshot gets the same slight desaturation and
+  // contrast lift, so mixed-quality source photos read as one shoot.
+  const ph = sharp(file)
     .flatten({ background: '#11161f' })
-    .resize(w, h, { fit: 'cover', position: 'top' });
-  if (dim !== 1) ph = ph.modulate({ brightness: dim });
+    .resize(w, h, { fit: 'cover', position: 'top' })
+    .modulate({ brightness: dim, saturation: 0.85 })
+    .linear(1.07, -9);
   const buf = await ph.png().toBuffer();
   const mask = Buffer.from(`<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${radius}" fill="#fff"/></svg>`);
   return sharp(buf).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
 }
 
 async function render(file, baseSvg, composites = []) {
-  await sharp(Buffer.from(baseSvg)).composite(composites).png({ compressionLevel: 9 }).toFile(path.join(OUT, file));
+  const grain = { input: await grainTile(), tile: true, blend: 'overlay' };
+  if (!composites.length) {
+    // Pure-SVG cards supersample: rasterize at 2x (density 144 vs the SVG
+    // default 72), then downscale - noticeably crisper thin lines and type.
+    const m = baseSvg.match(/width="(\d+)" height="(\d+)"/);
+    const w = m ? +m[1] : SQ, h = m ? +m[2] : SQ;
+    await sharp(Buffer.from(baseSvg), { density: 144 })
+      .resize(w, h)
+      .composite([grain])
+      .png({ compressionLevel: 9 })
+      .toFile(path.join(OUT, file));
+  } else {
+    await sharp(Buffer.from(baseSvg)).composite([...composites, grain]).png({ compressionLevel: 9 }).toFile(path.join(OUT, file));
+  }
   console.log('  wrote', file);
 }
 
 async function renderOn(file, bgBuf, composites) {
-  await sharp(bgBuf).composite(composites).png({ compressionLevel: 9 }).toFile(path.join(OUT, file));
+  const grain = { input: await grainTile(), tile: true, blend: 'overlay' };
+  await sharp(bgBuf).composite([...composites, grain]).png({ compressionLevel: 9 }).toFile(path.join(OUT, file));
   console.log('  wrote', file);
 }
 
@@ -289,12 +362,13 @@ function photoScrim(w, h) {
   <text x="94" y="80" font-family="${D}" font-size="44" font-weight="800" letter-spacing="2" fill="#ffffff">SMASH</text>`;
 }
 
-// The lime CTA-style bar at the bottom of photo cards.
-function bottomBar(w, text, { y = null, filled = true } = {}) {
+// The CTA-style bar at the bottom of photo cards (lime by default, gold for
+// trophy moments).
+function bottomBar(w, text, { y = null, filled = true, color = LIME, textColor = INK } = {}) {
   const by = y ?? 956;
   return `
-  <rect x="40" y="${by}" width="${w - 80}" height="84" rx="42" fill="${filled ? LIME : 'rgba(0,0,0,0.55)'}" ${filled ? '' : `stroke="${LIME}" stroke-width="3"`}/>
-  <text x="${w / 2}" y="${by + 56}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" letter-spacing="1" fill="${filled ? INK : LIME}">${esc(text)}</text>`;
+  <rect x="40" y="${by}" width="${w - 80}" height="84" rx="42" fill="${filled ? color : 'rgba(0,0,0,0.55)'}" ${filled ? '' : `stroke="${color}" stroke-width="3"`}/>
+  <text x="${w / 2}" y="${by + 56}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" letter-spacing="1" fill="${filled ? textColor : color}">${esc(text)}</text>`;
 }
 
 // ── DAILY: match card (photo treatment) ────────────────────────────────────
@@ -344,12 +418,14 @@ async function matchCard(p, flags, file, result = null, context = null) {
   ${hl2 ? `<text x="60" y="398" font-family="${D}" font-size="116" font-weight="800" fill="#ffffff">${esc(hl2)}</text>` : ''}
   ${tagsSvg}
 
-  <text x="${SQ - 64}" y="322" text-anchor="end" font-family="${D}" font-size="168" font-weight="800" fill="${LIME}">${favPct}%</text>
+  ${heroNum(SQ - 64, 322, `${favPct}%`, 168, LIME, 'end')}
   <text x="${SQ - 64}" y="374" text-anchor="end" font-family="${U}" font-size="25" font-weight="700" letter-spacing="4" fill="rgba(255,255,255,0.75)">${esc(last(favName).toUpperCase())} TO WIN</text>
   ${context?.h2h && (context.h2h.w1 + context.h2h.w2) > 0 ? `
   <text x="${SQ - 64}" y="420" text-anchor="end" font-family="${U}" font-size="23" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">CAREER H2H ${context.h2h.w1}-${context.h2h.w2}${context.pair?.n ? ` · WE'RE ${context.pair.correct}/${context.pair.n} ON THIS PAIR` : ''}</text>` : ''}
 
-  <!-- offset accent frames behind the panels (sticker energy, layout-safe) -->
+  <!-- ambient stage glow + offset accent frames behind the panels -->
+  ${glowSpot('glowDog', dogX + PW / 2, PY + PH / 2, 340, '#ffffff', 0.12)}
+  ${glowSpot('glowFav', favX + PW / 2, PY + PH / 2, 360, LIME, 0.2)}
   <rect x="${dogX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
   <rect x="${favX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/>
 </svg>`;
@@ -419,7 +495,7 @@ async function pollCard(p, file) {
 // ── DAILY: cover / parlay / slate story / results (typographic) ────────────
 async function coverCard(picks, sc, file) {
   const ev = picks[0]?.event || 'The Tour';
-  const t = theme(picks[0]?.surface);
+  const t = eventTheme(ev, picks[0]?.surface);
   const c = chrome(SQ, SQ, t, { ghost: 'CALLS', ghostY: 700 });
   const upsets = picks.filter((p) => p._flags.upset).length;
   const base = `${c.open}
@@ -434,7 +510,7 @@ ${c.close}`;
 }
 
 async function parlayCard(picks, file) {
-  const t = theme(picks[0]?.surface);
+  const t = eventTheme(picks[0]?.event, picks[0]?.surface);
   const n = Math.min(picks.length, 8);
   const startY = 320 + Math.max(0, (5 - n)) * 30;
   const c = chrome(SQ, SQ, t, { ghost: '$', ghostY: 760 });
@@ -460,7 +536,7 @@ ${c.close}`;
 }
 
 async function slateStory(picks, sc, file) {
-  const t = theme(picks[0]?.surface);
+  const t = eventTheme(picks[0]?.event, picks[0]?.surface);
   const c = chrome(ST_W, ST_H, t, { ghost: 'SMASH', ghostY: 1210, ghostSize: 470 });
   const shown = picks.slice(0, 8);
   const rowH = shown.length <= 4 ? 220 : 150;
@@ -501,7 +577,7 @@ async function resultsCard(sc, file) {
   if (y?.worstMiss) lines.push({ txt: `The one we own: ${y.worstMiss.call} lost`, color: 'rgba(255,255,255,0.55)' });
   const base = `${c.open}
   ${eyebrow(SQ, 150, `receipts · ${y?.date || ''}`, t.accent)}
-  <text x="${SQ / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="238" font-weight="800" fill="#ffffff">${y ? `${y.correct} OF ${y.n}` : ''}</text>
+  ${y ? heroNum(SQ / 2, 400, `${y.correct} OF ${y.n}`, 238, '#ffffff') : ''}
   <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called on yesterday's matches</text>
   ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="29" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
   ${pill(SQ / 2, 812, sc.proofPill, LIME)}
@@ -515,13 +591,15 @@ async function championCard(o, tour, file) {
   const hist = (o.history || []).map((h) => h.odds?.[o.champion.name]).filter((v) => v != null);
   const start = (hist.length && hist[0] < 0.99) ? `${Math.round(hist[0] * 100)}% when tracking began` : 'tracked daily, graded in public';
   const composites = [];
+  // Trophy moment: gold, not lime.
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  <defs>${goldGrad('champGold')}</defs>
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
+  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${GOLD}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
   <text x="60" y="340" font-family="${D}" font-size="98" font-weight="800" fill="#ffffff">YOUR</text>
-  <text x="60" y="442" font-family="${D}" font-size="98" font-weight="800" fill="${LIME}">CHAMPION</text>
-  <rect x="64" y="470" width="200" height="14" fill="${LIME}"/>
+  <text x="60" y="442" font-family="${D}" font-size="98" font-weight="800" fill="url(#champGold)">CHAMPION</text>
+  <rect x="64" y="470" width="200" height="14" fill="url(#champGold)"/>
   <text x="64" y="550" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.75)">${esc(start)}</text>
 </svg>`;
   composites.push({ input: Buffer.from(baseSvg), left: 0, top: 0 });
@@ -529,18 +607,18 @@ async function championCard(o, tour, file) {
   const PX = SQ - 64 - PW;
   if (o.champion.id) {
     composites.push({
-      input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/></svg>`),
+      input: Buffer.from(`<svg width="${SQ}" height="${SQ}">${glowSpot('champGlow', PX + PW / 2, PY + PH / 2, 460, GOLD, 0.28)}<rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${GOLD}"/></svg>`),
       left: 0, top: 0,
     });
     composites.push({ input: await panelPhoto(photoPath(tour, o.champion.id), PW, PH), left: PX, top: PY });
     composites.push({
-      input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/></svg>`),
+      input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${GOLD}" stroke-width="6"/></svg>`),
       left: 0, top: 0,
     });
   }
   const topSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${bottomBar(SQ, o.champion.name.toUpperCase(), { y: 968 })}
+  ${bottomBar(SQ, o.champion.name.toUpperCase(), { y: 968, color: GOLD })}
 </svg>`;
   composites.push({ input: Buffer.from(topSvg), left: 0, top: 0 });
   await renderOn(file, bg, composites);
@@ -551,7 +629,7 @@ async function titleOddsCard(o, tour, file) {
     await championCard(o, tour, file);
     return;
   }
-  const t = theme(o.surface);
+  const t = eventTheme(o.event, o.surface);
   const c = chrome(SQ, SQ, t, { ghost: '2000x', ghostY: 700 });
   const prevSnap = o.history?.length > 1 ? o.history[o.history.length - 2].odds : null;
   const top = o.odds.slice(0, 5);
@@ -594,6 +672,7 @@ async function drawRoadCard(o, tour, file) {
   const { field, survival } = o.draw;
   const nRounds = survival[0]?.length || 0;
   if (!nRounds || field.length < 4) return false;
+  const tEvent = eventTheme(o.event, o.surface);
   const cols = Math.min(4, nRounds);
   const colStart = nRounds - cols;
   const labels = [];
@@ -603,7 +682,7 @@ async function drawRoadCard(o, tour, file) {
     .sort((a, b) => (b.surv[nRounds - 1] || 0) - (a.surv[nRounds - 1] || 0))
     .slice(0, 8);
 
-  const t = theme(o.surface);
+  const t = tEvent;
   const c = chrome(SQ, SQ, t, { ghost: 'DRAW', ghostY: 700 });
   const colX = (j) => 588 + j * 116;
   let grid = '';
@@ -713,7 +792,7 @@ async function proofCard(track, file) {
   const c = chrome(SQ, SQ, t, { ghost: `${acc}%`, ghostY: 680 });
   const base = `${c.open}
   ${eyebrow(SQ, 130, 'the receipts · 2026 season', LIME)}
-  <text x="${SQ / 2}" y="360" text-anchor="middle" font-family="${D}" font-size="250" font-weight="800" fill="${LIME}">${acc}%</text>
+  ${heroNum(SQ / 2, 360, `${acc}%`, 250, LIME)}
   <text x="${SQ / 2}" y="438" text-anchor="middle" font-family="${U}" font-size="33" fill="#ffffff">of winners called correctly · ${n.toLocaleString()} matches, all public</text>
   ${us != null ? `
   <line x1="150" y1="510" x2="${SQ - 150}" y2="510" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
@@ -782,23 +861,31 @@ async function hotStreakCard(tour, file) {
   const PW = 440, PH = 620, PY = 290;
   const PX = SQ - 64 - PW;
   const img = await panelPhoto(photoPath(tour, hot.id), PW, PH);
+  // Trading-card treatment: holographic foil double frame + series line +
+  // collector serial. The spotlight is the card people keep.
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  <defs>${foilGrad('hotFoil')}</defs>
   ${photoScrim(SQ, SQ)}
-  <rect x="${SQ - 128}" y="40" width="88" height="48" fill="${tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
-  <text x="${SQ - 84}" y="74" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${tour.toUpperCase()}</text>
-  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">HOTTEST RACKET RIGHT NOW</text>
-  <text x="60" y="368" font-family="${D}" font-size="180" font-weight="800" fill="#ffffff">ON</text>
-  <text x="60" y="528" font-family="${D}" font-size="180" font-weight="800" fill="${LIME}">FIRE</text>
-  <rect x="64" y="556" width="230" height="14" fill="${LIME}"/>
-  <text x="64" y="680" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">${hot.w}-${hot.l}</text>
-  <text x="64" y="730" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.7)">in recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}</text>
+  <rect x="${SQ - 148}" y="60" width="88" height="48" fill="${tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
+  <text x="${SQ - 104}" y="94" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${tour.toUpperCase()}</text>
+  <text x="84" y="212" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">HOTTEST RACKET RIGHT NOW</text>
+  <text x="80" y="388" font-family="${D}" font-size="180" font-weight="800" fill="#ffffff">ON</text>
+  <text x="80" y="548" font-family="${D}" font-size="180" font-weight="800" fill="url(#hotFoil)">FIRE</text>
+  <rect x="84" y="576" width="230" height="14" fill="url(#hotFoil)"/>
+  ${heroNum(84, 700, `${hot.w}-${hot.l}`, 96, '#ffffff', 'start')}
+  <text x="84" y="748" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.7)">in recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}</text>
+  ${glowSpot('hotGlow', PX + PW / 2, PY + PH / 2, 440, LIME, 0.22)}
   <rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/>
 </svg>`;
   const topSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/>
-  ${bottomBar(SQ, hot.name.toUpperCase(), { y: 968 })}
+  <defs>${foilGrad('hotFoil2')}</defs>
+  <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="url(#hotFoil2)" stroke-width="6"/>
+  <rect x="28" y="28" width="${SQ - 56}" height="${SQ - 56}" rx="34" fill="none" stroke="url(#hotFoil2)" stroke-width="7"/>
+  <rect x="44" y="44" width="${SQ - 88}" height="${SQ - 88}" rx="26" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+  <text x="${SQ - 52}" y="${SQ / 2}" text-anchor="middle" font-family="${U}" font-size="21" font-weight="800" letter-spacing="5" fill="rgba(255,255,255,0.55)" transform="rotate(90 ${SQ - 52} ${SQ / 2})">SMASH SERIES · 2026${hot.rank ? ` · NO. ${hot.rank}` : ''}</text>
+  ${bottomBar(SQ, hot.name.toUpperCase(), { y: 950 })}
 </svg>`;
   await renderOn(file, bg, [
     { input: Buffer.from(baseSvg), left: 0, top: 0 },
@@ -821,20 +908,21 @@ function scorelineHit(m) {
 }
 
 // A period report card (tournament wrap / weekly recap share the layout).
-async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, themeKey, file }) {
+// `accent` switches the headline metal: lime for calls, gold for trophies.
+async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, themeKey, file, accent = LIME }) {
   const t = theme(themeKey);
   const c = chrome(SQ, SQ, t, { ghost: stats[0]?.value || '', ghostY: 700 });
   const rows = stats.map((s, i) => {
     const y = 470 + i * 118;
     return `
-  <text x="120" y="${y}" font-family="${D}" font-size="76" font-weight="800" fill="${i === 0 ? LIME : '#ffffff'}">${esc(s.value)}</text>
+  <text x="120" y="${y}" font-family="${D}" font-size="76" font-weight="800" fill="${i === 0 ? accent : '#ffffff'}">${esc(s.value)}</text>
   <text x="${SQ - 120}" y="${y - 8}" text-anchor="end" font-family="${U}" font-size="27" font-weight="600" fill="rgba(255,255,255,0.75)">${esc(s.label)}</text>
   <line x1="120" y1="${y + 26}" x2="${SQ - 120}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   }).join('');
   const base = `${c.open}
   ${eyebrow(SQ, 140, eyebrowText, t.accent)}
   <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
-  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${LIME}">${esc(headline2)}</text>` : ''}
+  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${accent}">${esc(headline2)}</text>` : ''}
   ${rows}
   ${footNote ? `<text x="${SQ / 2}" y="${SQ - 130}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(footNote)}</text>` : ''}
 ${c.close}`;
@@ -892,7 +980,7 @@ async function hypeCountdownCard(next, days, file) {
   ${photoScrim(SQ, SQ)}
   <text x="${SQ / 2}" y="220" text-anchor="middle" font-family="${U}" font-size="28" font-weight="700" letter-spacing="7" fill="${LIME}">THE NEXT MAJOR</text>
   <text x="${SQ / 2}" y="${228 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff">${esc(next.label.toUpperCase())}</text>
-  <text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${D}" font-size="320" font-weight="800" fill="${LIME}">${days}</text>
+  ${heroNum(SQ / 2, 700, String(days), 320, LIME)}
   <text x="${SQ / 2}" y="778" text-anchor="middle" font-family="${U}" font-size="34" font-weight="700" letter-spacing="8" fill="rgba(255,255,255,0.85)">DAYS TO GO</text>
   <text x="${SQ / 2}" y="846" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.65)">${esc(`first ball ${dateTxt} · ${next.surface} court`)}</text>
   ${bottomBar(SQ, 'PICKS LIVE THE MOMENT THE DRAW DROPS', { y: 956 })}
@@ -906,7 +994,7 @@ async function hypeCountdownCard(next, days, file) {
 async function hypeFavoritesCard(o, tour, file) {
   const top = (o.odds || []).filter((p) => p.prob > 0).slice(0, 5);
   if (top.length < 5) return false;
-  const t = theme(o.surface);
+  const t = eventTheme(o.event, o.surface);
   const c = chrome(SQ, SQ, t, { ghost: 'NEXT', ghostY: 700 });
   const maxProb = Math.max(...top.map((p) => p.prob), 0.01);
   let rowsSvg = '';
@@ -935,7 +1023,7 @@ ${c.close}`;
 // Story-format countdown: day count + the model's record on the slam's
 // surface + the promise, sized for an Instagram story.
 async function hypeStoryCard(next, days, recs, file) {
-  const t = theme(next.surface);
+  const t = eventTheme(next.label, next.surface);
   const c = chrome(ST_W, ST_H, t, { ghost: String(days), ghostY: 1210, ghostSize: 700 });
   const nameFs = Math.min(136, Math.floor(950 / (next.label.length * 0.58)));
   const recRows = recs.map((r, i) => `
@@ -953,6 +1041,306 @@ ${c.close}`;
   await render(file, base);
 }
 
+// ── RECEIPTS: called-it as a ticket stub ───────────────────────────────────
+// The "we called it" card reborn as a collectible: cream paper stub with a
+// perforated edge, barcode, and serial. Pure SVG, so it supersamples.
+function ticketBarcode(x, y, h, seedStr) {
+  let seed = 0;
+  for (const ch of String(seedStr)) seed = (seed * 31 + ch.charCodeAt(0)) & 0x7fffffff;
+  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  let bars = '', bx = x;
+  for (let i = 0; i < 26; i++) {
+    const w = 3 + Math.floor(rand() * 8);
+    if (i % 2 === 0) bars += `<rect x="${bx}" y="${y}" width="${w}" height="${h}" fill="${INK}"/>`;
+    bx += w + 3;
+  }
+  return bars;
+}
+
+async function receiptTicket(p, file) {
+  const opp = p.favorite === p.p1 ? p.name2 : p.name1;
+  const hit = !!p.correct;
+  const pct = Math.round(p.favProb * 100);
+  const t = eventTheme(p.event, p.surface);
+  const c = chrome(SQ, SQ, t, { ghost: hit ? 'CALLED' : 'MISSED', ghostY: 980 });
+  const TX = 90, TY = 300, TW = 900, TH = 520;   // ticket rect
+  const PERF = TX + 640;                          // perforation x
+  const stamp = hit
+    ? `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
+         <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#1c7a3f" stroke-width="7"/>
+         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="58" font-weight="800" letter-spacing="3" fill="#1c7a3f">CALLED &#10003;</text>
+       </g>`
+    : `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
+         <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#b3392e" stroke-width="7"/>
+         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="58" font-weight="800" letter-spacing="3" fill="#b3392e">MISSED &#10007;</text>
+       </g>`;
+  const base = `${c.open}
+  ${eyebrow(SQ, 176, 'the receipts · graded in public', t.accent)}
+  <g transform="rotate(-2 ${SQ / 2} ${TY + TH / 2})">
+    <rect x="${TX + 10}" y="${TY + 14}" width="${TW}" height="${TH}" rx="20" fill="rgba(0,0,0,0.45)"/>
+    <rect x="${TX}" y="${TY}" width="${TW}" height="${TH}" rx="20" fill="#f2eee2"/>
+    <line x1="${PERF}" y1="${TY + 14}" x2="${PERF}" y2="${TY + TH - 14}" stroke="#b9b2a0" stroke-width="3" stroke-dasharray="4 12"/>
+    <circle cx="${PERF}" cy="${TY}" r="18" fill="${t.top}"/>
+    <circle cx="${PERF}" cy="${TY + TH}" r="18" fill="${t.bottom}"/>
+
+    <text x="${TX + 44}" y="${TY + 62}" font-family="${U}" font-size="22" font-weight="800" letter-spacing="4" fill="rgba(20,24,30,0.55)">SMASH · OFFICIAL CALL</text>
+    <text x="${TX + 44}" y="${TY + 102}" font-family="${U}" font-size="24" font-weight="600" fill="rgba(20,24,30,0.75)">${esc(`${p.event || 'Tour'} · ${fmtDate(p.date)}`)}</text>
+    <text x="${TX + 44}" y="${TY + 210}" font-family="${D}" font-size="88" font-weight="800" fill="${INK}">${esc(last(p.favName).toUpperCase())}</text>
+    <text x="${TX + 44}" y="${TY + 258}" font-family="${U}" font-size="27" fill="rgba(20,24,30,0.7)">over ${esc(opp)} · our number: ${pct}%</text>
+    <text x="${TX + 44}" y="${TY + 330}" font-family="${D}" font-size="46" font-weight="800" fill="${INK}">${esc(p.winner === p.favorite ? 'WON' : 'LOST')}${p.score ? ` ${esc(p.score)}` : ''}</text>
+    <text x="${TX + 44}" y="${TY + 380}" font-family="${U}" font-size="22" fill="rgba(20,24,30,0.55)">locked before play · no edits, no take-backs</text>
+    ${stamp}
+
+    <g transform="rotate(90 ${PERF + 210} ${TY + 96})">
+      <text x="${PERF + 210}" y="${TY + 96}" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="4" fill="rgba(20,24,30,0.6)">CALL NO. ${esc(String(p.id).slice(-6))}</text>
+    </g>
+    <text x="${PERF + 44}" y="${TY + 258}" font-family="${D}" font-size="96" font-weight="800" fill="${INK}">${pct}%</text>
+    <text x="${PERF + 44}" y="${TY + 300}" font-family="${U}" font-size="21" fill="rgba(20,24,30,0.6)">stated win chance</text>
+    ${ticketBarcode(PERF + 44, TY + TH - 130, 76, p.id)}
+  </g>
+  <text x="${SQ / 2}" y="${TY + TH + 120}" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">every call collects a receipt · wins and misses both</text>
+${c.close}`;
+  await render(file, base);
+}
+
+// ── DAILY: title-odds movers (risers and fallers overnight) ────────────────
+async function oddsMoversCard(o, tour, file) {
+  const hist = o.history || [];
+  if (hist.length < 2 || o.status !== 'live') return false;
+  const cur = hist[hist.length - 1].odds || {};
+  const prev = hist[hist.length - 2].odds || {};
+  const deltas = (o.odds || [])
+    .map((p) => ({ ...p, delta: prev[p.name] != null ? p.prob - prev[p.name] : 0 }))
+    .filter((p) => Math.abs(p.delta) >= 0.02);
+  if (!deltas.length) return false;
+  const riser = [...deltas].sort((a, b) => b.delta - a.delta)[0];
+  const faller = [...deltas].sort((a, b) => a.delta - b.delta)[0];
+  if (!riser || riser.delta <= 0) return false;
+
+  const spark = (name) => {
+    const series = hist.map((h) => h.odds?.[name]).filter((v) => v != null);
+    if (series.length < 2) return '';
+    const maxV = Math.max(...series, 0.01);
+    const pts = series.map((v, i) => `${(i / (series.length - 1)) * 240},${54 - (v / maxV) * 50}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>`;
+  };
+  const t = eventTheme(o.event, o.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'ODDS', ghostY: 700 });
+  const comps = [];
+  const row = (p, y, up) => {
+    const pct = Math.round(p.prob * 100);
+    const d = Math.round(Math.abs(p.delta) * 100);
+    return `
+    <text x="250" y="${y}" font-family="${D}" font-size="62" font-weight="800" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
+    <text x="250" y="${y + 52}" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">title chance today: ${pct < 1 ? '<1' : pct}%</text>
+    <g transform="translate(250 ${y + 76})">${spark(p.name)}</g>
+    <text x="${SQ - 96}" y="${y + 30}" text-anchor="end" font-family="${D}" font-size="110" font-weight="800" fill="${up ? POS : NEG}">${up ? '&#9650;' : '&#9660;'}${d}</text>
+    <text x="${SQ - 96}" y="${y + 74}" text-anchor="end" font-family="${U}" font-size="23" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">${up ? 'POINTS OVERNIGHT' : 'POINTS OVERNIGHT'}</text>`;
+  };
+  if (riser.id) comps.push({ input: await circlePhoto(photoPath(tour, riser.id), 150), left: 80, top: 300 });
+  if (faller?.id && faller.delta < 0) comps.push({ input: await circlePhoto(photoPath(tour, faller.id), 150), left: 80, top: 620 });
+  const base = `${c.open}
+  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · the market moved`, t.accent)}
+  <text x="${SQ / 2}" y="250" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">ODDS <tspan fill="${LIME}">MOVERS</tspan></text>
+  ${row(riser, 360, true)}
+  ${faller && faller.delta < 0 ? row(faller, 680, false) : ''}
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the remaining draw, re-simulated 2,000 times every day</text>
+${c.close}`;
+  await render(file, base, comps);
+  return true;
+}
+
+// ── MOMENTS: streak detector ───────────────────────────────────────────────
+// Longest CURRENT run of consecutive correct deployed calls in any tour x
+// surface cell. Only posts when it grows past the last posted mark.
+function currentStreaks(track) {
+  const cells = new Map();
+  for (const m of track.matches || []) {
+    const k = `${m.tour}|${m.surface}`;
+    if (!cells.has(k)) cells.set(k, []);
+    cells.get(k).push(m);
+  }
+  const out = [];
+  for (const [k, list] of cells) {
+    list.sort((a, b) => new Date(b.date) - new Date(a.date));
+    let n = 0;
+    for (const m of list) { if (pickCorrect(m)) n++; else break; }
+    out.push({ key: k, len: n, tour: k.split('|')[0], surface: k.split('|')[1] });
+  }
+  return out.sort((a, b) => b.len - a.len);
+}
+
+async function streakCard(streak, file) {
+  const t = theme(streak.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'HOT', ghostY: 700 });
+  const base = `${c.open}
+  ${eyebrow(SQ, 150, 'the model is rolling', t.accent)}
+  ${heroNum(SQ / 2, 480, String(streak.len), 380, LIME)}
+  <text x="${SQ / 2}" y="592" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">STRAIGHT</text>
+  <text x="${SQ / 2}" y="668" text-anchor="middle" font-family="${U}" font-size="32" fill="rgba(255,255,255,0.85)">${esc(`${streak.tour.toUpperCase()} ${streak.surface}-court winners called in a row`)}</text>
+  <text x="${SQ / 2}" y="742" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">deployed calls, graded in public · streaks end - receipts don't</text>
+${c.close}`;
+  await render(file, base);
+}
+
+// ── MOMENTS: upset autopsy ─────────────────────────────────────────────────
+// After a seed falls: what we said, what the market said, side by side.
+async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
+  const wName = m.winner === m.p1 ? m.name1 : m.name2;
+  const lName = m.winner === m.p1 ? m.name2 : m.name1;
+  const weCalled = pickFav(m) === m.winner;
+  const wePct = Math.round(pickFavProb(m) * 100);
+  const marketCalled = m.oddFav != null ? m.oddFav === m.winner : null;
+  const t = eventTheme(m.event, m.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'UPSET', ghostY: 700 });
+  const vRow = (y, label, txt, good) => `
+  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="${good == null ? '#ffffff' : good ? POS : NEG}">${esc(txt)}</text>
+  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+  const comps = [];
+  const wid = m.winner === m.p1 ? m.p1 : m.p2;
+  comps.push({ input: await circlePhoto(photoPath(tour, wid), 170), left: SQ / 2 - 85, top: 250 });
+  const base = `${c.open}
+  ${eyebrow(SQ, 140, `${m.event || 'tour'} · seed down`, t.accent)}
+  <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="120" font-weight="800" fill="${NEG}">UPSET</text>
+  <text x="${SQ / 2}" y="500" text-anchor="middle" font-family="${D}" font-size="66" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">d.</tspan> ${esc(last(lName).toUpperCase())}</text>
+  <text x="${SQ / 2}" y="552" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">No. ${wRank} beats No. ${lRank}${m.score ? ` · ${esc(m.score)}` : ''}</text>
+  ${vRow(650, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ON ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ON ${last(lName).toUpperCase()}`, weCalled)}
+  ${vRow(730, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled)}
+  ${vRow(810, 'THE RANKINGS', 'NEVER SAW IT', false)}
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">graded in public either way - that's the whole point</text>
+${c.close}`;
+  await render(file, base, comps);
+}
+
+// ── DAILY: tale of the tape for the marquee matchup ────────────────────────
+async function taleOfTheTape(p, ctx, forms, file) {
+  const bg = await stadiumBg(p.surface, SQ, SQ);
+  const PW = 330, PH = 420, PY = 340;
+  const aX = 64, bX = SQ - 64 - PW;
+  const [aImg, bImg] = await Promise.all([
+    panelPhoto(photoPath(p.tour, p.p1), PW, PH),
+    panelPhoto(photoPath(p.tour, p.p2), PW, PH),
+  ]);
+  const favIsP1 = p.favorite === p.p1;
+  const f1 = forms.get(p.p1), f2 = forms.get(p.p2);
+  const midRow = (y, label, a, b) => `
+  <text x="${SQ / 2}" y="${y}" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.5)">${esc(label)}</text>
+  <text x="${SQ / 2 - 90}" y="${y + 44}" text-anchor="middle" font-family="${D}" font-size="46" font-weight="800" fill="#ffffff">${esc(a)}</text>
+  <text x="${SQ / 2 + 90}" y="${y + 44}" text-anchor="middle" font-family="${D}" font-size="46" font-weight="800" fill="#ffffff">${esc(b)}</text>`;
+  const baseSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  ${photoScrim(SQ, SQ)}
+  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase())}</text>
+  <text x="60" y="292" font-family="${D}" font-size="112" font-weight="800" fill="#ffffff">TALE OF <tspan fill="${LIME}">THE TAPE</tspan></text>
+  ${glowSpot('tapeA', aX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
+  ${glowSpot('tapeB', bX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
+  <rect x="${aX - 10}" y="${PY + 10}" width="${PW}" height="${PH}" rx="24" fill="${favIsP1 ? LIME : 'rgba(255,255,255,0.3)'}"/>
+  <rect x="${bX + 10}" y="${PY + 10}" width="${PW}" height="${PH}" rx="24" fill="${favIsP1 ? 'rgba(255,255,255,0.3)' : LIME}"/>
+</svg>`;
+  const topSvg = `
+<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? LIME : 'rgba(255,255,255,0.45)'}" stroke-width="${favIsP1 ? 6 : 3}"/>
+  <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.45)' : LIME}" stroke-width="${favIsP1 ? 3 : 6}"/>
+  ${pill(aX + PW / 2, PY + PH + 24, last(p.name1).toUpperCase(), favIsP1 ? LIME : '#ffffff', favIsP1)}
+  ${pill(bX + PW / 2, PY + PH + 24, last(p.name2).toUpperCase(), favIsP1 ? '#ffffff' : LIME, !favIsP1)}
+  ${midRow(400, 'RANK', p.rank1 ? `#${p.rank1}` : '-', p.rank2 ? `#${p.rank2}` : '-')}
+  ${midRow(510, 'RECENT FORM', f1 ? `${f1.w}-${f1.l}` : '-', f2 ? `${f2.w}-${f2.l}` : '-')}
+  ${midRow(620, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '-', ctx?.h2h ? String(ctx.h2h.w2) : '-')}
+  ${bottomBar(SQ, `OUR CALL: ${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`, { y: 950 })}
+</svg>`;
+  await renderOn(file, bg, [
+    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: aImg, left: aX, top: PY },
+    { input: bImg, left: bX, top: PY },
+    { input: Buffer.from(topSvg), left: 0, top: 0 },
+  ]);
+}
+
+// ── PROMO: the trust card (monthly calibration receipt) ────────────────────
+async function trustCard(track, file) {
+  const ms = (track.matches || []);
+  const buckets = [
+    { label: '50-60%', lo: 0.5, hi: 0.6 },
+    { label: '60-70%', lo: 0.6, hi: 0.7 },
+    { label: '70-85%', lo: 0.7, hi: 0.85 },
+    { label: '85%+', lo: 0.85, hi: 1.01 },
+  ].map((b) => {
+    const list = ms.filter((m) => pickFavProb(m) >= b.lo && pickFavProb(m) < b.hi);
+    const won = list.filter((m) => pickCorrect(m)).length;
+    return { ...b, n: list.length, won: list.length ? Math.round((won / list.length) * 100) : null };
+  }).filter((b) => b.n >= 30);
+  if (buckets.length < 3) return false;
+  const t = theme('brand');
+  const c = chrome(SQ, SQ, t, { ghost: 'TRUST', ghostY: 720 });
+  const rows = buckets.map((b, i) => {
+    const y = 430 + i * 118;
+    return `
+  <text x="130" y="${y}" font-family="${U}" font-size="30" font-weight="700" fill="rgba(255,255,255,0.8)">we said <tspan font-weight="800" fill="#ffffff">${esc(b.label)}</tspan></text>
+  <text x="${SQ - 130}" y="${y}" text-anchor="end" font-family="${D}" font-size="52" font-weight="800" fill="${LIME}">won ${b.won}%</text>
+  <text x="${SQ - 130}" y="${y + 34}" text-anchor="end" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.5)">${b.n.toLocaleString()} calls</text>
+  <line x1="130" y1="${y + 52}" x2="${SQ - 130}" y2="${y + 52}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+  }).join('');
+  const base = `${c.open}
+  ${eyebrow(SQ, 140, 'calibration check · updated monthly', LIME)}
+  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">WHEN WE SAY IT,</text>
+  <text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${LIME}">WE MEAN IT</text>
+  ${rows}
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">stated confidence vs what actually happened · every graded call this season</text>
+${c.close}`;
+  await render(file, base);
+  return true;
+}
+
+// ── FORMATS: 4:5 portrait variants + 16:9 banner ───────────────────────────
+const PT_W = 1080, PT_H = 1350;
+
+async function coverPortrait(picks, sc, file) {
+  const ev = picks[0]?.event || 'The Tour';
+  const t = eventTheme(ev, picks[0]?.surface);
+  const c = chrome(PT_W, PT_H, t, { ghost: 'CALLS', ghostY: 880 });
+  const upsets = picks.filter((p) => p._flags.upset).length;
+  const base = `${c.open}
+  ${eyebrow(PT_W, 280, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
+  <text x="${PT_W / 2}" y="520" text-anchor="middle" font-family="${D}" font-size="200" font-weight="800" fill="#ffffff">TODAY'S</text>
+  <text x="${PT_W / 2}" y="694" text-anchor="middle" font-family="${D}" font-size="200" font-weight="800" fill="${LIME}">CALLS</text>
+  <text x="${PT_W / 2}" y="800" text-anchor="middle" font-family="${U}" font-size="35" font-weight="600" fill="rgba(255,255,255,0.85)">${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before play${upsets ? ` · ${upsets} upset pick${upsets > 1 ? 's' : ''}` : ''}</text>
+  ${pill(PT_W / 2, 858, sc.proofPill, LIME)}
+  <text x="${PT_W / 2}" y="1044" text-anchor="middle" font-family="${U}" font-size="29" font-weight="700" letter-spacing="5" fill="rgba(255,255,255,0.6)">SWIPE FOR THE PICKS &#8594;</text>
+${c.close}`;
+  await render(file, base);
+}
+
+async function proofPortrait(track, sc, file) {
+  const ms = track.matches || [];
+  const n = ms.length;
+  const acc = n ? Math.round(ms.filter((m) => pickCorrect(m)).length / n * 100) : 0;
+  const t = theme('brand');
+  const c = chrome(PT_W, PT_H, t, { ghost: `${acc}%`, ghostY: 860 });
+  const base = `${c.open}
+  ${eyebrow(PT_W, 250, 'the receipts · 2026 season', LIME)}
+  ${heroNum(PT_W / 2, 560, `${acc}%`, 300, LIME)}
+  <text x="${PT_W / 2}" y="650" text-anchor="middle" font-family="${U}" font-size="34" fill="#ffffff">of winners called correctly</text>
+  <text x="${PT_W / 2}" y="702" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">${n.toLocaleString()} matches, every one public</text>
+  ${pill(PT_W / 2, 780, sc.proofPill, LIME)}
+  <text x="${PT_W / 2}" y="960" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.6)">no cherry-picking · no deletions · misses posted too</text>
+${c.close}`;
+  await render(file, base);
+}
+
+async function bannerWide(sc, file) {
+  const W = 1600, H = 900;
+  const t = theme('brand');
+  const c = chrome(W, H, t, { ghost: 'SMASH', ghostY: 620, ghostSize: 430 });
+  const base = `${c.open}
+  ${eyebrow(W, 180, 'grand slam prediction engine', LIME)}
+  <text x="${W / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="#ffffff">EVERY CALL <tspan fill="${LIME}">PUBLIC.</tspan></text>
+  <text x="${W / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="#ffffff">EVERY MISS <tspan fill="${LIME}">TOO.</tspan></text>
+  <text x="${W / 2}" y="640" text-anchor="middle" font-family="${U}" font-size="34" fill="rgba(255,255,255,0.8)">${esc(sc.proofLine[0].toUpperCase() + sc.proofLine.slice(1))}</text>
+${c.close}`;
+  await render(file, base);
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
 function loadRanks(tour) {
   const dir = tour === 'wta' ? path.join(DATA, 'women') : DATA;
@@ -960,6 +1348,15 @@ function loadRanks(tour) {
   if (!fs.existsSync(p)) return new Map();
   const rows = Papa.parse(fs.readFileSync(p, 'utf8'), { header: true }).data.filter((r) => r.id);
   return new Map(rows.map((r) => [r.id, Number(r.us_seed) || null]));
+}
+
+// Recent W-L per player, for the tale-of-the-tape form row.
+function loadForms(tour) {
+  const dir = tour === 'wta' ? path.join(DATA, 'women') : DATA;
+  const p = path.join(dir, 'smash_us.csv');
+  if (!fs.existsSync(p)) return new Map();
+  const rows = Papa.parse(fs.readFileSync(p, 'utf8'), { header: true }).data.filter((r) => r.id);
+  return new Map(rows.map((r) => [r.id, { w: Number(r.recent_w) || 0, l: Number(r.recent_l) || 0 }]));
 }
 
 async function run() {
@@ -991,7 +1388,10 @@ async function run() {
   sc.proofLabel = fwdArmed ? 'called before play, verified' : 'season benchmark · re-simulated daily';
 
   const assets = [];
-  const add = (file, type, format, category, caption) => assets.push({ file, type, format, category, caption });
+  // alt: accessibility text for the image (defaults to the caption's first
+  // sentence so every asset ships with SOMETHING usable).
+  const add = (file, type, format, category, caption, alt = null) =>
+    assets.push({ file, type, format, category, caption, alt: alt || `${caption.split('.')[0]}.` });
   const tags = '#tennis #atp #wta #tennisprediction';
 
   const decorate = (p) => {
@@ -1010,12 +1410,12 @@ async function run() {
     };
   };
 
-  // Daily promo cards stay slam-focused by design (rows without a tier
-  // predate the Masters expansion and are slams). The called-it receipts
-  // below deliberately do NOT filter: "we called 21 of 28 in Cincinnati"
-  // is forward-test proof, and proof travels.
+  // The daily kit covers everything the forward test covers: the slams AND
+  // the six combined 1000s (their weeks get the same daily treatment, and a
+  // Cincinnati carousel is US Open marketing). Draws, brackets, and the hype
+  // collection stay slam-exclusive by design.
   const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending' && (p.tier || 'slam') === 'slam')
+    .filter((p) => p.status === 'pending' && ['slam', '1000'].includes(p.tier || 'slam'))
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
     .map(decorate);
@@ -1023,7 +1423,11 @@ async function run() {
   // ── DAILY layer ─────────────────────────────────────────────────────────
   if (picks.length) {
     await coverCard(picks, sc, 'cover.png');
-    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`);
+    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`,
+      `Today's Calls cover card: ${picks.length} locked predictions at the ${picks[0].event}.`);
+    await coverPortrait(picks, sc, 'cover-45.png');
+    add('cover-45.png', 'carousel-cover', 'portrait', 'daily', `Today's calls at the ${picks[0].event}, 4:5 feed format. ${todayLink()} ${tags}`,
+      `Today's Calls cover card in portrait format for the ${picks[0].event}.`);
 
     // Career h2h + our pair record enrich every match card.
     const h2hAll = fs.existsSync(path.join(DATA, 'h2h.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'h2h.json'), 'utf8')) : {};
@@ -1072,6 +1476,18 @@ async function run() {
     const pollPick = [...picks].sort((a, b) => a.favProb - b.favProb)[0];
     await pollCard(pollPick, 'poll.png');
     add('poll.png', 'poll', 'square', 'daily', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}? Our model already picked a side - drop yours below, answer tomorrow. ${matchLink(pollPick)} ${tags}`);
+
+    // Tale of the tape: the marquee matchup (best combined ranking) gets the
+    // full split-screen stat treatment.
+    const marquee = [...picks]
+      .filter((p) => p._flags.rank1 && p._flags.rank2)
+      .sort((a, b) => (a._flags.rank1 + a._flags.rank2) - (b._flags.rank1 + b._flags.rank2))[0];
+    if (marquee) {
+      const forms = loadForms(marquee.tour);
+      await taleOfTheTape({ ...marquee, rank1: marquee._flags.rank1, rank2: marquee._flags.rank2 }, contextFor(marquee), forms, 'tape.png');
+      add('tape.png', 'tale-of-the-tape', 'square', 'daily', `Tale of the tape: ${last(marquee.name1)} vs ${last(marquee.name2)} at the ${marquee.event}. Rank, form, career head-to-head, and our call. ${matchLink(marquee)} ${tags}`,
+        `Tale of the tape stat comparison for ${marquee.name1} vs ${marquee.name2}.`);
+    }
   }
 
   // ── Receipts: prediction cards reborn as CALLED ✓ twins ─────────────────
@@ -1085,8 +1501,9 @@ async function run() {
     const p = calledIt[i];
     const file = `called-${i + 1}.png`;
     const winnerName = p.winner === p.p1 ? p.name1 : p.name2;
-    await matchCard(p, p._flags, file, { winnerName, score: p.score });
-    add(file, 'called-it', 'square', 'daily', `We called it: ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, locked before play. Final: ${winnerName} won${p.score ? ` ${p.score}` : ''}. Receipts: ${matchLink(p)} ${tags}`);
+    await receiptTicket(p, file);
+    add(file, 'called-it', 'square', 'daily', `We called it: ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, locked before play. Final: ${winnerName} won${p.score ? ` ${p.score}` : ''}. Receipts: ${matchLink(p)} ${tags}`,
+      `Ticket-stub receipt: our ${pctTxt(p.favProb)} call on ${p.favName}, graded ${p.correct ? 'correct' : 'wrong'}.`);
   }
 
   for (const tour of ['atp', 'wta']) {
@@ -1099,6 +1516,12 @@ async function run() {
     } else {
       const topTxt = o.odds.slice(0, 3).map((p) => `${last(p.name)} ${pctTxt(p.prob)}`).join(', ');
       add(file, 'title-odds', 'square', 'daily', `${o.event} ${tour.toUpperCase()} title odds today: ${topTxt}. The whole draw, simulated 2,000 times, updated daily. ${tags}`);
+    }
+    // Overnight risers and fallers, from the same daily snapshots.
+    const mv = `odds-movers-${tour}.png`;
+    if (await oddsMoversCard(o, tour, mv)) {
+      add(mv, 'odds-movers', 'square', 'daily', `${o.event} ${tour.toUpperCase()} odds movers: who rose and who slid overnight in our 2,000-run title simulation. ${SITE}/draw ${tags}`,
+        `Title odds movers card: overnight risers and fallers at the ${o.event}.`);
     }
   }
 
@@ -1230,6 +1653,7 @@ async function run() {
       footNote: 'every prediction on the public record',
       themeKey: 'brand',
       file: 'milestone.png',
+      accent: GOLD,
     });
     add('milestone.png', 'milestone', 'square', 'moments', `${mark.toLocaleString()} matches graded in public - season benchmark ${sc.season.acc}%, zero deletions. ${SITE}/track-record ${tags}`);
   }
@@ -1249,9 +1673,57 @@ async function run() {
     add('perfect-day.png', 'perfect-day', 'square', 'moments', `Perfect day: ${sc.yesterday.correct}/${sc.yesterday.n} winners called on ${sc.yesterday.date}. ${SITE}/track-record ${tags}`);
   }
 
+  // Streak detector: the longest current run of correct deployed calls in
+  // any tour x surface cell. Posts when it reaches 6 and only re-posts when
+  // it GROWS (the manifest remembers the last posted mark).
+  const bestStreak = currentStreaks(track)[0];
+  const prevStreak = prevManifest.lastStreak || null;
+  let lastStreak = prevStreak;
+  const STREAK_MIN = process.env.FORCE_STREAK === '1' ? 1 : 6;
+  if (bestStreak && bestStreak.len >= STREAK_MIN && (process.env.FORCE_STREAK === '1' || !prevStreak || prevStreak.key !== bestStreak.key || bestStreak.len > prevStreak.len)) {
+    await streakCard(bestStreak, 'streak.png');
+    add('streak.png', 'streak', 'square', 'moments', `${bestStreak.len} straight ${bestStreak.tour.toUpperCase()} ${bestStreak.surface}-court winners called. Deployed calls, graded in public - streaks end, receipts don't. ${SITE}/track-record ${tags}`,
+      `Streak card: ${bestStreak.len} consecutive correct calls on ${bestStreak.tour.toUpperCase()} ${bestStreak.surface}.`);
+    lastStreak = { key: bestStreak.key, len: bestStreak.len };
+  }
+
+  // Upset autopsy: when a top seed fell in the last 3 days, own the result
+  // either way - what we said vs what the market said.
+  const recentGraded = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 3 * 864e5);
+  let biggestUpset = null;
+  for (const m of recentGraded) {
+    const loserId = m.winner === m.p1 ? m.p2 : m.p1;
+    const wR = ranks[m.tour]?.get(m.winner), lR = ranks[m.tour]?.get(loserId);
+    if (!wR || !lR || lR > 12 || wR - lR < 10) continue;
+    if (!biggestUpset || (wR - lR) > biggestUpset.gap) biggestUpset = { m, wR, lR, gap: wR - lR };
+  }
+  if (biggestUpset) {
+    await upsetAutopsyCard(biggestUpset.m, biggestUpset.wR, biggestUpset.lR, biggestUpset.m.tour, 'autopsy.png');
+    const bu = biggestUpset;
+    const wName = bu.m.winner === bu.m.p1 ? bu.m.name1 : bu.m.name2;
+    add('autopsy.png', 'upset-autopsy', 'square', 'moments', `Upset autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
+      `Upset autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
+  }
+
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
-  add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.proofLine}, all graded in public. ${tags}`);
+  add('proof.png', 'proof', 'square', 'promo', `The 2026 receipts: ${sc.proofLine}, all graded in public. ${tags}`,
+    'Season receipts card: overall accuracy versus the bookmakers.');
+  await proofPortrait(track, sc, 'proof-45.png');
+  add('proof-45.png', 'proof', 'portrait', 'promo', `The 2026 receipts in 4:5: ${sc.proofLine}. ${tags}`,
+    'Season receipts card, portrait format.');
+  await bannerWide(sc, 'banner.png');
+  add('banner.png', 'banner', 'wide', 'promo', `Every call public. Every miss too. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${SITE}/track-record ${tags}`,
+    'Wide banner: every call public, every miss too.');
+
+  // Monthly trust card: stated confidence vs reality (first week of the
+  // month, or force with FORCE_TRUST=1).
+  if ((new Date().getUTCDate() <= 7 && new Date().getUTCDay() === 1) || process.env.FORCE_TRUST === '1') {
+    if (await trustCard(track, 'trust.png')) {
+      add('trust.png', 'trust', 'square', 'promo', `Calibration check: when we say 70%, do we win 70%? Stated confidence vs reality on every graded call this season. ${SITE}/model ${tags}`,
+        'Calibration trust card: stated confidence versus actual win rates by band.');
+    }
+  }
 
   await howItWorks(sc, 'how-it-works-1.png', 'how-it-works-2.png', 'how-it-works-3.png');
   add('how-it-works-1.png', 'explainer', 'square', 'promo', `How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. ${tags}`);
@@ -1335,7 +1807,7 @@ async function run() {
   }
 
   // ── Manifest + stale cleanup ────────────────────────────────────────────
-  const manifest = { generatedAt: new Date().toISOString(), seasonN: sc.season.n, thread, assets };
+  const manifest = { generatedAt: new Date().toISOString(), seasonN: sc.season.n, lastStreak, thread, assets };
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
   const keep = new Set([...assets.map((a) => a.file), 'manifest.json']);
   for (const f of fs.readdirSync(OUT)) {
