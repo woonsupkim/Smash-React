@@ -189,6 +189,13 @@ jobs:
         continue-on-error: true
         run: npm run build-daily-scorecard
 
+      # Season rewind: the /season page's JSON (archives last year's file
+      # automatically on the first run of a new year).
+      - name: Build the season rewind
+        id: season_rewind
+        continue-on-error: true
+        run: npm run build-season-rewind
+
       # The share kit: Instagram-format prediction cards (carousel + story)
       # in public/data/share/, each with a ready caption in manifest.json.
       # sharp is installed here rather than kept in package.json (a local
@@ -241,6 +248,22 @@ jobs:
           AUTOPOST_WEBHOOK_URL: ${{ secrets.AUTOPOST_WEBHOOK_URL }}
         run: npm run post-social
 
+      # Upset-alert web push (optional): at most one notification per run,
+      # only for a graded upset we called or a fresh bold underdog call.
+      # Without the VAPID/Supabase secrets it logs and no-ops.
+      - name: Send upset-alert web push (optional)
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          npm install --no-save web-push > /dev/null 2>&1
+          npm run send-push
+
       # Optional publicity: if a SOCIAL_WEBHOOK_URL secret is configured (a
       # Slack/Discord/Zapier-style JSON webhook), post the day's scorecard
       # text after a successful refresh. With no secret the step is a no-op,
@@ -291,7 +314,7 @@ jobs:
       # The cosmetic generators are continue-on-error so a card-render crash
       # can't discard the data commit - but their failures still surface here.
       - name: Open an issue if a cosmetic generator failed
-        if: steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure'
+        if: steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.season_rewind.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

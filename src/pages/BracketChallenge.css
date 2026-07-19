@@ -1,0 +1,124 @@
+/* src/pages/BracketChallenge.css */
+
+.challenge-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+.challenge-skel { height: 320px; border-radius: var(--radius-md); }
+
+.challenge-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+.challenge-sub { color: var(--text-2); font-size: 0.92rem; margin-bottom: 1.25rem; max-width: 60ch; }
+
+.challenge-seg { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.challenge-seg-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  color: var(--text-3);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.85rem;
+  cursor: pointer;
+}
+.challenge-seg-btn.active { color: var(--accent-brand); border-color: var(--accent-brand); }
+
+.challenge-empty, .challenge-nocloud {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1.2rem;
+  color: var(--text-3);
+}
+.challenge-empty a, .challenge-foot a { color: var(--accent-brand); }
+.challenge-nocloud { margin-top: 0.9rem; font-size: 0.85rem; }
+
+.challenge-status {
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em;
+  color: var(--accent-brand); margin-bottom: 1rem;
+}
+
+/* Bracket picker: four columns on desktop, stacked rounds on mobile */
+.challenge-bracket {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+.challenge-round-label {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 0.5rem;
+}
+.challenge-round-label span { color: var(--accent-brand); }
+.challenge-match {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.55rem;
+  overflow: hidden;
+}
+.challenge-pick {
+  display: flex; align-items: center; gap: 0.45rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  text-align: left;
+}
+.challenge-pick + .challenge-pick { border-top: 1px solid var(--border-1); }
+.challenge-pick:hover:not(:disabled) { color: var(--text-1); }
+.challenge-pick.chosen { background: rgba(198, 255, 28, 0.12); color: var(--text-1); font-weight: 700; }
+.challenge-pick:disabled { cursor: default; }
+.challenge-pick img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface-2); }
+.challenge-pick em { font-style: normal; color: var(--text-3); font-size: 0.68rem; margin-left: auto; }
+.challenge-tbd { color: var(--text-3); font-size: 0.7rem; }
+
+.challenge-lock {
+  display: block;
+  margin-top: 1rem;
+  background: var(--accent-brand); color: #0c0f14;
+  border: none; border-radius: 999px;
+  font-weight: 800; font-size: 0.9rem;
+  padding: 0.6rem 1.6rem; cursor: pointer;
+}
+.challenge-lock:disabled { opacity: 0.45; cursor: default; }
+
+.challenge-section-label {
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+  margin: 1.5rem 0 0.5rem;
+}
+.challenge-mine-round { font-size: 0.85rem; color: var(--text-2); margin: 0.2rem 0; }
+.challenge-mine-label { font-weight: 800; color: var(--text-3); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.challenge-model strong { color: var(--accent-brand); }
+
+.challenge-board-row {
+  display: flex; align-items: baseline; gap: 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+  padding: 0.45rem 0;
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.challenge-board-row:last-child { border-bottom: none; }
+.challenge-board-row.model { color: var(--accent-brand); font-weight: 700; }
+.challenge-board-rank { font-family: var(--font-display); font-weight: 800; width: 1.6rem; color: var(--text-3); }
+.challenge-board-name { flex: 1; }
+.challenge-board-score { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--text-1); }
+.challenge-board-score em { font-style: normal; color: var(--text-3); font-weight: 400; font-size: 0.75rem; }
+
+.challenge-foot { font-size: 0.78rem; color: var(--text-3); margin-top: 1.5rem; }
+
+@media (max-width: 720px) {
+  .challenge-bracket { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 460px) {
+  .challenge-bracket { grid-template-columns: 1fr; }
+}

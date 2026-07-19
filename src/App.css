@@ -149,6 +149,23 @@ body { font-variant-numeric: tabular-nums; }
 .has-tip:focus::after,
 .has-tip:focus-visible::after { opacity: 1; }
 
+/* Upset-alert subscription pill (PushToggle) - renders only when web push
+   is fully configured, so it can afford to be quiet. */
+.push-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.3rem 0.85rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+.push-toggle.on { color: var(--accent-brand); border-color: var(--accent-brand); }
+.push-toggle:disabled { opacity: 0.5; }
+
 /* Visually hidden but available to screen readers (chart summaries, etc.) */
 .sr-only {
   position: absolute;

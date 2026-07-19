@@ -10,6 +10,21 @@ export const MODEL_VERSION = '3.3';
 
 export const CHANGELOG = [
   {
+    version: '3.5',
+    date: '2026-07-18',
+    type: 'product',
+    title: 'The Edge, Oddsle, the Model Gym, and a bracket to beat',
+    notes: [
+      'THE EDGE: a board of every match where our locked pick and the betting market\'s favorite disagreed - our probability, the market\'s vig-stripped number, and who was right, graded in public. Nobody grades their divergence from the market in the open; now we do.',
+      'ODDSLE: the daily game. Five real matches from the graded ledger (same five for everyone, seeded by the date), call the winners, guess the model\'s confidence, share the emoji grid, keep the streak. Works year-round, no account needed.',
+      'THE MODEL GYM: weight the four engines yourself and backtest instantly against every graded match this season. Beat the deployed number and brag; the fair-fight footnote about hindsight is on the page.',
+      'SLAM BRACKET CHALLENGE: when a slam\'s round of 16 is set, lock a full bracket and get graded round by round - against everyone, including the model, which locks its own bracket from the survival matrix.',
+      'THE REWIND: one page per season - final accuracy with the bookie comparison, the boldest calls that landed, the miss we own, and every engine\'s score. This year\'s renders live; past years freeze forever at rollover.',
+      'COMPARE: any two-to-four players side by side - overlaid form curves, season records by surface, and the model\'s read on every pairing.',
+      'Optional upset alerts via web push: at most one notification a day, only when we call an upset or a bold underdog pick locks.',
+    ],
+  },
+  {
     version: '3.4',
     date: '2026-07-17',
     type: 'product',

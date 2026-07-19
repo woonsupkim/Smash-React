@@ -62,11 +62,17 @@ function main() {
 
   // ── Static routes (mirrors src/App.js; skips /admin, redirects, and the
   // legal fine-print pages /terms /privacy /disclaimer).
-  const FRESH = new Set(['/', '/today', '/track-record']); // regenerated every data refresh
+  const FRESH = new Set(['/', '/today', '/track-record', '/edge', '/oddsle', '/season']); // regenerated every data refresh
   const staticRoutes = [
     '/',
     '/today',
     '/track-record',
+    '/edge',
+    '/oddsle',
+    '/gym',
+    '/compare',
+    '/challenge',
+    '/season',
     '/h2h',
     '/draw',
     '/dream-brackets',
@@ -80,6 +86,14 @@ function main() {
     '/women/track-record',
     '/women/methodology',
   ];
+
+  // Frozen season archives (public/data/seasons/<year>.json -> /season/<year>).
+  try {
+    for (const f of fs.readdirSync(path.join(DATA, 'seasons'))) {
+      const y = f.match(/^(\d{4})\.json$/)?.[1];
+      if (y) staticRoutes.push(`/season/${y}`);
+    }
+  } catch { /* no archives yet */ }
 
   const urls = staticRoutes.map((route) => ({ loc: `${SITE}${route}`, lastmod: FRESH.has(route) ? today : null }));
 

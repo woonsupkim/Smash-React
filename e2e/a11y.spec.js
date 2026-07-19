@@ -15,6 +15,12 @@ const PAGES = [
   ['/pickem', 'pickem'],
   ['/rivalries', 'rivalries board'],
   ['/rivalry/atp/jannik-sinner-vs-alexander-zverev', 'rivalry page'],
+  ['/edge', 'edge board'],
+  ['/oddsle', 'oddsle'],
+  ['/gym', 'model gym'],
+  ['/compare/atp/jannik-sinner-vs-carlos-alcaraz', 'compare page'],
+  ['/season', 'season rewind'],
+  ['/challenge', 'bracket challenge'],
 ];
 
 for (const [path, name] of PAGES) {

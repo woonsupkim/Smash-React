@@ -1,0 +1,102 @@
+/* src/pages/Oddsle.css */
+
+.oddsle-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+.oddsle-skel { height: 320px; border-radius: var(--radius-md); }
+
+.oddsle-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+.oddsle-sub { color: var(--text-2); font-size: 0.92rem; margin-bottom: 1.25rem; }
+
+.oddsle-progress { display: flex; gap: 0.45rem; margin-bottom: 1rem; }
+.oddsle-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+}
+.oddsle-dot.now { border-color: var(--accent-brand); }
+.oddsle-dot.hit { background: var(--accent-positive); border-color: var(--accent-positive); }
+.oddsle-dot.miss { background: var(--accent-negative); border-color: var(--accent-negative); }
+
+.oddsle-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+.oddsle-meta {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em;
+  color: var(--text-3); text-transform: uppercase; margin-bottom: 0.9rem;
+}
+.oddsle-q { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: var(--text-1); margin-bottom: 1rem; }
+
+.oddsle-players { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.oddsle-player {
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1rem 0.5rem;
+  cursor: pointer;
+  color: var(--text-1);
+  font: inherit;
+}
+.oddsle-player:hover, .oddsle-player:focus-visible { border-color: var(--accent-brand); }
+.oddsle-face { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface-2); }
+.oddsle-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.88rem; font-weight: 700; text-align: center; }
+.oddsle-flag { width: 16px; height: 11px; object-fit: cover; border-radius: 2px; }
+
+.oddsle-guess-val {
+  font-family: var(--font-display);
+  font-size: 2.6rem; font-weight: 800; color: var(--accent-brand);
+  text-align: center; margin-bottom: 0.25rem;
+}
+.oddsle-slider { width: 100%; accent-color: var(--accent-brand); }
+.oddsle-slider-ends { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-3); margin: 0.25rem 0 1rem; }
+.oddsle-lock {
+  display: block; width: 100%;
+  background: var(--accent-brand); color: #0c0f14;
+  border: none; border-radius: 999px;
+  font-weight: 800; font-size: 0.9rem;
+  padding: 0.6rem 1rem; cursor: pointer;
+}
+.oddsle-lock:hover { filter: brightness(1.08); }
+
+.oddsle-reveal { display: flex; flex-direction: column; gap: 0.8rem; }
+.oddsle-verdict { font-weight: 800; font-size: 0.95rem; }
+.oddsle-verdict.hit { color: var(--accent-positive); }
+.oddsle-verdict.miss { color: var(--accent-negative); }
+.oddsle-odds-line { color: var(--text-2); font-size: 0.9rem; }
+
+.oddsle-done {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  text-align: center;
+}
+.oddsle-score { font-family: var(--font-display); font-size: 3.2rem; font-weight: 800; color: var(--text-1); }
+.oddsle-score span { font-size: 1.4rem; color: var(--text-3); }
+.oddsle-grid {
+  font-size: 1.3rem; line-height: 1.5; letter-spacing: 0.2em;
+  background: none; border: none; color: var(--text-1);
+  margin: 0.75rem 0;
+}
+.oddsle-streak { font-weight: 800; color: var(--text-2); margin-bottom: 1rem; }
+.oddsle-share {
+  background: var(--accent-brand); color: #0c0f14;
+  border: none; border-radius: 999px;
+  font-weight: 800; font-size: 0.9rem;
+  padding: 0.6rem 1.6rem; cursor: pointer;
+}
+.oddsle-back { font-size: 0.82rem; color: var(--text-3); margin-top: 1rem; }
+.oddsle-back a, .oddsle-foot a { color: var(--accent-brand); }
+.oddsle-foot { font-size: 0.78rem; color: var(--text-3); margin-top: 1.25rem; }

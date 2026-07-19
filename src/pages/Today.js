@@ -8,6 +8,7 @@ import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
+import PushToggle from '../components/PushToggle';
 import useDocMeta from '../utils/useDocMeta';
 import './Today.css';
 
@@ -36,6 +37,7 @@ export default function Today() {
     <div className="today-page">
       <div className="eyebrow">TODAY'S CALLS</div>
       <h1 className="today-title">Locked before play</h1>
+      <PushToggle />
       {season && (
         <p className="today-season">
           Season benchmark: {season.correct.toLocaleString()} of {season.n.toLocaleString()} winners

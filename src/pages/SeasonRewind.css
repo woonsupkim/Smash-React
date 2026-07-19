@@ -1,0 +1,103 @@
+/* src/pages/SeasonRewind.css */
+
+.rewind-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--page-pad-top) 1.5rem 3rem;
+}
+.rewind-skel { height: 320px; border-radius: var(--radius-md); }
+
+.rewind-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-1);
+  margin-bottom: 0.5rem;
+}
+.rewind-sub { color: var(--text-2); font-size: 0.92rem; margin-bottom: 1.5rem; max-width: 56ch; }
+
+.rewind-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+.rewind-hero-cell {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 1.2rem 1.1rem;
+}
+.rewind-hero-val {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.rewind-vs { font-size: 0.9rem; color: var(--text-3); font-weight: 700; }
+.rewind-hero-label { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; color: var(--text-3); margin-top: 0.4rem; }
+.rewind-hero-sub { font-size: 0.74rem; color: var(--text-3); margin-top: 0.25rem; }
+
+.rewind-section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 1.75rem 0 0.6rem;
+}
+
+/* Month strip */
+.rewind-months { display: flex; gap: 0.4rem; align-items: flex-end; }
+.rewind-month { flex: 1; text-align: center; }
+.rewind-month-acc { font-size: 0.7rem; font-weight: 800; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.rewind-month-bar-track { height: 64px; display: flex; align-items: flex-end; justify-content: center; margin: 0.25rem 0; }
+.rewind-month-bar { width: 70%; background: var(--accent-brand); opacity: 0.75; border-radius: 3px 3px 0 0; min-height: 3px; }
+.rewind-month-name { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em; color: var(--text-3); text-transform: uppercase; }
+.rewind-month-n { font-size: 0.62rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.rewind-table-note { font-size: 0.7rem; color: var(--text-3); margin-top: 0.4rem; }
+
+/* Bold-call rows */
+.rewind-call {
+  display: flex; align-items: center; gap: 0.75rem;
+  border-bottom: 1px solid var(--border-1);
+  padding: 0.55rem 0;
+}
+.rewind-call:last-of-type { border-bottom: none; }
+.rewind-face { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--surface-2); }
+.rewind-call-body { display: flex; flex-direction: column; gap: 0.1rem; }
+.rewind-call-line { font-size: 0.88rem; color: var(--text-2); }
+.rewind-call-line strong { color: var(--text-1); }
+.rewind-call-meta { font-size: 0.7rem; color: var(--text-3); }
+.rewind-hit { margin-left: auto; color: var(--accent-positive); font-weight: 800; }
+
+.rewind-worst {
+  background: rgba(224, 86, 86, 0.08);
+  border: 1px solid rgba(224, 86, 86, 0.3);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+.rewind-worst strong { color: var(--text-1); }
+
+.rewind-engines { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; }
+.rewind-engine {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+  display: flex; flex-direction: column; gap: 0.15rem;
+}
+.rewind-engine-name { font-size: 0.7rem; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.rewind-engine-acc { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; color: var(--text-1); }
+.rewind-engine-n { font-size: 0.68rem; color: var(--text-3); }
+
+.rewind-journey { color: var(--text-2); font-size: 0.9rem; margin: 0.3rem 0; }
+.rewind-journey strong { color: var(--text-1); }
+
+.rewind-foot { font-size: 0.78rem; color: var(--text-3); margin-top: 1.75rem; }
+.rewind-foot a { color: var(--accent-brand); }
+
+@media (max-width: 560px) {
+  .rewind-hero { grid-template-columns: 1fr; }
+  .rewind-months { flex-wrap: wrap; }
+  .rewind-month { flex: 1 0 12%; }
+}

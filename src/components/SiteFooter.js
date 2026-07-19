@@ -62,6 +62,7 @@ export default function SiteFooter() {
           <div className="site-footer-head">Predict</div>
           <Link to="/today">Today's Calls</Link>
           <Link to={prefix('/h2h')}>H2H Studio</Link>
+          <Link to="/compare">Compare Players</Link>
           <Link to="/draw">The Draw</Link>
           <Link to="/rivalries">Rivalries</Link>
         </nav>
@@ -69,14 +70,19 @@ export default function SiteFooter() {
         <nav className="site-footer-col" aria-label="Prove">
           <div className="site-footer-head">Prove</div>
           <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
+          <Link to="/edge">The Edge · Vs the Market</Link>
           <Link to="/model">The Engine Room · Model</Link>
+          <Link to="/season">The Rewind · Season</Link>
           <Link to="/methodology">Methodology</Link>
           <Link to="/changelog">Changelog</Link>
         </nav>
 
         <nav className="site-footer-col" aria-label="Play">
           <div className="site-footer-head">Play</div>
+          <Link to="/oddsle">Oddsle · Daily Game</Link>
           <Link to="/pickem">Pick'em</Link>
+          <Link to="/challenge">Bracket Challenge</Link>
+          <Link to="/gym">The Model Gym</Link>
           <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
         </nav>
 

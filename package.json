@@ -64,6 +64,8 @@
     "build-motion-assets": "node data-pipeline/buildMotionAssets.js",
     "build-sitemap": "node data-pipeline/buildSitemap.js",
     "build-digest": "node data-pipeline/buildDigest.js",
+    "build-season-rewind": "node data-pipeline/buildSeasonRewind.js",
+    "send-push": "node data-pipeline/sendPush.js",
     "post-social": "node data-pipeline/postSocial.js"
   },
   "eslintConfig": {

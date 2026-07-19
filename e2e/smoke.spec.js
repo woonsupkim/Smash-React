@@ -120,6 +120,69 @@ test('nav pillars open and navigate', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('edge board: disagreement hero and graded split rows', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/edge');
+  await expect(page.getByRole('heading', { name: /disagree with the market/i })).toBeVisible();
+  await expect(page.locator('.edge-hero-val').first()).toHaveText(/%/, { timeout: 15000 });
+  await expect(page.locator('.edge-row').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('oddsle: daily round flow through pick and guess', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/oddsle');
+  await expect(page.getByRole('heading', { name: /oddsle #\d+/i })).toBeVisible({ timeout: 15000 });
+  // Round 1: pick a winner, guess, lock, reveal.
+  await page.locator('.oddsle-player').first().click();
+  await expect(page.locator('.oddsle-slider')).toBeVisible();
+  await page.getByRole('button', { name: /lock it in/i }).click();
+  await expect(page.locator('.oddsle-verdict')).toBeVisible();
+  await expect(page.getByRole('button', { name: /next match \(2\/5\)/i })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('model gym: sliders re-score the season blend', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/gym');
+  await expect(page.getByRole('heading', { name: /build your own blend/i })).toBeVisible();
+  await expect(page.locator('.gym-hero-val').first()).toHaveText(/%/, { timeout: 15000 });
+  const before = await page.locator('.gym-hero-val').first().textContent();
+  await page.getByRole('button', { name: 'All form' }).click();
+  await expect(page.locator('.gym-hero-val').first()).not.toHaveText(before);
+  expect(errors).toEqual([]);
+});
+
+test('compare: hub renders and a deep link compares three players', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/compare');
+  await expect(page.getByRole('heading', { name: /compare any players/i })).toBeVisible();
+  await page.goto('/compare/atp/jannik-sinner-vs-alexander-zverev-vs-carlos-alcaraz');
+  await expect(page.getByRole('heading', { name: /sinner vs zverev vs alcaraz/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.compare-tr').first()).toBeVisible();
+  await expect(page.locator('.compare-pair')).toHaveCount(3);
+  expect(errors).toEqual([]);
+});
+
+test('season rewind: headline, bold calls, engines', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/season');
+  await expect(page.getByRole('heading', { name: /season, graded/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.rewind-hero-val').first()).toHaveText(/%/);
+  await expect(page.locator('.rewind-call').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('bracket challenge: renders bracket state and the model entry', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/challenge');
+  await expect(page.getByRole('heading', { name: /beat the model's bracket/i })).toBeVisible();
+  // With a 16-player draw on file (any status) the model's bracket shows;
+  // otherwise the honest empty state does.
+  await expect(page.locator('.challenge-model, .challenge-empty').first()).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
 test('today page renders calls or the honest empty state', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/today');

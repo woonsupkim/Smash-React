@@ -36,6 +36,13 @@ const ModelCard = lazy(() => import('./pages/ModelCard'));
 const Pickem = lazy(() => import('./pages/Pickem'));
 const Rivalry = lazy(() => import('./pages/Rivalry'));
 const Rivalries = lazy(() => import('./pages/Rivalries'));
+const EdgeBoard = lazy(() => import('./pages/EdgeBoard'));
+const Oddsle = lazy(() => import('./pages/Oddsle'));
+const ModelGym = lazy(() => import('./pages/ModelGym'));
+const Compare = lazy(() => import('./pages/Compare'));
+const CompareHub = lazy(() => import('./pages/Compare').then((m) => ({ default: m.CompareHub })));
+const SeasonRewind = lazy(() => import('./pages/SeasonRewind'));
+const BracketChallenge = lazy(() => import('./pages/BracketChallenge'));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Disclaimer })));
@@ -52,6 +59,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/today', label: 'Today', tourAgnostic: true },
       { to: '/h2h', label: 'H2H Studio' },
+      { to: '/compare', label: 'Compare Players', tourAgnostic: true },
       { to: '/draw', label: 'Draw', tourAgnostic: true },
     ],
   },
@@ -59,13 +67,18 @@ const NAV_GROUPS = [
     label: 'Prove',
     items: [
       { to: '/track-record', label: 'The Ledger · Track Record' },
+      { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
       { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
+      { to: '/season', label: 'The Rewind · Season', tourAgnostic: true },
     ],
   },
   {
     label: 'Play',
     items: [
+      { to: '/oddsle', label: 'Oddsle · Daily Game', tourAgnostic: true },
       { to: '/pickem', label: "Pick'em", tourAgnostic: true },
+      { to: '/challenge', label: 'Bracket Challenge', tourAgnostic: true },
+      { to: '/gym', label: 'The Model Gym', tourAgnostic: true },
       { to: '/dream-brackets', label: 'Brackets' },
     ],
   },
@@ -228,6 +241,17 @@ function App() {
           <Route path="/pickem" element={<Pickem />} />
           <Route path="/rivalries" element={<Rivalries />} />
           <Route path="/rivalry/:tour/:slug" element={<Rivalry />} />
+
+          {/* v3.5: the Edge board, the daily game, the gym, comparisons,
+              season rewinds, and the slam bracket challenge */}
+          <Route path="/edge" element={<EdgeBoard />} />
+          <Route path="/oddsle" element={<Oddsle />} />
+          <Route path="/gym" element={<ModelGym />} />
+          <Route path="/compare" element={<CompareHub />} />
+          <Route path="/compare/:tour/:slugs" element={<Compare />} />
+          <Route path="/season" element={<SeasonRewind />} />
+          <Route path="/season/:year" element={<SeasonRewind />} />
+          <Route path="/challenge" element={<BracketChallenge />} />
 
           {/* The live slam draw (both tours inside) and the model card */}
           <Route path="/draw" element={<DrawPage />} />
