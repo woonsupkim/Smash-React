@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T17:00:59.497Z",
+  "generatedAt": "2026-07-19T22:00:23.845Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -33,21 +33,21 @@
       "surface": "clay",
       "engine": "smash",
       "status": "alert",
-      "n": 750,
+      "n": 760,
       "seasonAcc": 68,
       "recentN": 40,
       "recentAcc": 55,
-      "rankRecentAcc": 50,
+      "rankRecentAcc": 53,
       "recentEngines": {
         "smash": 55,
-        "sim": 68,
+        "sim": 63,
         "elo": 63,
-        "rank": 50,
-        "upset": 68
+        "rank": 53,
+        "upset": 73
       },
       "bestRecent": {
-        "engine": "sim",
-        "acc": 68
+        "engine": "upset",
+        "acc": 73
       },
       "reasons": [
         "recent accuracy 55% is 13 points below the season's 68% (last 40 matches)"
@@ -81,21 +81,21 @@
       "surface": "hard",
       "engine": "elo",
       "status": "ok",
-      "n": 679,
+      "n": 686,
       "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 73,
-      "rankRecentAcc": 70,
+      "recentAcc": 78,
+      "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 70,
-        "sim": 55,
-        "elo": 73,
-        "rank": 70,
-        "upset": 60
+        "smash": 73,
+        "sim": 48,
+        "elo": 78,
+        "rank": 73,
+        "upset": 63
       },
       "bestRecent": {
         "engine": "elo",
-        "acc": 73
+        "acc": 78
       },
       "reasons": []
     },
@@ -104,21 +104,21 @@
       "surface": "clay",
       "engine": "smash",
       "status": "ok",
-      "n": 557,
+      "n": 560,
       "seasonAcc": 69,
       "recentN": 40,
-      "recentAcc": 68,
-      "rankRecentAcc": 55,
+      "recentAcc": 63,
+      "rankRecentAcc": 50,
       "recentEngines": {
-        "smash": 68,
-        "sim": 60,
-        "elo": 48,
-        "rank": 55,
-        "upset": 73
+        "smash": 63,
+        "sim": 63,
+        "elo": 53,
+        "rank": 50,
+        "upset": 75
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 73
+        "acc": 75
       },
       "reasons": []
     },

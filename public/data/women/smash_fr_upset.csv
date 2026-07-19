@@ -23,7 +23,7 @@ chwal,Maja Chwalinska,Maja,Chwalinska,21,2,0.71,0.90,0.46,0.55,0.40,0.01,POL,24,
 keys,Madison Keys,Madison,Keys,22,2,0.66,0.91,0.41,0.50,0.43,0.07,USA,31,15,5,9,1,0
 bouzk,Marie Bouzkova,Marie,Bouzkova,23,2,0.66,0.85,0.40,0.52,0.42,0.04,CZE,27,9,4,9,1,0
 ferna,Leylah Annie Fernandez,Leylah,Annie Fernandez,24,2,0.62,0.82,0.36,0.49,0.42,0.04,CAN,23,8,8,3,7,0
-tauso,Clara Tauson,Clara,Tauson,25,2,0.59,0.88,0.37,0.48,0.39,0.06,DEN,23,0,3,5,5,0
+tauso,Clara Tauson,Clara,Tauson,25,2,0.59,0.88,0.37,0.48,0.39,0.06,DEN,23,0,3,6,4,0
 navar,Emma Navarro,Emma,Navarro,26,2,0.58,0.89,0.43,0.50,0.41,0.04,USA,25,8,4,6,4,0
 merte,Elise Mertens,Elise,Mertens,27,2,0.59,0.85,0.39,0.49,0.42,0.09,BEL,30,7,4,8,2,0
 potap,Anastasia Potapova,Anastasia,Potapova,28,2,0.56,0.86,0.41,0.53,0.41,0.07,AUT,25,18,5,4,6,0
@@ -45,13 +45,13 @@ sakka,Maria Sakkari,Maria,Sakkari,43,2,0.61,0.89,0.37,0.47,0.42,0.06,GRE,30,4,5,
 frech,Magdalena Frech,Magdalena,Frech,44,2,0.62,0.94,0.38,0.46,0.37,0.04,POL,28,2,5,3,7,0
 bejle,Sara Bejlek,Sara,Bejlek,45,2,0.72,0.87,0.46,0.51,0.39,0.01,CZE,20,2,6,5,5,0
 cocci,Elisabetta Cocciaretto,Elisabetta,Cocciaretto,46,2,0.67,0.87,0.38,0.49,0.40,0.02,ITA,25,6,5,3,7,0
-marci,Petra Marcinko,Petra,Marcinko,47,2,0.56,0.82,0.41,0.49,0.38,0.01,CRO,20,22,13,5,5,1
+marci,Petra Marcinko,Petra,Marcinko,47,2,0.59,0.81,0.42,0.44,0.37,0.01,CRO,20,22,14,4,6,1
 bartu,Nikola Bartunkova,Nikola,Bartunkova,48,2,0.52,0.78,0.42,0.49,0.44,0.07,CZE,20,6,6,5,5,0
 parry,Diane Parry,Diane,Parry,49,2,0.62,0.91,0.36,0.47,0.40,0.06,FRA,23,12,7,6,4,0
 mcnal,Caty McNally,Caty,McNally,50,2,0.70,0.83,0.44,0.54,0.38,0.01,USA,24,6,5,5,5,0
 sonme,Zeynep Sonmez,Zeynep,Sonmez,51,2,0.64,0.90,0.43,0.49,0.38,0.01,TUR,24,6,4,6,4,0
 manei,Jessica Bouzas Maneiro,Jessica,Bouzas Maneiro,52,2,0.67,0.86,0.44,0.53,0.38,0.02,ESP,23,10,9,5,5,0
-oliyn,Oleksandra Oliynykova,Oleksandra,Oliynykova,53,2,0.75,0.79,0.44,0.49,0.42,0.00,UKR,25,24,12,4,6,1
+oliyn,Oleksandra Oliynykova,Oleksandra,Oliynykova,53,2,0.76,0.78,0.47,0.46,0.38,0.00,UKR,25,24,13,4,6,1
 valen,Tereza Valentova,Tereza,Valentova,54,2,0.63,0.87,0.44,0.56,0.39,0.03,CZE,19,9,5,5,5,0
 staro,Yuliia Starodubtseva,Yuliia,Starodubtseva,55,2,0.64,0.91,0.44,0.48,0.39,0.02,UKR,26,17,8,4,6,0
 sierr,Solana Sierra,Solana,Sierra,56,2,0.65,0.81,0.44,0.53,0.41,0.03,ARG,22,11,6,5,5,0
@@ -64,10 +64,10 @@ golub,Viktorija Golubic,Viktorija,Golubic,62,2,0.71,0.91,0.40,0.53,0.38,0.01,SUI
 stear,Peyton Stearns,Peyton,Stearns,63,2,0.64,0.88,0.39,0.50,0.40,0.05,USA,24,6,7,4,6,0
 zhang,Shuai Zhang,Shuai,Zhang,64,2,0.68,0.86,0.35,0.45,0.36,0.04,CHN,37,6,10,6,4,0
 kasat,Daria Kasatkina,Daria,Kasatkina,65,2,0.73,0.77,0.45,0.57,0.38,0.03,AUS,29,16,5,5,5,0
-kalin1,Anhelina Kalinina,Anhelina,Kalinina,66,2,0.65,0.66,0.37,0.40,0.30,0.05,UKR,29,48,12,3,7,1
+kalin1,Anhelina Kalinina,Anhelina,Kalinina,66,2,0.65,0.66,0.37,0.40,0.29,0.05,UKR,29,48,12,3,7,1
 yastr,Dayana Yastremska,Dayana,Yastremska,67,2,0.64,0.87,0.40,0.50,0.41,0.03,UKR,26,12,5,5,5,0
 serra,Maria Camila Osorio Serrano,Maria,Camila Osorio Serrano,68,2,0.66,0.79,0.41,0.55,0.41,0.03,COL,24,12,7,5,5,0
-udvar,Panna Udvardy,Panna,Udvardy,69,2,0.55,0.90,0.40,0.49,0.47,0.03,HUN,27,19,13,5,5,1
+udvar,Panna Udvardy,Panna,Udvardy,69,2,0.59,0.90,0.39,0.45,0.45,0.03,HUN,27,19,14,4,6,1
 rakhi,Kamilla Rakhimova,Kamilla,Rakhimova,70,2,0.58,0.86,0.37,0.52,0.37,0.03,UZB,24,2,6,4,6,0
 ruse,Elena Gabriela Ruse,Elena,Gabriela Ruse,71,2,0.53,0.81,0.36,0.47,0.24,0.07,ROU,28,5,7,5,5,1
 birre,Kimberly Birrell,Kimberly,Birrell,72,2,0.64,0.78,0.38,0.47,0.38,0.03,AUS,28,1,5,6,4,0
@@ -78,44 +78,44 @@ lys,Eva Lys,Eva,Lys,76,2,0.67,0.82,0.39,0.51,0.38,0.01,GER,24,3,6,3,7,0
 snigu,Daria Snigur,Daria,Snigur,77,2,0.72,0.84,0.43,0.51,0.36,0.02,UKR,24,5,3,6,4,0
 korpa,Tamara Korpatsch,Tamara,Korpatsch,78,2,0.62,0.88,0.45,0.48,0.34,0.04,GER,31,24,13,3,7,1
 towns,Taylor Townsend,Taylor,Townsend,79,2,0.65,0.93,0.38,0.46,0.40,0.06,USA,30,4,3,5,5,0
-jacqu,Elsa Jacquemot,Elsa,Jacquemot,80,2,0.50,0.80,0.39,0.63,0.27,0.05,FRA,23,9,13,3,7,1
+jacqu,Elsa Jacquemot,Elsa,Jacquemot,80,2,0.50,0.80,0.39,0.63,0.26,0.05,FRA,23,9,13,3,7,1
 parks,Alycia Parks,Alycia,Parks,81,2,0.53,0.81,0.33,0.46,0.42,0.14,USA,25,12,9,6,4,0
 tagge,Lilli Tagger,Lilli,Tagger,82,2,0.67,0.86,0.40,0.51,0.41,0.05,AUT,18,9,9,4,6,0
 karta,Sonay Kartal,Sonay,Kartal,83,2,0.75,0.90,0.43,0.48,0.38,0.01,GBR,24,0,0,6,4,0
 putin,Yulia Putintseva,Yulia,Putintseva,84,2,0.74,0.93,0.44,0.46,0.42,0.03,KAZ,31,22,8,7,3,1
-zakha,Anastasia Zakharova,Anastasia,Zakharova,85,2,0.70,0.82,0.38,0.49,0.37,0.01,RUS,24,6,9,7,3,0
+zakha,Anastasia Zakharova,Anastasia,Zakharova,85,2,0.70,0.82,0.38,0.49,0.37,0.01,RUS,24,6,9,6,4,0
 wang1,Xiyu Wang,Xiyu,Wang,86,2,0.72,0.89,0.45,0.55,0.40,0.02,CHN,25,30,7,6,4,0
 joint,Maya Joint,Maya,Joint,87,2,0.65,0.88,0.42,0.48,0.39,0.02,AUS,20,2,7,3,7,0
 grach,Varvara Gracheva,Varvara,Gracheva,88,2,0.65,0.90,0.38,0.50,0.38,0.03,FRA,25,0,0,6,4,0
-erjav,Veronika Erjavec,Veronika,Erjavec,89,2,0.72,0.89,0.36,0.53,0.43,0.01,SLO,26,33,17,6,4,1
+erjav,Veronika Erjavec,Veronika,Erjavec,89,2,0.71,0.90,0.34,0.49,0.42,0.01,SLO,26,33,18,6,4,1
 walte,Simona Waltert,Simona,Waltert,90,2,0.62,0.81,0.45,0.54,0.41,0.06,SUI,25,22,16,6,4,1
 selek,Oksana Selekhmeteva,Oksana,Selekhmeteva,91,2,0.52,0.51,0.34,0.44,0.38,0.03,ESP,23,7,14,4,6,1
 vidma,Darja Vidmanova,Darja,Vidmanova,92,2,0.62,0.90,0.42,0.53,0.38,0.05,CZE,23,10,10,6,4,0
-kraus,Sinja Kraus,Sinja,Kraus,93,2,0.62,0.89,0.46,0.61,0.42,0.02,AUT,24,27,10,8,2,1
+kraus,Sinja Kraus,Sinja,Kraus,93,2,0.65,0.90,0.48,0.60,0.41,0.01,AUT,24,29,10,8,2,1
 tomlj,Ajla Tomljanovic,Ajla,Tomljanovic,94,2,0.66,0.79,0.39,0.54,0.40,0.03,AUS,33,1,8,6,4,0
 timof,Maria Timofeeva,Maria,Timofeeva,95,2,0.66,0.86,0.47,0.50,0.40,0.03,UZB,22,33,6,6,4,0
 maria,Tatjana Maria,Tatjana,Maria,96,2,0.57,0.95,0.36,0.47,0.36,0.10,GER,38,6,7,10,0,0
 arang,Emiliana Arango,Emiliana,Arango,97,2,0.71,0.85,0.42,0.45,0.38,0.03,COL,25,11,15,3,7,1
-korne,Alina Korneeva,Alina,Korneeva,98,2,0.64,0.82,0.42,0.49,0.38,0.04,RUS,19,9,8,8,2,0
-tarar,Lanlana Tararudee,Lanlana,Tararudee,99,2,0.60,0.90,0.41,0.49,0.37,0.05,THA,22,0,1,7,3,0
+korne,Alina Korneeva,Alina,Korneeva,98,2,0.64,0.82,0.42,0.49,0.38,0.04,RUS,19,9,8,7,3,0
+tarar,Lanlana Tararudee,Lanlana,Tararudee,99,2,0.60,0.90,0.41,0.49,0.37,0.05,THA,22,0,1,8,2,0
 seide,Ella Seidel,Ella,Seidel,100,2,0.60,0.85,0.43,0.48,0.39,0.04,GER,21,12,13,1,9,0
 volyn,Katie Volynets,Katie,Volynets,101,2,0.77,0.91,0.45,0.52,0.36,0.01,USA,24,11,8,8,2,0
 volyn1,Katie Volynets,Katie,Volynets,101,2,0.77,0.91,0.45,0.52,0.36,0.01,USA,24,11,8,8,2,0
 krueg,Ashlyn Krueger,Ashlyn,Krueger,102,2,0.65,0.80,0.40,0.47,0.40,0.06,USA,22,6,6,8,2,0
-vande,Hanne Vandewinkel,Hanne,Vandewinkel,103,2,0.68,0.79,0.41,0.51,0.39,0.03,BEL,22,6,9,8,2,0
+vande,Hanne Vandewinkel,Hanne,Vandewinkel,103,2,0.68,0.79,0.41,0.51,0.39,0.03,BEL,22,6,9,7,3,0
 semen,Darja Semenistaja,Darja,Semenistaja,104,2,0.71,0.98,0.35,0.46,0.30,0.03,LAT,23,23,19,3,7,1
 kenin,Sofia Kenin,Sofia,Kenin,105,2,0.65,0.83,0.34,0.50,0.41,0.05,USA,27,2,5,3,7,0
-jones,Francesca Jones,Francesca,Jones,106,2,0.58,0.87,0.42,0.50,0.45,0.04,GBR,25,20,13,7,3,1
+jones,Francesca Jones,Francesca,Jones,106,2,0.60,0.88,0.43,0.52,0.46,0.04,GBR,25,22,13,8,2,1
 queve,Kaitlin Quevedo,Kaitlin,Quevedo,107,2,0.61,0.89,0.44,0.54,0.36,0.04,ESP,20,33,13,7,3,1
-uchij,Moyuka Uchijima,Moyuka,Uchijima,108,2,0.56,0.88,0.42,0.47,0.36,0.03,JPN,24,30,18,2,8,1
-sheri,Mayar Sherif,Mayar,Sherif,109,2,0.78,0.86,0.47,0.55,0.41,0.01,EGY,30,47,19,10,0,1
-kasin,Victoria Jimenez Kasintseva,Victoria,Jimenez Kasintseva,110,2,0.65,0.81,0.30,0.32,0.18,0.01,AND,20,7,13,4,6,1
+uchij,Moyuka Uchijima,Moyuka,Uchijima,108,2,0.56,0.88,0.42,0.47,0.35,0.03,JPN,24,30,18,2,8,1
+sheri,Mayar Sherif,Mayar,Sherif,109,2,0.79,0.87,0.48,0.55,0.43,0.01,EGY,30,48,19,10,0,1
+kasin,Victoria Jimenez Kasintseva,Victoria,Jimenez Kasintseva,110,2,0.68,0.84,0.41,0.46,0.38,0.02,AND,20,7,13,4,6,0
 galfi,Dalma Galfi,Dalma,Galfi,111,2,0.61,0.85,0.36,0.42,0.31,0.05,HUN,27,7,11,1,9,1
 sun,Lulu Sun,Lulu,Sun,112,2,0.57,0.89,0.37,0.43,0.40,0.06,NZL,25,2,6,4,6,0
 kuder,Polina Kudermetova,Polina,Kudermetova,113,2,0.59,0.86,0.43,0.49,0.40,0.06,UZB,23,33,16,4,6,0
 blink,Anna Blinkova,Anna,Blinkova,114,2,0.62,0.88,0.43,0.49,0.41,0.02,RUS,27,14,12,4,6,1
 kuder1,Veronika Kudermetova,Veronika,Kudermetova,115,2,0.60,0.90,0.39,0.47,0.40,0.09,RUS,29,0,0,4,6,0
-grabh,Julia Grabher,Julia,Grabher,116,2,0.65,0.76,0.37,0.48,0.44,0.03,AUT,30,20,19,5,5,1
+grabh,Julia Grabher,Julia,Grabher,116,2,0.67,0.77,0.38,0.46,0.43,0.02,AUT,30,21,20,6,4,1
 prest,Taylah Preston,Taylah,Preston,117,2,0.62,0.84,0.40,0.53,0.39,0.02,AUS,20,2,3,2,8,0
 chara,Alina Charaeva,Alina,Charaeva,118,2,0.50,0.81,0.44,0.56,0.46,0.06,ARM,24,25,16,5,5,1
 kawa,Katarzyna Kawa,Katarzyna,Kawa,119,2,0.58,0.85,0.45,0.54,0.35,0.06,POL,33,37,18,6,4,1

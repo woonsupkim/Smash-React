@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-17T17:01:12.132Z",
-  "seasonN": 3308,
+  "generatedAt": "2026-07-19T22:00:40.477Z",
+  "seasonN": 3328,
   "lastStreak": {
     "key": "atp|grass",
     "len": 17
@@ -28,24 +28,24 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-17: called 2 of 9 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-07-17: called 2 of 9 winners."
+      "caption": "Receipts from 2026-07-19: called 3 of 5 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-07-19: called 3 of 5 winners."
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 45 of 60 winners called, 2 wins over the bookies, 24 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon ATP report card: 45 of 60 winners called, 2 wins over the bookies, 24 exact scorelines."
+      "caption": "Wimbledon ATP report card: 27 of 33 winners called, 2 wins over the bookies, 11 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon ATP report card: 27 of 33 winners called, 2 wins over the bookies, 11 exact scorelines."
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 43 of 61 winners called, 1 wins over the bookies, 16 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon WTA report card: 43 of 61 winners called, 1 wins over the bookies, 16 exact scorelines."
+      "caption": "Wimbledon WTA report card: 21 of 34 winners called, 10 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon WTA report card: 21 of 34 winners called, 10 exact scorelines."
     },
     {
       "file": "draw-road-atp.png",
@@ -80,22 +80,6 @@
       "alt": "Linda Noskova's path, round by round."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
-      "format": "square",
-      "category": "moments",
-      "caption": "3,250 matches graded in public - season benchmark 68%, zero deletions. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "3,250 matches graded in public - season benchmark 68%, zero deletions."
-    },
-    {
-      "file": "streak.png",
-      "type": "streak",
-      "format": "square",
-      "category": "moments",
-      "caption": "17 straight ATP grass-court winners called. Deployed calls, graded in public - streaks end, receipts don't. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Streak card: 17 consecutive correct calls on ATP grass."
-    },
-    {
       "file": "autopsy.png",
       "type": "upset-autopsy",
       "format": "square",
@@ -108,7 +92,7 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,308 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,328 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -116,7 +100,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -124,7 +108,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. /track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. /track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -148,7 +132,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,308 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -180,24 +164,24 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "45 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "45 days until the US Open."
+      "caption": "43 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "43 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1357 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1357 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1364 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1364 matches this season."
     },
     {
       "file": "hype-story.png",
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "45 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "45 days to the US Open."
+      "caption": "43 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "43 days to the US Open."
     }
   ]
 }
