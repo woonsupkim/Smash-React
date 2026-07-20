@@ -212,6 +212,84 @@ function precompute(tour) {
     return { w1, n };
   }
 
+  // ── Exogenous-factor enrichment (the `exo` trial) ───────────────────────
+  // Court pace: serve-points-won rate per completed match, grouped by
+  // tournament id. Tournament ids are PER-EDITION in this API, so this is a
+  // within-event running estimate: by the middle rounds the event's pace is
+  // measured from its own earlier matches (strictly before the case date -
+  // leak-free); early rounds fall back to null (surface average).
+  const paceByTid = new Map(); // tid -> [{t, r}] sorted by time, with prefix sums
+  const surfPace = { hard: { s: 0, n: 0 }, clay: { s: 0, n: 0 }, grass: { s: 0, n: 0 } };
+  {
+    const seenPace = new Set();
+    for (const [, matches] of bundle.files) {
+      for (const m of matches) {
+        if (m.result_type !== 'completed' || !m.date || !m.stats || seenPace.has(String(m.id))) continue;
+        seenPace.add(String(m.id));
+        const surf = normSurf(bundle.surfaceMap[String(m.tournamentId)]);
+        if (!surf) continue;
+        let rs = 0, rn = 0;
+        for (const side of [m.stats.player1, m.stats.player2]) {
+          const svpt = Number(side?.firstServeOf) || 0;
+          const won = (Number(side?.winningOnFirstServe) || 0) + (Number(side?.winningOnSecondServe) || 0);
+          if (svpt >= 30) { rs += won / svpt; rn++; }
+        }
+        if (!rn) continue;
+        const r = rs / rn;
+        const tid = String(m.tournamentId);
+        if (!paceByTid.has(tid)) paceByTid.set(tid, []);
+        paceByTid.get(tid).push({ t: new Date(m.date).getTime(), r });
+        surfPace[surf].s += r; surfPace[surf].n++;
+      }
+    }
+    for (const list of paceByTid.values()) {
+      list.sort((a, b) => a.t - b.t);
+      let acc = 0;
+      for (const e of list) { acc += e.r; e.cum = acc; }
+    }
+  }
+  const paceOf = (tid, date, surface) => {
+    const list = paceByTid.get(String(tid));
+    if (!list || !surfPace[surface].n) return null;
+    const t = new Date(date).getTime();
+    // Count entries strictly before the case (linear scan is fine: per-event
+    // lists are tournament-sized).
+    let k = 0;
+    while (k < list.length && list[k].t < t) k++;
+    if (k < 8) return null; // too few earlier matches at this event
+    return +(list[k - 1].cum / k - surfPace[surface].s / surfPace[surface].n).toFixed(4);
+  };
+
+  // Workload/rust from a player's file: uncapped layoff days (capped 120),
+  // games in the previous match, and games played over the last 14 days.
+  const gamesOf = (result) => {
+    let g = 0;
+    for (const mt of String(result || '').matchAll(/(\d+)-(\d+)/g)) g += Number(mt[1]) + Number(mt[2]);
+    return g;
+  };
+  function workloadOf(ourId, caseM) {
+    const asOf = new Date(caseM.date);
+    let lastDate = null, prevGames = 0, g14 = 0;
+    for (const m of bundle.files.get(ourId) || []) {
+      if (m.id === caseM.id || m.result_type !== 'completed' || !m.date) continue;
+      const d = new Date(m.date);
+      if (d >= asOf) continue;
+      const g = gamesOf(m.result);
+      if (!lastDate || d > lastDate) { lastDate = d; prevGames = g; }
+      if (asOf - d < 14 * 864e5) g14 += g;
+    }
+    return { layoff: lastDate ? Math.min(120, Math.round((asOf - lastDate) / 864e5)) : 120, prevGames, g14 };
+  }
+
+  // Ages from the cached profile birthdays (no API).
+  let profiles = {};
+  try { profiles = JSON.parse(fs.readFileSync(path.join(bundle.RAW, 'player-profiles.json'), 'utf8')); } catch { /* absent */ }
+  const ageAt = (ourId, date) => {
+    const b = profiles[ourId]?.birthday;
+    if (!b) return null;
+    return +(((new Date(date)) - new Date(b)) / (365.25 * 864e5)).toFixed(1);
+  };
+
   const out = [];
   let done = 0;
   for (const c of cases) {
@@ -247,6 +325,8 @@ function precompute(tour) {
     const rankB = bundle.ranks[surface].get(p2) || 999;
     const f1 = fatigueOf(p1, m), f2 = fatigueOf(p2, m);
     const h2h = h2hOf(m);
+    const w1 = workloadOf(p1, m), w2 = workloadOf(p2, m);
+    const rawSurf = bundle.surfaceMap[String(m.tournamentId)];
     out.push({
       id: String(m.id), date: m.date, surface, p1Won,
       sim, ana,
@@ -256,6 +336,13 @@ function precompute(tour) {
       rest1: f1.rest, rest2: f2.rest, sets1: f1.sets, sets2: f2.sets,
       form1: formOf(p1, m), form2: formOf(p2, m),
       h2hW1: h2h.w1, h2hN: h2h.n,
+      // exogenous-factor fields (the `exo` trial)
+      indoor: rawSurf === 'I.hard' || rawSurf === 'Carpet' ? 1 : 0,
+      pace: paceOf(m.tournamentId, m.date, surface),
+      layoff1: w1.layoff, layoff2: w2.layoff,
+      prevG1: w1.prevGames, prevG2: w2.prevGames,
+      g14_1: w1.g14, g14_2: w2.g14,
+      age1: ageAt(p1, m.date), age2: ageAt(p2, m.date),
     });
   }
   if (!fs.existsSync(path.join(__dirname, 'output'))) fs.mkdirSync(path.join(__dirname, 'output'), { recursive: true });
@@ -1179,6 +1266,144 @@ function cmdScoreline() {
   }
 }
 
+// ── Exogenous-factor trials: market, court pace, fatigue v2, indoor, age ──
+// Every candidate is a feature set for the antisymmetric logistic stacker,
+// walk-forward by quarter under the exact protocol of cmdStack. Baselines:
+// the production 3-weight blend and the base stacker. Verdicts come with a
+// paired bootstrap vs the blend on the SAME matches.
+function stackOOF(rows, featFn, { lambda = 1, minTrain = 150 } = {}) {
+  const sorted = [...rows].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const folds = new Map();
+  for (const r of sorted) {
+    const k = evalCore.foldKey(r.date);
+    if (!folds.has(k)) folds.set(k, []);
+    folds.get(k).push(r);
+  }
+  const train = [];
+  const oof = [];
+  for (const [k, test] of folds) {
+    if (train.length >= minTrain) {
+      const w = evalCore.fitLogistic(train.map(featFn), train.map((r) => (r.p1Won ? 1 : 0)), { lambda });
+      for (const r of test) oof.push({ ...r, p: evalCore.predictLogistic(w, featFn(r)), won: r.p1Won ? 1 : 0, fold: k });
+    }
+    train.push(...test);
+  }
+  return oof;
+}
+
+// Paired bootstrap on the common matches: P(candidate has lower log loss)
+// and the accuracy delta CI. 1000 resamples.
+function pairedBoot(cand, base, reps = 1000) {
+  const byId = new Map(base.map((r) => [r.id, r]));
+  const pairs = cand.filter((r) => byId.has(r.id)).map((r) => {
+    const b = byId.get(r.id);
+    const ll = (p, won) => -(won ? Math.log(evalCore.clampP(p)) : Math.log(1 - evalCore.clampP(p)));
+    return {
+      dLL: ll(r.p, r.won) - ll(b.p, b.won),
+      dAcc: (((r.p >= 0.5) === !!r.won) ? 1 : 0) - (((b.p >= 0.5) === !!b.won) ? 1 : 0),
+    };
+  });
+  if (pairs.length < 50) return null;
+  let better = 0;
+  const accDeltas = [];
+  let seed = 12345;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < reps; i++) {
+    let sLL = 0, sAcc = 0;
+    for (let j = 0; j < pairs.length; j++) {
+      const p = pairs[Math.floor(rnd() * pairs.length)];
+      sLL += p.dLL; sAcc += p.dAcc;
+    }
+    if (sLL < 0) better++;
+    accDeltas.push(sAcc / pairs.length);
+  }
+  accDeltas.sort((a, b) => a - b);
+  return {
+    n: pairs.length,
+    pBetterLL: better / reps,
+    dAcc: pairs.reduce((s, p) => s + p.dAcc, 0) / pairs.length,
+    dAccLo: accDeltas[Math.floor(reps * 0.025)],
+    dAccHi: accDeltas[Math.floor(reps * 0.975)],
+  };
+}
+
+function cmdExo() {
+  const tours = process.env.TOUR ? [process.env.TOUR] : ['atp', 'wta'];
+  for (const tour of tours) {
+    console.log(`\n══ ${tour.toUpperCase()} - exogenous factors (walk-forward) ══`);
+    const bundle = loadTourRaw(tour);
+    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true }).filter((r) => r.ana != null);
+    const cov = (f) => rows.filter(f).length;
+    console.log(`n=${rows.length} | coverage: market ${cov((r) => r.market != null)} | pace ${cov((r) => r.pace != null)} | age ${cov((r) => r.age1 != null && r.age2 != null)} | indoor ${cov((r) => r.indoor === 1)}`);
+
+    // Feature builders. Every feature is antisymmetric (sign flips when the
+    // players swap) or a symmetric context gate multiplying an antisymmetric
+    // core - required by the zero-intercept logistic.
+    const base = stackFeatures;
+    const F = {
+      '+market': (r) => [...base(r), r.market != null ? clamp3(evalCore.logit(r.market)) : 0],
+      '+fatigue2': (r) => [...base(r),
+        (Math.log1p(Math.min(r.layoff1 ?? 21, 21)) - Math.log1p(Math.min(r.layoff2 ?? 21, 21))),
+        ((r.g14_2 ?? 0) - (r.g14_1 ?? 0)) / 60,            // heavier recent load = penalty
+        ((r.prevG2 ?? 0) - (r.prevG1 ?? 0)) / 40,          // longer previous match = penalty
+        ((r.layoff2 >= 60 ? 1 : 0) - (r.layoff1 >= 60 ? 1 : 0)), // rust flag
+      ],
+      '+indoor': (r) => [...base(r), (r.indoor || 0) * clamp3(evalCore.logit(r.ana)), (r.indoor || 0) * clamp3(evalCore.logit(r.eloProbP1))],
+      '+pace': (r) => [...base(r), (r.pace != null ? Math.max(-0.06, Math.min(0.06, r.pace)) * 20 : 0) * clamp3(evalCore.logit(r.ana))],
+      '+age': (r) => [...base(r), (r.age1 != null && r.age2 != null) ? Math.max(-1.5, Math.min(1.5, (r.age2 - r.age1) / 10)) : 0],
+      '+all(no market)': (r) => [...F['+fatigue2'](r).slice(0, base(r).length + 4),
+        (r.indoor || 0) * clamp3(evalCore.logit(r.ana)), (r.indoor || 0) * clamp3(evalCore.logit(r.eloProbP1)),
+        (r.pace != null ? Math.max(-0.06, Math.min(0.06, r.pace)) * 20 : 0) * clamp3(evalCore.logit(r.ana)),
+        (r.age1 != null && r.age2 != null) ? Math.max(-1.5, Math.min(1.5, (r.age2 - r.age1) / 10)) : 0],
+      '+all+market': (r) => [...F['+all(no market)'](r), r.market != null ? clamp3(evalCore.logit(r.market)) : 0],
+    };
+
+    // Baselines + candidates, one OOF each. (walkForwardOOF blends probP1 -
+    // the LITE cases carry the closed-form prob as `ana`, so map it in.)
+    const oof3 = evalCore.walkForwardOOF(rows.map((r) => ({ ...r, probP1: r.ana })));
+    const ids = new Set(oof3.map((r) => r.id));
+    const inIds = (l) => l.filter((r) => ids.has(r.id));
+    const oofBaseStack = inIds(stackOOF(rows, base));
+    const oofBy = {};
+    for (const [name, fn] of Object.entries(F)) oofBy[name] = inIds(stackOOF(rows, fn));
+
+    const line = (name, list, boot) => {
+      if (!list.length) return;
+      let extra = '';
+      if (boot) extra = ` | dAcc ${(boot.dAcc * 100).toFixed(2)}pt [${(boot.dAccLo * 100).toFixed(2)}, ${(boot.dAccHi * 100).toFixed(2)}] | P(better LL) ${(boot.pBetterLL * 100).toFixed(0)}%`;
+      console.log(`  ${name.padEnd(24)} | n=${String(list.length).padEnd(5)} | LL ${evalCore.logLoss(list).toFixed(4)} | acc ${(evalCore.accuracy(list) * 100).toFixed(1)}%${extra}`);
+    };
+    const blockFor = (label, filter) => {
+      console.log(label);
+      const b3 = oof3.filter(filter);
+      line('blend3 (production)', b3);
+      line('stacker (base)', oofBaseStack.filter(filter), pairedBoot(oofBaseStack.filter(filter), b3));
+      for (const name of Object.keys(F)) {
+        line(`stacker ${name}`, oofBy[name].filter(filter), pairedBoot(oofBy[name].filter(filter), b3));
+      }
+    };
+    blockFor('-- all (2024+) --', () => true);
+    blockFor(`-- season (${SEASON_START.slice(0, 4)}) --`, (r) => r.date >= SEASON_START);
+    for (const s of ['hard', 'clay', 'grass']) blockFor(`-- ${s} --`, (r) => r.surface === s);
+
+    // ── The market, on the priced subset: standalone and as an ensemble.
+    const priced = rows.filter((r) => r.market != null);
+    const pids = new Set(oof3.filter((r) => r.market != null).map((r) => r.id));
+    const b3p = oof3.filter((r) => pids.has(r.id));
+    console.log(`-- priced subset (closing odds available, n=${b3p.length}) --`);
+    line('blend3 (production)', b3p);
+    line('market standalone', b3p.map((r) => ({ ...r, p: r.market })), pairedBoot(b3p.map((r) => ({ ...r, p: r.market })), b3p));
+    // Ensemble: two-logit mix of the blend's OOF prob and the market,
+    // refit walk-forward per quarter on strictly earlier OOF rows.
+    const mixRows = oof3.filter((r) => r.market != null).map((r) => ({ ...r, pBlend: r.p }));
+    const oofMix = stackOOF(mixRows, (r) => [clamp3(evalCore.logit(r.pBlend)), clamp3(evalCore.logit(r.market))], { minTrain: 100 });
+    line('blend x market mix', oofMix, pairedBoot(oofMix, b3p));
+    const stackerAllM = oofBy['+all+market'].filter((r) => pids.has(r.id));
+    line('stacker +all+market', stackerAllM, pairedBoot(stackerAllM, b3p));
+  }
+  console.log('\nnote: home-country advantage not testable offline (needs the tournament-names cache, which lives in the CI raw cache); handedness/height need a one-time profile backfill after the API quota resets.');
+}
+
 const cmd = process.argv[2];
 if (cmd === 'precompute') {
   const tours = process.argv[3] ? [process.argv[3]] : ['atp', 'wta'];
@@ -1196,4 +1421,5 @@ else if (cmd === 'decay') cmdDecay();
 else if (cmd === 'frontier2') cmdFrontier2();
 else if (cmd === 'selector') cmdSelector();
 else if (cmd === 'scoreline') cmdScoreline();
-else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2|selector|scoreline');
+else if (cmd === 'exo') cmdExo();
+else console.log('Usage: node experiments.js precompute|elo|shrink|calib|fatigue|market|ana|stack|window|frontier2|selector|scoreline|exo');
