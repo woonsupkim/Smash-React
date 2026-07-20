@@ -39,15 +39,19 @@ export default function SeasonRewind() {
     return () => { alive = false; };
   }, [year]);
 
+  // A frozen archive is forever - treat a malformed one (missing headline
+  // or monthly) as absent rather than letting it crash the page for good.
+  const valid = !!(data && data.headline && Array.isArray(data.monthly));
+
   useDocMeta(
-    data ? `${data.year} Tennis Predictions, Graded: The Season Rewind | Smash` : null,
-    data ? `Every ${data.year} prediction graded in public: ${pct(data.headline.correct, data.headline.n)}% of winners called across ${data.headline.n.toLocaleString()} matches, the boldest calls, and the miss we own.` : null
+    valid ? `${data.year} Tennis Predictions, Graded: The Season Rewind | Smash` : null,
+    valid ? `Every ${data.year} prediction graded in public: ${pct(data.headline.correct, data.headline.n)}% of winners called across ${data.headline.n.toLocaleString()} matches, the boldest calls, and the miss we own.` : null
   );
 
   const monthlyMax = useMemo(() => Math.max(1, ...(data?.monthly || []).map((m) => m.n)), [data]);
 
   if (data === undefined) return <div className="rewind-page"><div className="skeleton rewind-skel" /></div>;
-  if (!data) {
+  if (!valid) {
     return (
       <div className="rewind-page">
         <div className="eyebrow">THE REWIND</div>

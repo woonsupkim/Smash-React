@@ -44,14 +44,11 @@ const pickCorrect = (m) => m.pickCorrect ?? m.smashCorrect;
 const round3 = (x) => Math.round(x * 1000) / 1000;
 
 function main() {
-  const track = readJson(path.join(DATA, 'track_record.json'));
-  if (!track || !Array.isArray(track.matches) || track.matches.length === 0) {
-    console.log('No track record yet; skipping season rewind.');
-    return;
-  }
   const year = new Date().getUTCFullYear();
 
-  // ── Rollover: freeze last year's rewind before the new season overwrites.
+  // ── Rollover FIRST: freeze last year's rewind the moment the year turns,
+  // even while the new season's track record is still empty - otherwise the
+  // archive would wait for the first graded match of the new season.
   const prev = readJson(OUT);
   if (prev && prev.year && prev.year !== year) {
     if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
@@ -60,6 +57,12 @@ function main() {
       fs.writeFileSync(dest, JSON.stringify(prev));
       console.log(`Archived the ${prev.year} season to public/data/seasons/${prev.year}.json`);
     }
+  }
+
+  const track = readJson(path.join(DATA, 'track_record.json'));
+  if (!track || !Array.isArray(track.matches) || track.matches.length === 0) {
+    console.log('No track record yet; skipping season rewind.');
+    return;
   }
 
   const matches = track.matches.filter((m) => m.winner && (m.pickFavorite || m.smashFavorite));

@@ -4,7 +4,7 @@
  * ONE thing per run - the boldest headline available:
  *
  *   1. a graded upset we CALLED yesterday (scorecard "beat the bookies"), or
- *   2. a fresh bold underdog call now locked on the board (favProb <= 0.45).
+ *   2. a locked pick where we back the market's underdog (lock-time odds).
  *
  * One notification per day maximum by design: alerts that fire daily get
  * muted within a week, and this channel exists for the moments that earn it.
@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
-const SITE = (process.env.SITE_URL || 'https://smash-tennis.vercel.app').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const readJson = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
 
 async function main() {
@@ -52,16 +52,28 @@ async function main() {
   }
 
   if (!note) {
+    // Bold call = a pending pick where WE back the market's underdog,
+    // judged by the lock-time odds stamped on the row. (favProb is always
+    // the favorite's number and never dips below 0.5, so "low favProb"
+    // can't define boldness - market disagreement does.)
     const preds = readJson(path.join(DATA, 'predictions.json'))?.predictions || [];
-    const dayAgo = Date.now() - 36 * 3600 * 1000;
+    const stillOpen = (p) => p.status === 'pending' && new Date(p.date) > new Date();
+    const impliedOurs = (p) => {
+      if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1)) return null;
+      const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
+      const mktP1 = q1 / (q1 + q2);
+      return p.favorite === p.p1 ? mktP1 : 1 - mktP1;
+    };
     const bold = preds
-      .filter((p) => p.status === 'pending' && p.favProb <= 0.45 && new Date(p.date) > new Date(dayAgo))
-      .sort((a, b) => a.favProb - b.favProb)[0];
+      .filter(stillOpen)
+      .map((p) => ({ p, mkt: impliedOurs(p) }))
+      .filter((x) => x.mkt != null && x.mkt < 0.5)
+      .sort((a, b) => a.mkt - b.mkt)[0];
     if (bold) {
       note = {
-        title: 'Bold call just locked',
-        body: `We're backing ${bold.favName} at ${Math.round(bold.favProb * 100)}% - the market disagrees. Think we're wrong? Make your pick.`,
-        url: `${SITE}/pickem`,
+        title: 'We just took the underdog',
+        body: `We're backing ${bold.p.favName} at ${Math.round(bold.p.favProb * 100)}% - the market has them at ${Math.round(bold.mkt * 100)}%. Think we're wrong? Make your pick.`,
+        url: `${SITE}/edge`,
       };
     }
   }

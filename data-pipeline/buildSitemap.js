@@ -22,7 +22,7 @@
  * script still exits 0.
  *
  * Usage: node data-pipeline/buildSitemap.js
- * Env:   SITE_URL (optional; defaults to https://smash-tennis.vercel.app)
+ * Env:   SITE_URL (optional; defaults to https://smash-react.vercel.app)
  */
 const fs = require('fs');
 const path = require('path');
@@ -32,7 +32,7 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const DATA = path.join(PUBLIC, 'data');
 
-const SITE = (process.env.SITE_URL || 'https://smash-tennis.vercel.app').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 
 // Exact copy of the slugify in buildShareAssets.js (the ̀-ͯ range
 // strips combining diacritics after NFD normalization) - keep in sync.
@@ -168,8 +168,10 @@ function main() {
   fs.writeFileSync(outFile, xml);
   console.log(`Wrote ${path.relative(ROOT, outFile)} with ${urls.length} urls.`);
 
-  // ── robots.txt: create if absent; append the Sitemap: line if an existing
-  // file lacks one. Never touch anything else in it.
+  // ── robots.txt: create if absent; keep the Sitemap: line CORRECT if
+  // present (a stale domain would otherwise be permanent - robots.txt is
+  // committed and this used to refuse to touch an existing line). Other
+  // content is never clobbered.
   const robotsFile = path.join(PUBLIC, 'robots.txt');
   const sitemapLine = `Sitemap: ${SITE}/sitemap.xml`;
   if (!fs.existsSync(robotsFile)) {
@@ -178,7 +180,13 @@ function main() {
   } else {
     const existing = fs.readFileSync(robotsFile, 'utf8');
     if (/^\s*Sitemap:/im.test(existing)) {
-      console.log('public/robots.txt already has a Sitemap: line; left untouched.');
+      const updated = existing.replace(/^\s*Sitemap:.*$/gim, sitemapLine);
+      if (updated !== existing) {
+        fs.writeFileSync(robotsFile, updated);
+        console.log('Corrected the Sitemap: line in public/robots.txt.');
+      } else {
+        console.log('public/robots.txt Sitemap: line already correct.');
+      }
     } else {
       fs.writeFileSync(robotsFile, `${existing.replace(/\n*$/, '\n')}\n${sitemapLine}\n`);
       console.log('Appended Sitemap: line to existing public/robots.txt.');

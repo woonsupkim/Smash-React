@@ -82,8 +82,19 @@ async function main() {
   // what we have, and let the next run resume where this one stopped.
   let consecFails = 0;
   const CIRCUIT = 8;
+  // Volume cap for the surface loop: on a cold/evicted raw cache, `missing`
+  // can be ~2,000 tournaments - without a cap, a run where the API keeps
+  // SUCCEEDING would burn the whole monthly quota in one go. Converges over
+  // a handful of runs like the name backfill.
+  const SURFACE_LOOKUPS_PER_RUN = 400;
+  let surfaceLookups = 0;
 
   for (const id of missing) {
+    if (surfaceLookups >= SURFACE_LOOKUPS_PER_RUN) {
+      console.warn(`Pausing surface lookups at ${SURFACE_LOOKUPS_PER_RUN} this run (${missing.length - surfaceLookups} left for next run).`);
+      break;
+    }
+    surfaceLookups++;
     if (consecFails >= CIRCUIT) {
       console.warn(`Aborting surface lookups: ${CIRCUIT} consecutive failures (API down or quota-blocked). Resuming next run.`);
       break;

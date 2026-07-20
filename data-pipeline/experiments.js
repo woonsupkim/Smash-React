@@ -369,6 +369,16 @@ function loadCases(tour) {
   return JSON.parse(fs.readFileSync(p, 'utf8')).cases;
 }
 
+// The retune workflow (and local exo runs) regenerate evalcases with LITE=1,
+// which strips the Monte-Carlo sim.c* variants. Commands that score those
+// variants (shrink/calib/ana) need a FULL precompute first - fail loudly
+// instead of printing NaN tables.
+function requireSimVariants(cases, cmdName) {
+  if (cases.some((c) => c.sim && c.sim.c0 != null)) return true;
+  console.error(`evalcases are LITE (no sim.c* variants) - '${cmdName}' needs a full precompute: node experiments.js precompute`);
+  return false;
+}
+
 // Attach elo probs (p1 perspective) to cases; cases without a snapshot drop.
 function withElo(bundle, cases, params) {
   const probs = eloProbsFor(bundle, new Set(cases.map((c) => c.id)), params);
@@ -417,8 +427,10 @@ function cmdShrink() {
   const marginK = process.env.MARGINK === '1';
   for (const tour of ['atp', 'wta']) {
     console.log(`\n══ ${tour.toUpperCase()} - shrinkage variants (rho=${rho}, marginK=${marginK}) ══`);
+    const cases = loadCases(tour);
+    if (!requireSimVariants(cases, 'shrink')) continue;
     const bundle = loadTourRaw(tour);
-    const rows = withElo(bundle, loadCases(tour), { rho, marginK });
+    const rows = withElo(bundle, cases, { rho, marginK });
     for (const c of SHRINK_VARIANTS) report(`shrinkC=${c}`, rows, `c${c}`);
   }
 }
@@ -429,8 +441,10 @@ function cmdCalib() {
   const simKey = process.env.SIMKEY || 'c0';
   for (const tour of ['atp', 'wta']) {
     console.log(`\n══ ${tour.toUpperCase()} - calibration (rho=${rho}, marginK=${marginK}, sim=${simKey}) ══`);
+    const cases = loadCases(tour);
+    if (!requireSimVariants(cases, 'calib')) continue;
     const bundle = loadTourRaw(tour);
-    const rows = withElo(bundle, loadCases(tour), { rho, marginK });
+    const rows = withElo(bundle, cases, { rho, marginK });
     const prepped = rows.map((r) => ({ ...r, probP1: r.sim[simKey] }));
     const oof = evalCore.walkForwardOOF(prepped);
     const raw = evalCore.logLoss(oof);
@@ -496,8 +510,10 @@ function cmdMarket() {
 function cmdAna() {
   for (const tour of ['atp', 'wta']) {
     console.log(`\n══ ${tour.toUpperCase()} - Monte Carlo (400 sims) vs closed-form sim ══`);
+    const cases = loadCases(tour);
+    if (!requireSimVariants(cases, 'ana')) continue;
     const bundle = loadTourRaw(tour);
-    const rows = withElo(bundle, loadCases(tour), { rho: 0.5, marginK: true }).filter((r) => r.ana != null);
+    const rows = withElo(bundle, cases, { rho: 0.5, marginK: true }).filter((r) => r.ana != null);
     for (const [label, key] of [['MC-400', null], ['analytic', 'ana']]) {
       const prepped = rows.map((r) => ({ ...r, probP1: key ? r[key] : r.sim.c0 }));
       const oof = evalCore.walkForwardOOF(prepped);

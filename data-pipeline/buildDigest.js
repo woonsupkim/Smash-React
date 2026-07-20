@@ -32,7 +32,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
 
-const SITE = (process.env.SITE_URL || 'https://smash-tennis.vercel.app').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const LIME = '#c6ff1c';
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 

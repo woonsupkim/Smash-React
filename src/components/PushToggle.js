@@ -55,7 +55,11 @@ export default function PushToggle() {
     try {
       const endpoint = sub.endpoint;
       await sub.unsubscribe();
-      await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+      // Best-effort server cleanup: RLS deliberately has no anon delete
+      // policy (an anonymous caller can't prove endpoint ownership), so
+      // this may be refused - the browser unsubscribe above already stops
+      // delivery, and the sender prunes the dead row on its next run.
+      await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint).then(() => {}, () => {});
       setSub(null);
       toast({ type: 'success', title: 'Alerts off', message: 'No more pings from us.' });
     } catch (err) {

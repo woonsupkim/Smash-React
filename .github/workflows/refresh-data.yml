@@ -140,7 +140,14 @@ jobs:
 
       # Forward test: grade any locked predictions whose results have landed,
       # then lock new ones for upcoming matches.
+      # continue-on-error: the script hard-crashes on a corrupt ledger BY
+      # DESIGN (never silently restart the locked forward record) - but that
+      # protection shouldn't discard the whole day's stats/track-record
+      # refresh with it. The alert step after the commit names this step
+      # when it fails.
       - name: Update forward predictions
+        id: predictions
+        continue-on-error: true
         env:
           # For lock-time market odds on pending picks (~4-6 requests/run);
           # without the key the step still locks predictions, just unpriced.
@@ -318,13 +325,13 @@ jobs:
       # The cosmetic generators are continue-on-error so a card-render crash
       # can't discard the data commit - but their failures still surface here.
       - name: Open an issue if a cosmetic generator failed
-        if: steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.season_rewind.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure'
+        if: steps.predictions.outcome == 'failure' || steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.season_rewind.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TITLE="Cosmetic generator failed in data refresh"
-          BODY="The data refresh committed fine, but a presentation step failed on $(date -u +%Y-%m-%d): title_odds=${{ steps.title_odds.outcome }}, scorecard=${{ steps.scorecard.outcome }}, share_assets=${{ steps.share_assets.outcome }}, motion_assets=${{ steps.motion_assets.outcome }}. See the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="The data refresh committed fine, but a fault-isolated step failed on $(date -u +%Y-%m-%d): predictions=${{ steps.predictions.outcome }}, title_odds=${{ steps.title_odds.outcome }}, scorecard=${{ steps.scorecard.outcome }}, season_rewind=${{ steps.season_rewind.outcome }}, share_assets=${{ steps.share_assets.outcome }}, motion_assets=${{ steps.motion_assets.outcome }}. See the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' --repo "${{ github.repository }}")
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY" --repo "${{ github.repository }}"

@@ -166,8 +166,11 @@ create policy "users lock their own bracket"
 -- Web-push subscriptions for upset alerts. Run once in the Supabase SQL
 -- editor. Anonymous browsers subscribe (no account needed for alerts), so:
 --  * insert: open to anon - a subscription is just a delivery address.
---  * delete: allowed only when the caller names the exact endpoint URL,
---    which is an unguessable capability only that browser holds.
+--  * delete: NO anon policy. RLS can't verify "you own this endpoint" for
+--    an anonymous caller, and `using (true)` would let anyone wipe the
+--    table. Unsubscribing works without it: the browser-side unsubscribe
+--    stops delivery immediately, and the pipeline sender prunes the dead
+--    row on the next send (404/410 cleanup in sendPush.js).
 --  * select: NO anon policy. Only the service-role key (used by the
 --    pipeline sender in CI) can read the list - subscriber endpoints are
 --    not public data.
@@ -184,7 +187,3 @@ alter table public.push_subscriptions enable row level security;
 create policy "anyone can subscribe"
   on public.push_subscriptions for insert
   with check (true);
-
-create policy "unsubscribe by endpoint"
-  on public.push_subscriptions for delete
-  using (true);

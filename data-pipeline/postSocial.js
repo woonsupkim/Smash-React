@@ -27,7 +27,7 @@
  *
  * Usage: node data-pipeline/postSocial.js
  * Env:   AUTOPOST_WEBHOOK_URL (optional), SITE_URL (optional; defaults to
- *        https://smash-tennis.vercel.app)
+ *        https://smash-react.vercel.app)
  */
 const fs = require('fs');
 const path = require('path');
@@ -35,7 +35,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const MANIFEST = path.join(ROOT, 'public', 'data', 'share', 'manifest.json');
 
-const SITE = (process.env.SITE_URL || 'https://smash-tennis.vercel.app').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const WEBHOOK = process.env.AUTOPOST_WEBHOOK_URL;
 const MAX_POSTS = 3;
 

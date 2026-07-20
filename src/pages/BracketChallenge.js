@@ -50,19 +50,26 @@ function modelBracket(field, survival) {
   return picks;
 }
 
-// Wins-per-player inside the event, counting only field-vs-field matches.
-// Single elimination means two R16 survivors can only meet from the R16 on,
-// so every such match IS a bracket result: 1 win = reached QF, 2 = SF,
-// 3 = final, 4 = champion.
+// Bracket wins per player inside the event. Single elimination means two
+// R16 survivors can only meet from the R16 on, so every field-vs-field
+// ledger row is a bracket result. Some field players have no roster id
+// (unresolved qualifiers), so their matches never reach the ledger - a
+// naive win count would then UNDERCOUNT their opponents. Date-ordered
+// round propagation recovers those invisible wins: when A beats B, the
+// round they met at is max(progress so far) of either player, so A's
+// progress becomes that round + 1 even if A's earlier win is missing.
 function actualProgress(track, eventName, fieldIds) {
-  const wins = new Map();
-  const inField = (id) => fieldIds.has(id);
-  for (const m of track?.matches || []) {
-    if (cleanEventName(m.event) !== eventName) continue;
-    if (!inField(m.p1) || !inField(m.p2)) continue;
-    wins.set(m.winner, (wins.get(m.winner) || 0) + 1);
+  const rows = (track?.matches || [])
+    .filter((m) => cleanEventName(m.event) === eventName && fieldIds.has(m.p1) && fieldIds.has(m.p2))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const prog = new Map(); // id -> bracket wins (0..4)
+  for (const m of rows) {
+    const loser = m.winner === m.p1 ? m.p2 : m.p1;
+    const round = Math.max(prog.get(m.winner) || 0, prog.get(loser) || 0);
+    prog.set(loser, Math.max(prog.get(loser) || 0, round));
+    prog.set(m.winner, Math.max(prog.get(m.winner) || 0, round + 1));
   }
-  return wins; // id -> bracket wins (0..4)
+  return prog;
 }
 
 function scoreEntry(picks, wins) {
@@ -98,13 +105,20 @@ export default function BracketChallenge() {
 
   const entry = odds?.events?.[tour];
   const eventName = entry ? cleanEventName(entry.event) : null;
-  const field = entry?.draw?.field?.length === 16 ? entry.draw.field : null;
+  // Slot fallbacks for unresolved qualifiers (null roster ids): every
+  // consumer below - picker, model bracket, byId, saved picks - speaks the
+  // same 'slotN' language, so a null id can never collapse the lookup map
+  // or render a blank name.
+  const field = useMemo(() => {
+    const raw = entry?.draw?.field?.length === 16 ? entry.draw.field : null;
+    return raw ? raw.map((p, i) => ({ ...p, id: p.id ?? `slot${i}` })) : null;
+  }, [entry]);
   const survival = entry?.draw?.survival;
-  const eventKey = entry ? `${tour}-${slugify(eventName)}-${new Date(entry.history?.[0]?.date || Date.now()).getUTCFullYear()}` : null;
+  const eventKey = entry ? `${tour}-${slugify(eventName)}-${new Date(entry.startsAt || entry.history?.[0]?.date || Date.now()).getUTCFullYear()}` : null;
   const open = !!(field && entry.status === 'live' && entry.fieldSize === 16);
   const gradeable = !!(field && (entry.fieldSize < 16 || entry.status === 'final'));
 
-  useEffect(() => { setSel(emptyPicks()); }, [tour, eventKey]);
+  useEffect(() => { setSel(emptyPicks()); setEntries(null); }, [tour, eventKey]);
 
   useEffect(() => {
     if (!supabase || !eventKey) return;
@@ -112,7 +126,8 @@ export default function BracketChallenge() {
       .then(({ data }) => setEntries(data || []));
   }, [eventKey]);
 
-  const fieldIds = useMemo(() => new Set((field || []).map((p) => p.id).filter(Boolean)), [field]);
+  // Real roster ids only: slotN ids can never appear in the ledger.
+  const fieldIds = useMemo(() => new Set((field || []).map((p) => p.id).filter((id) => !String(id).startsWith('slot'))), [field]);
   const wins = useMemo(
     () => (gradeable && eventName ? actualProgress(track, eventName, fieldIds) : new Map()),
     [gradeable, track, eventName, fieldIds]
@@ -153,8 +168,10 @@ export default function BracketChallenge() {
         event_key: eventKey,
         picks,
       });
-      if (error) throw error;
-      toast({ type: 'success', title: 'Bracket locked', message: 'Graded round by round from here. No take-backs.' });
+      if (error && error.code !== '23505') throw error;
+      toast(error
+        ? { type: 'error', title: 'Already locked', message: 'You have a bracket for this slam - one entry, no take-backs.' }
+        : { type: 'success', title: 'Bracket locked', message: 'Graded round by round from here. No take-backs.' });
       const { data } = await supabase.from('bracket_entries').select('user_id, display_name, picks, created_at').eq('event_key', eventKey);
       setEntries(data || []);
     } catch (err) {
@@ -204,7 +221,10 @@ export default function BracketChallenge() {
             {open ? 'ENTRIES OPEN - LOCK YOURS BEFORE RESULTS START' : entry.status === 'final' ? 'FINAL - GRADED' : 'IN FLIGHT - ENTRIES CLOSED, GRADING LIVE'}
           </div>
 
-          {open && !mine && (
+          {/* With cloud on, wait for entries to load before offering the
+              picker - otherwise a fast finger could double-submit while
+              `mine` is still unknown. */}
+          {open && !mine && (!cloudEnabled || entries !== null) && (
             <>
               <div className="challenge-bracket">
                 {ROUND_META.map((round, r) => (

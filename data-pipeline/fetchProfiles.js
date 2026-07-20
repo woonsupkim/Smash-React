@@ -77,6 +77,13 @@ async function main() {
     await new Promise((r) => setTimeout(r, 300)); // be polite to the API
   }
 
+  // Ages drift: a cached age computed at fetch time never has a birthday
+  // again. Recompute every stored age from the (immutable) birthday on
+  // every run - zero API cost, always current.
+  for (const entry of Object.values(cache)) {
+    if (entry?.birthday) entry.age = ageFromBirthday(entry.birthday);
+  }
+
   fs.writeFileSync(OUT_PATH, JSON.stringify(cache, null, 2));
   console.log(`Saved profiles for ${Object.keys(cache).length} players to ${OUT_PATH}`);
 }

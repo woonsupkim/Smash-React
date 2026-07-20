@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-
-Sitemap: https://smash-tennis.vercel.app/sitemap.xml
+Sitemap: https://smash-react.vercel.app/sitemap.xml

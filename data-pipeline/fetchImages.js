@@ -135,9 +135,18 @@ async function main() {
   if (!fs.existsSync(PLAYERS_DIR)) fs.mkdirSync(PLAYERS_DIR, { recursive: true });
   const roster = loadRoster();
 
-  const missing = roster.filter(([id]) => !fs.existsSync(path.join(PLAYERS_DIR, `${id}.png`)));
+  // Negative cache: players with no free-licensed image anywhere get a
+  // dated marker and are re-checked monthly instead of on every run -
+  // Wikimedia rate-limits aggressively and the answer rarely changes daily.
+  const NO_IMAGE_PATH = path.join(__dirname, 'raw', TOUR === 'wta' ? 'women' : '', 'no-image.json');
+  let noImage = {};
+  try { noImage = JSON.parse(fs.readFileSync(NO_IMAGE_PATH, 'utf8')); } catch { /* first run */ }
+  const RETRY_MS = 30 * 864e5;
+  const recentlyStruckOut = (id) => noImage[id] && (Date.now() - new Date(noImage[id]).getTime()) < RETRY_MS;
+
+  const missing = roster.filter(([id]) => !fs.existsSync(path.join(PLAYERS_DIR, `${id}.png`)) && !recentlyStruckOut(id));
   if (missing.length === 0) {
-    console.log('Every roster player already has an image.');
+    console.log('Every roster player has an image or a recent no-image marker.');
     return;
   }
 
@@ -171,7 +180,8 @@ async function main() {
             ok = true;
             console.log(`  ${name}: saved from Wikipedia (${url.split('/').pop()})`);
           } else {
-            console.log(`  ${name}: no image on Wikidata or Wikipedia`);
+            console.log(`  ${name}: no image on Wikidata or Wikipedia (rechecking in 30 days)`);
+            noImage[id] = new Date().toISOString();
             lastErr = null;
             break;
           }
@@ -184,6 +194,7 @@ async function main() {
     }
     if (lastErr) console.log(`  ${name}: error after retry (${lastErr.message})`);
   }
+  try { fs.writeFileSync(NO_IMAGE_PATH, JSON.stringify(noImage, null, 2)); } catch { /* raw dir may be absent locally */ }
   console.log(`Done. ${found}/${missing.length} images fetched. Remaining players fall back to default.png.`);
 }
 

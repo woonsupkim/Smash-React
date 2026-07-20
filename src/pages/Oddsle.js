@@ -76,21 +76,24 @@ export default function Oddsle() {
       .catch(() => setMatches([]));
   }, []);
 
+  const todayKey = utcDayKey();
+
   // Today's five: deterministic sample over the eligible ledger, sorted by
-  // id first so everyone draws from the identical deck.
+  // id first so everyone draws from the identical deck. Keyed on todayKey
+  // so a tab left open across UTC midnight reshuffles instead of replaying
+  // yesterday's five under today's number.
   const daily = useMemo(() => {
     if (!matches) return null;
     const deck = matches
       .filter((m) => m.winner && m.score && m.event && m.name1 && m.name2 && (m.pickProbP1 ?? m.probP1) != null)
       .sort((a, b) => String(a.id).localeCompare(String(b.id)));
     if (deck.length < ROUNDS) return [];
-    const rand = mulberry32(hashStr(`oddsle-${utcDayKey()}`));
+    const rand = mulberry32(hashStr(`oddsle-${todayKey}`));
     const chosen = new Set();
     while (chosen.size < ROUNDS) chosen.add(Math.floor(rand() * deck.length));
     return [...chosen].map((i) => deck[i]);
-  }, [matches]);
+  }, [matches, todayKey]);
 
-  const todayKey = utcDayKey();
   const played = store[todayKey];
   const streak = useMemo(() => computeStreak(store), [store]);
 
