@@ -25,6 +25,10 @@ const PAGES = [
 
 for (const [path, name] of PAGES) {
   test(`axe: no serious or critical violations on ${name}`, async ({ page }) => {
+    // Pre-seed the intro-seen flag: the home hero's once-per-browser fade-in
+    // otherwise races axe, which reads mid-animation opacity as a contrast
+    // failure (flaky under load, not a real violation).
+    await page.addInitScript(() => { try { localStorage.setItem('smash_intro_seen', '1'); } catch { /* private mode */ } });
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     const results = await new AxeBuilder({ page }).analyze();

@@ -30,6 +30,7 @@ export default function EdgeBoard() {
     'Every match where our model and the bookies disagreed on the winner, graded in public: our pick, the market pick, and who was right.'
   );
   const [data, setData] = useState(null);
+  const [preds, setPreds] = useState(null);
   const [tour, setTour] = useState('all');
 
   useEffect(() => {
@@ -37,7 +38,28 @@ export default function EdgeBoard() {
       .then((r) => r.json())
       .then((d) => setData({ ...d, matches: cleanEvents(d.matches) }))
       .catch(() => setData({ matches: [] }));
+    fetch(process.env.PUBLIC_URL + '/data/predictions.json')
+      .then((r) => r.json())
+      .then((d) => setPreds(cleanEvents(d.predictions)))
+      .catch(() => setPreds([]));
   }, []);
+
+  // THE FORWARD EDGE: pending picks that carry lock-time odds - the market's
+  // price at the moment we locked, before the match is played. Only splits
+  // (different winners) make the board; agreements carry no edge.
+  const forward = useMemo(() => {
+    return (preds || [])
+      .filter((p) => p.status === 'pending' && p.lockOdd1 && p.lockOdd2)
+      .filter((p) => tour === 'all' || p.tour === tour)
+      .map((p) => {
+        const mktP1 = impliedP1(p.lockOdd1, p.lockOdd2);
+        const mktFav = mktP1 >= 0.5 ? p.p1 : p.p2;
+        return { ...p, mktP1, mktFav, disagree: p.favorite !== mktFav };
+      })
+      .filter((p) => p.disagree)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 10);
+  }, [preds, tour]);
 
   // Rows where the ledger has both closing odds and a market favorite.
   const oddsRows = useMemo(() => {
@@ -130,6 +152,44 @@ export default function EdgeBoard() {
           </button>
         ))}
       </div>
+
+      {forward.length > 0 && (
+        <>
+          <div className="edge-section-label">The forward edge · locked, not yet played</div>
+          <div className="edge-board edge-forward">
+            {forward.map((p) => {
+              const ourName = p.favName;
+              const mktName = p.mktFav === p.p1 ? p.name1 : p.name2;
+              const mktProb = p.mktFav === p.p1 ? p.mktP1 : 1 - p.mktP1;
+              return (
+                <div className="edge-row" key={p.id}>
+                  <div className="edge-row-meta">
+                    <span className="edge-row-event">{p.tour.toUpperCase()}{p.event ? ` · ${p.event}` : ''}</span>
+                    <span className="edge-row-date">{new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  <div className="edge-row-match">
+                    {[[p.p1, p.name1], [p.p2, p.name2]].map(([pid, name], i) => (
+                      <Link key={pid} className="edge-player" to={`/player/${p.tour}/${pid}`}>
+                        <img className="edge-face" src={playerPhoto(p.tour, pid)} alt="" loading="lazy" />
+                        <span>{name}</span>
+                        {i === 0 && <span className="edge-vs">vs</span>}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="edge-row-calls">
+                    <span className="edge-call us">WE SAY {lastName(ourName)} {pct(p.favProb)}</span>
+                    <span className="edge-call">MARKET SAYS {lastName(mktName)} {pct(mktProb)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="edge-hero-note">
+            Market prices captured at the moment we locked each pick. These grade
+            into the board below as results land - no take-backs on either side.
+          </div>
+        </>
+      )}
 
       <div className="edge-section-label">Biggest splits, graded</div>
       <div className="edge-board">

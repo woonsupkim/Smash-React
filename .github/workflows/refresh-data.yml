@@ -141,6 +141,10 @@ jobs:
       # Forward test: grade any locked predictions whose results have landed,
       # then lock new ones for upcoming matches.
       - name: Update forward predictions
+        env:
+          # For lock-time market odds on pending picks (~4-6 requests/run);
+          # without the key the step still locks predictions, just unpriced.
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: npm run build-predictions
 
       # Model guardrails: per tour x surface, compare the deployed engine's

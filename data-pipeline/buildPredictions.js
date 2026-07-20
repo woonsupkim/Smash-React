@@ -277,6 +277,57 @@ async function run() {
     }
   }
 
+  // ── 2b. Capture lock-time market odds (Phase 1 of the Market engine) ────
+  // The upcoming-matches endpoint serves live pre-match bookmaker odds on
+  // the current plan (~2-3 requests per tour per run). The FIRST time odds
+  // appear for a still-pending, not-yet-started prediction they are stamped
+  // on the row and never overwritten: that snapshot is "what the market
+  // said when WE locked", the honest basis for the future deploy-or-not
+  // comparison (closing odds flatter the market; lock-time odds are the
+  // fair fight). Failures skip silently - odds are evidence, not a blocker.
+  const API_KEY = process.env.RAPIDAPI_KEY;
+  let stamped = 0;
+  if (API_KEY) {
+    const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
+    const pairKey = (a, b) => [normName(a), normName(b)].sort().join('|');
+    for (const league of ['atp', 'wta']) {
+      const wanted = new Map(); // name-pair key -> pending row still needing odds
+      for (const p of store.predictions) {
+        if (p.tour === league && p.status === 'pending' && !p.lockOdd1 && new Date(p.date) > new Date()) {
+          wanted.set(pairKey(p.name1, p.name2), p);
+        }
+      }
+      if (!wanted.size) continue;
+      try {
+        for (let page = 1; page <= 3 && wanted.size; page++) {
+          const res = await fetch(`https://${HOST}/tennis/v2/ms-api/upcoming/matches/${league}?limit=50&page=${page}`, {
+            headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
+          });
+          if (!res.ok) break;
+          const list = (await res.json()).matches || [];
+          for (const m of list) {
+            const key = pairKey(m.player1?.name || '', m.player2?.name || '');
+            const row = wanted.get(key);
+            if (!row) continue;
+            const o1 = Number(m.player1?.odd) || Number(m.odds?.k1) || null;
+            const o2 = Number(m.player2?.odd) || Number(m.odds?.k2) || null;
+            if (!(o1 > 1) || !(o2 > 1)) continue;
+            const p1IsFirst = normName(row.name1) === normName(m.player1?.name || '');
+            row.lockOdd1 = p1IsFirst ? o1 : o2;
+            row.lockOdd2 = p1IsFirst ? o2 : o1;
+            row.lockOddsAt = new Date().toISOString();
+            if (m.tournament?.country) row.tCountry = m.tournament.country;
+            wanted.delete(key);
+            stamped++;
+          }
+          if (list.length < 50) break;
+        }
+      } catch (err) {
+        console.warn(`  odds capture (${league}) failed: ${err.message}`);
+      }
+    }
+  }
+
   store.generatedAt = new Date().toISOString();
   store.predictions.sort((a, b) => new Date(b.date) - new Date(a.date));
   fs.writeFileSync(outPath, JSON.stringify(store));
@@ -284,7 +335,7 @@ async function run() {
   const pending = store.predictions.filter((p) => p.status === 'pending').length;
   const decided = store.predictions.filter((p) => p.status !== 'pending');
   const wins = decided.filter((p) => p.correct).length;
-  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
+  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}, lock-odds stamped ${stamped}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
   if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 
