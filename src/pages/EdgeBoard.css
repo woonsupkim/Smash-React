@@ -49,6 +49,26 @@
 .edge-hero-n { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text-1); }
 .edge-hero-nlabel { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; color: var(--text-3); line-height: 1.4; }
 .edge-hero-note { font-size: 0.74rem; color: var(--text-3); margin: 0.6rem 0 1.5rem; }
+
+/* The $1 test: hypothetical flat-stake payout, us vs the market */
+.edge-money {
+  margin-top: 0.85rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+}
+.edge-money-label {
+  font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em;
+  color: var(--text-3); margin-bottom: 0.5rem;
+}
+.edge-money-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.edge-money-cell { font-size: 0.95rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.edge-money-cell strong { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; }
+.edge-money-cell.pos strong { color: var(--accent-positive); }
+.edge-money-cell.neg strong { color: var(--accent-negative); }
+.edge-money-cell.us.pos strong { color: var(--accent-brand); }
+.edge-money-note { font-size: 0.72rem; color: var(--text-3); margin-top: 0.5rem; }
 .edge-empty {
   background: var(--surface-1);
   border: 1px solid var(--border-1);

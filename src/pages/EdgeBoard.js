@@ -83,6 +83,17 @@ export default function EdgeBoard() {
     const dis = oddsRows.filter((m) => m.disagree);
     const usRight = dis.filter((m) => pickCorrect(m)).length;
     const mktRight = dis.filter((m) => m.oddCorrect).length;
+    // The $1 test: stake $1 on every split, once on OUR pick and once on
+    // the market's own favorite, both paid at the closing odds. Splits mean
+    // we're usually holding the underdog ticket - the accuracy edge
+    // compounds into a payout edge.
+    let usReturn = 0, mktReturn = 0;
+    for (const m of dis) {
+      const ourOdds = pickFavorite(m) === m.p1 ? m.od1 : m.od2;
+      const mktOdds = m.oddFav === m.p1 ? m.od1 : m.od2;
+      if (pickCorrect(m)) usReturn += ourOdds;
+      if (m.oddCorrect) mktReturn += mktOdds;
+    }
     return {
       n: oddsRows.length,
       disagreements: dis.length,
@@ -90,6 +101,8 @@ export default function EdgeBoard() {
       mktRight,
       usAcc: dis.length ? Math.round((usRight / dis.length) * 100) : 0,
       mktAcc: dis.length ? Math.round((mktRight / dis.length) * 100) : 0,
+      usNet: usReturn - dis.length,
+      mktNet: mktReturn - dis.length,
     };
   }, [oddsRows]);
 
@@ -138,6 +151,23 @@ export default function EdgeBoard() {
         <div className="edge-empty">
           No graded disagreements for this filter yet. The moment we and the market split
           on a winner, the receipt lands here.
+        </div>
+      )}
+      {stats.disagreements > 0 && (
+        <div className="edge-money">
+          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked on every split, both ways</div>
+          <div className="edge-money-row">
+            <span className={`edge-money-cell us ${stats.usNet >= 0 ? 'pos' : 'neg'}`}>
+              $1 on our picks → <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
+            </span>
+            <span className={`edge-money-cell ${stats.mktNet >= 0 ? 'pos' : 'neg'}`}>
+              $1 on the market's → <strong>{stats.mktNet >= 0 ? '+' : '-'}${Math.abs(stats.mktNet).toFixed(0)}</strong>
+            </span>
+          </div>
+          <div className="edge-money-note">
+            Hypothetical, settled at the closing odds each side was actually quoted.
+            Splits put us on the underdog ticket, so being right pays more than being popular.
+          </div>
         </div>
       )}
       <div className="edge-hero-note">
