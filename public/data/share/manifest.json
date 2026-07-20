@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T22:00:40.477Z",
+  "generatedAt": "2026-07-20T08:54:43.515Z",
   "seasonN": 3328,
   "lastStreak": {
     "key": "atp|grass",
@@ -36,16 +36,16 @@
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 27 of 33 winners called, 2 wins over the bookies, 11 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon ATP report card: 27 of 33 winners called, 2 wins over the bookies, 11 exact scorelines."
+      "caption": "Wimbledon ATP report card: 22 of 27 winners called, 2 wins over the bookies, 10 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon ATP report card: 22 of 27 winners called, 2 wins over the bookies, 10 exact scorelines."
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 21 of 34 winners called, 10 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon WTA report card: 21 of 34 winners called, 10 exact scorelines."
+      "caption": "Wimbledon WTA report card: 15 of 27 winners called, 8 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon WTA report card: 15 of 27 winners called, 8 exact scorelines."
     },
     {
       "file": "draw-road-atp.png",
@@ -78,6 +78,14 @@
       "category": "draw",
       "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. /draw #tennis #atp #wta #tennisprediction",
       "alt": "Linda Noskova's path, round by round."
+    },
+    {
+      "file": "weekly.png",
+      "type": "weekly",
+      "format": "square",
+      "category": "weekly",
+      "caption": "The week in calls: 53 of 88 winners called, 1 wins over the bookies. Season benchmark: 68%. /track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 53 of 88 winners called, 1 wins over the bookies."
     },
     {
       "file": "autopsy.png",
@@ -164,8 +172,8 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "43 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "43 days until the US Open."
+      "caption": "42 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "42 days until the US Open."
     },
     {
       "file": "hype-surface.png",
@@ -180,8 +188,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "43 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "43 days to the US Open."
+      "caption": "42 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "42 days to the US Open."
     }
   ]
 }
