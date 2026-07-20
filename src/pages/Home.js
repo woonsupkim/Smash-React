@@ -92,6 +92,42 @@ function wilsonHalf(k, n) {
 // One home page for both tours: the board, stat rail, scorecard, and title
 // odds all cover ATP and WTA together, and the deep pages (H2H, Brackets)
 // carry their own tour switchers.
+// Personalization without accounts: greet a returning visitor with what
+// THEY have going - the Oddsle streak and their calls against the model,
+// both already sitting in localStorage. Renders nothing for first-timers,
+// so the hero stays clean where it matters most.
+function WelcomeBack() {
+  const facts = React.useMemo(() => {
+    const out = [];
+    try {
+      const oddsle = JSON.parse(localStorage.getItem('smashOddsle') || '{}');
+      const today = new Date().toISOString().slice(0, 10);
+      const playedToday = !!oddsle[today];
+      // Consecutive UTC days ending today (or yesterday if today is unplayed).
+      let streak = 0;
+      const d = new Date(`${today}T00:00:00Z`);
+      if (!playedToday) d.setUTCDate(d.getUTCDate() - 1);
+      while (oddsle[d.toISOString().slice(0, 10)]) { streak++; d.setUTCDate(d.getUTCDate() - 1); }
+      if (streak > 0 && !playedToday) out.push({ to: '/oddsle', text: `🔥 ${streak}-day Oddsle streak on the line - today's five are live` });
+      else if (playedToday) out.push({ to: '/oddsle', text: `✅ Oddsle #${oddsle[today].n} done: ${oddsle[today].score}/10${streak > 1 ? ` · ${streak}-day streak` : ''}` });
+    } catch { /* no oddsle history */ }
+    try {
+      const calls = JSON.parse(localStorage.getItem('smashCalls') || '{}');
+      const n = Object.keys(calls).length;
+      if (n >= 3) out.push({ to: '/pickem', text: `🎯 ${n} calls cast against the model - see how you stack up` });
+    } catch { /* no calls */ }
+    return out.slice(0, 2);
+  }, []);
+  if (!facts.length) return null;
+  return (
+    <div className="home-welcome" aria-label="Your progress">
+      {facts.map((f) => (
+        <Link key={f.to} to={f.to} className="home-welcome-chip">{f.text}</Link>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   // 'loading' | 'ready' | 'error' - drives skeleton vs content vs quiet omission
   const [proof, setProof] = useState({ state: 'loading' });
@@ -260,6 +296,7 @@ export default function Home() {
               Build a Bracket
             </Button>
           </div>
+          <WelcomeBack />
         </header>
 
         {/* ── Stat rail: the proof, one click from its receipts ──────────
@@ -521,8 +558,20 @@ export default function Home() {
               <p className="home-nav-desc">Seed your own fantasy slam and let the engine play out every round to a champion.</p>
               <span className="home-nav-go">Build yours →</span>
             </Link>
-            <Link to="/track-record" className="home-nav-card">
+            <Link to="/oddsle" className="home-nav-card">
               <div className="home-nav-num">03</div>
+              <div className="home-nav-name">Oddsle</div>
+              <p className="home-nav-desc">The daily game: five real matches, call the winners, outguess the model, keep the streak.</p>
+              <span className="home-nav-go">Play today's five →</span>
+            </Link>
+            <Link to="/edge" className="home-nav-card">
+              <div className="home-nav-num">04</div>
+              <div className="home-nav-name">The Edge</div>
+              <p className="home-nav-desc">Where we disagree with the betting market, and who turned out to be right. Both sides graded.</p>
+              <span className="home-nav-go">See the splits →</span>
+            </Link>
+            <Link to="/track-record" className="home-nav-card">
+              <div className="home-nav-num">05</div>
               <div className="home-nav-name">Track Record</div>
               <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
               <span className="home-nav-go">View the record →</span>

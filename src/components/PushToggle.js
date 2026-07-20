@@ -6,6 +6,7 @@
 // subscription is anonymous - a delivery address, not an account.
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../auth/AuthContext';
 import { toast } from './ui/Toast';
 
 const VAPID = process.env.REACT_APP_VAPID_PUBLIC_KEY;
@@ -17,6 +18,7 @@ const b64ToUint8 = (b64) => {
 };
 
 export default function PushToggle() {
+  const { user } = useAuth();
   const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID && !!supabase;
   const [sub, setSub] = useState(undefined); // undefined = checking, null = off
   const [busy, setBusy] = useState(false);
@@ -39,7 +41,9 @@ export default function PushToggle() {
       const reg = await navigator.serviceWorker.ready;
       const s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(VAPID) });
       const json = s.toJSON();
-      const { error } = await supabase.from('push_subscriptions').insert({ endpoint: json.endpoint, keys: json.keys });
+      // Signed-in subscribers get personal recaps ("you went 3-1"); the
+      // user link is optional and anonymous subscriptions work unchanged.
+      const { error } = await supabase.from('push_subscriptions').insert({ endpoint: json.endpoint, keys: json.keys, user_id: user?.id ?? null });
       if (error && error.code !== '23505') throw error; // unique violation = already subscribed, fine
       setSub(s);
       toast({ type: 'success', title: 'Upset alerts on', message: 'We only ring the bell for bold calls and graded upsets.' });

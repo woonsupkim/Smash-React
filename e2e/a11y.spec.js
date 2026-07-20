@@ -21,6 +21,8 @@ const PAGES = [
   ['/compare/atp/jannik-sinner-vs-carlos-alcaraz', 'compare page'],
   ['/season', 'season rewind'],
   ['/challenge', 'bracket challenge'],
+  ['/form', 'form chart'],
+  ['/event/wimbledon', 'event page'],
 ];
 
 for (const [path, name] of PAGES) {

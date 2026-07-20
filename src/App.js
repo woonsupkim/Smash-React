@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './auth/AuthContext';
 import AccountButton from './auth/AccountButton';
 import { initMonitoring } from './utils/monitoring';
+import { CHANGELOG } from './data/changelog';
 import { ToastHost } from './components/ui/Toast';
 import { Analytics } from '@vercel/analytics/react';
 import { motion } from 'framer-motion';
@@ -43,6 +44,8 @@ const Compare = lazy(() => import('./pages/Compare'));
 const CompareHub = lazy(() => import('./pages/Compare').then((m) => ({ default: m.CompareHub })));
 const SeasonRewind = lazy(() => import('./pages/SeasonRewind'));
 const BracketChallenge = lazy(() => import('./pages/BracketChallenge'));
+const FormChart = lazy(() => import('./pages/FormChart'));
+const EventPage = lazy(() => import('./pages/EventPage'));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Disclaimer })));
@@ -59,6 +62,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/today', label: 'Today', tourAgnostic: true },
       { to: '/h2h', label: 'H2H Studio' },
+      { to: '/form', label: 'The Form Chart', tourAgnostic: true },
       { to: '/compare', label: 'Compare Players', tourAgnostic: true },
       { to: '/draw', label: 'Draw', tourAgnostic: true },
     ],
@@ -109,6 +113,18 @@ function NavBar() {
   // Which pillar dropdown is open on desktop (click-to-open, esc/blur close).
   const [openGroup, setOpenGroup] = useState(null);
 
+  // What's-new pulse: a one-time dot on the Play pillar whenever a release
+  // ships that the browser hasn't seen. Opening the Play menu (where the
+  // new toys live) clears it; the menu's "What's new" link tells the story.
+  const releaseKey = `${CHANGELOG[0]?.version}-${CHANGELOG[0]?.date}`;
+  const [unseenRelease, setUnseenRelease] = useState(() => {
+    try { return localStorage.getItem('smash_whatsnew_seen') !== releaseKey; } catch { return false; }
+  });
+  const markReleaseSeen = () => {
+    try { localStorage.setItem('smash_whatsnew_seen', releaseKey); } catch { /* private mode */ }
+    setUnseenRelease(false);
+  };
+
   // Close everything whenever navigation happens (link tap, back button).
   useEffect(() => { setNavOpen(false); setOpenGroup(null); }, [location.pathname, location.search]);
 
@@ -147,35 +163,49 @@ function NavBar() {
         </button>
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
-            {NAV_GROUPS.map((group) => (
-              <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
-                <button
-                  type="button"
-                  className={`nav-link nav-pillar-btn${groupActive(group) ? ' active' : ''}`}
-                  aria-expanded={openGroup === group.label}
-                  aria-haspopup="true"
-                  onClick={() => setOpenGroup((g) => (g === group.label ? null : group.label))}
-                >
-                  {group.label}
-                  <span className="nav-pillar-caret" aria-hidden="true">▾</span>
-                </button>
-                <ul className="nav-pillar-menu" hidden={openGroup !== group.label}>
-                  {group.items.map(({ to, label, tourAgnostic }) => {
-                    const target = tourAgnostic ? to : withTour(to, isWomen);
-                    return (
-                      <li key={to}>
-                        <NavLink
-                          to={target}
-                          className={`nav-pillar-link${isLinkActive(target) ? ' active' : ''}`}
-                        >
-                          {label}
+            {NAV_GROUPS.map((group) => {
+              const showPulse = unseenRelease && group.label === 'Play';
+              return (
+                <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
+                  <button
+                    type="button"
+                    className={`nav-link nav-pillar-btn${groupActive(group) ? ' active' : ''}`}
+                    aria-expanded={openGroup === group.label}
+                    aria-haspopup="true"
+                    onClick={() => {
+                      if (showPulse) markReleaseSeen();
+                      setOpenGroup((g) => (g === group.label ? null : group.label));
+                    }}
+                  >
+                    {group.label}
+                    {showPulse && <span className="nav-pillar-pulse" aria-label="new features" />}
+                    <span className="nav-pillar-caret" aria-hidden="true">▾</span>
+                  </button>
+                  <ul className="nav-pillar-menu" hidden={openGroup !== group.label}>
+                    {group.items.map(({ to, label, tourAgnostic }) => {
+                      const target = tourAgnostic ? to : withTour(to, isWomen);
+                      return (
+                        <li key={to}>
+                          <NavLink
+                            to={target}
+                            className={`nav-pillar-link${isLinkActive(target) ? ' active' : ''}`}
+                          >
+                            {label}
+                          </NavLink>
+                        </li>
+                      );
+                    })}
+                    {group.label === 'Play' && (
+                      <li>
+                        <NavLink to="/changelog" className="nav-pillar-link nav-pillar-whatsnew">
+                          What's new in v{CHANGELOG[0]?.version} →
                         </NavLink>
                       </li>
-                    );
-                  })}
-                </ul>
-              </li>
-            ))}
+                    )}
+                  </ul>
+                </li>
+              );
+            })}
             <li className="nav-item">
               <AccountButton />
             </li>
@@ -252,6 +282,8 @@ function App() {
           <Route path="/season" element={<SeasonRewind />} />
           <Route path="/season/:year" element={<SeasonRewind />} />
           <Route path="/challenge" element={<BracketChallenge />} />
+          <Route path="/form" element={<FormChart />} />
+          <Route path="/event/:slug" element={<EventPage />} />
 
           {/* The live slam draw (both tours inside) and the model card */}
           <Route path="/draw" element={<DrawPage />} />

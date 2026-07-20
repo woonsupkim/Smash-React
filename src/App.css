@@ -271,6 +271,16 @@ h1, h2, h3, .heading-xl, .heading-lg,
 }
 .nav-pillar-caret { font-size: 0.6rem; opacity: 0.7; transition: transform 0.15s ease; }
 .nav-pillar.open .nav-pillar-caret { transform: rotate(180deg); }
+/* One-time what's-new dot: sits on the Play pillar until the menu is opened */
+.nav-pillar-pulse {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent-brand);
+  margin: 0 0.1rem 0.5rem 0.15rem;
+  box-shadow: 0 0 6px rgba(198, 255, 28, 0.8);
+}
+.nav-pillar-whatsnew { color: var(--accent-brand) !important; font-size: 0.78rem; }
 .nav-pillar-menu {
   list-style: none;
   margin: 0;

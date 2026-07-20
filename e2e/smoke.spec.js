@@ -183,6 +183,26 @@ test('bracket challenge: renders bracket state and the model entry', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('form chart: elo table with movers and tour toggle', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/form');
+  await expect(page.getByRole('heading', { name: /actually hot right now/i })).toBeVisible();
+  await expect(page.locator('.form-tr:not(.head)').first()).toBeVisible({ timeout: 15000 });
+  const firstName = await page.locator('.form-player').first().textContent();
+  await page.getByRole('button', { name: 'WTA', exact: true }).click();
+  await expect(page.locator('.form-player').first()).not.toHaveText(firstName, { timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('event page: graded record, engines, results', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/event/wimbledon');
+  await expect(page.getByRole('heading', { name: /wimbledon, graded/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.event-hero-val').first()).toHaveText(/%/);
+  await expect(page.locator('.event-row').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('today page renders calls or the honest empty state', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/today');

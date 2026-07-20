@@ -62,7 +62,7 @@ function main() {
 
   // ── Static routes (mirrors src/App.js; skips /admin, redirects, and the
   // legal fine-print pages /terms /privacy /disclaimer).
-  const FRESH = new Set(['/', '/today', '/track-record', '/edge', '/oddsle', '/season']); // regenerated every data refresh
+  const FRESH = new Set(['/', '/today', '/track-record', '/edge', '/oddsle', '/season', '/form']); // regenerated every data refresh
   const staticRoutes = [
     '/',
     '/today',
@@ -73,6 +73,7 @@ function main() {
     '/compare',
     '/challenge',
     '/season',
+    '/form',
     '/h2h',
     '/draw',
     '/dream-brackets',
@@ -155,6 +156,25 @@ function main() {
     for (const p of top) urls.push({ loc: `${SITE}/rivalry/${tour}/${p.slug}`, lastmod: null });
     console.log(`Added ${top.length} ${tour.toUpperCase()} rivalry pages.`);
   }
+
+  // ── Event pages: one per tournament with a meaningful graded sample in
+  // the ledger (40+ matches keeps out one-day exhibitions and thin labels).
+  try {
+    const track = readJson(path.join(DATA, 'track_record.json'));
+    const counts = new Map();
+    const cleanEvent = (n) => String(n || '').replace(/\s+-\s+.*$/, '').replace(/^The\s+/i, '').trim();
+    for (const m of track?.matches || []) {
+      const ev = cleanEvent(m.event);
+      if (ev) counts.set(ev, (counts.get(ev) || 0) + 1);
+    }
+    let added = 0;
+    for (const [ev, n] of counts) {
+      if (n < 40) continue;
+      urls.push({ loc: `${SITE}/event/${slugify(ev)}`, lastmod: null });
+      added++;
+    }
+    console.log(`Added ${added} event pages (40+ graded matches).`);
+  } catch { /* no ledger, no event pages */ }
 
   // ── Write sitemap.xml.
   const body = urls

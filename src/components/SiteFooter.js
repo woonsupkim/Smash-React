@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MODEL_VERSION } from '../data/changelog';
+import DigestSignup from './DigestSignup';
 import './SiteFooter.css';
 
 export default function SiteFooter() {
@@ -56,12 +57,14 @@ export default function SiteFooter() {
               </>
             )}
           </p>
+          <DigestSignup />
         </div>
 
         <nav className="site-footer-col" aria-label="Predict">
           <div className="site-footer-head">Predict</div>
           <Link to="/today">Today's Calls</Link>
           <Link to={prefix('/h2h')}>H2H Studio</Link>
+          <Link to="/form">The Form Chart</Link>
           <Link to="/compare">Compare Players</Link>
           <Link to="/draw">The Draw</Link>
           <Link to="/rivalries">Rivalries</Link>

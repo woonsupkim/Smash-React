@@ -520,6 +520,8 @@
   text-transform: uppercase;
 }
 .track-event-select optgroup option { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+.track-event-file { font-size: 0.78rem; font-weight: 700; color: var(--accent-brand); text-decoration: none; align-self: center; }
+.track-event-file:hover { text-decoration: underline; }
 
 /* ── Match log ────────────────────────────────────────────────────────── */
 .track-row {

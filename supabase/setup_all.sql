@@ -1,4 +1,4 @@
--- Smash: complete cloud setup in one paste (schema + pickem + bracket challenge + push).
+-- Smash: complete cloud setup in one paste (schema + pickem + bracket challenge + push + digest).
 -- Run ONCE in the Supabase SQL editor on a fresh project. (CREATE POLICY is not
 -- idempotent, so re-running after success will error harmlessly on the policies.)
 
@@ -179,6 +179,7 @@ create table if not exists public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
   endpoint text not null unique,
   keys jsonb not null,            -- { p256dh, auth } from PushSubscription.toJSON()
+  user_id uuid references auth.users (id), -- optional: signed-in subscribers get personal recaps
   created_at timestamptz not null default now()
 );
 
@@ -186,4 +187,25 @@ alter table public.push_subscriptions enable row level security;
 
 create policy "anyone can subscribe"
   on public.push_subscriptions for insert
+  with check (true);
+
+-- ============ supabase/digest.sql ============
+-- Weekly digest subscribers. Run once in the Supabase SQL editor.
+--  * insert: open to anon - subscribing is just leaving an address.
+--  * select/update/delete: NO anon policies. Only the service-role key
+--    (used by the digest sender in CI) can read the list - subscriber
+--    emails are private data, never exposed to the client.
+-- Unsubscribes are handled by reply/mailto for now (the digest footer says
+-- so); a tokenized unsubscribe link can come later without a schema change.
+
+create table if not exists public.digest_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique check (position('@' in email) > 1),
+  created_at timestamptz not null default now()
+);
+
+alter table public.digest_subscribers enable row level security;
+
+create policy "anyone can subscribe to the digest"
+  on public.digest_subscribers for insert
   with check (true);

@@ -10,6 +10,19 @@ export const MODEL_VERSION = '3.3';
 
 export const CHANGELOG = [
   {
+    version: '3.6',
+    date: '2026-07-20',
+    type: 'product',
+    title: 'The Form Chart, event files, and a front door that knows you',
+    notes: [
+      'THE FORM CHART: live Elo ratings for both tours with the biggest movers of the last two weeks - who is actually hot, not who was hot last autumn. The off-season finally has a living page.',
+      'EVENT FILES: one page per tournament (/event/wimbledon and friends) - our graded record there, engine by engine, with the boldest hit and the latest results. The event filter on the Ledger links straight to them.',
+      'The mobile tab bar grew a Play tab (the daily game, one thumb away), the Play menu shows a one-time pulse when a release ships, and the home page now greets returning visitors with THEIR Oddsle streak and pick record.',
+      'The weekly digest opened to the public: subscribe in the footer, one email a week, every number graded. Signed-in push subscribers now get PERSONAL recaps ("you went 3-1, the model went 2-2") instead of the generic headline, and bracket-challenge players get a ping when a round completes mid-slam.',
+      'Home\'s Explore grid finally sells the good stuff: Oddsle and The Edge are on the front door.',
+    ],
+  },
+  {
     version: '3.5',
     date: '2026-07-18',
     type: 'product',

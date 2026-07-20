@@ -201,25 +201,49 @@ async function main() {
   console.log(`Wrote public/data/digest.html and digest.txt (${lines.length} stat rows). Subject: ${subject}`);
 
   // ── Optional send via Resend. Never fatal.
+  // Recipients = DIGEST_TO (owner) + the public subscriber list from
+  // Supabase (digest_subscribers, readable only with the service key).
+  // Each subscriber gets their own send - addresses are never shared in a
+  // joint "to" line. Capped per run to stay inside Resend's free tier.
   const key = process.env.RESEND_API_KEY;
-  const to = process.env.DIGEST_TO;
-  if (!key || !to) {
-    console.log('RESEND_API_KEY / DIGEST_TO not both set; skipping send.');
+  if (!key) {
+    console.log('RESEND_API_KEY not set; skipping send.');
     return;
   }
-  const from = process.env.DIGEST_FROM || 'smash@updates.local';
-  // Awaited so the process doesn't exit before the send resolves and the
-  // status line actually reaches the workflow log. Still never fatal.
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: to.split(',').map((s) => s.trim()), subject, html, text: txt }),
-    });
-    console.log(`Resend response: ${res.status}${res.ok ? '' : ` ${await res.text().catch(() => '')}`}`);
-  } catch (err) {
-    console.log(`Digest send failed (non-fatal): ${err.message}`);
+  const recipients = new Set((process.env.DIGEST_TO || '').split(',').map((s) => s.trim()).filter(Boolean));
+  const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
+  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/digest_subscribers?select=email`, {
+        headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+      });
+      if (res.ok) for (const r of await res.json()) recipients.add(r.email);
+      else console.log(`Could not read digest subscribers (HTTP ${res.status}); sending to DIGEST_TO only.`);
+    } catch (err) {
+      console.log(`Subscriber fetch failed (non-fatal): ${err.message}`);
+    }
   }
+  if (!recipients.size) {
+    console.log('No digest recipients (no DIGEST_TO, no subscribers); skipping send.');
+    return;
+  }
+  const CAP = 90; // Resend free tier is 100/day; leave headroom for alerts
+  const list = [...recipients].slice(0, CAP);
+  if (recipients.size > CAP) console.warn(`  ! digest recipient list capped at ${CAP} of ${recipients.size} - upgrade the email plan.`);
+  const from = process.env.DIGEST_FROM || 'smash@updates.local';
+  let sent = 0, failed = 0;
+  for (const rcpt of list) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: [rcpt], subject, html, text: txt }),
+      });
+      if (res.ok) sent++; else { failed++; if (failed === 1) console.log(`  first send failure: ${res.status} ${await res.text().catch(() => '')}`); }
+      await new Promise((r) => setTimeout(r, 600)); // stay under Resend's rate limit
+    } catch { failed++; }
+  }
+  console.log(`Digest sent to ${sent} recipient(s)${failed ? `, ${failed} failed` : ''}.`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

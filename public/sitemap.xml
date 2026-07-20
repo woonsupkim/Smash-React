@@ -9,6 +9,7 @@
   <url><loc>https://smash-react.vercel.app/compare</loc></url>
   <url><loc>https://smash-react.vercel.app/challenge</loc></url>
   <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-07-20</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-07-20</lastmod></url>
   <url><loc>https://smash-react.vercel.app/h2h</loc></url>
   <url><loc>https://smash-react.vercel.app/draw</loc></url>
   <url><loc>https://smash-react.vercel.app/dream-brackets</loc></url>
@@ -315,4 +316,21 @@
   <url><loc>https://smash-react.vercel.app/rivalry/wta/belinda-bencic-vs-iga-swiatek</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/linda-noskova-vs-iga-swiatek</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/marta-kostyuk-vs-jessica-pegula</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/brisbane-international</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/asb-classic</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/adelaide-international</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/australian-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/qatar-totalenergies-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/dubai-duty-free-championships</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/bnp-paribas-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/miami-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/monte-carlo-rolex-masters</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/mutua-madrid-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/internazionali-bnl-d-italia</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/french-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/hsbc-championships</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/libema-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/terra-wortmann-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/lexus-eastbourne-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/wimbledon</loc></url>
 </urlset>

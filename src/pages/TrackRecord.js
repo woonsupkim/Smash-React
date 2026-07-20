@@ -14,6 +14,7 @@ import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
 import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
 import { cleanEvents } from '../utils/eventName';
+import { slugify } from '../utils/slug';
 import useDocMeta from '../utils/useDocMeta';
 import './TrackRecord.css';
 
@@ -400,6 +401,11 @@ export default function TrackRecord() {
                   </optgroup>
                 ))}
               </select>
+            )}
+            {eventF !== 'all' && (
+              <Link className="track-event-file" to={`/event/${slugify(eventF)}`}>
+                the {eventF} file →
+              </Link>
             )}
           </div>
 

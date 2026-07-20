@@ -14,6 +14,7 @@ create table if not exists public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
   endpoint text not null unique,
   keys jsonb not null,            -- { p256dh, auth } from PushSubscription.toJSON()
+  user_id uuid references auth.users (id), -- optional: signed-in subscribers get personal recaps
   created_at timestamptz not null default now()
 );
 
