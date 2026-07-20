@@ -140,7 +140,7 @@ const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'sho
 
 // Every caption ends with a destination. SITE_URL (repo variable / env) makes
 // links absolute; without it they stay as site-relative paths.
-const SITE = (process.env.SITE_URL || '').replace(/\/$/, '');
+const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const matchLink = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
 const todayLink = () => `${SITE}/today`;
@@ -824,7 +824,7 @@ async function howItWorks(sc, file1, file2, file3) {
   ${extra}
 ${c.close}`;
   };
-  await render(file1, slide(1, '1000x', 'WE PLAY EVERY MATCH', '1,000 TIMES', 'point by point, serve by serve - before it happens',
+  await render(file1, slide(1, 'EXACT', 'WE COMPUTE EVERY MATCH', 'POINT BY POINT', 'every path the match can take - before it happens',
     `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">real serve and return stats, per surface, recency-weighted</text>`));
   await render(file2, slide(2, 'PICK', 'THEN WE CALL IT,', 'IN PUBLIC', 'win probability · exact score · upset risk',
     `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">locked before play - no edits, no take-backs</text>`));
@@ -1210,6 +1210,89 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   ${vRow(730, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled)}
   ${vRow(810, 'THE RANKINGS', 'NEVER SAW IT', false)}
   <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">graded in public either way - that's the whole point</text>
+${c.close}`;
+  await render(file, base, comps);
+}
+
+// ── EDGE: us vs the betting market, graded ─────────────────────────────────
+// Vig-stripped implied probability for p1 from decimal closing odds (same
+// math as src/pages/EdgeBoard.js - keep in step).
+function impliedP1(od1, od2) {
+  const r1 = 1 / od1, r2 = 1 / od2;
+  return r1 / (r1 + r2);
+}
+
+// The biggest recent SPLIT: a graded match where our pick and the market's
+// favorite differed. Both calls on the card, both graded - the honesty is
+// the aesthetic.
+async function edgeSplitCard(m, tour, file) {
+  const ourFavIsP1 = pickFav(m) === m.p1;
+  const ourName = ourFavIsP1 ? m.name1 : m.name2;
+  const mktName = m.oddFav === m.p1 ? m.name1 : m.name2;
+  const ourPct = Math.round(pickFavProb(m) * 100);
+  const mktP1 = impliedP1(m.od1, m.od2);
+  const mktPct = Math.round((m.oddFav === m.p1 ? mktP1 : 1 - mktP1) * 100);
+  const weWon = pickCorrect(m);
+  const t = eventTheme(m.event, m.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'SPLIT', ghostY: 700 });
+  const vRow = (y, label, txt, good) => `
+  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="${good ? POS : NEG}">${esc(txt)}</text>
+  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+  const comps = [{ input: await circlePhoto(photoPath(tour, m.winner), 170), left: SQ / 2 - 85, top: 260 }];
+  const wName = m.winner === m.p1 ? m.name1 : m.name2;
+  const base = `${c.open}
+  ${eyebrow(SQ, 140, `${m.event || 'tour'} · we disagreed with the market`, t.accent)}
+  <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">THE <tspan fill="${weWon ? LIME : NEG}">${weWon ? 'EDGE' : 'MISS'}</tspan></text>
+  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="60" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">WON</tspan>${m.score ? ` <tspan font-size="40" fill="rgba(255,255,255,0.7)">${esc(m.score)}</tspan>` : ''}</text>
+  ${vRow(640, 'WE SAID', `${last(ourName).toUpperCase()} · ${ourPct}% ${weWon ? '✓' : '✗'}`, weWon)}
+  ${vRow(724, 'MARKET SAID', `${last(mktName).toUpperCase()} · ${mktPct}% ${m.oddCorrect ? '✓' : '✗'}`, !!m.oddCorrect)}
+  <text x="${SQ / 2}" y="820" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">only one side of a split can be right - both get graded</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">every split this season, graded: ${esc(String(SITE).replace(/^https?:\/\//, ''))}/edge</text>
+${c.close}`;
+  await render(file, base, comps);
+}
+
+// The $1 test: flat-stake payout of our picks vs the market's own favorites
+// across every graded split, settled at the closing odds. The honesty
+// footnote is non-negotiable - this card flirts with betting language.
+async function dollarTestCard(edge, file) {
+  const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`;
+  await reportCard({
+    eyebrowText: 'the edge · the $1 test',
+    headline1: '$1 ON EVERY',
+    headline2: 'SPLIT',
+    stats: [
+      { value: money(edge.usNet), label: `our picks, net of $${edge.n} staked` },
+      { value: money(edge.mktNet), label: 'the market\'s own favorites, same stakes' },
+      { value: `${edge.usAcc}% VS ${edge.mktAcc}%`, label: `winners called on the ${edge.n} splits` },
+    ],
+    footNote: 'hypothetical · settled at closing odds · not betting advice',
+    themeKey: 'brand',
+    file,
+    accent: edge.usNet >= 0 ? LIME : NEG,
+  });
+}
+
+// A FORWARD split: a still-pending pick where we back the market's underdog
+// at lock time. The receipt is written before the match - that's the brag.
+async function forwardEdgeCard(p, mktPct, file) {
+  const t = eventTheme(p.event, p.surface);
+  const c = chrome(SQ, SQ, t, { ghost: 'LOCKED', ghostY: 700 });
+  const oppName = p.favorite === p.p1 ? p.name2 : p.name1;
+  const vRow = (y, label, txt) => `
+  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">${esc(txt)}</text>
+  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+  const comps = [{ input: await circlePhoto(photoPath(p.tour, p.favorite), 190), left: SQ / 2 - 95, top: 268 }];
+  const base = `${c.open}
+  ${eyebrow(SQ, 140, `${p.event || 'tour'} · locked, not yet played`, t.accent)}
+  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">WE TOOK THE <tspan fill="${LIME}">DOG</tspan></text>
+  <text x="${SQ / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="64" font-weight="800" fill="#ffffff">${esc(last(p.favName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">OVER</tspan> ${esc(last(oppName).toUpperCase())}</text>
+  ${vRow(650, 'WE SAY', `${esc(last(p.favName).toUpperCase())} · ${Math.round(p.favProb * 100)}%`)}
+  ${vRow(734, 'MARKET SAYS', `${esc(last(p.favName).toUpperCase())} · ONLY ${mktPct}%`)}
+  <text x="${SQ / 2}" y="830" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">odds captured the moment we locked - graded in days, no take-backs</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the forward board: ${esc(String(SITE).replace(/^https?:\/\//, ''))}/edge</text>
 ${c.close}`;
   await render(file, base, comps);
 }
@@ -1706,6 +1789,67 @@ async function run() {
       `Upset autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
   }
 
+  // ── EDGE: us vs the betting market (new collection) ─────────────────────
+  // Splits = graded matches where our deployed pick and the market's
+  // favorite differed, per the closing odds already on the ledger rows.
+  const edgeRows = (track.matches || [])
+    .filter((m) => m.od1 > 1 && m.od2 > 1 && m.oddFav && pickFav(m))
+    .map((m) => ({ ...m, _mktP1: impliedP1(m.od1, m.od2) }))
+    .filter((m) => pickFav(m) !== m.oddFav);
+  if (edgeRows.length >= 20) {
+    let usReturn = 0, mktReturn = 0, usRight = 0, mktRight = 0;
+    for (const m of edgeRows) {
+      const ourOdds = pickFav(m) === m.p1 ? m.od1 : m.od2;
+      const mktOdds = m.oddFav === m.p1 ? m.od1 : m.od2;
+      if (pickCorrect(m)) { usReturn += ourOdds; usRight++; }
+      if (m.oddCorrect) { mktReturn += mktOdds; mktRight++; }
+    }
+    const edge = {
+      n: edgeRows.length,
+      usNet: usReturn - edgeRows.length,
+      mktNet: mktReturn - edgeRows.length,
+      usAcc: Math.round((usRight / edgeRows.length) * 100),
+      mktAcc: Math.round((mktRight / edgeRows.length) * 100),
+    };
+    await dollarTestCard(edge, 'edge-dollar.png');
+    add('edge-dollar.png', 'edge-dollar-test', 'square', 'edge',
+      `The $1 test: $1 on every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}. The market's own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet).toFixed(0)}. Hypothetical, settled at closing odds, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
+      `The $1 test card: flat-stake payout of our picks versus the market's on ${edge.n} disagreements.`);
+
+    // The freshest big split (last 7 days), else the season's biggest gap -
+    // the board always has a story to tell.
+    const ourP1 = (m) => m.pickProbP1 ?? m.smashProbP1 ?? m.probP1;
+    const gap = (m) => Math.abs(ourP1(m) - m._mktP1);
+    const bySize = [...edgeRows].sort((a, b) => gap(b) - gap(a));
+    const recent = edgeRows
+      .filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    const split = recent[0] || bySize[0];
+    if (split) {
+      await edgeSplitCard(split, split.tour, 'edge-split.png');
+      const weWon = pickCorrect(split);
+      add('edge-split.png', 'edge-split', 'square', 'edge',
+        `We disagreed with the market on ${last(split.name1)} vs ${last(split.name2)}${split.event ? ` at the ${split.event}` : ''} - ${weWon ? 'and the model was right' : 'and the market took this one'}. Both calls graded in public, like every split this season: ${SITE}/edge ${tags}`,
+        `Edge split card: our call versus the market's on ${split.name1} vs ${split.name2}, graded.`);
+    }
+  }
+  // Forward split: a pending pick where we hold the underdog ticket per the
+  // lock-time odds (Phase 1 capture). Rendered only when one exists.
+  const fwdSplit = (preds.predictions || [])
+    .filter((p) => p.status === 'pending' && p.lockOdd1 > 1 && p.lockOdd2 > 1 && new Date(p.date) > new Date())
+    .map((p) => {
+      const mktP1 = impliedP1(p.lockOdd1, p.lockOdd2);
+      return { p, mktOurs: p.favorite === p.p1 ? mktP1 : 1 - mktP1 };
+    })
+    .filter((x) => x.mktOurs < 0.5)
+    .sort((a, b) => a.mktOurs - b.mktOurs)[0];
+  if (fwdSplit) {
+    await forwardEdgeCard(fwdSplit.p, Math.round(fwdSplit.mktOurs * 100), 'edge-forward.png');
+    add('edge-forward.png', 'edge-forward', 'square', 'edge',
+      `Locked before play: we're backing ${fwdSplit.p.favName} at ${Math.round(fwdSplit.p.favProb * 100)}% while the market has them at ${Math.round(fwdSplit.mktOurs * 100)}%. Graded within days, no take-backs. ${SITE}/edge ${tags}`,
+      `Forward edge card: our underdog call on ${fwdSplit.p.favName}, locked with the market price attached.`);
+  }
+
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
   add('proof.png', 'proof', 'square', 'promo', `The ${SEASON_YEAR} receipts: ${sc.proofLine}, all graded in public. ${tags}`,
@@ -1727,7 +1871,7 @@ async function run() {
   }
 
   await howItWorks(sc, 'how-it-works-1.png', 'how-it-works-2.png', 'how-it-works-3.png');
-  add('how-it-works-1.png', 'explainer', 'square', 'promo', `How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. ${tags}`);
+  add('how-it-works-1.png', 'explainer', 'square', 'promo', `How Smash works, 1 of 3: we compute every match point by point before it happens - every path it can take, from real serve and return stats. ${tags}`);
   add('how-it-works-2.png', 'explainer', 'square', 'promo', `How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. ${tags}`);
   add('how-it-works-3.png', 'explainer', 'square', 'promo', `How Smash works, 3 of 3: then the results grade us. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${tags}`);
 
