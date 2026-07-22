@@ -31,10 +31,35 @@ const path = require('path');
 const RESERVE = Number(process.env.API_RESERVE || 300);
 const MAX_PER_RUN = Number(process.env.API_MAX_PER_RUN || 600);
 const ALERT_FILE = path.join(__dirname, '..', 'raw', 'api-budget-alert.json');
+const LEDGER_FILE = path.join(__dirname, '..', 'raw', 'api-usage.json');
 
 let used = 0;
 let remaining = null; // last seen X-RateLimit-Requests-Remaining
+let monthLimit = null; // last seen X-RateLimit-Requests-Limit
 let hardStopped = false;
+
+// ── Session ledger ────────────────────────────────────────────────────────
+// Scripts run as separate processes, so per-refresh totals live in a small
+// file keyed by the workflow run (locally: the UTC date). Each process
+// upserts its own line; reportApiUsage.js turns the file into the
+// after-refresh usage summary.
+const runKey = process.env.GITHUB_RUN_ID || `local-${new Date().toISOString().slice(0, 10)}`;
+const scriptKey = `${process.argv[1] ? path.basename(process.argv[1]) : 'unknown'} ${process.argv[2] || ''}`.trim();
+
+function flushLedger() {
+  try {
+    let ledger = {};
+    try { ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf8')); } catch { /* fresh */ }
+    if (ledger.runKey !== runKey) ledger = { runKey, calls: {} };
+    ledger.calls[scriptKey] = used;
+    ledger.total = Object.values(ledger.calls).reduce((s, n) => s + n, 0);
+    if (remaining != null) ledger.lastRemaining = remaining;
+    if (monthLimit != null) ledger.lastLimit = monthLimit;
+    ledger.updatedAt = new Date().toISOString();
+    fs.mkdirSync(path.dirname(LEDGER_FILE), { recursive: true });
+    fs.writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2));
+  } catch { /* accounting must never break fetching */ }
+}
 
 function trip(reason) {
   if (hardStopped) return;
@@ -62,6 +87,10 @@ function note(res) {
   const raw = res?.headers?.get?.('x-ratelimit-requests-remaining');
   const rem = raw == null || raw === '' ? NaN : Number(raw);
   if (Number.isFinite(rem)) remaining = rem;
+  const rawLimit = res?.headers?.get?.('x-ratelimit-requests-limit');
+  const lim = rawLimit == null || rawLimit === '' ? NaN : Number(rawLimit);
+  if (Number.isFinite(lim)) monthLimit = lim;
+  flushLedger();
   if (remaining != null && remaining <= RESERVE) {
     trip(`monthly quota remaining (${remaining}) at or below the ${RESERVE}-request reserve floor`);
   } else if (used >= MAX_PER_RUN) {

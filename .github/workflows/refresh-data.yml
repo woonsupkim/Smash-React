@@ -158,6 +158,14 @@ jobs:
       # recent accuracy against the season, the rankings baseline, and a coin
       # flip. Writes public/data/guardrails.json; a later step opens an alert
       # issue if anything tripped.
+      # After-refresh API usage report: session calls, month cumulative,
+      # remaining, and $ - rendered on this run's summary page. always() so
+      # the numbers show even when a later step fails.
+      - name: Report API usage
+        if: always()
+        continue-on-error: true
+        run: npm run report-api-usage
+
       # API spend guardrail: if any fetcher hard-stopped (quota reserve floor
       # or per-run cap - see data-pipeline/lib/apiBudget.js), open/refresh an
       # issue and clear the marker so the cached copy can't re-alert forever.

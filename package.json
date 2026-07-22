@@ -65,6 +65,7 @@
     "build-sitemap": "node data-pipeline/buildSitemap.js",
     "build-digest": "node data-pipeline/buildDigest.js",
     "build-season-rewind": "node data-pipeline/buildSeasonRewind.js",
+    "report-api-usage": "node data-pipeline/reportApiUsage.js",
     "send-push": "node data-pipeline/sendPush.js",
     "post-social": "node data-pipeline/postSocial.js"
   },
