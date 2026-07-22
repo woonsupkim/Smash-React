@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-20T08:54:43.515Z",
-  "seasonN": 3328,
+  "generatedAt": "2026-07-22T11:55:37.936Z",
+  "seasonN": 3344,
   "lastStreak": {
     "key": "atp|grass",
     "len": 17
@@ -28,31 +28,31 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-19: called 3 of 5 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-07-19: called 3 of 5 winners."
+      "caption": "Receipts from 2026-07-22: called 0 of 1 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-07-22: called 0 of 1 winners."
     },
     {
       "file": "wrap-atp.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon ATP report card: 22 of 27 winners called, 2 wins over the bookies, 10 exact scorelines. Jannik Sinner takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon ATP report card: 22 of 27 winners called, 2 wins over the bookies, 10 exact scorelines."
+      "caption": "Wimbledon ATP report card: 17 of 18 winners called, 2 wins over the bookies, 9 exact scorelines. Jannik Sinner takes the title. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon ATP report card: 17 of 18 winners called, 2 wins over the bookies, 9 exact scorelines."
     },
     {
       "file": "wrap-wta.png",
       "type": "wrap",
       "format": "square",
       "category": "wrap",
-      "caption": "Wimbledon WTA report card: 15 of 27 winners called, 8 exact scorelines. Linda Noskova takes the title. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon WTA report card: 15 of 27 winners called, 8 exact scorelines."
+      "caption": "Wimbledon WTA report card: 8 of 13 winners called, 6 exact scorelines. Linda Noskova takes the title. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Wimbledon WTA report card: 8 of 13 winners called, 6 exact scorelines."
     },
     {
       "file": "draw-road-atp.png",
       "type": "draw-road",
       "format": "square",
       "category": "draw",
-      "caption": "Our last look at the Wimbledon ATP bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction",
+      "caption": "Our last look at the Wimbledon ATP bracket before it was decided. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "alt": "Our last look at the Wimbledon ATP bracket before it was decided."
     },
     {
@@ -60,7 +60,7 @@
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Jannik Sinner's path, round by round. Our last look at the Wimbledon ATP bracket before it was decided. /draw #tennis #atp #wta #tennisprediction",
+      "caption": "Jannik Sinner's path, round by round. Our last look at the Wimbledon ATP bracket before it was decided. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "alt": "Jannik Sinner's path, round by round."
     },
     {
@@ -68,7 +68,7 @@
       "type": "draw-road",
       "format": "square",
       "category": "draw",
-      "caption": "Our last look at the Wimbledon WTA bracket before it was decided. Every line of the bracket: /draw #tennis #atp #wta #tennisprediction",
+      "caption": "Our last look at the Wimbledon WTA bracket before it was decided. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "alt": "Our last look at the Wimbledon WTA bracket before it was decided."
     },
     {
@@ -76,7 +76,7 @@
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. /draw #tennis #atp #wta #tennisprediction",
+      "caption": "Linda Noskova's path, round by round. Our last look at the Wimbledon WTA bracket before it was decided. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "alt": "Linda Noskova's path, round by round."
     },
     {
@@ -88,19 +88,27 @@
       "alt": "The week in calls: 53 of 88 winners called, 1 wins over the bookies."
     },
     {
-      "file": "autopsy.png",
-      "type": "upset-autopsy",
+      "file": "edge-dollar.png",
+      "type": "edge-dollar-test",
       "format": "square",
-      "category": "moments",
-      "caption": "Upset autopsy: No. 95 Halys takes down No. 11. What we said, what the market said, graded in public either way. /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Upset autopsy card: rank 95 beat rank 11, with our call and the market's."
+      "category": "edge",
+      "caption": "The $1 test: $1 on every one of the 240 matches where we and the betting market picked different winners. Our picks: +$63. The market's own favorites: -$66. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 240 disagreements."
+    },
+    {
+      "file": "edge-split.png",
+      "type": "edge-split",
+      "format": "square",
+      "category": "edge",
+      "caption": "We disagreed with the market on Collignon vs Vacherot at the EFG Swiss Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Edge split card: our call versus the market's on Raphael Collignon vs Valentin Vacherot, graded."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,328 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,344 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -108,7 +116,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,344 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -116,7 +124,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. /track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,344 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -124,8 +132,8 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats. #tennis #atp #wta #tennisprediction",
-      "alt": "How Smash works, 1 of 3: we play every match 1,000 times before it happens - point by point, from real serve and return stats."
+      "caption": "How Smash works, 1 of 3: we compute every match point by point before it happens - every path it can take, from real serve and return stats. #tennis #atp #wta #tennisprediction",
+      "alt": "How Smash works, 1 of 3: we compute every match point by point before it happens - every path it can take, from real serve and return stats."
     },
     {
       "file": "how-it-works-2.png",
@@ -140,7 +148,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,328 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,344 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -156,7 +164,7 @@
       "type": "spotlight",
       "format": "square",
       "category": "promo",
-      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 10-0 in recent matches. Their full page: /player/atp/sinne #tennis #atp #wta #tennisprediction",
+      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/sinne #tennis #atp #wta #tennisprediction",
       "alt": "Hottest racket on the ATP right now: Jannik Sinner, 10-0 in recent matches."
     },
     {
@@ -164,7 +172,7 @@
       "type": "spotlight",
       "format": "square",
       "category": "promo",
-      "caption": "Hottest racket on the WTA right now: Linda Noskova, 10-0 in recent matches. Their full page: /player/wta/nosko #tennis #atp #wta #tennisprediction",
+      "caption": "Hottest racket on the WTA right now: Linda Noskova, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/nosko #tennis #atp #wta #tennisprediction",
       "alt": "Hottest racket on the WTA right now: Linda Noskova, 10-0 in recent matches."
     },
     {
@@ -172,24 +180,24 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "42 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "42 days until the US Open."
+      "caption": "40 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "40 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1364 matches this season. ATP 65% · WTA 67% (season benchmark). /track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1364 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1367 matches this season. ATP 65% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1367 matches this season."
     },
     {
       "file": "hype-story.png",
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "42 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "42 days to the US Open."
+      "caption": "40 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "40 days to the US Open."
     }
   ]
 }
