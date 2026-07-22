@@ -26,8 +26,11 @@
  * manifest.json lists every asset with format, category, and a ready caption.
  *
  * Requires sharp (installed on the fly in CI; a local file lock prevents
- * adding it to package.json). Fonts: Barlow Condensed when available (CI
- * installs fonts-barlow), else Arial Narrow / DejaVu.
+ * adding it to package.json). Fonts: Barlow Condensed / Arial Narrow /
+ * DejaVu Sans Condensed (CI installs fonts-dejavu-extra), else plain
+ * DejaVu Sans. Every text element is sized via fitFS against DejaVu Sans
+ * metrics (the widest possible fallback), so a missing font can shrink
+ * type slightly but can never overflow the canvas or a photo panel.
  *
  * Usage: node buildShareAssets.js
  */
@@ -105,9 +108,12 @@ const foilGrad = (id = 'foil') => `
 
 // Hero numeral: tight tracking plus an offset outlined ghost twin behind it,
 // the signature treatment every big stat shares.
-const heroNum = (x, y, text, size, fill, anchor = 'middle') => `
-  <text x="${x + 9}" y="${y + 9}" text-anchor="${anchor}" font-family="${D}" font-size="${size}" font-weight="800" letter-spacing="-0.02em" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2">${esc(text)}</text>
-  <text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${D}" font-size="${size}" font-weight="800" letter-spacing="-0.02em" fill="${fill}">${esc(text)}</text>`;
+const heroNum = (x, y, text, size, fill, anchor = 'middle', maxW = null) => {
+  const s = maxW ? fitFS(text, size, maxW) : size;
+  return `
+  <text x="${x + 9}" y="${y + 9}" text-anchor="${anchor}" font-family="${D}" font-size="${s}" font-weight="800" letter-spacing="-0.02em" fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="2">${esc(text)}</text>
+  <text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${D}" font-size="${s}" font-weight="800" letter-spacing="-0.02em" fill="${fill}">${esc(text)}</text>`;
+};
 
 // ── Film grain: one deterministic RGBA noise tile, composited over every
 // card with 'overlay' - the single cheapest "premium" upgrade there is.
@@ -145,6 +151,37 @@ const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[
 const matchLink = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
 const todayLink = () => `${SITE}/today`;
 
+// ── Width-safe typography ──────────────────────────────────────────────────
+// The font that actually renders these cards is whatever the machine has:
+// Barlow Condensed when installed, plain DejaVu Sans when not. DejaVu is by
+// far the widest face in the chain, so every layout measures against DejaVu
+// metrics: a substituted font can only render NARROWER than planned, never
+// spill off the canvas or under a photo panel. Per-glyph advance widths in
+// em, rounded up (overestimating shrinks text a little; underestimating
+// truncates it).
+const CHAR_EM = (ch) => {
+  if (ch === ' ') return 0.36;
+  if (/[WM@%&]/.test(ch)) return 1.05;
+  if (/[mw]/.test(ch)) return 0.98;
+  if (/[A-Z0-9$#?]/.test(ch)) return 0.78;
+  if (/[a-z]/.test(ch)) return 0.6;
+  if (/[.,:;!'’|()[\]]/.test(ch)) return 0.38;
+  if (/[·\-–_/]/.test(ch)) return 0.52;
+  return 0.85;
+};
+const emW = (s) => [...String(s ?? '')].reduce((w, ch) => w + CHAR_EM(ch), 0);
+// Estimated pixel width at font-size fs (+ letter-spacing in px).
+const textWpx = (s, fs, ls = 0) => emW(s) * fs + Math.max(0, String(s ?? '').length - 1) * ls;
+// Largest font size <= fs that keeps s inside maxW. Measure the PLAIN text
+// (before esc/tspan markup).
+const fitFS = (s, fs, maxW, ls = 0) => {
+  const em = emW(s);
+  if (!em) return fs;
+  const spacing = Math.max(0, String(s).length - 1) * ls;
+  if (em * fs + spacing <= maxW) return fs;
+  return Math.max(12, Math.floor((maxW - spacing) / em));
+};
+
 // Split a short headline into two stacked lines at the middle word.
 function splitHeadline(s) {
   const words = s.split(' ');
@@ -156,10 +193,9 @@ function splitHeadline(s) {
 // ── Chrome for TYPOGRAPHIC cards (gradient + court + ghost + vignette) ─────
 function chrome(w, h, t, { ghost = null, ghostY = null, ghostSize = null } = {}) {
   // Width-aware ghost sizing: the watermark word must live INSIDE the
-  // canvas, not bleed off both edges (0.58em/char covers the condensed
-  // face in CI and the wider local fallback).
+  // canvas, not bleed off both edges, whichever font actually renders it.
   const gsRaw = ghostSize || Math.min(w * 0.62, 660);
-  const gs = ghost ? Math.min(gsRaw, Math.floor((w * 0.94) / (String(ghost).length * 0.58))) : gsRaw;
+  const gs = ghost ? fitFS(ghost, gsRaw, w * 0.94) : gsRaw;
   const open = `
 <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -206,23 +242,28 @@ function chrome(w, h, t, { ghost = null, ghostY = null, ghostSize = null } = {})
 }
 
 function eyebrow(w, y, text, color) {
-  const fs2 = 27;
-  const approx = text.length * (fs2 * 0.8) + 40;
+  const up = text.toUpperCase();
+  // Long kickers (event + tagline) shrink to fit; short ones keep 27px.
+  const fs2 = fitFS(up, 27, w - 220, 6);
+  const approx = textWpx(up, fs2, 6) + 40;
   return `
   <rect x="${w / 2 - approx / 2 - 34}" y="${y - 20}" width="16" height="16" fill="${color}"/>
-  <text x="${w / 2 + 12}" y="${y - 5}" text-anchor="middle" font-family="${U}" font-size="${fs2}" font-weight="700" letter-spacing="6" fill="${color}">${esc(text.toUpperCase())}</text>`;
+  <text x="${w / 2 + 12}" y="${y - 5}" text-anchor="middle" font-family="${U}" font-size="${fs2}" font-weight="700" letter-spacing="6" fill="${color}">${esc(up)}</text>`;
 }
 
-function pill(cx, y, text, color, filled = false) {
-  const w = text.length * 17 + 70;
+// maxW (optional) caps the whole pill's width: the text shrinks to keep the
+// pill inside its column (photo panels hand their own width here).
+function pill(cx, y, text, color, filled = false, maxW = null) {
+  const fs2 = maxW ? fitFS(text, 26, maxW - 50, 2) : 26;
+  const w = Math.ceil(textWpx(text, fs2, 2)) + 50;
   return `
   <rect x="${cx - w / 2}" y="${y}" width="${w}" height="52" rx="26" fill="${filled ? color : 'rgba(0,0,0,0.45)'}" stroke="${color}" stroke-width="3"/>
-  <text x="${cx}" y="${y + 36}" text-anchor="middle" font-family="${U}" font-size="26" font-weight="800" letter-spacing="2" fill="${filled ? INK : color}">${esc(text)}</text>`;
+  <text x="${cx}" y="${y + 36}" text-anchor="middle" font-family="${U}" font-size="${fs2}" font-weight="800" letter-spacing="2" fill="${filled ? INK : color}">${esc(text)}</text>`;
 }
 
 // Small filled tag, left-anchored (photo-card flag style).
 function tag(x, y, text, color) {
-  const w = text.length * 15 + 44;
+  const w = Math.ceil(textWpx(text, 23, 2)) + 40;
   return {
     svg: `
   <rect x="${x}" y="${y}" width="${w}" height="46" fill="${color}"/>
@@ -367,9 +408,11 @@ function photoScrim(w, h) {
 // trophy moments).
 function bottomBar(w, text, { y = null, filled = true, color = LIME, textColor = INK } = {}) {
   const by = y ?? 956;
+  const fs2 = fitFS(text, 44, w - 200, 1);
+  const ty = by + 42 + fs2 * 0.34; // keep the (possibly smaller) text centered in the bar
   return `
   <rect x="40" y="${by}" width="${w - 80}" height="84" rx="42" fill="${filled ? color : 'rgba(0,0,0,0.55)'}" ${filled ? '' : `stroke="${color}" stroke-width="3"`}/>
-  <text x="${w / 2}" y="${by + 56}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" letter-spacing="1" fill="${filled ? textColor : color}">${esc(text)}</text>`;
+  <text x="${w / 2}" y="${ty.toFixed(0)}" text-anchor="middle" font-family="${D}" font-size="${fs2}" font-weight="800" letter-spacing="1" fill="${filled ? textColor : color}">${esc(text)}</text>`;
 }
 
 // ── DAILY: match card (photo treatment) ────────────────────────────────────
@@ -408,15 +451,20 @@ async function matchCard(p, flags, file, result = null, context = null) {
     if (tx === 64) tagsSvg = `<rect x="64" y="434" width="230" height="14" fill="${LIME}"/>`;
   }
 
+  // The headline column ends where the big right-anchored % begins.
+  const pctW = textWpx(`${favPct}%`, 168);
+  const hlMax = SQ - 60 - 64 - pctW - 30;
+  const hlFs = Math.min(fitFS(hl1, 116, hlMax), hl2 ? fitFS(hl2, 116, hlMax) : 116);
+  const kicker = `${p.event} · ${p.surface} · ${fmtDate(p.date)}`.toUpperCase();
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   ${photoScrim(SQ, SQ)}
   <rect x="${SQ - 128}" y="40" width="88" height="48" fill="${p.tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
   <text x="${SQ - 84}" y="74" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${p.tour.toUpperCase()}</text>
 
-  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${p.surface} · ${fmtDate(p.date)}`.toUpperCase())}</text>
-  <text x="60" y="292" font-family="${D}" font-size="116" font-weight="800" fill="#ffffff">${esc(hl1)}</text>
-  ${hl2 ? `<text x="60" y="398" font-family="${D}" font-size="116" font-weight="800" fill="#ffffff">${esc(hl2)}</text>` : ''}
+  <text x="64" y="172" font-family="${U}" font-size="${fitFS(kicker, 27, SQ - 64 - 152, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(kicker)}</text>
+  <text x="60" y="292" font-family="${D}" font-size="${hlFs}" font-weight="800" fill="#ffffff">${esc(hl1)}</text>
+  ${hl2 ? `<text x="60" y="398" font-family="${D}" font-size="${hlFs}" font-weight="800" fill="#ffffff">${esc(hl2)}</text>` : ''}
   ${tagsSvg}
 
   ${heroNum(SQ - 64, 322, `${favPct}%`, 168, LIME, 'end')}
@@ -437,12 +485,12 @@ async function matchCard(p, flags, file, result = null, context = null) {
   <rect x="${favX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/>
   <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="46" fill="rgba(0,0,0,0.65)" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
   <text x="${SQ / 2}" y="${PY + PH / 2 + 16}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">VS</text>
-  ${pill(dogX + PW / 2, PY + PH - 74, `${last(dogName).toUpperCase()}${dogRank ? ` · NO. ${dogRank}` : ''}`, '#ffffff')}
-  ${pill(favX + PW / 2, PY + PH - 74, `${last(favName).toUpperCase()}${favRank ? ` · NO. ${favRank}` : ''}`, LIME, true)}
+  ${pill(dogX + PW / 2, PY + PH - 74, `${last(dogName).toUpperCase()}${dogRank ? ` · NO. ${dogRank}` : ''}`, '#ffffff', false, PW - 12)}
+  ${pill(favX + PW / 2, PY + PH - 74, `${last(favName).toUpperCase()}${favRank ? ` · NO. ${favRank}` : ''}`, LIME, true, PW - 12)}
   ${result ? `
   <g transform="rotate(-10 540 300)">
     <rect x="310" y="236" width="460" height="118" rx="16" fill="rgba(0,0,0,0.55)" stroke="${POS}" stroke-width="9"/>
-    <text x="540" y="318" text-anchor="middle" font-family="${D}" font-size="82" font-weight="800" letter-spacing="4" fill="${POS}">CALLED &#10003;</text>
+    <text x="540" y="318" text-anchor="middle" font-family="${D}" font-size="${fitFS('CALLED W', 82, 420, 4)}" font-weight="800" letter-spacing="4" fill="${POS}">CALLED &#10003;</text>
   </g>` : ''}
   ${bottomBar(SQ, result
     ? `${last(result.winnerName).toUpperCase()} WON${result.score ? ` ${result.score}` : ''} · WE SAID ${favPct}%`
@@ -469,8 +517,8 @@ async function pollCard(p, file) {
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
-  <text x="60" y="330" font-family="${D}" font-size="200" font-weight="800" fill="#ffffff">WHO <tspan fill="${LIME}">WINS?</tspan></text>
+  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)}`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
+  <text x="60" y="330" font-family="${D}" font-size="${fitFS('WHO WINS?', 200, SQ - 120)}" font-weight="800" fill="#ffffff">WHO <tspan fill="${LIME}">WINS?</tspan></text>
   <rect x="64" y="366" width="230" height="14" fill="${LIME}"/>
   <rect x="${aX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
   <rect x="${bX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
@@ -481,8 +529,8 @@ async function pollCard(p, file) {
   <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
   <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="46" fill="rgba(0,0,0,0.65)" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
   <text x="${SQ / 2}" y="${PY + PH / 2 + 16}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">VS</text>
-  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff')}
-  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff')}
+  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff', false, PW - 12)}
+  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff', false, PW - 12)}
   ${bottomBar(SQ, 'VOTE IN THE COMMENTS · ANSWER TOMORROW', { filled: false, y: 968 })}
 </svg>`;
   await renderOn(file, bg, [
@@ -501,7 +549,7 @@ async function coverCard(picks, sc, file) {
   const upsets = picks.filter((p) => p._flags.upset).length;
   const base = `${c.open}
   ${eyebrow(SQ, 200, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
-  <text x="${SQ / 2}" y="418" text-anchor="middle" font-family="${D}" font-size="196" font-weight="800" fill="#ffffff">TODAY'S</text>
+  <text x="${SQ / 2}" y="418" text-anchor="middle" font-family="${D}" font-size="${fitFS("TODAY'S", 196, SQ - 100)}" font-weight="800" fill="#ffffff">TODAY'S</text>
   <text x="${SQ / 2}" y="588" text-anchor="middle" font-family="${D}" font-size="196" font-weight="800" fill="${LIME}">CALLS</text>
   <text x="${SQ / 2}" y="688" text-anchor="middle" font-family="${U}" font-size="35" font-weight="600" fill="rgba(255,255,255,0.85)">${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before play${upsets ? ` · ${upsets} upset pick${upsets > 1 ? 's' : ''}` : ''}</text>
   ${pill(SQ / 2, 742, sc.proofPill, LIME)}
@@ -529,7 +577,7 @@ async function parlayCard(picks, file) {
   <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE SLATE</text>
   ${rows}
   <line x1="130" y1="${lineY}" x2="${SQ - 130}" y2="${lineY}" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-  <text x="${SQ / 2}" y="${lineY + 118}" text-anchor="middle" font-family="${D}" font-size="124" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)}</text>
+  <text x="${SQ / 2}" y="${lineY + 118}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)}`, 124, SQ - 160)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)}</text>
   <text x="${SQ / 2}" y="${lineY + 178}" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">at fair odds · all ${picks.length} hit ${pctTxt(pAll)} of the time by our math</text>
   <text x="${SQ / 2}" y="${lineY + 224}" text-anchor="middle" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.45)">not betting advice - probabilities, publicly graded</text>
 ${c.close}`;
@@ -558,12 +606,12 @@ async function slateStory(picks, sc, file) {
   const footY = (shown.length <= 4 ? 580 : 480) + shown.length * rowH;
   const base = `${c.open}
   ${eyebrow(ST_W, 160, `${picks[0]?.event || ''} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
-  <text x="${ST_W / 2}" y="300" text-anchor="middle" font-family="${D}" font-size="136" font-weight="800" fill="#ffffff">TODAY'S CALLS</text>
+  <text x="${ST_W / 2}" y="300" text-anchor="middle" font-family="${D}" font-size="${fitFS("TODAY'S CALLS", 136, ST_W - 120)}" font-weight="800" fill="#ffffff">TODAY'S CALLS</text>
   <text x="${ST_W / 2}" y="368" text-anchor="middle" font-family="${U}" font-size="29" fill="rgba(255,255,255,0.7)">locked before play · the number is our win probability</text>
   ${rows}
   <rect x="90" y="${footY}" width="${ST_W - 180}" height="176" rx="20" fill="rgba(0,0,0,0.4)" stroke="${LIME}" stroke-width="3"/>
-  <text x="${ST_W / 2}" y="${footY + 76}" text-anchor="middle" font-family="${D}" font-size="66" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)} if every call hits</text>
-  <text x="${ST_W / 2}" y="${footY + 132}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">at fair odds · ${esc(sc.proofLine)}</text>
+  <text x="${ST_W / 2}" y="${footY + 76}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)} if every call hits`, 66, ST_W - 240)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)} if every call hits</text>
+  <text x="${ST_W / 2}" y="${footY + 132}" text-anchor="middle" font-family="${U}" font-size="${fitFS(`at fair odds · ${sc.proofLine}`, 26, ST_W - 240)}" fill="rgba(255,255,255,0.6)">at fair odds · ${esc(sc.proofLine)}</text>
 ${c.close}`;
   await render(file, base);
 }
@@ -578,9 +626,9 @@ async function resultsCard(sc, file) {
   if (y?.worstMiss) lines.push({ txt: `The one we own: ${y.worstMiss.call} lost`, color: 'rgba(255,255,255,0.55)' });
   const base = `${c.open}
   ${eyebrow(SQ, 150, `receipts · ${y?.date || ''}`, t.accent)}
-  ${y ? heroNum(SQ / 2, 400, `${y.correct} OF ${y.n}`, 238, '#ffffff') : ''}
+  ${y ? heroNum(SQ / 2, 400, `${y.correct} OF ${y.n}`, 238, '#ffffff', 'middle', SQ - 120) : ''}
   <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called on yesterday's matches</text>
-  ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="29" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
+  ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="${fitFS(l.txt, 29, SQ - 120)}" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
   ${pill(SQ / 2, 812, sc.proofPill, LIME)}
 ${c.close}`;
   await render(file, base);
@@ -592,16 +640,19 @@ async function championCard(o, tour, file) {
   const hist = (o.history || []).map((h) => h.odds?.[o.champion.name]).filter((v) => v != null);
   const start = (hist.length && hist[0] < 0.99) ? `${Math.round(hist[0] * 100)}% when tracking began` : 'tracked daily, graded in public';
   const composites = [];
+  // The text column ends where the photo panel begins (PX below).
+  const colW = SQ - 64 - 440 - 60 - 26;
+  const champFs = fitFS('CHAMPION', 98, colW);
   // Trophy moment: gold, not lime.
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   <defs>${goldGrad('champGold')}</defs>
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${GOLD}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
-  <text x="60" y="340" font-family="${D}" font-size="98" font-weight="800" fill="#ffffff">YOUR</text>
-  <text x="60" y="442" font-family="${D}" font-size="98" font-weight="800" fill="url(#champGold)">CHAMPION</text>
+  <text x="64" y="192" font-family="${U}" font-size="${fitFS(`${o.event} ${tour}`.toUpperCase(), 27, colW, 6)}" font-weight="700" letter-spacing="6" fill="${GOLD}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
+  <text x="60" y="340" font-family="${D}" font-size="${champFs}" font-weight="800" fill="#ffffff">YOUR</text>
+  <text x="60" y="442" font-family="${D}" font-size="${champFs}" font-weight="800" fill="url(#champGold)">CHAMPION</text>
   <rect x="64" y="470" width="200" height="14" fill="url(#champGold)"/>
-  <text x="64" y="550" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.75)">${esc(start)}</text>
+  <text x="64" y="550" font-family="${U}" font-size="${fitFS(start, 26, colW)}" fill="rgba(255,255,255,0.75)">${esc(start)}</text>
 </svg>`;
   composites.push({ input: Buffer.from(baseSvg), left: 0, top: 0 });
   const PW = 440, PH = 620, PY = 300;
@@ -645,7 +696,7 @@ async function titleOddsCard(o, tour, file) {
     const prev = prevSnap?.[p.name];
     const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
     rowsSvg += `
-    <text x="236" y="${y + 24}" font-family="${D}" font-size="52" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
+    <text x="236" y="${y + 24}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 52, SQ - 236 - 220)}" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
     <rect x="236" y="${y + 44}" width="${w}" height="26" rx="13" fill="${LIME}" opacity="0.9"/>
     <text x="${236 + w + 20}" y="${y + 66}" font-family="${D}" font-size="52" font-weight="800" fill="#ffffff">${pct < 1 ? '&lt;1' : pct}%</text>
     ${delta ? `<text x="${SQ - 96}" y="${y + 40}" text-anchor="end" font-family="${U}" font-size="36" font-weight="800" fill="${delta > 0 ? POS : NEG}">${delta > 0 ? '&#9650;' : '&#9660;'}${Math.abs(delta)}</text>` : ''}`;
@@ -656,9 +707,9 @@ async function titleOddsCard(o, tour, file) {
   }
   const base = `${c.open}
   ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · who wins it all?`, t.accent)}
-  <text x="${SQ / 2}" y="244" text-anchor="middle" font-family="${D}" font-size="108" font-weight="800" fill="#ffffff">TITLE ODDS TODAY</text>
+  <text x="${SQ / 2}" y="244" text-anchor="middle" font-family="${D}" font-size="${fitFS('TITLE ODDS TODAY', 108, SQ - 120)}" font-weight="800" fill="#ffffff">TITLE ODDS TODAY</text>
   ${rowsSvg}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the remaining draw, played out 2,000 times · arrows vs yesterday</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS('the remaining draw, played out 2,000 times · arrows vs yesterday', 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">the remaining draw, played out 2,000 times · arrows vs yesterday</text>
 ${c.close}`;
   await render(file, base, comps);
 }
@@ -695,7 +746,7 @@ async function drawRoadCard(o, tour, file) {
     const p = rows[i];
     const y = 368 + i * 70;
     const lastName = (p.name || '').split(' ').pop().toUpperCase();
-    grid += `<text x="176" y="${y + 38}" font-family="${D}" font-size="42" font-weight="700" fill="#ffffff">${esc(lastName)}</text>`;
+    grid += `<text x="176" y="${y + 38}" font-family="${D}" font-size="${fitFS(lastName, 42, colX(0) - 176 - 24)}" font-weight="700" fill="#ffffff">${esc(lastName)}</text>`;
     for (let j = 0; j < cols; j++) {
       const v = p.surv[colStart + j] ?? 0;
       const pct = v >= 0.995 ? '&gt;99' : v < 0.005 ? '&lt;1' : Math.round(v * 100);
@@ -713,9 +764,9 @@ async function drawRoadCard(o, tour, file) {
       : 'our last look at the bracket before it was decided';
   const base = `${c.open}
   ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · the draw`, t.accent)}
-  <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE ROAD TO <tspan fill="${LIME}">THE TITLE</tspan></text>
+  <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="${fitFS('THE ROAD TO THE TITLE', 104, SQ - 120)}" font-weight="800" fill="#ffffff">THE ROAD TO <tspan fill="${LIME}">THE TITLE</tspan></text>
   ${grid}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(foot)}</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS(foot, 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">${esc(foot)}</text>
 ${c.close}`;
   await render(file, base, comps);
   return true;
@@ -754,8 +805,8 @@ async function drawPathCard(o, tour, file) {
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="192" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour} · the favorite`.toUpperCase())}</text>
-  <text x="60" y="330" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">${esc(lastName)}'S</text>
+  <text x="64" y="192" font-family="${U}" font-size="${fitFS(`${o.event} ${tour} · the favorite`.toUpperCase(), 27, SQ - 64 - 420 - 90, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour} · the favorite`.toUpperCase())}</text>
+  <text x="60" y="330" font-family="${D}" font-size="${fitFS(`${lastName}'S`, 96, SQ - 60 - 420 - 90)}" font-weight="800" fill="#ffffff">${esc(lastName)}'S</text>
   <text x="60" y="428" font-family="${D}" font-size="96" font-weight="800" fill="${LIME}">PATH</text>
   ${steps}
 </svg>`;
@@ -794,7 +845,7 @@ async function proofCard(track, file) {
   const base = `${c.open}
   ${eyebrow(SQ, 130, `the receipts · ${SEASON_YEAR} season`, LIME)}
   ${heroNum(SQ / 2, 360, `${acc}%`, 250, LIME)}
-  <text x="${SQ / 2}" y="438" text-anchor="middle" font-family="${U}" font-size="33" fill="#ffffff">of winners called correctly · ${n.toLocaleString()} matches, all public</text>
+  <text x="${SQ / 2}" y="438" text-anchor="middle" font-family="${U}" font-size="${fitFS(`of winners called correctly · ${n.toLocaleString()} matches, all public`, 33, SQ - 130)}" fill="#ffffff">of winners called correctly · ${n.toLocaleString()} matches, all public</text>
   ${us != null ? `
   <line x1="150" y1="510" x2="${SQ - 150}" y2="510" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
   <text x="${SQ / 2 - 190}" y="620" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">${us}%</text>
@@ -802,7 +853,7 @@ async function proofCard(track, file) {
   <text x="${SQ / 2}" y="620" text-anchor="middle" font-family="${D}" font-size="60" font-weight="700" fill="rgba(255,255,255,0.5)">vs</text>
   <text x="${SQ / 2 + 190}" y="620" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="rgba(255,255,255,0.65)">${them}%</text>
   <text x="${SQ / 2 + 190}" y="668" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">THE BOOKIES</text>` : ''}
-  ${disWin != null ? `<text x="${SQ / 2}" y="772" text-anchor="middle" font-family="${U}" font-size="30" font-weight="600" fill="${LIME}">When we disagree with the bookies, we're right ${disWin}% of the time.</text>` : ''}
+  ${disWin != null ? `<text x="${SQ / 2}" y="772" text-anchor="middle" font-family="${U}" font-size="${fitFS(`When we disagree with the bookies, we're right ${disWin}% of the time.`, 30, SQ - 130)}" font-weight="600" fill="${LIME}">When we disagree with the bookies, we're right ${disWin}% of the time.</text>` : ''}
   <text x="${SQ / 2}" y="852" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">No cherry-picking. No deletions. Misses posted too.</text>
 ${c.close}`;
   await render(file, base);
@@ -811,16 +862,15 @@ ${c.close}`;
 async function howItWorks(sc, file1, file2, file3) {
   const t = theme('brand');
   // Width-aware headline size: long lines shrink to stay inside the frame
-  // (0.62em/char covers both Barlow Condensed in CI and the wider DejaVu
-  // local fallback), short lines keep the full 128px punch.
-  const fit = (s, max = 128) => Math.min(max, Math.floor((SQ - 130) / (String(s).length * 0.62)));
+  // whatever font renders them, short lines keep the full 128px punch.
+  const fit = (s, max = 128) => fitFS(s, max, SQ - 130);
   const slide = (num, ghost, headline1, headline2, sub, extra = '') => {
     const c = chrome(SQ, SQ, t, { ghost, ghostY: 700 });
     return `${c.open}
   ${eyebrow(SQ, 130, `how it works · ${num} of 3`, LIME)}
   <text x="${SQ / 2}" y="380" text-anchor="middle" font-family="${D}" font-size="${fit(headline1)}" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
   <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="${fit(headline2)}" font-weight="800" fill="${LIME}">${esc(headline2)}</text>
-  <text x="${SQ / 2}" y="618" text-anchor="middle" font-family="${U}" font-size="32" fill="rgba(255,255,255,0.8)">${esc(sub)}</text>
+  <text x="${SQ / 2}" y="618" text-anchor="middle" font-family="${U}" font-size="${fitFS(sub, 32, SQ - 130)}" fill="rgba(255,255,255,0.8)">${esc(sub)}</text>
   ${extra}
 ${c.close}`;
   };
@@ -870,12 +920,12 @@ async function hotStreakCard(tour, file) {
   ${photoScrim(SQ, SQ)}
   <rect x="${SQ - 148}" y="60" width="88" height="48" fill="${tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
   <text x="${SQ - 104}" y="94" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${tour.toUpperCase()}</text>
-  <text x="84" y="212" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">HOTTEST RACKET RIGHT NOW</text>
-  <text x="80" y="388" font-family="${D}" font-size="180" font-weight="800" fill="#ffffff">ON</text>
-  <text x="80" y="548" font-family="${D}" font-size="180" font-weight="800" fill="url(#hotFoil)">FIRE</text>
+  <text x="84" y="212" font-family="${U}" font-size="${fitFS('HOTTEST RACKET RIGHT NOW', 27, PX - 84 - 20, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">HOTTEST RACKET RIGHT NOW</text>
+  <text x="80" y="388" font-family="${D}" font-size="${fitFS('FIRE', 180, PX - 80 - 16)}" font-weight="800" fill="#ffffff">ON</text>
+  <text x="80" y="548" font-family="${D}" font-size="${fitFS('FIRE', 180, PX - 80 - 16)}" font-weight="800" fill="url(#hotFoil)">FIRE</text>
   <rect x="84" y="576" width="230" height="14" fill="url(#hotFoil)"/>
-  ${heroNum(84, 700, `${hot.w}-${hot.l}`, 96, '#ffffff', 'start')}
-  <text x="84" y="748" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.7)">in recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}</text>
+  ${heroNum(84, 700, `${hot.w}-${hot.l}`, 96, '#ffffff', 'start', PX - 84 - 20)}
+  <text x="84" y="748" font-family="${U}" font-size="${fitFS(`in recent matches · World No. ${hot.rank || 1}`, 26, PX - 84 - 20)}" fill="rgba(255,255,255,0.7)">in recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}</text>
   ${glowSpot('hotGlow', PX + PW / 2, PY + PH / 2, 440, LIME, 0.22)}
   <rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/>
 </svg>`;
@@ -916,16 +966,17 @@ async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, 
   const rows = stats.map((s, i) => {
     const y = 470 + i * 118;
     return `
-  <text x="120" y="${y}" font-family="${D}" font-size="76" font-weight="800" fill="${i === 0 ? accent : '#ffffff'}">${esc(s.value)}</text>
-  <text x="${SQ - 120}" y="${y - 8}" text-anchor="end" font-family="${U}" font-size="27" font-weight="600" fill="rgba(255,255,255,0.75)">${esc(s.label)}</text>
+  <text x="120" y="${y}" font-family="${D}" font-size="${fitFS(s.value, 76, 500)}" font-weight="800" fill="${i === 0 ? accent : '#ffffff'}">${esc(s.value)}</text>
+  <text x="${SQ - 120}" y="${y - 8}" text-anchor="end" font-family="${U}" font-size="${fitFS(s.label, 27, 420)}" font-weight="600" fill="rgba(255,255,255,0.75)">${esc(s.label)}</text>
   <line x1="120" y1="${y + 26}" x2="${SQ - 120}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   }).join('');
+  const hFs = Math.min(fitFS(headline1, 104, SQ - 140), headline2 ? fitFS(headline2, 104, SQ - 140) : 104);
   const base = `${c.open}
   ${eyebrow(SQ, 140, eyebrowText, t.accent)}
-  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
-  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${accent}">${esc(headline2)}</text>` : ''}
+  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="${hFs}" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
+  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="${hFs}" font-weight="800" fill="${accent}">${esc(headline2)}</text>` : ''}
   ${rows}
-  ${footNote ? `<text x="${SQ / 2}" y="${SQ - 130}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(footNote)}</text>` : ''}
+  ${footNote ? `<text x="${SQ / 2}" y="${SQ - 130}" text-anchor="middle" font-family="${U}" font-size="${fitFS(footNote, 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">${esc(footNote)}</text>` : ''}
 ${c.close}`;
   await render(file, base);
 }
@@ -943,9 +994,9 @@ async function rivalryCard(p, h2hRec, ourRecord, file) {
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
-  <text x="60" y="300" font-family="${D}" font-size="128" font-weight="800" fill="#ffffff">THE RIVALRY,</text>
-  <text x="60" y="410" font-family="${D}" font-size="128" font-weight="800" fill="${LIME}">ROUND ${meetings + 1}</text>
+  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)}`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
+  <text x="60" y="300" font-family="${D}" font-size="${fitFS('THE RIVALRY,', 128, SQ - 120)}" font-weight="800" fill="#ffffff">THE RIVALRY,</text>
+  <text x="60" y="410" font-family="${D}" font-size="${fitFS(`ROUND ${meetings + 1}`, 128, SQ - 120)}" font-weight="800" fill="${LIME}">ROUND ${meetings + 1}</text>
   <rect x="${aX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
   <rect x="${bX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
 </svg>`;
@@ -955,8 +1006,8 @@ async function rivalryCard(p, h2hRec, ourRecord, file) {
   <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
   <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="58" fill="rgba(0,0,0,0.7)" stroke="${LIME}" stroke-width="4"/>
   <text x="${SQ / 2}" y="${PY + PH / 2 + 20}" text-anchor="middle" font-family="${D}" font-size="52" font-weight="800" fill="#ffffff">${h2hRec.w1}-${h2hRec.w2}</text>
-  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff')}
-  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff')}
+  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff', false, PW - 12)}
+  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff', false, PW - 12)}
   ${bottomBar(SQ, ourRecord && ourRecord.n > 0
     ? `WE'VE CALLED ${ourRecord.correct} OF ${ourRecord.n} OF THEIR MEETINGS`
     : `OUR CALL: ${last(p.favName).toUpperCase()} · ${pctTxt(p.favProb)}`, { y: 968 })}
@@ -974,7 +1025,7 @@ async function rivalryCard(p, h2hRec, ourRecord, file) {
 // promise ("picks live the moment the draw drops").
 async function hypeCountdownCard(next, days, file) {
   const bg = await stadiumBg(next.surface, SQ, SQ);
-  const nameFs = Math.min(150, Math.floor(950 / (next.label.length * 0.58)));
+  const nameFs = fitFS(next.label.toUpperCase(), 150, 950);
   const dateTxt = new Date(next.startsAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
@@ -1006,7 +1057,7 @@ async function hypeFavoritesCard(o, tour, file) {
     const pct = Math.round(p.prob * 100);
     const w = Math.max(14, (p.prob / maxProb) * 380);
     rowsSvg += `
-    <text x="236" y="${y + 24}" font-family="${D}" font-size="50" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
+    <text x="236" y="${y + 24}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 50, SQ - 236 - 220)}" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
     <rect x="236" y="${y + 42}" width="${w.toFixed(0)}" height="24" rx="12" fill="${LIME}" opacity="0.9"/>
     <text x="${(236 + w + 20).toFixed(0)}" y="${y + 62}" font-family="${D}" font-size="50" font-weight="800" fill="#ffffff">${pct < 1 ? '&lt;1' : pct}%</text>`;
     if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 100), left: 110, top: y - 10 });
@@ -1015,7 +1066,7 @@ async function hypeFavoritesCard(o, tour, file) {
   ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · projected field`, t.accent)}
   <text x="${SQ / 2}" y="248" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE <tspan fill="${LIME}">FAVORITES</tspan></text>
   ${rowsSvg}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS("from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops", 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops</text>
 ${c.close}`;
   await render(file, base, comps);
   return true;
@@ -1026,7 +1077,7 @@ ${c.close}`;
 async function hypeStoryCard(next, days, recs, file) {
   const t = eventTheme(next.label, next.surface);
   const c = chrome(ST_W, ST_H, t, { ghost: String(days), ghostY: 1210, ghostSize: 700 });
-  const nameFs = Math.min(136, Math.floor(950 / (next.label.length * 0.58)));
+  const nameFs = fitFS(next.label.toUpperCase(), 136, 950);
   const recRows = recs.map((r, i) => `
   <text x="${ST_W / 2}" y="${1246 + i * 62}" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.8)">${esc(`${r.tour.toUpperCase()} on ${next.surface} this season: ${r.acc}% of winners called`)}</text>`).join('');
   const base = `${c.open}
@@ -1069,11 +1120,11 @@ async function receiptTicket(p, file) {
   const stamp = hit
     ? `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
          <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#1c7a3f" stroke-width="7"/>
-         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="58" font-weight="800" letter-spacing="3" fill="#1c7a3f">CALLED &#10003;</text>
+         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="${fitFS('CALLED W', 58, 264, 3)}" font-weight="800" letter-spacing="3" fill="#1c7a3f">CALLED &#10003;</text>
        </g>`
     : `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
          <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#b3392e" stroke-width="7"/>
-         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="58" font-weight="800" letter-spacing="3" fill="#b3392e">MISSED &#10007;</text>
+         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="${fitFS('MISSED W', 58, 264, 3)}" font-weight="800" letter-spacing="3" fill="#b3392e">MISSED &#10007;</text>
        </g>`;
   const base = `${c.open}
   ${eyebrow(SQ, 176, 'the receipts · graded in public', t.accent)}
@@ -1086,9 +1137,9 @@ async function receiptTicket(p, file) {
 
     <text x="${TX + 44}" y="${TY + 62}" font-family="${U}" font-size="22" font-weight="800" letter-spacing="4" fill="rgba(20,24,30,0.55)">SMASH · OFFICIAL CALL</text>
     <text x="${TX + 44}" y="${TY + 102}" font-family="${U}" font-size="24" font-weight="600" fill="rgba(20,24,30,0.75)">${esc(`${p.event || 'Tour'} · ${fmtDate(p.date)}`)}</text>
-    <text x="${TX + 44}" y="${TY + 210}" font-family="${D}" font-size="88" font-weight="800" fill="${INK}">${esc(last(p.favName).toUpperCase())}</text>
-    <text x="${TX + 44}" y="${TY + 258}" font-family="${U}" font-size="27" fill="rgba(20,24,30,0.7)">over ${esc(opp)} · our number: ${pct}%</text>
-    <text x="${TX + 44}" y="${TY + 330}" font-family="${D}" font-size="46" font-weight="800" fill="${INK}">${esc(p.winner === p.favorite ? 'WON' : 'LOST')}${p.score ? ` ${esc(p.score)}` : ''}</text>
+    <text x="${TX + 44}" y="${TY + 210}" font-family="${D}" font-size="${fitFS(last(p.favName).toUpperCase(), 88, PERF - TX - 88)}" font-weight="800" fill="${INK}">${esc(last(p.favName).toUpperCase())}</text>
+    <text x="${TX + 44}" y="${TY + 258}" font-family="${U}" font-size="${fitFS(`over ${opp} · our number: ${pct}%`, 27, PERF - TX - 88)}" fill="rgba(20,24,30,0.7)">over ${esc(opp)} · our number: ${pct}%</text>
+    <text x="${TX + 44}" y="${TY + 330}" font-family="${D}" font-size="${fitFS(`${p.winner === p.favorite ? 'WON' : 'LOST'}${p.score ? ` ${p.score}` : ''}`, 46, PERF - TX - 88)}" font-weight="800" fill="${INK}">${esc(p.winner === p.favorite ? 'WON' : 'LOST')}${p.score ? ` ${esc(p.score)}` : ''}</text>
     <text x="${TX + 44}" y="${TY + 380}" font-family="${U}" font-size="22" fill="rgba(20,24,30,0.55)">locked before play · no edits, no take-backs</text>
     ${stamp}
 
@@ -1132,7 +1183,7 @@ async function oddsMoversCard(o, tour, file) {
     const pct = Math.round(p.prob * 100);
     const d = Math.round(Math.abs(p.delta) * 100);
     return `
-    <text x="250" y="${y}" font-family="${D}" font-size="62" font-weight="800" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
+    <text x="250" y="${y}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 62, SQ - 250 - 340)}" font-weight="800" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
     <text x="250" y="${y + 52}" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">title chance today: ${pct < 1 ? '<1' : pct}%</text>
     <g transform="translate(250 ${y + 76})">${spark(p.name)}</g>
     <text x="${SQ - 96}" y="${y + 30}" text-anchor="end" font-family="${D}" font-size="110" font-weight="800" fill="${up ? POS : NEG}">${up ? '&#9650;' : '&#9660;'}${d}</text>
@@ -1196,7 +1247,7 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const c = chrome(SQ, SQ, t, { ghost: 'UPSET', ghostY: 700 });
   const vRow = (y, label, txt, good) => `
   <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="${good == null ? '#ffffff' : good ? POS : NEG}">${esc(txt)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="${good == null ? '#ffffff' : good ? POS : NEG}">${esc(txt)}</text>
   <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   const comps = [];
   const wid = m.winner === m.p1 ? m.p1 : m.p2;
@@ -1204,7 +1255,7 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const base = `${c.open}
   ${eyebrow(SQ, 140, `${m.event || 'tour'} · seed down`, t.accent)}
   <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="120" font-weight="800" fill="${NEG}">UPSET</text>
-  <text x="${SQ / 2}" y="500" text-anchor="middle" font-family="${D}" font-size="66" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">d.</tspan> ${esc(last(lName).toUpperCase())}</text>
+  <text x="${SQ / 2}" y="500" text-anchor="middle" font-family="${D}" font-size="${fitFS(`${last(wName).toUpperCase()} d. ${last(lName).toUpperCase()}`, 66, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">d.</tspan> ${esc(last(lName).toUpperCase())}</text>
   <text x="${SQ / 2}" y="552" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">No. ${wRank} beats No. ${lRank}${m.score ? ` · ${esc(m.score)}` : ''}</text>
   ${vRow(650, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ON ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ON ${last(lName).toUpperCase()}`, weCalled)}
   ${vRow(730, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled)}
@@ -1237,14 +1288,15 @@ async function edgeSplitCard(m, tour, file) {
   const c = chrome(SQ, SQ, t, { ghost: 'SPLIT', ghostY: 700 });
   const vRow = (y, label, txt, good) => `
   <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="${good ? POS : NEG}">${esc(txt)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="${good ? POS : NEG}">${esc(txt)}</text>
   <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   const comps = [{ input: await circlePhoto(photoPath(tour, m.winner), 170), left: SQ / 2 - 85, top: 260 }];
   const wName = m.winner === m.p1 ? m.name1 : m.name2;
+  const wLine = `${last(wName).toUpperCase()} WON${m.score ? ` ${m.score}` : ''}`;
   const base = `${c.open}
   ${eyebrow(SQ, 140, `${m.event || 'tour'} · we disagreed with the market`, t.accent)}
   <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">THE <tspan fill="${weWon ? LIME : NEG}">${weWon ? 'EDGE' : 'MISS'}</tspan></text>
-  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="60" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">WON</tspan>${m.score ? ` <tspan font-size="40" fill="rgba(255,255,255,0.7)">${esc(m.score)}</tspan>` : ''}</text>
+  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="${fitFS(wLine, 60, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">WON</tspan>${m.score ? ` <tspan font-size="40" fill="rgba(255,255,255,0.7)">${esc(m.score)}</tspan>` : ''}</text>
   ${vRow(640, 'WE SAID', `${last(ourName).toUpperCase()} · ${ourPct}% ${weWon ? '✓' : '✗'}`, weWon)}
   ${vRow(724, 'MARKET SAID', `${last(mktName).toUpperCase()} · ${mktPct}% ${m.oddCorrect ? '✓' : '✗'}`, !!m.oddCorrect)}
   <text x="${SQ / 2}" y="820" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">only one side of a split can be right - both get graded</text>
@@ -1282,15 +1334,15 @@ async function forwardEdgeCard(p, mktPct, file) {
   const oppName = p.favorite === p.p1 ? p.name2 : p.name1;
   const vRow = (y, label, txt) => `
   <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">${esc(txt)}</text>
+  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="#ffffff">${esc(txt)}</text>
   <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   const comps = [{ input: await circlePhoto(photoPath(p.tour, p.favorite), 190), left: SQ / 2 - 95, top: 268 }];
   const base = `${c.open}
   ${eyebrow(SQ, 140, `${p.event || 'tour'} · locked, not yet played`, t.accent)}
-  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">WE TOOK THE <tspan fill="${LIME}">DOG</tspan></text>
-  <text x="${SQ / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="64" font-weight="800" fill="#ffffff">${esc(last(p.favName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">OVER</tspan> ${esc(last(oppName).toUpperCase())}</text>
-  ${vRow(650, 'WE SAY', `${esc(last(p.favName).toUpperCase())} · ${Math.round(p.favProb * 100)}%`)}
-  ${vRow(734, 'MARKET SAYS', `${esc(last(p.favName).toUpperCase())} · ONLY ${mktPct}%`)}
+  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="${fitFS('WE TOOK THE DOG', 96, SQ - 140)}" font-weight="800" fill="#ffffff">WE TOOK THE <tspan fill="${LIME}">DOG</tspan></text>
+  <text x="${SQ / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="${fitFS(`${last(p.favName).toUpperCase()} OVER ${last(oppName).toUpperCase()}`, 64, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(p.favName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">OVER</tspan> ${esc(last(oppName).toUpperCase())}</text>
+  ${vRow(650, 'WE SAY', `${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`)}
+  ${vRow(734, 'MARKET SAYS', `${last(p.favName).toUpperCase()} · ONLY ${mktPct}%`)}
   <text x="${SQ / 2}" y="830" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">odds captured the moment we locked - graded in days, no take-backs</text>
   <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the forward board: ${esc(String(SITE).replace(/^https?:\/\//, ''))}/edge</text>
 ${c.close}`;
@@ -1315,8 +1367,8 @@ async function taleOfTheTape(p, ctx, forms, file) {
   const baseSvg = `
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase())}</text>
-  <text x="60" y="292" font-family="${D}" font-size="112" font-weight="800" fill="#ffffff">TALE OF <tspan fill="${LIME}">THE TAPE</tspan></text>
+  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase())}</text>
+  <text x="60" y="292" font-family="${D}" font-size="${fitFS('TALE OF THE TAPE', 112, SQ - 120)}" font-weight="800" fill="#ffffff">TALE OF <tspan fill="${LIME}">THE TAPE</tspan></text>
   ${glowSpot('tapeA', aX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
   ${glowSpot('tapeB', bX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
   <rect x="${aX - 10}" y="${PY + 10}" width="${PW}" height="${PH}" rx="24" fill="${favIsP1 ? LIME : 'rgba(255,255,255,0.3)'}"/>
@@ -1326,8 +1378,8 @@ async function taleOfTheTape(p, ctx, forms, file) {
 <svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
   <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? LIME : 'rgba(255,255,255,0.45)'}" stroke-width="${favIsP1 ? 6 : 3}"/>
   <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.45)' : LIME}" stroke-width="${favIsP1 ? 3 : 6}"/>
-  ${pill(aX + PW / 2, PY + PH + 24, last(p.name1).toUpperCase(), favIsP1 ? LIME : '#ffffff', favIsP1)}
-  ${pill(bX + PW / 2, PY + PH + 24, last(p.name2).toUpperCase(), favIsP1 ? '#ffffff' : LIME, !favIsP1)}
+  ${pill(aX + PW / 2, PY + PH + 24, last(p.name1).toUpperCase(), favIsP1 ? LIME : '#ffffff', favIsP1, PW + 40)}
+  ${pill(bX + PW / 2, PY + PH + 24, last(p.name2).toUpperCase(), favIsP1 ? '#ffffff' : LIME, !favIsP1, PW + 40)}
   ${midRow(400, 'RANK', p.rank1 ? `#${p.rank1}` : '-', p.rank2 ? `#${p.rank2}` : '-')}
   ${midRow(510, 'RECENT FORM', f1 ? `${f1.w}-${f1.l}` : '-', f2 ? `${f2.w}-${f2.l}` : '-')}
   ${midRow(620, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '-', ctx?.h2h ? String(ctx.h2h.w2) : '-')}
@@ -1367,10 +1419,10 @@ async function trustCard(track, file) {
   }).join('');
   const base = `${c.open}
   ${eyebrow(SQ, 140, 'calibration check · updated monthly', LIME)}
-  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">WHEN WE SAY IT,</text>
-  <text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="${LIME}">WE MEAN IT</text>
+  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="${fitFS('WHEN WE SAY IT,', 104, SQ - 140)}" font-weight="800" fill="#ffffff">WHEN WE SAY IT,</text>
+  <text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="${fitFS('WHEN WE SAY IT,', 104, SQ - 140)}" font-weight="800" fill="${LIME}">WE MEAN IT</text>
   ${rows}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">stated confidence vs what actually happened · every graded call this season</text>
+  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS('stated confidence vs what actually happened · every graded call this season', 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">stated confidence vs what actually happened · every graded call this season</text>
 ${c.close}`;
   await render(file, base);
   return true;
@@ -1418,9 +1470,9 @@ async function bannerWide(sc, file) {
   const c = chrome(W, H, t, { ghost: 'SMASH', ghostY: 620, ghostSize: 430 });
   const base = `${c.open}
   ${eyebrow(W, 180, 'grand slam prediction engine', LIME)}
-  <text x="${W / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="#ffffff">EVERY CALL <tspan fill="${LIME}">PUBLIC.</tspan></text>
-  <text x="${W / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="#ffffff">EVERY MISS <tspan fill="${LIME}">TOO.</tspan></text>
-  <text x="${W / 2}" y="640" text-anchor="middle" font-family="${U}" font-size="34" fill="rgba(255,255,255,0.8)">${esc(sc.proofLine[0].toUpperCase() + sc.proofLine.slice(1))}</text>
+  <text x="${W / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="${fitFS('EVERY CALL PUBLIC.', 170, W - 160)}" font-weight="800" fill="#ffffff">EVERY CALL <tspan fill="${LIME}">PUBLIC.</tspan></text>
+  <text x="${W / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="${fitFS('EVERY CALL PUBLIC.', 170, W - 160)}" font-weight="800" fill="#ffffff">EVERY MISS <tspan fill="${LIME}">TOO.</tspan></text>
+  <text x="${W / 2}" y="640" text-anchor="middle" font-family="${U}" font-size="${fitFS(sc.proofLine, 34, W - 200)}" fill="rgba(255,255,255,0.8)">${esc(sc.proofLine[0].toUpperCase() + sc.proofLine.slice(1))}</text>
 ${c.close}`;
   await render(file, base);
 }

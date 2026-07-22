@@ -244,15 +244,23 @@ jobs:
       # The share kit: Instagram-format prediction cards (carousel + story)
       # in public/data/share/, each with a ready caption in manifest.json.
       # sharp is installed here rather than kept in package.json (a local
-      # file lock prevents committing it as a dependency); fonts-barlow gives
-      # the cards the app's own condensed display face.
+      # file lock prevents committing it as a dependency). Fonts: the cards
+      # want a condensed display face; fonts-dejavu-extra ships DejaVu Sans
+      # Condensed (already in the generator's font chain) and actually
+      # exists in the Ubuntu archive - the old fonts-barlow attempt failed
+      # silently for months and every card rendered in wide DejaVu Sans.
+      # The generator sizes text width-safely either way; the install is
+      # logged, not silenced, so a regression is visible in the run log.
       - name: Generate shareable assets
         id: share_assets
         continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
         run: |
-          sudo apt-get install -y --no-install-recommends fonts-barlow > /dev/null 2>&1 || true
+          sudo apt-get update -qq || true
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-extra || echo "WARNING: fonts-dejavu-extra install failed; cards fall back to wide DejaVu Sans"
+          sudo apt-get install -y --no-install-recommends fonts-barlow 2> /dev/null || echo "fonts-barlow unavailable (expected); using DejaVu Sans Condensed"
+          fc-list | grep -i -E 'barlow|condensed' || echo "WARNING: no condensed font registered"
           npm install --no-save sharp
           npm run build-share-assets
 

@@ -45,6 +45,27 @@ const THEMES = {
 const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
+// Width-safe type, sized against DejaVu Sans metrics (the widest font the
+// chain can fall back to) - keep in step with buildShareAssets.js.
+const CHAR_EM = (ch) => {
+  if (ch === ' ') return 0.36;
+  if (/[WM@%&]/.test(ch)) return 1.05;
+  if (/[mw]/.test(ch)) return 0.98;
+  if (/[A-Z0-9$#?]/.test(ch)) return 0.78;
+  if (/[a-z]/.test(ch)) return 0.6;
+  if (/[.,:;!'’|()[\]]/.test(ch)) return 0.38;
+  if (/[·\-–_/]/.test(ch)) return 0.52;
+  return 0.85;
+};
+const emW = (s) => [...String(s ?? '')].reduce((w, ch) => w + CHAR_EM(ch), 0);
+const fitFS = (s, fs, maxW, ls = 0) => {
+  const em = emW(s);
+  if (!em) return fs;
+  const spacing = Math.max(0, String(s).length - 1) * ls;
+  if (em * fs + spacing <= maxW) return fs;
+  return Math.max(12, Math.floor((maxW - spacing) / em));
+};
+
 const hasFfmpeg = () => spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0;
 
 function shell(w, h, t, inner) {
@@ -108,7 +129,7 @@ async function countdownVideo() {
     const pulse = 1 + 0.015 * Math.sin((f / N) * Math.PI * 4);
     const svg = shell(SQ, SQ, t, `
   <text x="${SQ / 2}" y="200" text-anchor="middle" font-family="${U}" font-size="28" font-weight="700" letter-spacing="7" fill="${LIME}">THE NEXT MAJOR</text>
-  <text x="${SQ / 2}" y="320" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">${esc(next.name.toUpperCase())}</text>
+  <text x="${SQ / 2}" y="320" text-anchor="middle" font-family="${D}" font-size="${fitFS(next.name.toUpperCase(), 110, SQ - 120)}" font-weight="800" fill="#ffffff">${esc(next.name.toUpperCase())}</text>
   <g transform="translate(${SQ / 2} 620) scale(${pulse.toFixed(4)}) translate(${-SQ / 2} -620)">
     <circle cx="${SQ / 2}" cy="620" r="210" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
     <path d="${arcPath(SQ / 2, 620, 210, deg)}" fill="none" stroke="${LIME}" stroke-width="14" stroke-linecap="round"/>
@@ -151,13 +172,13 @@ async function raceVideo(tour) {
         const w = Math.max(10, (v / maxVal) * 560);
         const y = 300 + i * 118;
         return `
-    <text x="80" y="${y + 20}" font-family="${D}" font-size="46" font-weight="700" fill="#ffffff">${esc(n.toUpperCase())}</text>
+    <text x="80" y="${y + 20}" font-family="${D}" font-size="${fitFS(n.toUpperCase(), 46, SQ - 160)}" font-weight="700" fill="#ffffff">${esc(n.toUpperCase())}</text>
     <rect x="80" y="${y + 38}" width="${w.toFixed(1)}" height="26" rx="13" fill="${LIME}" opacity="0.9"/>
     <text x="${(90 + w).toFixed(1)}" y="${y + 60}" font-family="${D}" font-size="46" font-weight="800" fill="#ffffff">${Math.round(v * 100)}%</text>`;
       }).join('');
       const svg = shell(SQ, SQ, t, `
   <text x="${SQ / 2}" y="130" text-anchor="middle" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour} · title race`.toUpperCase())}</text>
-  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="96" font-weight="800" fill="#ffffff">WHO WINS IT ALL?</text>
+  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="${fitFS('WHO WINS IT ALL?', 96, SQ - 120)}" font-weight="800" fill="#ffffff">WHO WINS IT ALL?</text>
   ${rows}
   <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">${esc(snaps[s + 1].date)} · the draw, played out 2,000 times daily</text>`);
       await writeFrame(dir, frame++, svg);
@@ -203,8 +224,8 @@ async function recapReel() {
     const a = easeInOut(Math.min(1, f / 8));
     await writeFrame(dir, frame++, shell(W, H, t, `
   <text x="${W / 2}" y="560" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="${LIME}" opacity="${a.toFixed(2)}">${esc(dateLabel.toUpperCase())}</text>
-  <text x="${W / 2}" y="720" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">YESTERDAY,</text>
-  <text x="${W / 2}" y="880" text-anchor="middle" font-family="${D}" font-size="150" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">GRADED.</text>
+  <text x="${W / 2}" y="720" text-anchor="middle" font-family="${D}" font-size="${fitFS('YESTERDAY,', 150, W - 120)}" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">YESTERDAY,</text>
+  <text x="${W / 2}" y="880" text-anchor="middle" font-family="${D}" font-size="${fitFS('YESTERDAY,', 150, W - 120)}" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">GRADED.</text>
   <text x="${W / 2}" y="1010" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)" opacity="${a.toFixed(2)}">every call graded in public</text>`));
   }
 
@@ -222,20 +243,21 @@ async function recapReel() {
     const hit = m.pickCorrect != null ? m.pickCorrect : m.smashCorrect;
     const stampText = hit ? 'CALLED IT' : 'MISSED';
     const stampColor = hit ? LIME : '#ff5d5d';
+    const nameFs2 = Math.min(fitFS(m.name1.toUpperCase(), 86, W - 120), fitFS(m.name2.toUpperCase(), 86, W - 120));
     for (let f = 0; f < 22; f++) {
       const pop = f < 4 ? 0 : Math.min(1, (f - 4) / 5);
       const scale = 0.6 + 0.4 * easeInOut(pop);
       await writeFrame(dir, frame++, shell(W, H, t, `
   <text x="${W / 2}" y="380" text-anchor="middle" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="rgba(255,255,255,0.65)">CALL ${i + 1} OF ${dayMatches.length} · ${esc(m.tour.toUpperCase())} · ${esc(m.surface.toUpperCase())}</text>
-  <text x="${W / 2}" y="560" text-anchor="middle" font-family="${D}" font-size="86" font-weight="800" fill="#ffffff">${esc(m.name1.toUpperCase())}</text>
+  <text x="${W / 2}" y="560" text-anchor="middle" font-family="${D}" font-size="${nameFs2}" font-weight="800" fill="#ffffff">${esc(m.name1.toUpperCase())}</text>
   <text x="${W / 2}" y="650" text-anchor="middle" font-family="${D}" font-size="52" font-weight="700" fill="rgba(255,255,255,0.55)">VS</text>
-  <text x="${W / 2}" y="750" text-anchor="middle" font-family="${D}" font-size="86" font-weight="800" fill="#ffffff">${esc(m.name2.toUpperCase())}</text>
+  <text x="${W / 2}" y="750" text-anchor="middle" font-family="${D}" font-size="${nameFs2}" font-weight="800" fill="#ffffff">${esc(m.name2.toUpperCase())}</text>
   <text x="${W / 2}" y="900" text-anchor="middle" font-family="${U}" font-size="32" font-weight="700" fill="${LIME}">WE SAID: ${esc(pickName.split(' ').pop().toUpperCase())} ${pct}%</text>
   <text x="${W / 2}" y="980" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.8)">${esc(winName.split(' ').pop())} won${m.score ? ` ${esc(m.score)}` : ''}</text>
   ${pop > 0 ? `
   <g transform="translate(${W / 2} 1220) rotate(-7) scale(${scale.toFixed(3)})">
     <rect x="-330" y="-86" width="660" height="172" rx="18" fill="none" stroke="${stampColor}" stroke-width="12" opacity="${easeInOut(pop).toFixed(2)}"/>
-    <text x="0" y="42" text-anchor="middle" font-family="${D}" font-size="120" font-weight="800" fill="${stampColor}" opacity="${easeInOut(pop).toFixed(2)}">${stampText}</text>
+    <text x="0" y="42" text-anchor="middle" font-family="${D}" font-size="${fitFS(stampText, 120, 600)}" font-weight="800" fill="${stampColor}" opacity="${easeInOut(pop).toFixed(2)}">${stampText}</text>
   </g>` : ''}`));
     }
   }
@@ -246,7 +268,7 @@ async function recapReel() {
     const a = easeInOut(Math.min(1, f / 8));
     await writeFrame(dir, frame++, shell(W, H, t, `
   <text x="${W / 2}" y="600" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="rgba(255,255,255,0.65)" opacity="${a.toFixed(2)}">THE DAY</text>
-  <text x="${W / 2}" y="800" text-anchor="middle" font-family="${D}" font-size="230" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">${sc.yesterday.correct} OF ${sc.yesterday.n}</text>
+  <text x="${W / 2}" y="800" text-anchor="middle" font-family="${D}" font-size="${fitFS(`${sc.yesterday.correct} OF ${sc.yesterday.n}`, 230, W - 120)}" font-weight="800" fill="${LIME}" opacity="${a.toFixed(2)}">${sc.yesterday.correct} OF ${sc.yesterday.n}</text>
   <text x="${W / 2}" y="900" text-anchor="middle" font-family="${U}" font-size="34" font-weight="700" fill="#ffffff" opacity="${a.toFixed(2)}">WINNERS CALLED RIGHT</text>
   ${season?.n ? `<text x="${W / 2}" y="1060" text-anchor="middle" font-family="${U}" font-size="29" fill="rgba(255,255,255,0.75)" opacity="${a.toFixed(2)}">SEASON: ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} (${season.acc}%)</text>` : ''}
   <text x="${W / 2}" y="1200" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="4" fill="${LIME}" opacity="${a.toFixed(2)}">TOMORROW'S CALLS · LINK IN BIO</text>`));
@@ -283,7 +305,7 @@ async function matchPulseVideo() {
     const w = Math.max(8, BARW * (pct / 100) * prog);
     const svg = shell(SQ, SQ, t, `
   <text x="${SQ / 2}" y="180" text-anchor="middle" font-family="${U}" font-size="27" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${pick.event} · our call`.toUpperCase())}</text>
-  <text x="${SQ / 2}" y="330" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">${esc(pick.favName.toUpperCase())}</text>
+  <text x="${SQ / 2}" y="330" text-anchor="middle" font-family="${D}" font-size="${fitFS(pick.favName.toUpperCase(), 110, SQ - 120)}" font-weight="800" fill="#ffffff">${esc(pick.favName.toUpperCase())}</text>
   <text x="${SQ / 2}" y="400" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.7)">over ${esc(opp)}</text>
   <text x="${SQ / 2}" y="620" text-anchor="middle" font-family="${D}" font-size="270" font-weight="800" fill="${LIME}">${shown}%</text>
   <rect x="${(SQ - BARW) / 2}" y="700" width="${BARW}" height="34" rx="17" fill="rgba(255,255,255,0.12)"/>
@@ -313,7 +335,7 @@ async function coronationVideo() {
     fs.mkdirSync(dir, { recursive: true });
     const N = 48; // 4s
     const name = o.champion.name.toUpperCase();
-    const nameFs = Math.min(150, Math.floor(950 / (name.length * 0.58)));
+    const nameFs = fitFS(name, 150, 950);
     for (let f = 0; f < N; f++) {
       const a = easeInOut(Math.min(1, f / 10));
       const scale = 0.85 + 0.15 * easeInOut(Math.min(1, f / 14));
@@ -329,7 +351,7 @@ async function coronationVideo() {
   </defs>
   <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${U}" font-size="30" font-weight="700" letter-spacing="8" fill="${GOLDC}" opacity="${a.toFixed(2)}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
   <g transform="translate(${SQ / 2} 520) scale(${scale.toFixed(3)}) translate(${-SQ / 2} -520)">
-    <text x="${SQ / 2}" y="470" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="url(#crownGold)" opacity="${a.toFixed(2)}">CHAMPION</text>
+    <text x="${SQ / 2}" y="470" text-anchor="middle" font-family="${D}" font-size="${fitFS('CHAMPION', 170, SQ - 140)}" font-weight="800" fill="url(#crownGold)" opacity="${a.toFixed(2)}">CHAMPION</text>
     <text x="${SQ / 2}" y="${480 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff" opacity="${a.toFixed(2)}">${esc(name)}</text>
   </g>
   <rect x="${shine.toFixed(0)}" y="300" width="240" height="420" fill="url(#shine)" transform="skewX(-18)"/>
