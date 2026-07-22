@@ -158,6 +158,29 @@ jobs:
       # recent accuracy against the season, the rankings baseline, and a coin
       # flip. Writes public/data/guardrails.json; a later step opens an alert
       # issue if anything tripped.
+      # API spend guardrail: if any fetcher hard-stopped (quota reserve floor
+      # or per-run cap - see data-pipeline/lib/apiBudget.js), open/refresh an
+      # issue and clear the marker so the cached copy can't re-alert forever.
+      # The run itself continues: a throttled refresh on cached data is the
+      # designed behavior, not a failure.
+      - name: Alert if the API spend guardrail tripped
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MARKER="data-pipeline/raw/api-budget-alert.json"
+          if [ ! -f "$MARKER" ]; then echo "Spend guardrail clean."; exit 0; fi
+          TITLE="API spend guardrail tripped"
+          BODY="A fetcher hit the spend hard-stop on $(date -u +%Y-%m-%d) and switched to cached data (no overage risk). Details: $(cat "$MARKER"). Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          rm -f "$MARKER"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' --repo "${{ github.repository }}")
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY" --repo "${{ github.repository }}"
+          else
+            gh issue create --title "$TITLE" --body "$BODY" --label bug --repo "${{ github.repository }}" || \
+            gh issue create --title "$TITLE" --body "$BODY" --repo "${{ github.repository }}"
+          fi
+
       - name: Check model guardrails
         run: npm run check-guardrails
 

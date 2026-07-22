@@ -36,13 +36,19 @@ function loadActivePlayerNames() {
   return [...names].map((s) => JSON.parse(s));
 }
 
+const budget = require('./lib/apiBudget');
+
 // Retries transient statuses (rate limit, 5xx) with a growing pause before
 // giving up - a quota-blocked or flaky API must not kill the whole refresh.
+// Every attempt passes the spend guardrail first and reports its quota
+// headers back to it: past the reserve floor, calls refuse to fire.
 async function apiGet(urlPath, tries = 3) {
   for (let attempt = 1; ; attempt++) {
+    budget.guard();
     const res = await fetch(`https://${HOST}${urlPath}`, {
       headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
     });
+    budget.note(res);
     if (res.ok) return res.json();
     const transient = [429, 500, 502, 503].includes(res.status);
     if (!transient || attempt >= tries) throw new Error(`${urlPath} -> HTTP ${res.status}`);
@@ -168,6 +174,10 @@ async function main() {
   // the gap closes next run.
   let consecFails = 0;
   for (const p of players) {
+    if (budget.stopped()) {
+      console.warn('Aborting match fetch: API spend guardrail tripped. Cached data serves this run.');
+      break;
+    }
     if (consecFails >= 8) {
       console.warn('Aborting match fetch: 8 consecutive failures (API down or quota-blocked). Cached data serves this run.');
       break;

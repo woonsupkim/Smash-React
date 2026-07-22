@@ -299,10 +299,13 @@ async function run() {
       }
       if (!wanted.size) continue;
       try {
+        const budget = require('./lib/apiBudget');
         for (let page = 1; page <= 3 && wanted.size; page++) {
+          budget.guard();
           const res = await fetch(`https://${HOST}/tennis/v2/ms-api/upcoming/matches/${league}?limit=50&page=${page}`, {
             headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
           });
+          budget.note(res);
           if (!res.ok) break;
           const list = (await res.json()).matches || [];
           for (const m of list) {

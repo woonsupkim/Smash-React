@@ -20,13 +20,18 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+const budget = require('./lib/apiBudget');
+
 // Retries transient statuses (rate limit, 5xx) with a growing pause before
-// giving up - keep in step with the same helper in fetch.js.
+// giving up - keep in step with the same helper in fetch.js. Every attempt
+// passes the spend guardrail (lib/apiBudget) and reports back to it.
 async function apiGet(urlPath, tries = 3) {
   for (let attempt = 1; ; attempt++) {
+    budget.guard();
     const res = await fetch(`https://${HOST}${urlPath}`, {
       headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
     });
+    budget.note(res);
     if (res.ok) return res.json();
     const transient = [429, 500, 502, 503].includes(res.status);
     if (!transient || attempt >= tries) throw new Error(`HTTP ${res.status}`);
@@ -59,6 +64,10 @@ async function main() {
 
   let consecFails = 0;
   for (const ourId of missing) {
+    if (budget.stopped()) {
+      console.warn('Aborting profile lookups: API spend guardrail tripped. Resuming next run.');
+      break;
+    }
     if (consecFails >= 8) {
       console.warn('Aborting profile lookups: 8 consecutive failures (API down or quota-blocked). Resuming next run.');
       break;

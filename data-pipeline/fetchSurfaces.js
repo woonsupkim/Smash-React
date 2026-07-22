@@ -21,13 +21,18 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+const budget = require('./lib/apiBudget');
+
 // Retries transient statuses (rate limit, 5xx) with a growing pause before
-// giving up - keep in step with the same helper in fetch.js.
+// giving up - keep in step with the same helper in fetch.js. Every attempt
+// passes the spend guardrail (lib/apiBudget) and reports back to it.
 async function apiGet(urlPath, tries = 3) {
   for (let attempt = 1; ; attempt++) {
+    budget.guard();
     const res = await fetch(`https://${HOST}${urlPath}`, {
       headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
     });
+    budget.note(res);
     if (res.ok) return res.json();
     const transient = [429, 500, 502, 503].includes(res.status);
     if (!transient || attempt >= tries) throw new Error(`HTTP ${res.status}`);
@@ -37,7 +42,7 @@ async function apiGet(urlPath, tries = 3) {
 
 // Metadata files that share the raw dir with the per-player match arrays.
 // Keep in sync with whatever the fetchers write there.
-const RAW_METADATA = new Set(['player-id-map.json', 'tournament-surfaces.json', 'player-profiles.json', 'tournament-names.json', 'no-image.json']);
+const RAW_METADATA = new Set(['player-id-map.json', 'tournament-surfaces.json', 'player-profiles.json', 'tournament-names.json', 'no-image.json', 'api-budget-alert.json']);
 
 function collectTournamentIds() {
   const ids = new Set();
@@ -99,6 +104,10 @@ async function main() {
   let surfaceLookups = 0;
 
   for (const id of missing) {
+    if (budget.stopped()) {
+      console.warn('Aborting surface lookups: API spend guardrail tripped. Resuming next run.');
+      break;
+    }
     if (surfaceLookups >= SURFACE_LOOKUPS_PER_RUN) {
       console.warn(`Pausing surface lookups at ${SURFACE_LOOKUPS_PER_RUN} this run (${missing.length - surfaceLookups} left for next run).`);
       break;
@@ -133,6 +142,10 @@ async function main() {
   const nameless = ids.filter((id) => String(id) in cache && !(String(id) in names)).slice(0, NAME_BACKFILL_PER_RUN);
   if (nameless.length) console.log(`Backfilling names for ${nameless.length} tournaments (of ${ids.filter((id) => !(String(id) in names)).length} without one)...`);
   for (const id of nameless) {
+    if (budget.stopped()) {
+      console.warn('Aborting name backfill: API spend guardrail tripped. Resuming next run.');
+      break;
+    }
     if (consecFails >= CIRCUIT) {
       console.warn(`Aborting name backfill: ${CIRCUIT} consecutive failures (API down or quota-blocked). Resuming next run.`);
       break;
