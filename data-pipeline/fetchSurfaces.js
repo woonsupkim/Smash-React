@@ -35,17 +35,26 @@ async function apiGet(urlPath, tries = 3) {
   }
 }
 
+// Metadata files that share the raw dir with the per-player match arrays.
+// Keep in sync with whatever the fetchers write there.
+const RAW_METADATA = new Set(['player-id-map.json', 'tournament-surfaces.json', 'player-profiles.json', 'tournament-names.json', 'no-image.json']);
+
 function collectTournamentIds() {
   const ids = new Set();
-  const files = fs.readdirSync(RAW_DIR).filter(
-    (f) => f.endsWith('.json') && f !== 'player-id-map.json' && f !== 'tournament-surfaces.json' && f !== 'player-profiles.json' && f !== 'tournament-names.json'
-  );
+  const files = fs.readdirSync(RAW_DIR).filter((f) => f.endsWith('.json') && !RAW_METADATA.has(f));
   for (const f of files) {
     // One truncated cache file (a killed run mid-write) must not take down
     // the whole surface resolution - skip it; the next fetch repairs it.
     let matches;
     try { matches = JSON.parse(fs.readFileSync(path.join(RAW_DIR, f), 'utf8')); } catch {
       console.warn(`  skipping corrupt cache file ${f}`);
+      continue;
+    }
+    // Shape guard, not just a name list: any future metadata file that is
+    // valid JSON but not a match ARRAY must be skipped, not crash the run
+    // (exactly what no-image.json did before it joined the list above).
+    if (!Array.isArray(matches)) {
+      console.warn(`  skipping non-array cache file ${f}`);
       continue;
     }
     for (const m of matches) {
