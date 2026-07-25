@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T11:55:22.035Z",
+  "generatedAt": "2026-07-25T08:29:44.006Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -8,24 +8,25 @@
       "surface": "hard",
       "engine": "smash",
       "status": "alert",
-      "n": 678,
-      "seasonAcc": 65,
+      "n": 738,
+      "seasonAcc": 66,
       "recentN": 40,
-      "recentAcc": 50,
-      "rankRecentAcc": 48,
+      "recentAcc": 45,
+      "rankRecentAcc": 38,
       "recentEngines": {
-        "smash": 50,
-        "sim": 50,
-        "elo": 63,
-        "rank": 48,
+        "smash": 45,
+        "sim": 48,
+        "elo": 65,
+        "rank": 38,
         "upset": 63
       },
       "bestRecent": {
         "engine": "elo",
-        "acc": 63
+        "acc": 65
       },
       "reasons": [
-        "recent accuracy 50% is 15 points below the season's 65% (last 40 matches)"
+        "recent accuracy 45% is below a coin flip (last 40 matches)",
+        "recent accuracy 45% is 21 points below the season's 66% (last 40 matches)"
       ]
     },
     {
@@ -33,25 +34,25 @@
       "surface": "clay",
       "engine": "smash",
       "status": "alert",
-      "n": 770,
+      "n": 909,
       "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 45,
-      "rankRecentAcc": 48,
+      "recentAcc": 40,
+      "rankRecentAcc": 45,
       "recentEngines": {
-        "smash": 45,
-        "sim": 55,
-        "elo": 53,
-        "rank": 48,
-        "upset": 73
+        "smash": 40,
+        "sim": 50,
+        "elo": 48,
+        "rank": 45,
+        "upset": 65
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 73
+        "acc": 65
       },
       "reasons": [
-        "recent accuracy 45% is below a coin flip (last 40 matches)",
-        "recent accuracy 45% is 22 points below the season's 67% (last 40 matches)"
+        "recent accuracy 40% is below a coin flip (last 40 matches)",
+        "recent accuracy 40% is 27 points below the season's 67% (last 40 matches)"
       ]
     },
     {
@@ -59,21 +60,21 @@
       "surface": "grass",
       "engine": "sim",
       "status": "ok",
-      "n": 336,
+      "n": 341,
       "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 78,
+      "recentAcc": 80,
       "rankRecentAcc": 73,
       "recentEngines": {
         "smash": 73,
-        "sim": 78,
-        "elo": 73,
+        "sim": 80,
+        "elo": 70,
         "rank": 73,
         "upset": 60
       },
       "bestRecent": {
         "engine": "sim",
-        "acc": 78
+        "acc": 80
       },
       "reasons": []
     },
@@ -82,21 +83,21 @@
       "surface": "hard",
       "engine": "elo",
       "status": "ok",
-      "n": 689,
-      "seasonAcc": 67,
+      "n": 753,
+      "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 83,
-      "rankRecentAcc": 80,
+      "recentAcc": 73,
+      "rankRecentAcc": 70,
       "recentEngines": {
-        "smash": 80,
-        "sim": 53,
-        "elo": 83,
-        "rank": 80,
-        "upset": 68
+        "smash": 68,
+        "sim": 60,
+        "elo": 73,
+        "rank": 70,
+        "upset": 80
       },
       "bestRecent": {
-        "engine": "elo",
-        "acc": 83
+        "engine": "upset",
+        "acc": 80
       },
       "reasons": []
     },
@@ -105,20 +106,20 @@
       "surface": "clay",
       "engine": "smash",
       "status": "ok",
-      "n": 563,
-      "seasonAcc": 69,
+      "n": 650,
+      "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 65,
-      "rankRecentAcc": 53,
+      "recentAcc": 63,
+      "rankRecentAcc": 50,
       "recentEngines": {
-        "smash": 65,
-        "sim": 65,
-        "elo": 55,
-        "rank": 53,
-        "upset": 75
+        "smash": 63,
+        "sim": 75,
+        "elo": 65,
+        "rank": 50,
+        "upset": 73
       },
       "bestRecent": {
-        "engine": "upset",
+        "engine": "sim",
         "acc": 75
       },
       "reasons": []
@@ -128,7 +129,7 @@
       "surface": "grass",
       "engine": "sim",
       "status": "ok",
-      "n": 308,
+      "n": 315,
       "seasonAcc": 72,
       "recentN": 40,
       "recentAcc": 65,
@@ -136,7 +137,7 @@
       "recentEngines": {
         "smash": 73,
         "sim": 65,
-        "elo": 63,
+        "elo": 60,
         "rank": 65,
         "upset": 83
       },
@@ -154,8 +155,9 @@
     "status": "insufficient"
   },
   "alerts": [
-    "ATP hard (smash): recent accuracy 50% is 15 points below the season's 65% (last 40 matches)",
-    "ATP clay (smash): recent accuracy 45% is below a coin flip (last 40 matches)",
-    "ATP clay (smash): recent accuracy 45% is 22 points below the season's 67% (last 40 matches)"
+    "ATP hard (smash): recent accuracy 45% is below a coin flip (last 40 matches)",
+    "ATP hard (smash): recent accuracy 45% is 21 points below the season's 66% (last 40 matches)",
+    "ATP clay (smash): recent accuracy 40% is below a coin flip (last 40 matches)",
+    "ATP clay (smash): recent accuracy 40% is 27 points below the season's 67% (last 40 matches)"
   ]
 }
