@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T08:29:44.006Z",
+  "generatedAt": "2026-07-26T08:46:20.548Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -34,21 +34,21 @@
       "surface": "clay",
       "engine": "smash",
       "status": "alert",
-      "n": 909,
+      "n": 912,
       "seasonAcc": 67,
       "recentN": 40,
       "recentAcc": 40,
       "rankRecentAcc": 45,
       "recentEngines": {
         "smash": 40,
-        "sim": 50,
-        "elo": 48,
+        "sim": 53,
+        "elo": 50,
         "rank": 45,
-        "upset": 65
+        "upset": 63
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 65
+        "acc": 63
       },
       "reasons": [
         "recent accuracy 40% is below a coin flip (last 40 matches)",
@@ -83,21 +83,21 @@
       "surface": "hard",
       "engine": "elo",
       "status": "ok",
-      "n": 753,
+      "n": 755,
       "seasonAcc": 68,
       "recentN": 40,
       "recentAcc": 73,
-      "rankRecentAcc": 70,
+      "rankRecentAcc": 68,
       "recentEngines": {
-        "smash": 68,
-        "sim": 60,
+        "smash": 65,
+        "sim": 63,
         "elo": 73,
-        "rank": 70,
-        "upset": 80
+        "rank": 68,
+        "upset": 83
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 80
+        "acc": 83
       },
       "reasons": []
     },

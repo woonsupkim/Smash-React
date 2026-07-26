@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-25T08:30:02.196Z",
-  "seasonN": 3706,
+  "generatedAt": "2026-07-26T08:46:39.525Z",
+  "seasonN": 3711,
   "lastStreak": {
     "key": "atp|grass",
     "len": 18
@@ -28,16 +28,8 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-24: called 5 of 10 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-07-24: called 5 of 10 winners."
-    },
-    {
-      "file": "wrap-atp.png",
-      "type": "wrap",
-      "format": "square",
-      "category": "wrap",
-      "caption": "Wimbledon ATP report card: 9 of 9 winners called, 3 wins over the bookies, 7 exact scorelines. Jannik Sinner takes the title. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Wimbledon ATP report card: 9 of 9 winners called, 3 wins over the bookies, 7 exact scorelines."
+      "caption": "Receipts from 2026-07-25: called 2 of 5 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-07-25: called 2 of 5 winners."
     },
     {
       "file": "draw-road-atp.png",
@@ -80,20 +72,12 @@
       "alt": "The week in calls: 53 of 88 winners called, 1 wins over the bookies."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
+      "file": "autopsy.png",
+      "type": "upset-autopsy",
       "format": "square",
       "category": "moments",
-      "caption": "3,500 matches graded in public - season benchmark 68%, zero deletions. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "3,500 matches graded in public - season benchmark 68%, zero deletions."
-    },
-    {
-      "file": "streak.png",
-      "type": "streak",
-      "format": "square",
-      "category": "moments",
-      "caption": "18 straight ATP grass-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Streak card: 18 consecutive correct calls on ATP grass."
+      "caption": "Upset autopsy: No. 95 Halys takes down No. 11. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Upset autopsy card: rank 95 beat rank 11, with our call and the market's."
     },
     {
       "file": "edge-dollar.png",
@@ -116,7 +100,7 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,706 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,711 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -124,7 +108,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,706 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,711 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -132,7 +116,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,706 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,711 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -156,7 +140,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,706 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,711 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -188,24 +172,24 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "37 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "37 days until the US Open."
+      "caption": "36 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "36 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1491 matches this season. ATP 66% · WTA 68% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1491 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1493 matches this season. ATP 66% · WTA 68% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1493 matches this season."
     },
     {
       "file": "hype-story.png",
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "37 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "37 days to the US Open."
+      "caption": "36 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "36 days to the US Open."
     }
   ]
 }
