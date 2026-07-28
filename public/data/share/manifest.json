@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-27T10:10:49.037Z",
-  "seasonN": 3714,
+  "generatedAt": "2026-07-28T08:56:45.858Z",
+  "seasonN": 3726,
   "lastStreak": {
     "key": "atp|grass",
     "len": 18
@@ -28,8 +28,8 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-26: called 0 of 3 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-07-26: called 0 of 3 winners."
+      "caption": "Receipts from 2026-07-28: called 1 of 6 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-07-28: called 1 of 6 winners."
     },
     {
       "file": "draw-road-atp.png",
@@ -84,23 +84,23 @@
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $1 test: $1 on every one of the 268 matches where we and the betting market picked different winners. Our picks: +$72. The market's own favorites: -$76. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 268 disagreements."
+      "caption": "The $1 test: $1 on every one of the 270 matches where we and the betting market picked different winners. Our picks: +$74. The market's own favorites: -$78. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 270 disagreements."
     },
     {
       "file": "edge-split.png",
       "type": "edge-split",
       "format": "square",
       "category": "edge",
-      "caption": "We disagreed with the market on Hanfmann vs Baez at the Generali Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "Edge split card: our call versus the market's on Yannick Hanfmann vs Sebastian Baez, graded."
+      "caption": "We disagreed with the market on Tabilo vs Griekspoor at the Citi Open - and the model was right. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Edge split card: our call versus the market's on Alejandro Tabilo vs Tallon Griekspoor, graded."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,714 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 3,726 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -108,7 +108,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,714 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 3,726 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -116,7 +116,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,714 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 3,726 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -140,7 +140,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,714 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 3,726 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -172,24 +172,24 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "35 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "35 days until the US Open."
+      "caption": "34 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "34 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1494 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1494 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1506 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1506 matches this season."
     },
     {
       "file": "hype-story.png",
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "35 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "35 days to the US Open."
+      "caption": "34 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "34 days to the US Open."
     }
   ]
 }
