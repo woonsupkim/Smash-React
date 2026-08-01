@@ -1,35 +1,167 @@
 {
-  "generatedAt": "2026-07-31T09:23:30.308Z",
-  "seasonN": 4096,
+  "generatedAt": "2026-08-01T08:07:40.803Z",
+  "seasonN": 4106,
   "lastStreak": {
     "key": "atp|grass",
     "len": 19
   },
-  "thread": null,
+  "thread": [
+    "Today at the Canada: 8 calls, every one locked before play. Season benchmark: 68% of winners called across 4,106 matches, re-simulated daily. Picks below.",
+    "1/8 Marcos Giron over Pablo Llamas Ruiz at 60% on hard. https://smash-react.vercel.app/match/pablo-llamas-ruiz-vs-marcos-giron-183342",
+    "2/8 Francesca Jones over Taylah Preston at 55% on hard. https://smash-react.vercel.app/match/francesca-jones-vs-taylah-preston-183327",
+    "3/8 Titouan Droguet over Dalibor Svrcina at 54% on hard. UPSET PICK. https://smash-react.vercel.app/match/titouan-droguet-vs-dalibor-svrcina-183337",
+    "4/8 Denis Shapovalov over Zachary Svajda at 56% on hard. https://smash-react.vercel.app/match/denis-shapovalov-vs-zachary-svajda-181780",
+    "5/8 Tallon Griekspoor over Lorenzo Sonego at 54% on hard. https://smash-react.vercel.app/match/tallon-griekspoor-vs-lorenzo-sonego-181784",
+    "6/8 Nuno Borges over Aleksandar Kovacevic at 61% on hard. https://smash-react.vercel.app/match/nuno-borges-vs-aleksandar-kovacevic-181794",
+    "7/8 Mariano Navone over Matteo Berrettini at 52% on hard. https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-181804",
+    "8/8 Botic Van De Zandschulp over Giovanni Mpetshi Perricard at 60% on hard. https://smash-react.vercel.app/match/botic-van-de-zandschulp-vs-giovanni-mpetshi-perricard-181805",
+    "If every call hits, $10 at fair odds returns $985. Not betting advice, just the math on our own confidence.",
+    "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
+  ],
   "assets": [
+    {
+      "file": "cover.png",
+      "type": "carousel-cover",
+      "format": "square",
+      "category": "daily",
+      "caption": "Today's calls at the Canada: 8 matches, locked before play. Swipe for every pick. Season benchmark: 68% of winners called across 4,106 matches, re-simulated daily. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "alt": "Today's Calls cover card: 8 locked predictions at the Canada."
+    },
+    {
+      "file": "cover-45.png",
+      "type": "carousel-cover",
+      "format": "portrait",
+      "category": "daily",
+      "caption": "Today's calls at the Canada, 4:5 feed format. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "alt": "Today's Calls cover card in portrait format for the Canada."
+    },
+    {
+      "file": "match-1.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Marcos Giron over Pablo Llamas Ruiz at 60%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/pablo-llamas-ruiz-vs-marcos-giron-183342 #tennis #atp #wta #tennisprediction",
+      "alt": " Marcos Giron over Pablo Llamas Ruiz at 60%, Canada (hard)."
+    },
+    {
+      "file": "match-2.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Francesca Jones over Taylah Preston at 55%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/francesca-jones-vs-taylah-preston-183327 #tennis #atp #wta #tennisprediction",
+      "alt": " Francesca Jones over Taylah Preston at 55%, Canada (hard)."
+    },
+    {
+      "file": "match-3.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " UPSET PICK: Titouan Droguet over Dalibor Svrcina at 54%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/titouan-droguet-vs-dalibor-svrcina-183337 #tennis #atp #wta #tennisprediction",
+      "alt": " UPSET PICK: Titouan Droguet over Dalibor Svrcina at 54%, Canada (hard)."
+    },
+    {
+      "file": "match-4.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Denis Shapovalov over Zachary Svajda at 56%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/denis-shapovalov-vs-zachary-svajda-181780 #tennis #atp #wta #tennisprediction",
+      "alt": " Denis Shapovalov over Zachary Svajda at 56%, Canada (hard)."
+    },
+    {
+      "file": "match-5.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Tallon Griekspoor over Lorenzo Sonego at 54%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/tallon-griekspoor-vs-lorenzo-sonego-181784 #tennis #atp #wta #tennisprediction",
+      "alt": " Tallon Griekspoor over Lorenzo Sonego at 54%, Canada (hard)."
+    },
+    {
+      "file": "match-6.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Nuno Borges over Aleksandar Kovacevic at 61%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/nuno-borges-vs-aleksandar-kovacevic-181794 #tennis #atp #wta #tennisprediction",
+      "alt": " Nuno Borges over Aleksandar Kovacevic at 61%, Canada (hard)."
+    },
+    {
+      "file": "match-7.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Mariano Navone over Matteo Berrettini at 52%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-181804 #tennis #atp #wta #tennisprediction",
+      "alt": " Mariano Navone over Matteo Berrettini at 52%, Canada (hard)."
+    },
+    {
+      "file": "match-8.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Botic Van De Zandschulp over Giovanni Mpetshi Perricard at 60%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/botic-van-de-zandschulp-vs-giovanni-mpetshi-perricard-181805 #tennis #atp #wta #tennisprediction",
+      "alt": " Botic Van De Zandschulp over Giovanni Mpetshi Perricard at 60%, Canada (hard)."
+    },
+    {
+      "file": "rivalry.png",
+      "type": "rivalry",
+      "format": "square",
+      "category": "daily",
+      "caption": "Navone vs Berrettini, meeting number 7. Career: 0-6. We've called 0 of 4 of their matches right. https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-181804 #tennis #atp #wta #tennisprediction",
+      "alt": "Navone vs Berrettini, meeting number 7."
+    },
+    {
+      "file": "parlay.png",
+      "type": "carousel-closer",
+      "format": "square",
+      "category": "daily",
+      "caption": "If every call today hits, $10 at fair odds returns $985. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "alt": "If every call today hits, $10 at fair odds returns $985."
+    },
+    {
+      "file": "slate-story.png",
+      "type": "slate",
+      "format": "story",
+      "category": "daily",
+      "caption": "The full slate for Aug 1: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "alt": "The full slate for Aug 1: every call with win probability and flags."
+    },
+    {
+      "file": "poll.png",
+      "type": "poll",
+      "format": "square",
+      "category": "daily",
+      "caption": "Navone or Berrettini at the Canada? Our model already picked a side - drop yours below, answer tomorrow. https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-181804 #tennis #atp #wta #tennisprediction",
+      "alt": "Navone or Berrettini at the Canada? Our model already picked a side - drop yours below, answer tomorrow."
+    },
+    {
+      "file": "tape.png",
+      "type": "tale-of-the-tape",
+      "format": "square",
+      "category": "daily",
+      "caption": "Tale of the tape: Navone vs Berrettini at the Canada. Rank, form, career head-to-head, and our call. https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-181804 #tennis #atp #wta #tennisprediction",
+      "alt": "Tale of the tape stat comparison for Mariano Navone vs Matteo Berrettini."
+    },
     {
       "file": "title-odds-atp.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 52%, Alcaraz 23%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 52%, Alcaraz 23%, Zverev 9%."
+      "caption": "US Open ATP title odds today: Sinner 53%, Alcaraz 21%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 53%, Alcaraz 21%, Zverev 9%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Sabalenka 43%, Rybakina 21%, Pegula 7%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Sabalenka 43%, Rybakina 21%, Pegula 7%."
+      "caption": "US Open WTA title odds today: Sabalenka 41%, Rybakina 20%, Pegula 8%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Sabalenka 41%, Rybakina 20%, Pegula 8%."
     },
     {
       "file": "results.png",
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-07-31: called 5 of 6 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-07-31: called 5 of 6 winners."
+      "caption": "Receipts from 2026-08-01: called 0 of 5 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-08-01: called 0 of 5 winners."
     },
     {
       "file": "draw-road-atp.png",
@@ -72,43 +204,43 @@
       "alt": "The week in calls: 31 of 64 winners called."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
+      "file": "autopsy.png",
+      "type": "upset-autopsy",
       "format": "square",
       "category": "moments",
-      "caption": "4,000 matches graded in public - season benchmark 68%, zero deletions. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "4,000 matches graded in public - season benchmark 68%, zero deletions."
-    },
-    {
-      "file": "streak.png",
-      "type": "streak",
-      "format": "square",
-      "category": "moments",
-      "caption": "19 straight ATP grass-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Streak card: 19 consecutive correct calls on ATP grass."
+      "caption": "Upset autopsy: No. 33 Tabilo takes down No. 5. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "Upset autopsy card: rank 33 beat rank 5, with our call and the market's."
     },
     {
       "file": "edge-dollar.png",
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $1 test: $1 on every one of the 297 matches where we and the betting market picked different winners. Our picks: +$91. The market's own favorites: -$93. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 297 disagreements."
+      "caption": "The $1 test: $1 on every one of the 298 matches where we and the betting market picked different winners. Our picks: +$90. The market's own favorites: -$93. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 298 disagreements."
     },
     {
       "file": "edge-split.png",
       "type": "edge-split",
       "format": "square",
       "category": "edge",
-      "caption": "We disagreed with the market on Tabilo vs Griekspoor at the Citi Open - and the model was right. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "Edge split card: our call versus the market's on Alejandro Tabilo vs Tallon Griekspoor, graded."
+      "caption": "We disagreed with the market on Jodar vs Musetti at the Citi Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Edge split card: our call versus the market's on Rafael Jodar vs Lorenzo Musetti, graded."
+    },
+    {
+      "file": "edge-forward.png",
+      "type": "edge-forward",
+      "format": "square",
+      "category": "edge",
+      "caption": "Locked before play: we're backing Mariano Navone at 52% while the market has them at 35%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Forward edge card: our underdog call on Mariano Navone, locked with the market price attached."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 4,096 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 4,106 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -116,7 +248,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 4,096 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 4,106 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -124,7 +256,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 4,096 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 4,106 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -148,7 +280,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 4,096 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 4,106 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -180,16 +312,16 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "31 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "31 days until the US Open."
+      "caption": "30 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "30 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1690 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1690 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1700 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1700 matches this season."
     },
     {
       "file": "hype-favorites-atp.png",
@@ -212,8 +344,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "31 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "31 days to the US Open."
+      "caption": "30 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "30 days to the US Open."
     }
   ]
 }
