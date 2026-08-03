@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T08:05:31.707Z",
+  "generatedAt": "2026-08-03T09:02:14.172Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -8,16 +8,16 @@
       "surface": "hard",
       "engine": "smash",
       "status": "ok",
-      "n": 848,
+      "n": 849,
       "seasonAcc": 66,
       "recentN": 40,
-      "recentAcc": 63,
-      "rankRecentAcc": 53,
+      "recentAcc": 65,
+      "rankRecentAcc": 55,
       "recentEngines": {
-        "smash": 63,
-        "sim": 68,
-        "elo": 63,
-        "rank": 53,
+        "smash": 65,
+        "sim": 70,
+        "elo": 65,
+        "rank": 55,
         "upset": 85
       },
       "bestRecent": {
@@ -80,24 +80,26 @@
       "surface": "hard",
       "engine": "elo",
       "status": "alert",
-      "n": 860,
+      "n": 863,
       "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 50,
-      "rankRecentAcc": 50,
+      "recentAcc": 43,
+      "rankRecentAcc": 53,
       "recentEngines": {
-        "smash": 50,
-        "sim": 73,
-        "elo": 50,
-        "rank": 50,
-        "upset": 85
+        "smash": 45,
+        "sim": 68,
+        "elo": 43,
+        "rank": 53,
+        "upset": 88
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 85
+        "acc": 88
       },
       "reasons": [
-        "recent accuracy 50% is 17 points below the season's 67% (last 40 matches)"
+        "recent accuracy 43% is below a coin flip (last 40 matches)",
+        "recent accuracy 43% is 24 points below the season's 67% (last 40 matches)",
+        "deployed engine (elo) at 43% is losing to the rankings baseline at 53% on the same recent matches"
       ]
     },
     {
@@ -148,14 +150,16 @@
     }
   ],
   "forward": {
-    "n": 5,
-    "recentN": 5,
-    "recentAcc": 80,
+    "n": 7,
+    "recentN": 7,
+    "recentAcc": 57,
     "status": "insufficient"
   },
   "alerts": [
     "ATP clay (smash): recent accuracy 30% is below a coin flip (last 40 matches)",
     "ATP clay (smash): recent accuracy 30% is 37 points below the season's 67% (last 40 matches)",
-    "WTA hard (elo): recent accuracy 50% is 17 points below the season's 67% (last 40 matches)"
+    "WTA hard (elo): recent accuracy 43% is below a coin flip (last 40 matches)",
+    "WTA hard (elo): recent accuracy 43% is 24 points below the season's 67% (last 40 matches)",
+    "WTA hard (elo): deployed engine (elo) at 43% is losing to the rankings baseline at 53% on the same recent matches"
   ]
 }

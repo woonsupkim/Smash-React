@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-02T08:05:56.379Z",
-  "seasonN": 4114,
+  "generatedAt": "2026-08-03T09:02:37.793Z",
+  "seasonN": 4118,
   "lastStreak": {
     "key": "atp|grass",
     "len": 19
   },
   "thread": [
-    "Today at the Canada: 8 calls, every one locked before play. Season benchmark: 68% of winners called across 4,114 matches, re-simulated daily. Picks below.",
+    "Today at the Canada: 8 calls, every one locked before play. Season benchmark: 68% of winners called across 4,118 matches, re-simulated daily. Picks below.",
     "1/8 Francesca Jones over Taylah Preston at 53% on hard. https://smash-react.vercel.app/match/francesca-jones-vs-taylah-preston-183327",
     "2/8 Denis Shapovalov over Zachary Svajda at 54% on hard. https://smash-react.vercel.app/match/denis-shapovalov-vs-zachary-svajda-181780",
     "3/8 Tallon Griekspoor over Lorenzo Sonego at 54% on hard. https://smash-react.vercel.app/match/tallon-griekspoor-vs-lorenzo-sonego-181784",
@@ -24,7 +24,7 @@
       "type": "carousel-cover",
       "format": "square",
       "category": "daily",
-      "caption": "Today's calls at the Canada: 8 matches, locked before play. Swipe for every pick. Season benchmark: 68% of winners called across 4,114 matches, re-simulated daily. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "caption": "Today's calls at the Canada: 8 matches, locked before play. Swipe for every pick. Season benchmark: 68% of winners called across 4,118 matches, re-simulated daily. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
       "alt": "Today's Calls cover card: 8 locked predictions at the Canada."
     },
     {
@@ -160,24 +160,24 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 54%, Alcaraz 22%, Zverev 10%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 54%, Alcaraz 22%, Zverev 10%."
+      "caption": "US Open ATP title odds today: Sinner 51%, Alcaraz 23%, Zverev 10%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 51%, Alcaraz 23%, Zverev 10%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Sabalenka 41%, Rybakina 22%, Pegula 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Sabalenka 41%, Rybakina 22%, Pegula 9%."
+      "caption": "US Open WTA title odds today: Sabalenka 43%, Rybakina 18%, Pegula 8%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Sabalenka 43%, Rybakina 18%, Pegula 8%."
     },
     {
       "file": "results.png",
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-08-02: called 2 of 2 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-08-02: called 2 of 2 winners."
+      "caption": "Receipts from 2026-08-03: called 0 of 1 winners. Season benchmark: 68%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-08-03: called 0 of 1 winners."
     },
     {
       "file": "draw-road-atp.png",
@@ -216,8 +216,8 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 31 of 64 winners called. Season benchmark: 68%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 31 of 64 winners called."
+      "caption": "The week in calls: 52 of 97 winners called, 4 wins over the bookies. Season benchmark: 68%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 52 of 97 winners called, 4 wins over the bookies."
     },
     {
       "file": "autopsy.png",
@@ -248,15 +248,15 @@
       "type": "edge-forward",
       "format": "square",
       "category": "edge",
-      "caption": "Locked before play: we're backing Juan Manuel Cerundolo at 53% while the market has them at 36%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "Forward edge card: our underdog call on Juan Manuel Cerundolo, locked with the market price attached."
+      "caption": "Locked before play: we're backing Mariano Navone at 52% while the market has them at 35%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Forward edge card: our underdog call on Mariano Navone, locked with the market price attached."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 4,114 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: season benchmark: 68% of winners called across 4,118 matches, re-simulated daily, all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -264,7 +264,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 4,114 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: season benchmark: 68% of winners called across 4,118 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -272,8 +272,16 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 4,114 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. Season benchmark: 68% of winners called across 4,118 matches, re-simulated daily. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
+    },
+    {
+      "file": "trust.png",
+      "type": "trust",
+      "format": "square",
+      "category": "promo",
+      "caption": "Calibration check: when we say 70%, do we win 70%? Stated confidence vs reality on every graded call this season. https://smash-react.vercel.app/model #tennis #atp #wta #tennisprediction",
+      "alt": "Calibration trust card: stated confidence versus actual win rates by band."
     },
     {
       "file": "how-it-works-1.png",
@@ -296,7 +304,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 4,114 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. Season benchmark: 68% of winners called across 4,118 matches, re-simulated daily. #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -328,16 +336,16 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "29 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "29 days until the US Open."
+      "caption": "28 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "28 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1708 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1708 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1712 matches this season. ATP 66% · WTA 67% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1712 matches this season."
     },
     {
       "file": "hype-favorites-atp.png",
@@ -360,8 +368,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "29 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "29 days to the US Open."
+      "caption": "28 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "28 days to the US Open."
     }
   ]
 }

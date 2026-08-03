@@ -33,7 +33,7 @@ ostap,Jelena Ostapenko,Jelena,Ostapenko,31,2,0.57,0.77,0.44,0.54,0.43,0.16,LAT,2
 eala,Alexandra Eala,Alexandra,Eala,32,2,0.63,0.91,0.39,0.49,0.42,0.04,PHI,21,29,5,8,2
 raduc,Emma Raducanu,Emma,Raducanu,33,2,0.68,0.86,0.41,0.52,0.39,0.05,GBR,23,5,1,6,4
 vekic,Donna Vekic,Donna,Vekic,34,2,0.58,0.89,0.36,0.49,0.41,0.11,CRO,30,6,3,6,4
-bucsa,Cristina Bucsa,Cristina,Bucsa,35,2,0.66,0.88,0.37,0.45,0.39,0.03,ESP,28,0,0,2,8
+bucsa,Cristina Bucsa,Cristina,Bucsa,35,2,0.66,0.88,0.37,0.45,0.39,0.03,ESP,28,0,0,1,9
 sinia,Katerina Siniakova,Katerina,Siniakova,36,2,0.61,0.84,0.34,0.48,0.43,0.08,CZE,30,5,3,6,4
 crist,Jaqueline Cristian,Jaqueline,Cristian,37,2,0.62,0.88,0.23,0.38,0.37,0.08,ROU,28,1,2,4,6
 krejc,Barbora Krejcikova,Barbora,Krejcikova,38,2,0.63,0.86,0.39,0.46,0.40,0.09,CZE,30,10,2,8,2
@@ -43,7 +43,7 @@ samso,Liudmila Samsonova,Liudmila,Samsonova,41,2,0.55,0.88,0.35,0.48,0.40,0.12,R
 tjen,Janice Tjen,Janice,Tjen,42,2,0.65,0.90,0.33,0.43,0.40,0.07,INA,24,6,9,4,6
 sakka,Maria Sakkari,Maria,Sakkari,43,2,0.55,0.88,0.28,0.48,0.38,0.11,GRE,31,4,3,7,3
 frech,Magdalena Frech,Magdalena,Frech,44,2,0.58,0.88,0.30,0.43,0.35,0.09,POL,28,1,4,4,6
-bejle,Sara Bejlek,Sara,Bejlek,45,2,0.59,0.91,0.36,0.40,0.35,0.03,CZE,20,1,4,5,5
+bejle,Sara Bejlek,Sara,Bejlek,45,2,0.59,0.91,0.36,0.40,0.35,0.03,CZE,20,1,4,6,4
 cocci,Elisabetta Cocciaretto,Elisabetta,Cocciaretto,46,2,0.57,0.86,0.34,0.46,0.41,0.06,ITA,25,0,3,4,6
 marci,Petra Marcinko,Petra,Marcinko,47,2,0.59,0.75,0.32,0.52,0.40,0.08,CRO,20,5,5,6,4
 bartu,Nikola Bartunkova,Nikola,Bartunkova,48,2,0.58,0.88,0.34,0.43,0.42,0.10,CZE,20,21,8,6,4
@@ -107,7 +107,7 @@ semen,Darja Semenistaja,Darja,Semenistaja,104,2,0.61,0.96,0.38,0.49,0.30,0.04,LA
 kenin,Sofia Kenin,Sofia,Kenin,105,2,0.70,0.85,0.30,0.49,0.38,0.03,USA,27,3,5,2,8
 jones,Francesca Jones,Francesca,Jones,106,2,0.65,0.88,0.25,0.43,0.33,0.07,GBR,25,0,5,9,1
 queve,Kaitlin Quevedo,Kaitlin,Quevedo,107,2,0.66,0.85,0.38,0.35,0.43,0.04,ESP,20,2,2,6,4
-uchij,Moyuka Uchijima,Moyuka,Uchijima,108,2,0.53,0.82,0.29,0.43,0.33,0.09,JPN,24,0,2,5,5
+uchij,Moyuka Uchijima,Moyuka,Uchijima,108,2,0.53,0.82,0.29,0.43,0.33,0.09,JPN,24,0,2,6,4
 sheri,Mayar Sherif,Mayar,Sherif,109,2,0.75,0.81,0.28,0.40,0.29,0.05,EGY,30,0,1,8,2
 kasin,Victoria Jimenez Kasintseva,Victoria,Jimenez Kasintseva,110,2,0.66,0.92,0.33,0.33,0.29,0.01,AND,20,0,2,1,9
 galfi,Dalma Galfi,Dalma,Galfi,111,2,0.65,0.89,0.32,0.37,0.38,0.13,HUN,27,4,7,0,10

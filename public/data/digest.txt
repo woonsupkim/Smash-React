@@ -1,13 +1,13 @@
-SMASH WEEKLY DIGEST · 2026-07-27
+SMASH WEEKLY DIGEST · 2026-08-03
 
-Last 7 days: 31 of 64
-  48% of winners called across every graded match this week.
-Season benchmark: 2,515 of 3,714
+Last 7 days: 52 of 97
+  54% of winners called across every graded match this week.
+Season benchmark: 2,788 of 4,114
   68% - today's engines replayed over the season. A benchmark, not a live betting record.
-Forward test: 2-1
-  Predictions locked before play, then graded in public.
+Forward test: 4-3
+  Predictions locked before play, then graded in public. 65 more pending.
 
-Next up: US Open on hard, 35 days out.
+Next up: US Open on hard, 28 days out.
 
 Every call, graded in public: https://smash-react.vercel.app/track-record
 
