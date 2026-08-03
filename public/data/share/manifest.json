@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03T09:02:37.793Z",
+  "generatedAt": "2026-08-03T09:21:57.939Z",
   "seasonN": 4118,
   "lastStreak": {
     "key": "atp|grass",
@@ -160,16 +160,16 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 51%, Alcaraz 23%, Zverev 10%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 51%, Alcaraz 23%, Zverev 10%."
+      "caption": "US Open ATP title odds today: Sinner 54%, Alcaraz 21%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 54%, Alcaraz 21%, Zverev 9%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Sabalenka 43%, Rybakina 18%, Pegula 8%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Sabalenka 43%, Rybakina 18%, Pegula 8%."
+      "caption": "US Open WTA title odds today: Sabalenka 42%, Rybakina 20%, Pegula 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Sabalenka 42%, Rybakina 20%, Pegula 9%."
     },
     {
       "file": "results.png",
