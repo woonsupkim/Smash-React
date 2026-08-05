@@ -25,6 +25,18 @@ function loadRanks(tour) {
   return new Map(rows.map((r) => [r.id, Number(r.us_seed) || null]));
 }
 
+// An "upset pick" means the model backs a player the rankings say should
+// LOSE, by a margin that actually means something. Ranking numbers are noisy
+// and compress badly: #69 vs #76 is a coin flip dressed up as a gap, while
+// #26 vs #98 is a genuine call against the form book. So materiality is a
+// RATIO (the same log-scale the rank engine itself uses) plus a floor on the
+// raw gap, and both must clear. Without this the badge fired on almost any
+// pick and stopped meaning anything.
+const UPSET_RATIO = 2;   // the underdog's number must be at least double
+const UPSET_MIN_GAP = 10; // ...and at least this many places back
+const isUpsetPick = (favRank, oppRank) =>
+  !!favRank && !!oppRank && favRank >= oppRank * UPSET_RATIO && favRank - oppRank >= UPSET_MIN_GAP;
+
 // Plain-language reason for an against-the-rankings call, keyed on the
 // engine that locked it.
 function upsetReason(p, favRank, oppRank) {
@@ -86,8 +98,8 @@ function run() {
     worstMiss: worstMiss ? { call: `${fav(worstMiss)} (we said ${Math.round(favProb(worstMiss) * 100)}%)`, winner: dog(worstMiss) } : null,
   };
 
-  // Upset watch: pending picks where the model's favorite is the WORSE-ranked
-  // player. Sorted by ranking gap; top 3.
+  // Upset watch: pending picks where the model backs a materially
+  // worse-ranked player. Sorted by ranking gap; top 3.
   const upsetWatch = (preds.predictions || [])
     .filter((p) => p.status === 'pending')
     .map((p) => {
@@ -95,7 +107,7 @@ function run() {
       const oppId = favId === p.p1 ? p.p2 : p.p1;
       const favRank = ranks[p.tour]?.get(favId);
       const oppRank = ranks[p.tour]?.get(oppId);
-      if (!favRank || !oppRank || favRank <= oppRank) return null;
+      if (!isUpsetPick(favRank, oppRank)) return null;
       return {
         id: p.id, tour: p.tour, surface: p.surface, event: p.event, date: p.date,
         favName: p.favName,

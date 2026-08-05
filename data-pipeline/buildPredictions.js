@@ -178,16 +178,44 @@ async function run() {
   // erase the on-the-record history. The workflow keeps the old commit.
   const store = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : { predictions: [] };
 
-  // Collapse any pre-existing duplicates (same tour + pair + day), preferring
-  // a decided entry over a still-pending one.
-  const loadKey = (p) => `${p.tour}|${[p.p1, p.p2].sort().join('_')}|${new Date(p.date).toISOString().slice(0, 10)}`;
+  // Collapse pre-existing duplicates of the SAME match.
+  //
+  // Identity is tour + player pair + event + year, NOT the scheduled day: in
+  // singles a pair meets at most once per event per year, while ESPN slides
+  // the scheduled date as a tournament's order of play firms up. Keying on
+  // the day re-locked the same match every time it moved (Shapovalov vs
+  // Svajda was locked three times, and 28 already-graded matches were
+  // double or triple counted in the public record - a real inflation of the
+  // forward-test denominator, not a cosmetic glitch).
+  //
+  // The survivor is the EARLIEST lock: that is the honest "we called it
+  // before play" timestamp, and it carries the first lock-odds snapshot.
+  // Its date is advanced to the latest schedule so the board stays right.
+  const matchKey = (p) => `${p.tour}|${[p.p1, p.p2].sort().join('_')}|${p.event || '?'}|${new Date(p.date).getUTCFullYear()}`;
+  const lockTime = (p) => new Date(p.lockedAt || p.date).getTime();
   const dedup = new Map();
+  let collapsed = 0;
   for (const p of store.predictions) {
-    const k = loadKey(p);
+    const k = matchKey(p);
     const prev = dedup.get(k);
-    if (!prev || (prev.status === 'pending' && p.status !== 'pending')) dedup.set(k, p);
+    if (!prev) { dedup.set(k, p); continue; }
+    collapsed++;
+    // Prefer a graded row over a pending one; otherwise the earliest lock.
+    const keep = (prev.status !== 'pending' && p.status === 'pending') ? prev
+      : (prev.status === 'pending' && p.status !== 'pending') ? p
+      : (lockTime(p) < lockTime(prev) ? p : prev);
+    const drop = keep === prev ? p : prev;
+    // Carry forward whatever the dropped twin knew that the survivor doesn't:
+    // the most recent schedule, and any lock-odds captured on the other row.
+    if (new Date(drop.date) > new Date(keep.date) && keep.status === 'pending') keep.date = drop.date;
+    if (!keep.lockOdd1 && drop.lockOdd1) {
+      keep.lockOdd1 = drop.lockOdd1; keep.lockOdd2 = drop.lockOdd2;
+      keep.lockOddsAt = drop.lockOddsAt; keep.tCountry = keep.tCountry || drop.tCountry;
+    }
+    dedup.set(k, keep);
   }
   store.predictions = [...dedup.values()];
+  if (collapsed) console.log(`Collapsed ${collapsed} duplicate row(s) of matches already in the ledger.`);
 
   const ctxByTour = { atp: loadTour('atp'), wta: loadTour('wta') };
 
@@ -231,14 +259,17 @@ async function run() {
   }
 
   // ── 2. Seed new upcoming predictions ────────────────────────────────────
-  // Dedupe by matchup identity (tour + player pair + day), NOT the ESPN
-  // competition id - ESPN reassigns that id between runs, which would
-  // otherwise lock the same match twice.
-  const dayKey = (tour, p1, p2, date) =>
-    `${tour}|${[p1, p2].sort().join('_')}|${new Date(date).toISOString().slice(0, 10)}`;
-  const seen = new Set(store.predictions.map((p) => dayKey(p.tour, p.p1, p.p2, p.date)));
+  // Keyed on matchup identity (tour + pair + event + year), NOT the ESPN
+  // competition id (reassigned between runs) and NOT the scheduled day
+  // (ESPN slides it as the order of play firms up). A match already in the
+  // ledger is never re-locked; if its schedule moved, the existing row's
+  // date is updated in place so the pick keeps its original lock time.
+  const seedKey = (tour, p1, p2, event, date) =>
+    `${tour}|${[p1, p2].sort().join('_')}|${event || '?'}|${new Date(date).getUTCFullYear()}`;
+  const seen = new Map(store.predictions.map((p) => [matchKey(p), p]));
 
   let added = 0;
+  let rescheduled = 0;
   const today = new Date();
   for (const league of ['atp', 'wta']) {
     const ctx = ctxByTour[league];
@@ -253,15 +284,24 @@ async function run() {
         const a = matchRoster(g.names[0], ctx.roster);
         const b = matchRoster(g.names[1], ctx.roster);
         if (!a || !b || a.id === b.id) continue;
-        const key = dayKey(league, a.id, b.id, g.date);
-        if (seen.has(key)) continue;
+        const key = seedKey(league, a.id, b.id, ev.label, g.date);
+        const already = seen.get(key);
+        if (already) {
+          // Same match, new time slot: move the existing lock, never add one.
+          if (already.status === 'pending' && already.date !== g.date) {
+            already.date = g.date;
+            already.id = g.id;
+            rescheduled++;
+          }
+          continue;
+        }
         const bestOf = ev.bestOf[league] || ctx.bestOf;
         const pred = predict(ctx, a, b, ev.surface, bestOf);
         if (pred == null) continue;
         const { probA, engine } = pred;
         const favorite = probA >= 0.5 ? a.id : b.id;
         const favProb = probA >= 0.5 ? probA : 1 - probA;
-        store.predictions.push({
+        const row = {
           id: g.id, tour: league, surface: ev.surface, event: ev.label, date: g.date,
           tier: ev.tier, bestOf,
           p1: a.id, p2: b.id, name1: a.name, name2: b.name,
@@ -270,8 +310,9 @@ async function run() {
           favProb: Math.round(favProb * 1000) / 1000,
           engine,
           status: 'pending', lockedAt: new Date().toISOString(),
-        });
-        seen.add(key);
+        };
+        store.predictions.push(row);
+        seen.set(key, row);
         added++;
       }
     }
@@ -338,7 +379,7 @@ async function run() {
   const pending = store.predictions.filter((p) => p.status === 'pending').length;
   const decided = store.predictions.filter((p) => p.status !== 'pending');
   const wins = decided.filter((p) => p.correct).length;
-  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}, lock-odds stamped ${stamped}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
+  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}, rescheduled ${rescheduled}, lock-odds stamped ${stamped}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
   if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 

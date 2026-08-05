@@ -15,7 +15,10 @@ test('home renders the board and proof rail', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Simulate the Slams', { exact: false })).toBeVisible();
   // The proof rail loads from track_record.json - a number, not a skeleton.
-  await expect(page.getByText(/of winners called|winners called/i).first()).toBeVisible({ timeout: 15000 });
+  // Asserted on the rail itself rather than any one caption: the captions
+  // change with the season (off-season copy vs a live board), and this test
+  // is about the data arriving, not about which phrase is on screen.
+  await expect(page.locator('.home-stat-val').first()).toHaveText(/\d/, { timeout: 15000 });
   expect(errors).toEqual([]);
 });
 
@@ -25,10 +28,14 @@ test('track record: hero, filters, event dropdown, match log', async ({ page }) 
   await expect(page.getByRole('heading', { name: /track record/i })).toBeVisible();
   await expect(page.locator('.track-hero-value')).toHaveText(/%/, { timeout: 15000 });
 
-  // Surface filter changes the hero sample size.
-  const subBefore = await page.locator('.track-hero-sub').textContent();
+  // Surface filter reaches the surface-scoped copy. Which element carries
+  // that copy depends on whether the forward test has earned the hero slot
+  // yet, so assert the label lands somewhere in the stats block rather than
+  // pinning one selector that moves with the season.
   await page.getByRole('button', { name: 'Grass', exact: true }).click();
-  await expect(page.locator('.track-hero-sub')).not.toHaveText(subBefore, { timeout: 5000 });
+  await expect(
+    page.locator('.track-hero-sub, .track-benchmark-text').filter({ hasText: /Grass/i }).first()
+  ).toBeVisible({ timeout: 5000 });
 
   // Event dropdown filters the log.
   const select = page.locator('.track-event-select');

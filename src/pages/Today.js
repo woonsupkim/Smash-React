@@ -23,9 +23,17 @@ export default function Today() {
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
-      .then((d) => setPicks((d.predictions || [])
-        .filter((p) => p.status === 'pending')
-        .sort((a, b) => new Date(a.date) - new Date(b.date))))
+      .then((d) => {
+        // Next up first; picks whose day has passed without a result yet
+        // fall to the bottom rather than heading the page (see Home.js).
+        const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+        const pending = (d.predictions || []).filter((p) => p.status === 'pending');
+        const soon = (a, b) => new Date(a.date) - new Date(b.date);
+        setPicks([
+          ...pending.filter((p) => new Date(p.date) >= startOfToday).sort(soon),
+          ...pending.filter((p) => new Date(p.date) < startOfToday).sort((a, b) => -soon(a, b)),
+        ]);
+      })
       .catch(() => setPicks([]));
     fetch(process.env.PUBLIC_URL + '/data/daily_scorecard.json')
       .then((r) => r.json())
@@ -60,7 +68,7 @@ export default function Today() {
             const when = timeUntil(p.date);
             const favIsP1 = p.favorite === p.p1;
             return (
-              <Link key={p.id} to={`/match/${matchSlug(p)}`} className="today-row">
+              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className="today-row">
                 <span className="today-faces">
                   <img src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
                   <img src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />

@@ -144,11 +144,21 @@ export default function Home() {
       .then((r) => { if (!r.ok) throw new Error('bad response'); return r.json(); })
       .then((d) => {
         const all = d.predictions || [];
-        const list = all
-          .filter((p) => p.status === 'pending')
-          .sort((a, b) => new Date(a.date) - new Date(b.date))
-          .slice(0, 6);
-        setPicks({ state: 'ready', list });
+        // Order by what a visitor means by "now": the next matches to be
+        // played, soonest first. Scheduled times are often midnight
+        // placeholders that drift, so today counts as upcoming - but a pick
+        // whose day has PASSED and still has no result is only awaiting a
+        // scoreline, and must never lead a board with a live dot on it.
+        const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+        const pending = all.filter((p) => p.status === 'pending');
+        const upcoming = pending
+          .filter((p) => new Date(p.date) >= startOfToday)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+        const awaiting = pending
+          .filter((p) => new Date(p.date) < startOfToday)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        const list = [...upcoming, ...awaiting].slice(0, 6);
+        setPicks({ state: 'ready', list, live: upcoming.length > 0 });
         const decided = all.filter((p) => p.status !== 'pending');
         const correct = decided.filter((p) => p.correct).length;
         setForward({ n: decided.length, correct, acc: decided.length ? Math.round((correct / decided.length) * 100) : 0 });
@@ -423,8 +433,10 @@ export default function Home() {
         {/* ── Live board: what's on the tour right now ─────────────────── */}
         <section className="home-board">
           <div className="home-section-head">
-            {picks.list.length > 0 && <span className="home-live-dot" />}
-            <h2 className="home-section-title">{picks.list.length > 0 ? 'Happening Now' : 'Tournament Watch'}</h2>
+            {picks.live && <span className="home-live-dot" />}
+            <h2 className="home-section-title">
+              {picks.live ? 'Happening Now' : picks.list.length > 0 ? 'Awaiting Results' : 'Tournament Watch'}
+            </h2>
             {picks.list.length > 0 && (
               <span className="home-section-sub">
                 {new Set(picks.list.map((p) => p.event)).size === 1 ? picks.list[0].event : 'on tour this week'}
@@ -500,7 +512,7 @@ export default function Home() {
               {picks.list.map((p) => {
                 const when = timeUntil(p.date);
                 return (
-                  <Link key={p.id} to={`/match/${matchSlug(p)}`} className="home-board-card">
+                  <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className="home-board-card">
                     <div className="home-board-top">
                       <span className="home-board-tour">{p.tour === 'wta' ? 'WTA' : 'ATP'}</span>
                       <span className={`home-board-surface s-${p.surface}`}>{p.surface}</span>

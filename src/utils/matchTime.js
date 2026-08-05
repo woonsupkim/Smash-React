@@ -4,15 +4,25 @@
 // cards and match pages, plus a viewer-local kickoff time.
 
 export function timeUntil(iso, now = Date.now()) {
-  const diff = new Date(iso) - now;
+  const when = new Date(iso);
+  const diff = when - now;
   if (Number.isNaN(diff)) return null;
-  if (diff <= 0) return { past: true, label: 'awaiting result' };
-  const mins = Math.floor(diff / 6e4);
-  const h = Math.floor(mins / 60);
-  const d = Math.floor(h / 24);
-  if (d >= 1) return { past: false, label: `in ${d}d ${h % 24}h` };
-  if (h >= 1) return { past: false, label: `in ${h}h ${mins % 60}m` };
-  return { past: false, soon: true, label: mins <= 1 ? 'about to start' : `in ${mins}m` };
+  if (diff > 0) {
+    const mins = Math.floor(diff / 6e4);
+    const h = Math.floor(mins / 60);
+    const d = Math.floor(h / 24);
+    if (d >= 1) return { past: false, label: `in ${d}d ${h % 24}h` };
+    if (h >= 1) return { past: false, label: `in ${h}h ${mins % 60}m` };
+    return { past: false, soon: true, label: mins <= 1 ? 'about to start' : `in ${mins}m` };
+  }
+  // The clock time has passed - but schedules routinely carry a midnight
+  // placeholder until the order of play is published, so a match still
+  // listed for TODAY is on today's card, not overdue. Only a pick whose
+  // DAY has passed with no result is genuinely awaiting one.
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  if (when >= startOfToday) return { past: false, today: true, label: 'today' };
+  return { past: true, label: 'awaiting result' };
 }
 
 // "Sat, Jul 12 · 11:00 AM" in the visitor's own timezone.

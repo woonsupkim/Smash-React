@@ -59,6 +59,13 @@ const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorre
 const pickFav = (m) => m.pickFavorite || m.smashFavorite;
 const pickProbP1 = (m) => (m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1);
 const pickFavProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
+
+// "UPSET PICK" means the model backs a materially worse-ranked player, not
+// merely one ranking place back. Same test as buildDailyScorecard.js - the
+// cards and the site must never disagree about what an upset is.
+const UPSET_RATIO = 2, UPSET_MIN_GAP = 10;
+const isUpsetPick = (favRank, oppRank) =>
+  !!favRank && !!oppRank && favRank >= oppRank * UPSET_RATIO && favRank - oppRank >= UPSET_MIN_GAP;
 const SQ = 1080;
 const ST_W = 1080, ST_H = 1920;
 const MAX_MATCH_CARDS = 8;
@@ -1538,7 +1545,7 @@ async function run() {
     return {
       ...p,
       _flags: {
-        upset: !!(favRank && oppRank && favRank > oppRank),
+        upset: isUpsetPick(favRank, oppRank),
         confidence: p.favProb >= 0.70 ? 'high' : (p.favProb < 0.60 ? 'low' : null),
         rank1: ranks[p.tour]?.get(p.p1),
         rank2: ranks[p.tour]?.get(p.p2),
