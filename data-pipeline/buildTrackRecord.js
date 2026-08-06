@@ -23,6 +23,7 @@ const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
 const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
 const { matchProb, matchDetail } = require('./lib/analyticProb');
 const { slamsForYear } = require('./lib/slamCalendar');
+const { isDeployTier } = require('./lib/events');
 
 // Event label for a match: the tournament-names cache when we have it
 // (fetchSurfaces backfills it over a few runs), else a slam-window
@@ -347,6 +348,79 @@ for (const tour of ['atp', 'wta']) {
 // annotation below uses it to decide each match's actual call.
 const ENGINE_FIELD = { smash: 'smashCorrect', sim: 'correct', elo: 'eloCorrect', rank: 'rankCorrect', upset: 'upsetCorrect' };
 const ENGINE_PROB = { smash: 'smashProbP1', sim: 'probP1', elo: 'eloProbP1', rank: 'rankProbP1', upset: 'upsetProbP1' };
+
+// ── Which engine gets deployed in a cell ───────────────────────────────────
+// Two rules, both learned the hard way.
+//
+// 1. SELECT ON THE POPULATION WE SERVE. The raw archive is ~2/3 challengers
+//    and 250s, but the site only ever locks picks on slams and the six
+//    combined 1000s. Selecting on the archive picked Form for WTA hard
+//    (best across 685 small events) and shipped it to the US Open, where
+//    it was not the best. Selection now looks only at deploy-tier matches.
+//
+// 2. ONLY SWITCH WHEN IT MEANS SOMETHING. Deploy-tier cells hold a few
+//    hundred matches, where one standard deviation of accuracy is ~3
+//    points. Plain argmax on that sample proposed shipping the RANKINGS
+//    baseline for both hard cells on a ~1-point lead: noise, and a product
+//    that beats rankings has no business deploying them. So the Smart
+//    Blend (the tuned general-purpose default, and the best-calibrated
+//    engine in most cells) holds the slot unless a challenger is better by
+//    a margin whose 95% paired-bootstrap interval clears zero. Ties, near
+//    misses, and thin samples all resolve to the blend.
+//
+// As deploy-tier evidence accumulates a genuinely better engine will cross
+// the bar on its own; nothing here is frozen.
+const DEPLOY_BASE = 'smash';
+const DEPLOY_MIN_N = 100;   // below this, the cell has no business choosing
+const BOOT_REPS = 2000;
+
+// 2.5th percentile of the paired accuracy difference (a - b), in points.
+// Seeded so a rerun of the same data always deploys the same engine - a
+// selector that flickered between refreshes would be worse than a wrong one.
+function pairedBootLo(list, fa, fb) {
+  const usable = list.filter((m) => m[fa] != null && m[fb] != null);
+  if (usable.length < DEPLOY_MIN_N) return -Infinity;
+  let seed = 987654321;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const diffs = [];
+  for (let r = 0; r < BOOT_REPS; r++) {
+    let a = 0, b = 0;
+    for (let i = 0; i < usable.length; i++) {
+      const m = usable[Math.floor(rnd() * usable.length)];
+      if (m[fa]) a++;
+      if (m[fb]) b++;
+    }
+    diffs.push(((a - b) / usable.length) * 100);
+  }
+  diffs.sort((x, y) => x - y);
+  return diffs[Math.floor(BOOT_REPS * 0.025)];
+}
+
+function selectEngine(deployList) {
+  const accOf = (id) => {
+    const f = ENGINE_FIELD[id];
+    const v = deployList.filter((m) => m[f] != null);
+    return v.length ? Math.round((v.filter((m) => m[f]).length / v.length) * 100) : null;
+  };
+  const acc = Object.fromEntries(Object.keys(ENGINE_FIELD).map((id) => [id, accOf(id)]));
+  if (deployList.length < DEPLOY_MIN_N) {
+    return { engine: DEPLOY_BASE, basis: 'thin-sample', n: deployList.length, acc, margin: null };
+  }
+  let engine = DEPLOY_BASE, margin = 0;
+  for (const id of Object.keys(ENGINE_FIELD)) {
+    if (id === DEPLOY_BASE) continue;
+    const lo = pairedBootLo(deployList, ENGINE_FIELD[id], ENGINE_FIELD[DEPLOY_BASE]);
+    if (lo > 0 && lo > margin) { engine = id; margin = lo; }
+  }
+  return {
+    engine,
+    basis: engine === DEPLOY_BASE ? 'blend-default' : 'significant',
+    n: deployList.length,
+    acc,
+    margin: engine === DEPLOY_BASE ? null : +margin.toFixed(1),
+  };
+}
+
 function summarize(list) {
   if (!list.length) return null;
   const out = { n: list.length };
@@ -357,13 +431,12 @@ function summarize(list) {
     lls[id] = ll != null ? +ll.toFixed(4) : null;
   }
   out.logLoss = lls;
-  // Best selectable engine BY ACCURACY, matching the "Most accurate" tag on
-  // the Five Ways panel (product rule: every call the site makes uses the
-  // best predicting engine for its tour x surface, and the headline grades
-  // those deployed calls). Smart Blend wins ties. Per-engine log losses are
-  // emitted above so the tradeoff stays inspectable.
-  const order = ['smash', 'sim', 'elo', 'rank', 'upset'];
-  out.best = order.reduce((b, id) => (out[id] > out[b] ? id : b), 'smash');
+  // The percentages above describe the WHOLE archive (the site's evidence
+  // base, and what the comparison panels show). The deployed engine is a
+  // separate question, answered only on the matches the site actually calls.
+  const sel = selectEngine(list.filter((m) => isDeployTier(m.event)));
+  out.best = sel.engine;
+  out.selection = sel;
   return out;
 }
 const accuracy = {};

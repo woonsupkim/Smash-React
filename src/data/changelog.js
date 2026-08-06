@@ -6,9 +6,22 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '3.3';
+export const MODEL_VERSION = '3.7';
 
 export const CHANGELOG = [
+  {
+    version: '3.7',
+    date: '2026-08-05',
+    type: 'model',
+    title: 'Engines chosen on the matches we actually call',
+    notes: [
+      'ENGINE SELECTION, RESCOPED: each tour and surface now picks its deployed engine from the slams and the six combined 1000s - the events this site publishes picks on - instead of the whole match archive, which is roughly two-thirds challengers and 250s. Selecting on the archive had put the Form engine on WTA hard because it leads across 685 small events, and it was about to call the US Open on that basis.',
+      'A NEW BAR FOR SWITCHING: the Smart Blend keeps the slot unless a rival beats it on those events by a margin whose 95% paired-bootstrap interval clears zero. Plain "highest number wins" wanted to deploy the raw Rankings baseline on both hard-court cells on a one-point lead across ~280 matches, which is noise. Under the new rule all six cells deploy the Smart Blend; as evidence accumulates a genuinely better engine can still take the job.',
+      'GUARDRAILS MATCH: engine-health monitoring now watches the same population it deploys on. Two standing alerts turned out to be about tennis we never call (a chaotic week of clay 250s where every engine AND the rankings baseline collapsed together), while a real softening on WTA grass had been hidden inside the volume of small-event matches.',
+      'DUPLICATE CALLS PURGED: a rescheduled match used to relock as a new prediction each time the draw moved its date, so 28 graded matches were counted two or three times. Match identity is now tour + pair + event, a moved match updates its existing lock in place, and the verified-call count is honest again (the accuracy was never affected).',
+      'Upset watch now requires a real ranking gap (double the number and at least ten places) instead of flagging any pick one spot against the form book.',
+    ],
+  },
   {
     version: '3.6',
     date: '2026-07-20',

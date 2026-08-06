@@ -195,12 +195,15 @@ export default function ModelCard() {
         <section className="mc-section">
           <h2>Engine health</h2>
           <p>
-            Each tour and surface is called by its most accurate engine, and this board
-            watches whether that engine is still earning the job: its record over the
-            last {guard.window} graded matches in that cell, against its own season
-            number and the plain rankings baseline. It's rechecked on every data
-            refresh, and anything that trips an alert also opens a maintenance ticket
-            automatically.
+            Each tour and surface is called by the engine that earns the job at the
+            events we actually publish picks on: the four slams and the six combined
+            1000s. The Smart Blend holds the slot unless another engine beats it there
+            by a margin wide enough to survive a significance test, so a one-point lead
+            on a few hundred matches never changes what ships. This board then watches
+            whether the deployed engine is still earning it: its record over the last
+            {' '}{guard.window} graded matches in that cell, against its own season number
+            and the plain rankings baseline. Rechecked on every data refresh, and
+            anything that trips an alert opens a maintenance ticket automatically.
           </p>
           <table className="mc-table mc-guard-table">
             <thead>

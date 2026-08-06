@@ -9,6 +9,12 @@
  * lands in `alerts`, and the refresh workflow opens a GitHub issue (which
  * GitHub emails to watchers) so a cold cell never rots silently.
  *
+ * Scope: DEPLOY TIERS only (slams + the six combined 1000s, per
+ * lib/events.js) - the matches the site actually publishes picks on, and
+ * the same population the engine selector learns from. Monitoring a
+ * different population than you deploy on produces both false alarms and
+ * blind spots.
+ *
  * Thresholds, for honesty about noise: over 40 matches one standard
  * deviation of accuracy is about 8 points, so the season-drop trigger
  * (12 points) is roughly a 1.5-sigma event and "watch" (8 points) is
@@ -22,6 +28,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { isDeployTier } = require('./lib/events');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
 const WINDOW = 40;   // recent matches per cell
@@ -55,7 +62,15 @@ function run() {
   const cells = [];
   for (const tour of ['atp', 'wta']) {
     for (const surface of ['hard', 'clay', 'grass']) {
-      const cell = ms.filter((m) => m.tour === tour && m.surface === surface);
+      // Deploy tiers only: slams and the six combined 1000s, the same
+      // allowlist the forward test locks picks on and the engine selector
+      // learns from. Watching the raw archive instead meant a chaotic week
+      // of clay 250s could page us about an engine that never called them
+      // (last time, every engine AND the rankings baseline cratered
+      // together - a hard week of tennis, not a cold model), while a real
+      // slide at the level we actually publish could hide inside the
+      // volume of small-event matches.
+      const cell = ms.filter((m) => m.tour === tour && m.surface === surface && isDeployTier(m.event));
       const recent = cell.slice(-WINDOW);
       const engine = recent.length ? (recent[recent.length - 1].pickEngine || 'smash') : 'smash';
       const seasonAcc = pct(cell, pickCorrect);
@@ -87,7 +102,7 @@ function run() {
         .filter(([, v]) => v != null)
         .reduce((b, e) => (b && b[1] >= e[1] ? b : e), null);
       cells.push({
-        tour, surface, engine, status, n: cell.length, seasonAcc, recentN: recent.length, recentAcc, rankRecentAcc,
+        tour, surface, label, engine, status, n: cell.length, seasonAcc, recentN: recent.length, recentAcc, rankRecentAcc,
         recentEngines, bestRecent: bestRecent ? { engine: bestRecent[0], acc: bestRecent[1] } : null, reasons,
       });
       for (const r of reasons) alerts.push(`${label} (${engine}): ${r}`);

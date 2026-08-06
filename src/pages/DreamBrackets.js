@@ -428,7 +428,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
       .then(r => r.json()).then(setEloData).catch(() => setEloData({}));
   }, [dataDir]);
 
-  // Most accurate engine for this tour+surface (for the "Recommended" badge).
+  // The engine deployed for this tour+surface (for the "Recommended" badge),
+  // chosen on the slams and 1000s the site actually calls.
   const [engineAcc, setEngineAcc] = useState(null);
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/engine_accuracy.json')

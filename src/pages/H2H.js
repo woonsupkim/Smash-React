@@ -264,21 +264,29 @@ export default function H2H({ tour = 'atp' }) {
   const eloHistA = playerA ? eloHistAll?.[playerA.id] : null;
   const eloHistB = playerB ? eloHistAll?.[playerB.id] : null;
   const bestEngine = engineAcc?.[tour]?.[config.surfaceKey]?.best || 'smash';
-  const bestEngineAccPct = engineAcc?.[tour]?.[config.surfaceKey]?.[bestEngine] ?? null;
+  // Engines are chosen on the events the site actually calls (slams and the
+  // combined 1000s), so the picker shows accuracy measured on THAT
+  // population too. Showing whole-archive numbers next to the deployed
+  // engine reads as a contradiction whenever another engine happens to lead
+  // across the challengers and 250s we never publish picks on.
+  const cellAcc = engineAcc?.[tour]?.[config.surfaceKey];
+  const deployAcc = cellAcc?.selection?.acc || null;
+  const bestEngineAccPct = deployAcc?.[bestEngine] ?? cellAcc?.[bestEngine] ?? null;
   useEffect(() => { setEngine(bestEngine); }, [bestEngine]);
 
   // Manual engine picker options for the Detailed simulation drawer: the
-  // five engines with their season accuracy in THIS tour x surface cell,
-  // the recommended (deployed) one starred.
+  // five engines with their accuracy in THIS tour x surface cell, the
+  // deployed one starred.
   const engineOptions = useMemo(() => {
     const cell = engineAcc?.[tour]?.[config.surfaceKey] || {};
+    const dep = cell.selection?.acc || null;
     return [
       { id: 'smash', label: 'Smart Blend' },
       { id: 'sim', label: 'Point Sim' },
       { id: 'elo', label: 'Form' },
       { id: 'upset', label: 'Hot Streak' },
       { id: 'rank', label: 'Rankings' },
-    ].map((e) => ({ ...e, acc: cell[e.id] ?? null, recommended: e.id === bestEngine }));
+    ].map((e) => ({ ...e, acc: dep?.[e.id] ?? cell[e.id] ?? null, recommended: e.id === bestEngine }));
   }, [engineAcc, tour, config.surfaceKey, bestEngine]);
 
   // Onboarding: on the first load with nothing picked, preselect a
@@ -789,7 +797,7 @@ export default function H2H({ tour = 'atp' }) {
                     )}
                     <div className="verdict-powered">
                       Powered by <strong>{ENGINE_LABELS[engine] || 'Smart Blend'}</strong>
-                      {bestEngineAccPct != null ? `, our strongest engine on ${config.surfaceLabel.toLowerCase()} (${bestEngineAccPct}% of winners on our record)` : ''}.
+                      {bestEngineAccPct != null ? `, the engine we deploy on ${config.surfaceLabel.toLowerCase()} (${bestEngineAccPct}% of winners at the slams and 1000s we call)` : ''}.
                     </div>
                     {receipts && receipts.acc != null && receipts.n >= 8 && (
                       <div className="verdict-credibility">
@@ -811,7 +819,7 @@ export default function H2H({ tour = 'atp' }) {
                   <p className="studio-card-sub">
                     {engine === 'smash'
                       ? 'What pushes the Smart Blend toward each player, in probability points.'
-                      : `How each model signal leans. The headline uses ${ENGINE_LABELS[engine]}, our strongest engine on ${config.surfaceLabel.toLowerCase()}.`}
+                      : `How each model signal leans. The headline uses ${ENGINE_LABELS[engine]}, the engine we deploy on ${config.surfaceLabel.toLowerCase()}.`}
                   </p>
                   <div className="why-attr">
                     {attribution.map((c) => {
