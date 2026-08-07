@@ -60,13 +60,13 @@ export default function SiteFooter() {
           <DigestSignup />
         </div>
 
-        <nav className="site-footer-col" aria-label="Predict">
-          <div className="site-footer-head">Predict</div>
-          <Link to="/today">Today's Calls</Link>
+        <nav className="site-footer-col" aria-label="Simulate">
+          <div className="site-footer-head">Simulate</div>
           <Link to={prefix('/h2h')}>H2H Studio</Link>
+          <Link to="/today">Today's Calls</Link>
+          <Link to="/draw">The Draw · Title Odds</Link>
           <Link to="/form">The Form Chart</Link>
           <Link to="/compare">Compare Players</Link>
-          <Link to="/draw">The Draw</Link>
           <Link to="/rivalries">Rivalries</Link>
         </nav>
 
@@ -80,13 +80,10 @@ export default function SiteFooter() {
           <Link to="/changelog">Changelog</Link>
         </nav>
 
-        <nav className="site-footer-col" aria-label="Play">
-          <div className="site-footer-head">Play</div>
-          <Link to="/oddsle">Oddsle · Daily Game</Link>
-          <Link to="/pickem">Pick'em</Link>
-          <Link to="/challenge">Bracket Challenge</Link>
-          <Link to="/gym">The Model Gym</Link>
+        <nav className="site-footer-col" aria-label="Brackets">
+          <div className="site-footer-head">Brackets</div>
           <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
+          <Link to="/challenge">Bracket Challenge</Link>
         </nav>
 
         <nav className="site-footer-col" aria-label="Legal">

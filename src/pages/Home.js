@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
-import { pickCorrect } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite } from '../utils/deployedPick';
 import './Home.css';
 
 // Tiny inline sparkline for a player's title-odds history.
@@ -92,42 +92,6 @@ function wilsonHalf(k, n) {
 // One home page for both tours: the board, stat rail, scorecard, and title
 // odds all cover ATP and WTA together, and the deep pages (H2H, Brackets)
 // carry their own tour switchers.
-// Personalization without accounts: greet a returning visitor with what
-// THEY have going - the Oddsle streak and their calls against the model,
-// both already sitting in localStorage. Renders nothing for first-timers,
-// so the hero stays clean where it matters most.
-function WelcomeBack() {
-  const facts = React.useMemo(() => {
-    const out = [];
-    try {
-      const oddsle = JSON.parse(localStorage.getItem('smashOddsle') || '{}');
-      const today = new Date().toISOString().slice(0, 10);
-      const playedToday = !!oddsle[today];
-      // Consecutive UTC days ending today (or yesterday if today is unplayed).
-      let streak = 0;
-      const d = new Date(`${today}T00:00:00Z`);
-      if (!playedToday) d.setUTCDate(d.getUTCDate() - 1);
-      while (oddsle[d.toISOString().slice(0, 10)]) { streak++; d.setUTCDate(d.getUTCDate() - 1); }
-      if (streak > 0 && !playedToday) out.push({ to: '/oddsle', text: `🔥 ${streak}-day Oddsle streak on the line - today's five are live` });
-      else if (playedToday) out.push({ to: '/oddsle', text: `✅ Oddsle #${oddsle[today].n} done: ${oddsle[today].score}/10${streak > 1 ? ` · ${streak}-day streak` : ''}` });
-    } catch { /* no oddsle history */ }
-    try {
-      const calls = JSON.parse(localStorage.getItem('smashCalls') || '{}');
-      const n = Object.keys(calls).length;
-      if (n >= 3) out.push({ to: '/pickem', text: `🎯 ${n} calls cast against the model - see how you stack up` });
-    } catch { /* no calls */ }
-    return out.slice(0, 2);
-  }, []);
-  if (!facts.length) return null;
-  return (
-    <div className="home-welcome" aria-label="Your progress">
-      {facts.map((f) => (
-        <Link key={f.to} to={f.to} className="home-welcome-chip">{f.text}</Link>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
   // 'loading' | 'ready' | 'error' - drives skeleton vs content vs quiet omission
   const [proof, setProof] = useState({ state: 'loading' });
@@ -202,6 +166,19 @@ export default function Home() {
         const prev = prevSlam();
         const between = prev ? ms.filter((m) => new Date(m.date) >= prev.end) : [];
         const bCorrect = between.filter((m) => pickCorrect(m)).length;
+        // The Edge, in one line: only the matches where our pick and the
+        // bookmakers' favorite were DIFFERENT people. Agreeing with the
+        // market proves nothing, so the splits are the only honest test of
+        // whether the model adds anything - and the flat-stake payout is
+        // what that difference is worth. Same math as EdgeBoard; keep in
+        // step. (Not betting advice: it settles at closing odds, after the
+        // fact, and it is on the record either way.)
+        const splits = odds.filter((m) => m.oddFav && pickFavorite(m) !== m.oddFav && m.od1 > 1 && m.od2 > 1);
+        let usReturn = 0, mktReturn = 0;
+        for (const m of splits) {
+          if (pickCorrect(m)) usReturn += pickFavorite(m) === m.p1 ? m.od1 : m.od2;
+          if (m.oddCorrect) mktReturn += m.oddFav === m.p1 ? m.od1 : m.od2;
+        }
         setProof({
           state: 'ready',
           n,
@@ -209,6 +186,13 @@ export default function Home() {
           ciHalf: wilsonHalf(k, n),
           smashOnOdds: odds.length ? Math.round((odds.filter((m) => pickCorrect(m)).length / odds.length) * 100) : null,
           marketAcc: odds.length ? Math.round((odds.filter((m) => m.oddCorrect).length / odds.length) * 100) : null,
+          edge: splits.length >= 40 ? {
+            n: splits.length,
+            usAcc: Math.round((splits.filter((m) => pickCorrect(m)).length / splits.length) * 100),
+            mktAcc: Math.round((splits.filter((m) => m.oddCorrect).length / splits.length) * 100),
+            usNet: Math.round(usReturn - splits.length),
+            mktNet: Math.round(mktReturn - splits.length),
+          } : null,
           between: between.length >= 5 ? {
             n: between.length,
             correct: bCorrect,
@@ -306,7 +290,6 @@ export default function Home() {
               Build a Bracket
             </Button>
           </div>
-          <WelcomeBack />
         </header>
 
         {/* ── Stat rail: the proof, one click from its receipts ──────────
@@ -553,6 +536,48 @@ export default function Home() {
         </section>
 
         {/* ── Destinations ─────────────────────────────────────────────── */}
+        {/* ── The Edge, on the front door ────────────────────────────────
+            The single hardest thing this app can claim, and it used to be
+            one number in the stat rail. Only the matches where our pick and
+            the bookmakers' favorite were different people: agreeing with the
+            market proves nothing. */}
+        {proof.state === 'ready' && proof.edge && (
+          <section className="home-edge">
+            <div className="home-section-head">
+              <h2 className="home-section-title">When we disagree with the bookmakers</h2>
+              <span className="home-section-sub">{proof.edge.n} graded splits this season</span>
+            </div>
+            <Link to="/edge" className="home-edge-card">
+              <div className="home-edge-split">
+                <div className="home-edge-side">
+                  <span className="home-edge-val">{proof.edge.usAcc}%</span>
+                  <span className="home-edge-cap">us</span>
+                </div>
+                <span className="home-edge-vs">vs</span>
+                <div className="home-edge-side muted">
+                  <span className="home-edge-val">{proof.edge.mktAcc}%</span>
+                  <span className="home-edge-cap">the bookmakers</span>
+                </div>
+              </div>
+              <div className="home-edge-body">
+                <p className="home-edge-line">
+                  On the {proof.edge.n} matches where our pick was a different player than the
+                  market's favorite, we called {proof.edge.usAcc}% of the winners.
+                </p>
+                <p className="home-edge-money">
+                  Staking $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
+                    {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
+                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
+                    {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
+                  </strong> backing theirs.
+                </p>
+                <span className="home-edge-note">Settled at closing odds, every split graded. Not betting advice.</span>
+              </div>
+              <span className="home-nav-go">See every split →</span>
+            </Link>
+          </section>
+        )}
+
         <section className="home-nav">
           <div className="home-section-head">
             <h2 className="home-section-title">Explore</h2>
@@ -560,33 +585,39 @@ export default function Home() {
           <div className="home-nav-grid">
             <Link to="/h2h" className="home-nav-card">
               <div className="home-nav-num">01</div>
-              <div className="home-nav-name">Head to Head</div>
-              <p className="home-nav-desc">Any two players, any surface. Every point computed, showing who wins, how often, and by what score.</p>
+              <div className="home-nav-name">H2H Studio</div>
+              <p className="home-nav-desc">Any two players, any surface. We compute the match point by point, every path it can take, and show you who wins, how often, and by what score.</p>
               <span className="home-nav-go">Open the studio →</span>
             </Link>
-            <Link to="/dream-brackets" className="home-nav-card">
+            <Link to="/edge" className="home-nav-card">
               <div className="home-nav-num">02</div>
+              <div className="home-nav-name">The Edge</div>
+              <p className="home-nav-desc">Where we disagree with the betting market, and who turned out to be right. Both sides graded, misses included.</p>
+              <span className="home-nav-go">See the splits →</span>
+            </Link>
+            <Link to="/track-record" className="home-nav-card">
+              <div className="home-nav-num">03</div>
+              <div className="home-nav-name">The Ledger</div>
+              <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
+              <span className="home-nav-go">View the record →</span>
+            </Link>
+            <Link to="/draw" className="home-nav-card">
+              <div className="home-nav-num">04</div>
+              <div className="home-nav-name">The Draw</div>
+              <p className="home-nav-desc">The whole bracket played out 2,000 times before each day's play, so you can see who the draw actually favors.</p>
+              <span className="home-nav-go">Read the bracket →</span>
+            </Link>
+            <Link to="/dream-brackets" className="home-nav-card">
+              <div className="home-nav-num">05</div>
               <div className="home-nav-name">Dream Brackets</div>
               <p className="home-nav-desc">Seed your own fantasy slam and let the engine play out every round to a champion.</p>
               <span className="home-nav-go">Build yours →</span>
             </Link>
-            <Link to="/oddsle" className="home-nav-card">
-              <div className="home-nav-num">03</div>
-              <div className="home-nav-name">Oddsle</div>
-              <p className="home-nav-desc">The daily game: five real matches, call the winners, outguess the model, keep the streak.</p>
-              <span className="home-nav-go">Play today's five →</span>
-            </Link>
-            <Link to="/edge" className="home-nav-card">
-              <div className="home-nav-num">04</div>
-              <div className="home-nav-name">The Edge</div>
-              <p className="home-nav-desc">Where we disagree with the betting market, and who turned out to be right. Both sides graded.</p>
-              <span className="home-nav-go">See the splits →</span>
-            </Link>
-            <Link to="/track-record" className="home-nav-card">
-              <div className="home-nav-num">05</div>
-              <div className="home-nav-name">Track Record</div>
-              <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
-              <span className="home-nav-go">View the record →</span>
+            <Link to="/model" className="home-nav-card">
+              <div className="home-nav-num">06</div>
+              <div className="home-nav-name">The Engine Room</div>
+              <p className="home-nav-desc">Five engines, one deployed per surface, and the health board that says when one stops earning the job.</p>
+              <span className="home-nav-go">Look under the hood →</span>
             </Link>
           </div>
         </section>

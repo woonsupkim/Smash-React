@@ -56,18 +56,6 @@
 }
 
 /* Welcome-back chips: the visitor's own streak/record, under the hero CTAs */
-.home-welcome { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
-.home-welcome-chip {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-2);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-1);
-  border-radius: 999px;
-  padding: 0.3rem 0.85rem;
-  text-decoration: none;
-}
-.home-welcome-chip:hover { color: var(--accent-brand); border-color: var(--accent-brand); }
 
 .hero-ctas {
   display: flex;
@@ -473,6 +461,50 @@
   color: var(--accent-negative);
 }
 .home-board-upset-reason { font-size: 0.78rem; color: var(--text-2); line-height: 1.4; }
+
+/* ── The Edge strip: the market head-to-head, on the front door ──────── */
+.home-edge { margin-bottom: 2.5rem; }
+.home-edge-card {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.6fr) 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.home-edge-card:hover { background: rgba(255,255,255,0.06); border-color: var(--border-2); }
+.home-edge-split { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
+.home-edge-side { display: flex; flex-direction: column; align-items: center; }
+.home-edge-val {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-brand);
+}
+.home-edge-side.muted .home-edge-val { color: var(--text-2); }
+.home-edge-cap {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 0.35rem;
+}
+.home-edge-vs { font-size: 0.8rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.home-edge-body { display: flex; flex-direction: column; gap: 0.4rem; }
+.home-edge-line { margin: 0; color: var(--text-1); font-size: 0.98rem; line-height: 1.5; }
+.home-edge-money { margin: 0; color: var(--text-2); font-size: 0.95rem; }
+.home-edge-money .pos { color: var(--accent-brand); }
+.home-edge-money .neg { color: var(--neg, #ff5c5c); }
+.home-edge-note { font-size: 0.78rem; color: var(--text-3); }
+.home-edge-card .home-nav-go { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+  .home-edge-card { grid-template-columns: 1fr; gap: 1rem; }
+}
 
 /* ── Destination cards (replaces the old city surface tiles) ─────────── */
 .home-nav { margin-bottom: 3rem; }

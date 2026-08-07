@@ -62,14 +62,12 @@ function main() {
 
   // ── Static routes (mirrors src/App.js; skips /admin, redirects, and the
   // legal fine-print pages /terms /privacy /disclaimer).
-  const FRESH = new Set(['/', '/today', '/track-record', '/edge', '/oddsle', '/season', '/form']); // regenerated every data refresh
+  const FRESH = new Set(['/', '/today', '/track-record', '/edge', '/season', '/form']); // regenerated every data refresh
   const staticRoutes = [
     '/',
     '/today',
     '/track-record',
     '/edge',
-    '/oddsle',
-    '/gym',
     '/compare',
     '/challenge',
     '/season',

@@ -10,6 +10,18 @@ export const MODEL_VERSION = '3.7';
 
 export const CHANGELOG = [
   {
+    version: '3.8',
+    date: '2026-08-06',
+    type: 'product',
+    title: 'Fewer things, done properly',
+    notes: [
+      'RETIRED: Oddsle, Pick\'em, and the Model Gym are gone. Three games competing for the same attention meant none of them got the work they needed, and none was the reason anyone came here. What is left is what this site is actually good at.',
+      'THE NAVIGATION NOW SAYS WHAT IT DOES: Simulate (any matchup, any draw, computed point by point), Prove (the market head-to-head, the graded ledger, the engine internals), Brackets (build one, or take on the model). Named for the verb, not the abstraction.',
+      'THE EDGE MOVED TO THE FRONT DOOR: the hardest claim this app can make used to be a single number in the stat rail. The home page now shows the market head-to-head in full - our record against the bookmakers on the matches where we picked a DIFFERENT player, and what a flat $1 stake on each would have returned for both sides. Agreeing with the market proves nothing; the splits are the only honest test.',
+      'The Explore grid leads with the simulator, the edge, and the ledger, and the mobile tab bar swaps its games tab for The Edge - the one surface that is always populated, year round.',
+    ],
+  },
+  {
     version: '3.7',
     date: '2026-08-05',
     type: 'model',

@@ -90,15 +90,6 @@ test('player page: profile, record, and elo form curve', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('pickem renders the game and degrades honestly without accounts', async ({ page }) => {
-  const errors = collectErrors(page);
-  await page.goto('/pickem');
-  await expect(page.getByRole('heading', { name: /pick'em/i })).toBeVisible();
-  // Model's forward record loads from predictions.json.
-  await expect(page.getByText(/model's locked record|locked record/i).first()).toBeVisible({ timeout: 15000 });
-  expect(errors).toEqual([]);
-});
-
 test('h2h why panel shows the form-curve overlay', async ({ page }) => {
   const errors = collectErrors(page);
   // Deep link a known pair: the daily featured matchup rotates and a player
@@ -133,30 +124,6 @@ test('edge board: disagreement hero and graded split rows', async ({ page }) => 
   await expect(page.getByRole('heading', { name: /disagree with the market/i })).toBeVisible();
   await expect(page.locator('.edge-hero-val').first()).toHaveText(/%/, { timeout: 15000 });
   await expect(page.locator('.edge-row').first()).toBeVisible();
-  expect(errors).toEqual([]);
-});
-
-test('oddsle: daily round flow through pick and guess', async ({ page }) => {
-  const errors = collectErrors(page);
-  await page.goto('/oddsle');
-  await expect(page.getByRole('heading', { name: /oddsle #\d+/i })).toBeVisible({ timeout: 15000 });
-  // Round 1: pick a winner, guess, lock, reveal.
-  await page.locator('.oddsle-player').first().click();
-  await expect(page.locator('.oddsle-slider')).toBeVisible();
-  await page.getByRole('button', { name: /lock it in/i }).click();
-  await expect(page.locator('.oddsle-verdict')).toBeVisible();
-  await expect(page.getByRole('button', { name: /next match \(2\/5\)/i })).toBeVisible();
-  expect(errors).toEqual([]);
-});
-
-test('model gym: sliders re-score the season blend', async ({ page }) => {
-  const errors = collectErrors(page);
-  await page.goto('/gym');
-  await expect(page.getByRole('heading', { name: /build your own blend/i })).toBeVisible();
-  await expect(page.locator('.gym-hero-val').first()).toHaveText(/%/, { timeout: 15000 });
-  const before = await page.locator('.gym-hero-val').first().textContent();
-  await page.getByRole('button', { name: 'All form' }).click();
-  await expect(page.locator('.gym-hero-val').first()).not.toHaveText(before);
   expect(errors).toEqual([]);
 });
 

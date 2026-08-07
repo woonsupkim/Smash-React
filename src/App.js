@@ -34,12 +34,9 @@ const PlayerPage = lazy(() => import('./pages/PlayerPage'));
 const Today = lazy(() => import('./pages/Today'));
 const DrawPage = lazy(() => import('./pages/DrawPage'));
 const ModelCard = lazy(() => import('./pages/ModelCard'));
-const Pickem = lazy(() => import('./pages/Pickem'));
 const Rivalry = lazy(() => import('./pages/Rivalry'));
 const Rivalries = lazy(() => import('./pages/Rivalries'));
 const EdgeBoard = lazy(() => import('./pages/EdgeBoard'));
-const Oddsle = lazy(() => import('./pages/Oddsle'));
-const ModelGym = lazy(() => import('./pages/ModelGym'));
 const Compare = lazy(() => import('./pages/Compare'));
 const CompareHub = lazy(() => import('./pages/Compare').then((m) => ({ default: m.CompareHub })));
 const SeasonRewind = lazy(() => import('./pages/SeasonRewind'));
@@ -52,38 +49,44 @@ const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.
 
 initMonitoring();
 
-// Three product pillars instead of a flat list of pages: Predict is the
-// daily habit, Prove is the trust surface, Play is the games. Methodology
-// and the model card live in the footer's trust cluster; the Engine Room
-// also appears under Prove because it earns it.
+// Three product pillars instead of a flat list of pages, each answering one
+// question a visitor actually has:
+//
+//   Simulate - "what does the engine say?" (the thing that makes this app
+//              worth using: any matchup, any draw, computed point by point)
+//   Prove    - "why should I believe it?" (the graded ledger, the market
+//              head-to-head, the engine internals)
+//   Brackets - "let me play with it" (build a draw, or take on the model)
+//
+// Named for the verb in each case, not for an abstraction: the old "Play"
+// pillar was a bucket for four different games, and once the daily games
+// retired it was just brackets wearing a vaguer label. Methodology and the
+// model card also live in the footer's trust cluster.
 const NAV_GROUPS = [
   {
-    label: 'Predict',
+    label: 'Simulate',
     items: [
-      { to: '/today', label: 'Today', tourAgnostic: true },
-      { to: '/h2h', label: 'H2H Studio' },
+      { to: '/h2h', label: 'H2H Studio · Any Matchup' },
+      { to: '/today', label: "Today's Calls", tourAgnostic: true },
+      { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
       { to: '/form', label: 'The Form Chart', tourAgnostic: true },
       { to: '/compare', label: 'Compare Players', tourAgnostic: true },
-      { to: '/draw', label: 'Draw', tourAgnostic: true },
     ],
   },
   {
     label: 'Prove',
     items: [
-      { to: '/track-record', label: 'The Ledger · Track Record' },
       { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
+      { to: '/track-record', label: 'The Ledger · Every Call Graded' },
       { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
       { to: '/season', label: 'The Rewind · Season', tourAgnostic: true },
     ],
   },
   {
-    label: 'Play',
+    label: 'Brackets',
     items: [
-      { to: '/oddsle', label: 'Oddsle · Daily Game', tourAgnostic: true },
-      { to: '/pickem', label: "Pick'em", tourAgnostic: true },
-      { to: '/challenge', label: 'Bracket Challenge', tourAgnostic: true },
-      { to: '/gym', label: 'The Model Gym', tourAgnostic: true },
-      { to: '/dream-brackets', label: 'Brackets' },
+      { to: '/dream-brackets', label: 'Dream Brackets · Build One' },
+      { to: '/challenge', label: 'Bracket Challenge · Beat the Model', tourAgnostic: true },
     ],
   },
 ];
@@ -113,9 +116,10 @@ function NavBar() {
   // Which pillar dropdown is open on desktop (click-to-open, esc/blur close).
   const [openGroup, setOpenGroup] = useState(null);
 
-  // What's-new pulse: a one-time dot on the Play pillar whenever a release
-  // ships that the browser hasn't seen. Opening the Play menu (where the
-  // new toys live) clears it; the menu's "What's new" link tells the story.
+  // What's-new pulse: a one-time dot whenever a release ships that this
+  // browser hasn't seen. It rides the Prove pillar now - releases here are
+  // mostly changes to how calls are made and graded, and that pillar is
+  // where the changelog link lives to explain them.
   const releaseKey = `${CHANGELOG[0]?.version}-${CHANGELOG[0]?.date}`;
   const [unseenRelease, setUnseenRelease] = useState(() => {
     try { return localStorage.getItem('smash_whatsnew_seen') !== releaseKey; } catch { return false; }
@@ -164,7 +168,7 @@ function NavBar() {
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
             {NAV_GROUPS.map((group) => {
-              const showPulse = unseenRelease && group.label === 'Play';
+              const showPulse = unseenRelease && group.label === 'Prove';
               return (
                 <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
                   <button
@@ -195,7 +199,7 @@ function NavBar() {
                         </li>
                       );
                     })}
-                    {group.label === 'Play' && (
+                    {group.label === 'Prove' && (
                       <li>
                         <NavLink to="/changelog" className="nav-pillar-link nav-pillar-whatsnew">
                           What's new in v{CHANGELOG[0]?.version} →
@@ -268,15 +272,12 @@ function App() {
           <Route path="/match/:slug" element={<MatchPage />} />
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
-          <Route path="/pickem" element={<Pickem />} />
           <Route path="/rivalries" element={<Rivalries />} />
           <Route path="/rivalry/:tour/:slug" element={<Rivalry />} />
 
           {/* v3.5: the Edge board, the daily game, the gym, comparisons,
               season rewinds, and the slam bracket challenge */}
           <Route path="/edge" element={<EdgeBoard />} />
-          <Route path="/oddsle" element={<Oddsle />} />
-          <Route path="/gym" element={<ModelGym />} />
           <Route path="/compare" element={<CompareHub />} />
           <Route path="/compare/:tour/:slugs" element={<Compare />} />
           <Route path="/season" element={<SeasonRewind />} />

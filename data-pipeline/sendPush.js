@@ -6,8 +6,6 @@
  *   1. a graded upset we CALLED yesterday (scorecard "beat the bookies"),
  *   2. a locked pick where we back the market's underdog (lock-time odds),
  *   3. a bracket-challenge round completing mid-slam.
- * Signed-in subscribers with freshly graded pick'em picks get a PERSONAL
- * recap ("you went 3-1, the model went 2-2") instead of the headline.
  *
  * One notification per day maximum by design: alerts that fire daily get
  * muted within a week, and this channel exists for the moments that earn it.
@@ -107,67 +105,16 @@ async function main() {
   const subs = await res.json();
   if (!subs.length) { console.log('No subscribers yet.'); return; }
 
-  // ── Personal recaps for signed-in subscribers: their pick'em record on
-  // predictions graded in the last ~36h, vs the model on the same matches.
-  // Personal beats editorial - a subscriber with a fresh recap gets that
-  // instead of the generic headline.
-  const personal = new Map(); // user_id -> note
-  const linked = subs.filter((s) => s.user_id);
-  if (linked.length) {
-    const preds = readJson(path.join(DATA, 'predictions.json'))?.predictions || [];
-    const cutoff = Date.now() - 36 * 3600 * 1000;
-    const fresh = preds.filter((p) => (p.status === 'won' || p.status === 'lost') && new Date(p.date).getTime() > cutoff);
-    if (fresh.length) {
-      const byMatch = new Map(fresh.map((p) => [String(p.id), p]));
-      const ids = [...byMatch.keys()].map((x) => `"${x}"`).join(',');
-      const users = [...new Set(linked.map((s) => s.user_id))].join(',');
-      try {
-        const pr = await fetch(`${SUPABASE_URL}/rest/v1/pickem_picks?select=user_id,match_id,pick&match_id=in.(${ids})&user_id=in.(${users})`, {
-          headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
-        });
-        if (pr.ok) {
-          const picks = await pr.json();
-          const byUser = new Map();
-          for (const p of picks) {
-            if (!byUser.has(p.user_id)) byUser.set(p.user_id, []);
-            byUser.get(p.user_id).push(p);
-          }
-          for (const [uid, list] of byUser) {
-            let w = 0, mw = 0;
-            for (const p of list) {
-              const pred = byMatch.get(String(p.match_id));
-              if (!pred) continue;
-              if (p.pick === pred.winner) w++;
-              if (pred.correct) mw++;
-            }
-            const n = list.length;
-            if (!n) continue;
-            const vs = w > mw ? 'you beat the model' : w < mw ? 'the model edged you' : 'dead heat with the model';
-            personal.set(uid, {
-              title: `Your picks: ${w}-${n - w} yesterday`,
-              body: `The model went ${mw}-${n - mw} on the same matches - ${vs}. Today's board is open.`,
-              url: `${SITE}/pickem`,
-            });
-          }
-        }
-      } catch (err) {
-        console.log(`Personal recap fetch failed (non-fatal): ${err.message}`);
-      }
-    }
-  }
-
-  if (!note && personal.size === 0) {
-    console.log('No headline and no personal recaps today; no push sent.');
+  if (!note) {
+    console.log('No headline worth a notification today; no push sent.');
     return;
   }
 
-  console.log(`Sending: ${personal.size} personal recap(s), generic "${note ? note.title : 'none'}" to the rest...`);
+  console.log(`Sending "${note.title}" to ${subs.length} subscriber(s)...`);
   let sent = 0, gone = 0;
   for (const s of subs) {
-    const payload = (s.user_id && personal.get(s.user_id)) || note;
-    if (!payload) continue;
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify(payload));
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify(note));
       sent++;
     } catch (err) {
       // 404/410 = the browser dropped the subscription; clean it up.
