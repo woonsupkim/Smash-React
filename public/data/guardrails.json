@@ -1,144 +1,24 @@
 {
-  "generatedAt": "2026-08-05T08:17:39.465Z",
+  "generatedAt": "2026-08-06T08:16:59.319Z",
   "window": 40,
   "minN": 25,
   "cells": [
     {
       "tour": "atp",
       "surface": "hard",
+      "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 873,
-      "seasonAcc": 67,
-      "recentN": 40,
-      "recentAcc": 73,
-      "rankRecentAcc": 70,
-      "recentEngines": {
-        "smash": 73,
-        "sim": 57,
-        "elo": 68,
-        "rank": 70,
-        "upset": 78
-      },
-      "bestRecent": {
-        "engine": "upset",
-        "acc": 78
-      },
-      "reasons": []
-    },
-    {
-      "tour": "atp",
-      "surface": "clay",
-      "engine": "smash",
-      "status": "alert",
-      "n": 1010,
-      "seasonAcc": 67,
-      "recentN": 40,
-      "recentAcc": 30,
-      "rankRecentAcc": 35,
-      "recentEngines": {
-        "smash": 30,
-        "sim": 35,
-        "elo": 48,
-        "rank": 35,
-        "upset": 53
-      },
-      "bestRecent": {
-        "engine": "upset",
-        "acc": 53
-      },
-      "reasons": [
-        "recent accuracy 30% is below a coin flip (last 40 matches)",
-        "recent accuracy 30% is 37 points below the season's 67% (last 40 matches)"
-      ]
-    },
-    {
-      "tour": "atp",
-      "surface": "grass",
-      "engine": "sim",
-      "status": "ok",
-      "n": 345,
-      "seasonAcc": 70,
-      "recentN": 40,
-      "recentAcc": 83,
-      "rankRecentAcc": 70,
-      "recentEngines": {
-        "smash": 70,
-        "sim": 83,
-        "elo": 70,
-        "rank": 70,
-        "upset": 60
-      },
-      "bestRecent": {
-        "engine": "sim",
-        "acc": 83
-      },
-      "reasons": []
-    },
-    {
-      "tour": "wta",
-      "surface": "hard",
-      "engine": "elo",
-      "status": "alert",
-      "n": 885,
-      "seasonAcc": 67,
-      "recentN": 40,
-      "recentAcc": 50,
-      "rankRecentAcc": 68,
-      "recentEngines": {
-        "smash": 55,
-        "sim": 57,
-        "elo": 50,
-        "rank": 68,
-        "upset": 78
-      },
-      "bestRecent": {
-        "engine": "upset",
-        "acc": 78
-      },
-      "reasons": [
-        "recent accuracy 50% is 17 points below the season's 67% (last 40 matches)",
-        "deployed engine (elo) at 50% is losing to the rankings baseline at 68% on the same recent matches"
-      ]
-    },
-    {
-      "tour": "wta",
-      "surface": "clay",
-      "engine": "smash",
-      "status": "watch",
-      "n": 729,
+      "n": 316,
       "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 57,
-      "rankRecentAcc": 45,
-      "recentEngines": {
-        "smash": 57,
-        "sim": 78,
-        "elo": 65,
-        "rank": 45,
-        "upset": 78
-      },
-      "bestRecent": {
-        "engine": "sim",
-        "acc": 78
-      },
-      "reasons": []
-    },
-    {
-      "tour": "wta",
-      "surface": "grass",
-      "engine": "sim",
-      "status": "ok",
-      "n": 322,
-      "seasonAcc": 72,
-      "recentN": 40,
       "recentAcc": 65,
-      "rankRecentAcc": 65,
+      "rankRecentAcc": 63,
       "recentEngines": {
-        "smash": 73,
-        "sim": 65,
-        "elo": 60,
-        "rank": 65,
+        "smash": 65,
+        "sim": 53,
+        "elo": 53,
+        "rank": 63,
         "upset": 83
       },
       "bestRecent": {
@@ -146,18 +26,133 @@
         "acc": 83
       },
       "reasons": []
+    },
+    {
+      "tour": "atp",
+      "surface": "clay",
+      "label": "ATP clay",
+      "engine": "smash",
+      "status": "ok",
+      "n": 302,
+      "seasonAcc": 69,
+      "recentN": 40,
+      "recentAcc": 70,
+      "rankRecentAcc": 70,
+      "recentEngines": {
+        "smash": 70,
+        "sim": 68,
+        "elo": 68,
+        "rank": 70,
+        "upset": 57
+      },
+      "bestRecent": {
+        "engine": "smash",
+        "acc": 70
+      },
+      "reasons": []
+    },
+    {
+      "tour": "atp",
+      "surface": "grass",
+      "label": "ATP grass",
+      "engine": "smash",
+      "status": "ok",
+      "n": 135,
+      "seasonAcc": 73,
+      "recentN": 40,
+      "recentAcc": 75,
+      "rankRecentAcc": 75,
+      "recentEngines": {
+        "smash": 75,
+        "sim": 75,
+        "elo": 73,
+        "rank": 75,
+        "upset": 63
+      },
+      "bestRecent": {
+        "engine": "smash",
+        "acc": 75
+      },
+      "reasons": []
+    },
+    {
+      "tour": "wta",
+      "surface": "hard",
+      "label": "WTA hard",
+      "engine": "smash",
+      "status": "watch",
+      "n": 293,
+      "seasonAcc": 70,
+      "recentN": 40,
+      "recentAcc": 60,
+      "rankRecentAcc": 65,
+      "recentEngines": {
+        "smash": 60,
+        "sim": 57,
+        "elo": 63,
+        "rank": 65,
+        "upset": 78
+      },
+      "bestRecent": {
+        "engine": "upset",
+        "acc": 78
+      },
+      "reasons": []
+    },
+    {
+      "tour": "wta",
+      "surface": "clay",
+      "label": "WTA clay",
+      "engine": "smash",
+      "status": "ok",
+      "n": 264,
+      "seasonAcc": 70,
+      "recentN": 40,
+      "recentAcc": 75,
+      "rankRecentAcc": 75,
+      "recentEngines": {
+        "smash": 75,
+        "sim": 57,
+        "elo": 63,
+        "rank": 75,
+        "upset": 57
+      },
+      "bestRecent": {
+        "engine": "smash",
+        "acc": 75
+      },
+      "reasons": []
+    },
+    {
+      "tour": "wta",
+      "surface": "grass",
+      "label": "WTA grass",
+      "engine": "smash",
+      "status": "ok",
+      "n": 129,
+      "seasonAcc": 72,
+      "recentN": 40,
+      "recentAcc": 73,
+      "rankRecentAcc": 65,
+      "recentEngines": {
+        "smash": 73,
+        "sim": 65,
+        "elo": 68,
+        "rank": 65,
+        "upset": 80
+      },
+      "bestRecent": {
+        "engine": "upset",
+        "acc": 80
+      },
+      "reasons": []
     }
   ],
   "forward": {
     "n": 81,
     "recentN": 40,
-    "recentAcc": 70,
+    "recentAcc": 60,
     "status": "ok"
   },
-  "alerts": [
-    "ATP clay (smash): recent accuracy 30% is below a coin flip (last 40 matches)",
-    "ATP clay (smash): recent accuracy 30% is 37 points below the season's 67% (last 40 matches)",
-    "WTA hard (elo): recent accuracy 50% is 17 points below the season's 67% (last 40 matches)",
-    "WTA hard (elo): deployed engine (elo) at 50% is losing to the rankings baseline at 68% on the same recent matches"
-  ]
+  "alerts": []
 }
