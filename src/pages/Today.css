@@ -89,3 +89,83 @@
   text-decoration: none;
 }
 .today-footer a:hover { color: var(--accent-brand); }
+
+/* ── Controls: only rendered when the slate is big enough to need them ── */
+.today-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0.75rem;
+}
+.today-seg {
+  display: inline-flex;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.today-seg button {
+  background: transparent;
+  border: 0;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+}
+.today-seg button:hover { color: var(--text-1); }
+.today-seg button.active { background: var(--accent-brand); color: #0c0f14; }
+.today-seg button:focus-visible { outline: 2px solid var(--accent-brand); outline-offset: -2px; }
+
+.today-select { display: inline-flex; align-items: center; gap: 0.4rem; }
+.today-select-cap {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.today-select select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.today-select select:focus-visible { outline: 2px solid var(--accent-brand); outline-offset: 2px; }
+/* Native menus default to light chrome, illegible on this palette. */
+.today-select option { background: #14181f; color: #e8eaee; }
+
+.today-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+
+.today-parlay-cta {
+  display: block;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px dashed var(--border-2, var(--border-1));
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  font-size: 0.88rem;
+  text-decoration: none;
+  text-align: center;
+}
+.today-parlay-cta:hover { color: var(--accent-brand); border-color: var(--accent-brand); }
+
+.today-reset {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-brand);
+  text-decoration: underline;
+  cursor: pointer;
+}

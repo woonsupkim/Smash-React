@@ -25,6 +25,23 @@ export function timeUntil(iso, now = Date.now()) {
   return { past: true, label: 'awaiting result' };
 }
 
+// Is this match on the viewer's calendar day? "Today" has to mean today,
+// not "within 24 hours" - a 9pm match tomorrow is not on today's card.
+//
+// Deliberately the VIEWER's local day, not UTC and not the tournament's:
+// the page is called Today, and the visitor's own calendar is the only one
+// they can check it against. Caveat worth knowing: schedules often carry a
+// midnight placeholder until the order of play is published, so a match
+// stamped 04:00 UTC can land on the previous evening for viewers well west
+// of the venue. The placeholder is the imprecise part, not this test.
+export function isToday(iso, now = new Date()) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+}
+
 // "Sat, Jul 12 · 11:00 AM" in the visitor's own timezone.
 export function localKickoff(iso) {
   const d = new Date(iso);

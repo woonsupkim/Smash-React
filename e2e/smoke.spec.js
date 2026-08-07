@@ -112,9 +112,35 @@ test('rivalry page renders h2h, verdict reads, and form curves', async ({ page }
 test('nav pillars open and navigate', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Prove' }).click();
+  await page.getByRole('button', { name: 'Proof' }).click();
   await page.locator('.nav-pillar-menu').getByRole('link', { name: /the ledger/i }).click();
   await expect(page.getByRole('heading', { name: /track record/i })).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('parlay builder: suggestion loads legs and the slip prices them', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/parlay');
+  await expect(page.getByRole('heading', { name: /stack today's calls/i })).toBeVisible();
+  // Either there are calls today (builder renders) or the honest empty state.
+  const legs = page.locator('.parlay-leg');
+  if (await legs.count() === 0) {
+    await expect(page.locator('.parlay-empty')).toBeVisible();
+    expect(errors).toEqual([]);
+    return;
+  }
+  // A suggestion fills the slip, and the slip prices what it filled.
+  await page.locator('.parlay-chip').first().click();
+  await expect(page.locator('.parlay-slip-pct')).toHaveText(/%/);
+  await expect(page.locator('.parlay-legs-out li').first()).toBeVisible();
+  // Adding a leg can only make the combined probability smaller.
+  const before = parseInt((await page.locator('.parlay-slip-pct').textContent()).replace('%', ''), 10);
+  const unchecked = page.locator('.parlay-leg:not(.on)').first();
+  if (await unchecked.count()) {
+    await unchecked.click();
+    const after = parseInt((await page.locator('.parlay-slip-pct').textContent()).replace('%', ''), 10);
+    expect(after).toBeLessThanOrEqual(before);
+  }
   expect(errors).toEqual([]);
 });
 

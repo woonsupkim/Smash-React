@@ -10,6 +10,18 @@ export const MODEL_VERSION = '3.7';
 
 export const CHANGELOG = [
   {
+    version: '3.9',
+    date: '2026-08-06',
+    type: 'product',
+    title: "The parlay builder, and a Today page that means today",
+    notes: [
+      'THE PARLAY BUILDER: stack any of today\'s locked calls and see what they are actually worth. Two prices sit side by side - our fair price from our own probabilities, and the market\'s price from the bookmaker odds we stamped on each pick before play. When the market\'s is longer, it rates our picks worse than we do, which is the same disagreement The Edge grades all season, priced per selection instead of per match.',
+      'It leads with the number that gets WORSE as you add legs. Four 70% calls feel like a lock and land 24% of the time, so the combined chance is the headline and the suggestions are named for how often they land, never for what they would pay. Probabilities, not tips.',
+      'TODAY MEANS TODAY: the page was showing anything not yet played, which during a Masters week meant tomorrow night\'s matches under a heading that said Today. It is now strictly your calendar day, with filters for tour and event and sorting by start time, most confident, or closest calls - a forty-match Thursday needed to be readable.',
+      'THE NAVIGATION SPLIT AGAIN, on purpose: Today (the card, the parlay, live title odds, who is hot) holds everything whose value expires, while Simulate keeps the tools that are the same tool tomorrow. And Prove is now Proof, which is what it always was.',
+    ],
+  },
+  {
     version: '3.8',
     date: '2026-08-06',
     type: 'product',

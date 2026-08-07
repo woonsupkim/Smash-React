@@ -32,6 +32,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const MatchPage = lazy(() => import('./pages/MatchPage'));
 const PlayerPage = lazy(() => import('./pages/PlayerPage'));
 const Today = lazy(() => import('./pages/Today'));
+const Parlay = lazy(() => import('./pages/Parlay'));
 const DrawPage = lazy(() => import('./pages/DrawPage'));
 const ModelCard = lazy(() => import('./pages/ModelCard'));
 const Rivalry = lazy(() => import('./pages/Rivalry'));
@@ -49,32 +50,42 @@ const Disclaimer = lazy(() => import('./pages/Legal').then((m) => ({ default: m.
 
 initMonitoring();
 
-// Three product pillars instead of a flat list of pages, each answering one
-// question a visitor actually has:
+// Four pillars, each answering one question a visitor actually has:
 //
-//   Simulate - "what does the engine say?" (the thing that makes this app
-//              worth using: any matchup, any draw, computed point by point)
-//   Prove    - "why should I believe it?" (the graded ledger, the market
-//              head-to-head, the engine internals)
+//   Today    - "what's on right now?" (the daily card, the parlay, the live
+//              title odds, who's hot) - everything whose value expires
+//   Simulate - "what if?" (the tools you drive: any matchup, any set of
+//              players, any rivalry, computed point by point)
+//   Proof    - "why should I believe it?" (the market head-to-head, the
+//              graded ledger, the engine internals)
 //   Brackets - "let me play with it" (build a draw, or take on the model)
 //
-// Named for the verb in each case, not for an abstraction: the old "Play"
-// pillar was a bucket for four different games, and once the daily games
-// retired it was just brackets wearing a vaguer label. Methodology and the
-// model card also live in the footer's trust cluster.
+// Today and Simulate were one pillar until it became clear they answer
+// different questions on different clocks: Today's Calls and the title odds
+// are perishable and change every refresh, while the H2H studio is a tool
+// that is the same tool tomorrow. Named for the verb or the moment, never
+// for an abstraction. Methodology and the model card also live in the
+// footer's trust cluster.
 const NAV_GROUPS = [
+  {
+    label: 'Today',
+    items: [
+      { to: '/today', label: "Today's Calls", tourAgnostic: true },
+      { to: '/parlay', label: 'The Parlay Builder', tourAgnostic: true },
+      { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
+      { to: '/form', label: 'The Form Chart', tourAgnostic: true },
+    ],
+  },
   {
     label: 'Simulate',
     items: [
       { to: '/h2h', label: 'H2H Studio · Any Matchup' },
-      { to: '/today', label: "Today's Calls", tourAgnostic: true },
-      { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
-      { to: '/form', label: 'The Form Chart', tourAgnostic: true },
       { to: '/compare', label: 'Compare Players', tourAgnostic: true },
+      { to: '/rivalries', label: 'Rivalries', tourAgnostic: true },
     ],
   },
   {
-    label: 'Prove',
+    label: 'Proof',
     items: [
       { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
       { to: '/track-record', label: 'The Ledger · Every Call Graded' },
@@ -117,7 +128,7 @@ function NavBar() {
   const [openGroup, setOpenGroup] = useState(null);
 
   // What's-new pulse: a one-time dot whenever a release ships that this
-  // browser hasn't seen. It rides the Prove pillar now - releases here are
+  // browser hasn't seen. It rides the Proof pillar now - releases here are
   // mostly changes to how calls are made and graded, and that pillar is
   // where the changelog link lives to explain them.
   const releaseKey = `${CHANGELOG[0]?.version}-${CHANGELOG[0]?.date}`;
@@ -168,7 +179,7 @@ function NavBar() {
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
             {NAV_GROUPS.map((group) => {
-              const showPulse = unseenRelease && group.label === 'Prove';
+              const showPulse = unseenRelease && group.label === 'Proof';
               return (
                 <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
                   <button
@@ -199,7 +210,7 @@ function NavBar() {
                         </li>
                       );
                     })}
-                    {group.label === 'Prove' && (
+                    {group.label === 'Proof' && (
                       <li>
                         <NavLink to="/changelog" className="nav-pillar-link nav-pillar-whatsnew">
                           What's new in v{CHANGELOG[0]?.version} →
@@ -272,6 +283,7 @@ function App() {
           <Route path="/match/:slug" element={<MatchPage />} />
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
+          <Route path="/parlay" element={<Parlay />} />
           <Route path="/rivalries" element={<Rivalries />} />
           <Route path="/rivalry/:tour/:slug" element={<Rivalry />} />
 

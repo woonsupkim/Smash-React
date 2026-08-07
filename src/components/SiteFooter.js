@@ -70,8 +70,8 @@ export default function SiteFooter() {
           <Link to="/rivalries">Rivalries</Link>
         </nav>
 
-        <nav className="site-footer-col" aria-label="Prove">
-          <div className="site-footer-head">Prove</div>
+        <nav className="site-footer-col" aria-label="Proof">
+          <div className="site-footer-head">Proof</div>
           <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
           <Link to="/edge">The Edge · Vs the Market</Link>
           <Link to="/model">The Engine Room · Model</Link>
