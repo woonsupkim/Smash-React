@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T07:03:46.384Z",
+  "generatedAt": "2026-08-08T06:34:44.642Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,16 +9,16 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "alert",
-      "n": 368,
+      "n": 376,
       "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 50,
-      "rankRecentAcc": 50,
+      "recentAcc": 45,
+      "rankRecentAcc": 45,
       "recentEngines": {
-        "smash": 50,
-        "sim": 45,
-        "elo": 50,
-        "rank": 50,
+        "smash": 45,
+        "sim": 53,
+        "elo": 45,
+        "rank": 45,
         "upset": 80
       },
       "bestRecent": {
@@ -26,7 +26,8 @@
         "acc": 80
       },
       "reasons": [
-        "recent accuracy 50% is 18 points below the season's 68% (last 40 matches)"
+        "recent accuracy 45% is below a coin flip (last 40 matches)",
+        "recent accuracy 45% is 23 points below the season's 68% (last 40 matches)"
       ]
     },
     {
@@ -83,21 +84,21 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 339,
+      "n": 347,
       "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 73,
-      "rankRecentAcc": 73,
+      "recentAcc": 75,
+      "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 73,
+        "smash": 75,
         "sim": 73,
-        "elo": 73,
-        "rank": 73,
-        "upset": 88
+        "elo": 78,
+        "rank": 75,
+        "upset": 80
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 88
+        "acc": 80
       },
       "reasons": []
     },
@@ -151,12 +152,13 @@
     }
   ],
   "forward": {
-    "n": 94,
+    "n": 109,
     "recentN": 40,
-    "recentAcc": 68,
+    "recentAcc": 65,
     "status": "ok"
   },
   "alerts": [
-    "ATP hard (smash): recent accuracy 50% is 18 points below the season's 68% (last 40 matches)"
+    "ATP hard (smash): recent accuracy 45% is below a coin flip (last 40 matches)",
+    "ATP hard (smash): recent accuracy 45% is 23 points below the season's 68% (last 40 matches)"
   ]
 }
