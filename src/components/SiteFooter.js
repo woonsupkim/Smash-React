@@ -60,38 +60,42 @@ export default function SiteFooter() {
           <DigestSignup />
         </div>
 
-        <nav className="site-footer-col" aria-label="Simulate">
-          <div className="site-footer-head">Simulate</div>
-          <Link to={prefix('/h2h')}>H2H Studio</Link>
-          <Link to="/today">Today's Calls</Link>
-          <Link to="/draw">The Draw · Title Odds</Link>
-          <Link to="/form">The Form Chart</Link>
-          <Link to="/compare">Compare Players</Link>
-          <Link to="/rivalries">Rivalries</Link>
-        </nav>
+        <div className="site-footer-colgroup">
+          <nav className="site-footer-col" aria-label="Simulate">
+            <div className="site-footer-head">Simulate</div>
+            <Link to={prefix('/h2h')}>H2H Studio</Link>
+            <Link to="/today">Today's Calls</Link>
+            <Link to="/draw">The Draw · Title Odds</Link>
+            <Link to="/form">The Form Chart</Link>
+            <Link to="/compare">Compare Players</Link>
+            <Link to="/rivalries">Rivalries</Link>
+          </nav>
 
-        <nav className="site-footer-col" aria-label="Proof">
-          <div className="site-footer-head">Proof</div>
-          <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
-          <Link to="/edge">The Edge · Vs the Market</Link>
-          <Link to="/model">The Engine Room · Model</Link>
-          <Link to="/season">The Rewind · Season</Link>
-          <Link to="/methodology">Methodology</Link>
-          <Link to="/changelog">Changelog</Link>
-        </nav>
+          <nav className="site-footer-col" aria-label="Brackets">
+            <div className="site-footer-head">Brackets</div>
+            <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
+            <Link to="/challenge">Bracket Challenge</Link>
+          </nav>
+        </div>
 
-        <nav className="site-footer-col" aria-label="Brackets">
-          <div className="site-footer-head">Brackets</div>
-          <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
-          <Link to="/challenge">Bracket Challenge</Link>
-        </nav>
+        <div className="site-footer-colgroup">
+          <nav className="site-footer-col" aria-label="Proof">
+            <div className="site-footer-head">Proof</div>
+            <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
+            <Link to="/edge">The Edge · Vs the Market</Link>
+            <Link to="/model">The Engine Room · Model</Link>
+            <Link to="/season">The Rewind · Season</Link>
+            <Link to="/methodology">Methodology</Link>
+            <Link to="/changelog">Changelog</Link>
+          </nav>
 
-        <nav className="site-footer-col" aria-label="Legal">
-          <div className="site-footer-head">Legal</div>
-          <Link to="/terms">Terms of Use</Link>
-          <Link to="/privacy">Privacy</Link>
-          <Link to="/disclaimer">Responsible Use</Link>
-        </nav>
+          <nav className="site-footer-col" aria-label="Legal">
+            <div className="site-footer-head">Legal</div>
+            <Link to="/terms">Terms of Use</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/disclaimer">Responsible Use</Link>
+          </nav>
+        </div>
       </div>
 
       <div className="site-footer-legal">

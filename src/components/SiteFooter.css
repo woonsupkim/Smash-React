@@ -49,6 +49,14 @@
   margin: 0;
 }
 
+/* Each footer pillar stacks a second section beneath it:
+   Brackets under Simulate, Legal under Proof. */
+.site-footer-colgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
 .site-footer-col {
   display: flex;
   flex-direction: column;

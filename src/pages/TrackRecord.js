@@ -35,12 +35,39 @@ const MAJOR_EVENT_TIERS = [
   { tier: 'Grand Slams', re: /australian open|french open|roland garros|wimbledon|us open/i },
   {
     tier: 'Masters & 1000s',
-    re: /bnp paribas|indian wells|miami open|monte.carlo|madrid open|internazionali|italian open|national bank|canadian open|canada masters|cincinnati|shanghai|paris masters|rolex paris|qatar totalenergies|qatar open|dubai|china open|wuhan/i,
-    // qatar totalenergies = the WTA 1000; NOT the ATP Doha 250 ("Qatar ExxonMobil Open")
+    re: /bnp paribas|indian wells|miami open|monte.carlo|madrid open|internazionali|italian open|national bank|canadian open|\bcanada\b|cincinnati|shanghai|paris masters|rolex paris|qatar totalenergies|qatar open|dubai|china open|wuhan/i,
+    // qatar totalenergies = the WTA 1000; NOT the ATP Doha 250 ("Qatar ExxonMobil Open").
+    // predictions.json labels the National Bank Open as bare "Canada" (the
+    // retrospective log uses "National Bank Open"); match both so the live
+    // Masters stop actually populates the forward receipts.
   },
   { tier: 'Tour Finals', re: /atp finals|wta finals|tour finals/i },
 ];
 const eventTier = (name) => MAJOR_EVENT_TIERS.find(({ re }) => re.test(name))?.tier || null;
+
+// The forward record ("The Receipts") only counts calls at the events a fan
+// treats as real tests: Grand Slams and the Masters/1000 stops. Lower-tier
+// 250/500 calls are noise for a public scoreboard. Two independent signals,
+// since neither is complete in the data: the event-name regex catches the
+// slams (which carry no tier code), and the native `tier` field catches
+// Masters even when the event name is a sponsor string the regex misses.
+const FORWARD_TIERS = new Set(['Grand Slams', 'Masters & 1000s']);
+const FORWARD_TIER_CODES = new Set(['1000', '2000', '3000', 'grand slam', 'grandslam', 'slam']);
+const isForwardEvent = (p) =>
+  FORWARD_TIERS.has(eventTier(p.event || '')) || FORWARD_TIER_CODES.has(String(p.tier || '').toLowerCase());
+
+// One call per matchup: the ESPN id can reassign between refreshes, so the
+// same match can appear twice (often one pending + one graded). Key by the
+// player pair and event, and keep the graded copy when there's a choice.
+const dedupePreds = (list) => {
+  const seen = new Map();
+  for (const p of list) {
+    const key = `${p.tour}|${[p.p1, p.p2].sort().join('_')}|${(p.event || '').toLowerCase()}`;
+    const prev = seen.get(key);
+    if (!prev || (prev.status === 'pending' && p.status !== 'pending')) seen.set(key, p);
+  }
+  return [...seen.values()];
+};
 
 // Wilson 95% score interval for a binomial proportion - defends the headline
 // accuracy against "that's just luck" by showing the sampling uncertainty.
@@ -141,7 +168,9 @@ export default function TrackRecord() {
   }, [data]);
 
   const forward = useMemo(() => {
-    const list = (predictions?.predictions || []).filter((p) =>
+    // Majors only (Slams + Masters/1000), one call per matchup, then the UI filters.
+    const majors = dedupePreds((predictions?.predictions || []).filter(isForwardEvent));
+    const list = majors.filter((p) =>
       (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface)
       && (eventF === 'all' || p.event === eventF));
     const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -157,7 +186,7 @@ export default function TrackRecord() {
   // Unfiltered forward record for the hero: the locked-before-play claim is
   // the page's headline once it has enough verified calls behind it.
   const forwardAll = useMemo(() => {
-    const all = predictions?.predictions || [];
+    const all = dedupePreds((predictions?.predictions || []).filter(isForwardEvent));
     const decided = all.filter((p) => p.status !== 'pending');
     const correct = decided.filter((p) => p.correct).length;
     const dates = all.map((p) => new Date(p.date)).filter((d) => !isNaN(d));
@@ -422,13 +451,21 @@ export default function TrackRecord() {
                   </div>
                 )}
               </div>
-              {forward.pending.slice(0, 8).map((p) => (
-                <Link className="track-forward-row pending" to={`/match/${matchSlug(p)}`} key={p.id}>
-                  <span className="track-forward-status"><span aria-hidden="true">⏳ </span>Upcoming</span>
-                  <span className="track-forward-match">{p.name1} vs {p.name2}</span>
-                  <span className="track-forward-call">Backing {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
-                </Link>
-              ))}
+              {forward.pending.slice(0, 8).map((p) => {
+                // A locked call whose match time has passed but the result
+                // hasn't been fetched yet reads "Awaiting result", not
+                // "Upcoming" - honest when the data refresh is lagging.
+                const awaiting = new Date(p.date).getTime() < Date.now();
+                return (
+                  <Link className={`track-forward-row pending${awaiting ? ' awaiting' : ''}`} to={`/match/${matchSlug(p)}`} key={p.id}>
+                    <span className="track-forward-status">
+                      <span aria-hidden="true">{awaiting ? '⌛ ' : '⏳ '}</span>{awaiting ? 'Awaiting result' : 'Upcoming'}
+                    </span>
+                    <span className="track-forward-match">{p.name1} vs {p.name2}</span>
+                    <span className="track-forward-call">{awaiting ? 'Backed' : 'Backing'} {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
+                  </Link>
+                );
+              })}
               {forward.pending.length > 8 && (
                 <div className="track-note" style={{ marginTop: '0.4rem' }}>
                   Plus {forward.pending.length - 8} more locked calls · <Link to="/today">see all of today's</Link>

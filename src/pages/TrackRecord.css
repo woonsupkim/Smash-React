@@ -366,6 +366,8 @@
 .track-forward-status { font-size: 0.78rem; color: var(--text-3); }
 .track-forward-row.hit .track-forward-status { color: var(--accent-positive); }
 .track-forward-row.miss .track-forward-status { color: var(--accent-negative); }
+/* Match time passed, result not yet fetched - amber, like the freshness SLA. */
+.track-forward-row.awaiting .track-forward-status { color: #ffb74d; }
 .track-forward-match { color: var(--text-1); font-weight: 600; }
 .track-forward-call { color: var(--text-3); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 

@@ -77,11 +77,18 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Simulate',
+    label: 'H2H',
     items: [
       { to: '/h2h', label: 'H2H Studio · Any Matchup' },
       { to: '/compare', label: 'Compare Players', tourAgnostic: true },
       { to: '/rivalries', label: 'Rivalries', tourAgnostic: true },
+    ],
+  },
+  {
+    label: 'Brackets',
+    items: [
+      { to: '/dream-brackets', label: 'Dream Brackets · Build One' },
+      { to: '/challenge', label: 'Bracket Challenge · Beat the Model', tourAgnostic: true },
     ],
   },
   {
@@ -91,13 +98,6 @@ const NAV_GROUPS = [
       { to: '/track-record', label: 'The Ledger · Every Call Graded' },
       { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
       { to: '/season', label: 'The Rewind · Season', tourAgnostic: true },
-    ],
-  },
-  {
-    label: 'Brackets',
-    items: [
-      { to: '/dream-brackets', label: 'Dream Brackets · Build One' },
-      { to: '/challenge', label: 'Bracket Challenge · Beat the Model', tourAgnostic: true },
     ],
   },
 ];
