@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T15:44:25.815Z",
+  "generatedAt": "2026-08-08T18:09:14.131Z",
   "seasonN": 4636,
   "lastStreak": {
     "key": "wta|grass",
@@ -7,15 +7,15 @@
   },
   "thread": [
     "Today at the Canada: 8 calls, every one locked before play. 67% of winners called before play (73 of 109 verified, no take-backs). Picks below.",
-    "1/8 Iga Swiatek over Marta Kostyuk at 72% on hard. High confidence. https://smash-react.vercel.app/match/iga-swiatek-vs-marta-kostyuk-182186",
-    "2/8 Luciano Darderi over Nuno Borges at 55% on hard. https://smash-react.vercel.app/match/luciano-darderi-vs-nuno-borges-181756",
-    "3/8 Jessica Pegula over Diana Shnaider at 81% on hard. High confidence. https://smash-react.vercel.app/match/diana-shnaider-vs-jessica-pegula-182210",
-    "4/8 Brandon Nakashima over Arthur Rinderknech at 57% on hard. https://smash-react.vercel.app/match/brandon-nakashima-vs-arthur-rinderknech-181758",
-    "5/8 Rafael Jodar over Jiri Lehecka at 50% on hard. https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775",
-    "6/8 Aryna Sabalenka over Ekaterina Alexandrova at 91% on hard. High confidence. https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-aryna-sabalenka-182224",
-    "7/8 Arthur Fils over Cameron Norrie at 57% on hard. https://smash-react.vercel.app/match/cameron-norrie-vs-arthur-fils-181745",
-    "8/8 Amanda Anisimova over Elina Svitolina at 57% on hard. https://smash-react.vercel.app/match/amanda-anisimova-vs-elina-svitolina-182200",
-    "If every call hits, $10 at fair odds returns $362. Not betting advice, just the math on our own confidence.",
+    "1/8 Rafael Jodar over Jiri Lehecka at 50% on hard. https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775",
+    "2/8 Aryna Sabalenka over Ekaterina Alexandrova at 91% on hard. High confidence. https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-aryna-sabalenka-182224",
+    "3/8 Arthur Fils over Cameron Norrie at 57% on hard. https://smash-react.vercel.app/match/cameron-norrie-vs-arthur-fils-181745",
+    "4/8 Amanda Anisimova over Elina Svitolina at 57% on hard. https://smash-react.vercel.app/match/amanda-anisimova-vs-elina-svitolina-182200",
+    "5/8 Jakub Mensik over Botic Van De Zandschulp at 71% on hard. High confidence. https://smash-react.vercel.app/match/jakub-mensik-vs-botic-van-de-zandschulp-181723",
+    "6/8 Learner Tien over Thiago Agustin Tirante at 64% on hard. https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-learner-tien-181744",
+    "7/8 Ben Shelton over Joao Fonseca at 61% on hard. https://smash-react.vercel.app/match/ben-shelton-vs-joao-fonseca-181772",
+    "8/8 Naomi Osaka over Leylah Annie Fernandez at 72% on hard. High confidence. https://smash-react.vercel.app/match/naomi-osaka-vs-leylah-annie-fernandez-182169",
+    "If every call hits, $10 at fair odds returns $331. Not betting advice, just the math on our own confidence.",
     "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
   ],
   "assets": [
@@ -40,43 +40,11 @@
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " High confidence: Iga Swiatek over Marta Kostyuk at 72%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/iga-swiatek-vs-marta-kostyuk-182186 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Iga Swiatek over Marta Kostyuk at 72%, Canada (hard)."
-    },
-    {
-      "file": "match-2.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Luciano Darderi over Nuno Borges at 55%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/luciano-darderi-vs-nuno-borges-181756 #tennis #atp #wta #tennisprediction",
-      "alt": " Luciano Darderi over Nuno Borges at 55%, Canada (hard)."
-    },
-    {
-      "file": "match-3.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " High confidence: Jessica Pegula over Diana Shnaider at 81%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/diana-shnaider-vs-jessica-pegula-182210 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Jessica Pegula over Diana Shnaider at 81%, Canada (hard)."
-    },
-    {
-      "file": "match-4.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Brandon Nakashima over Arthur Rinderknech at 57%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/brandon-nakashima-vs-arthur-rinderknech-181758 #tennis #atp #wta #tennisprediction",
-      "alt": " Brandon Nakashima over Arthur Rinderknech at 57%, Canada (hard)."
-    },
-    {
-      "file": "match-5.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
       "caption": " Rafael Jodar over Jiri Lehecka at 50%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775 #tennis #atp #wta #tennisprediction",
       "alt": " Rafael Jodar over Jiri Lehecka at 50%, Canada (hard)."
     },
     {
-      "file": "match-6.png",
+      "file": "match-2.png",
       "type": "match",
       "format": "square",
       "category": "daily",
@@ -84,7 +52,7 @@
       "alt": " High confidence: Aryna Sabalenka over Ekaterina Alexandrova at 91%, Canada (hard)."
     },
     {
-      "file": "match-7.png",
+      "file": "match-3.png",
       "type": "match",
       "format": "square",
       "category": "daily",
@@ -92,7 +60,7 @@
       "alt": " Arthur Fils over Cameron Norrie at 57%, Canada (hard)."
     },
     {
-      "file": "match-8.png",
+      "file": "match-4.png",
       "type": "match",
       "format": "square",
       "category": "daily",
@@ -100,20 +68,44 @@
       "alt": " Amanda Anisimova over Elina Svitolina at 57%, Canada (hard)."
     },
     {
-      "file": "rivalry.png",
-      "type": "rivalry",
+      "file": "match-5.png",
+      "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": "Darderi vs Borges, meeting number 7. Career: 2-4. We've called 1 of 3 of their matches right. https://smash-react.vercel.app/match/luciano-darderi-vs-nuno-borges-181756 #tennis #atp #wta #tennisprediction",
-      "alt": "Darderi vs Borges, meeting number 7."
+      "caption": " High confidence: Jakub Mensik over Botic Van De Zandschulp at 71%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/jakub-mensik-vs-botic-van-de-zandschulp-181723 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Jakub Mensik over Botic Van De Zandschulp at 71%, Canada (hard)."
+    },
+    {
+      "file": "match-6.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Learner Tien over Thiago Agustin Tirante at 64%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-learner-tien-181744 #tennis #atp #wta #tennisprediction",
+      "alt": " Learner Tien over Thiago Agustin Tirante at 64%, Canada (hard)."
+    },
+    {
+      "file": "match-7.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " Ben Shelton over Joao Fonseca at 61%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/ben-shelton-vs-joao-fonseca-181772 #tennis #atp #wta #tennisprediction",
+      "alt": " Ben Shelton over Joao Fonseca at 61%, Canada (hard)."
+    },
+    {
+      "file": "match-8.png",
+      "type": "match",
+      "format": "square",
+      "category": "daily",
+      "caption": " High confidence: Naomi Osaka over Leylah Annie Fernandez at 72%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/naomi-osaka-vs-leylah-annie-fernandez-182169 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Naomi Osaka over Leylah Annie Fernandez at 72%, Canada (hard)."
     },
     {
       "file": "parlay.png",
       "type": "carousel-closer",
       "format": "square",
       "category": "daily",
-      "caption": "If every call today hits, $10 at fair odds returns $362. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "alt": "If every call today hits, $10 at fair odds returns $362."
+      "caption": "If every call today hits, $10 at fair odds returns $331. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "alt": "If every call today hits, $10 at fair odds returns $331."
     },
     {
       "file": "slate-story.png",
@@ -224,8 +216,8 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 52 of 97 winners called, 4 wins over the bookies. Season benchmark: 68%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 52 of 97 winners called, 4 wins over the bookies."
+      "caption": "The week in calls: 129 of 200 winners called, 6 wins over the bookies. Season benchmark: 67%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 129 of 200 winners called, 6 wins over the bookies."
     },
     {
       "file": "autopsy.png",
@@ -250,14 +242,6 @@
       "category": "edge",
       "caption": "We disagreed with the market on Tien vs Paul at the National Bank Open - and the model was right. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
       "alt": "Edge split card: our call versus the market's on Learner Tien vs Tommy Paul, graded."
-    },
-    {
-      "file": "edge-forward.png",
-      "type": "edge-forward",
-      "format": "square",
-      "category": "edge",
-      "caption": "Locked before play: we're backing Luciano Darderi at 55% while the market has them at 40%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "Forward edge card: our underdog call on Luciano Darderi, locked with the market price attached."
     },
     {
       "file": "proof.png",

@@ -71,6 +71,171 @@ const ST_W = 1080, ST_H = 1920;
 const MAX_MATCH_CARDS = 8;
 const SEASON_YEAR = new Date().getUTCFullYear();
 
+// ════════════════════════════════════════════════════════════════════════════
+// SMASH 2.0 design system: vector type (fontkit) + a layered "stage".
+//
+// Text is shaped by fontkit and emitted as SVG <path> outlines, so cards are
+// pixel-identical on any machine (no dependence on which fonts the renderer
+// happens to have) and every string has an exact width for layout. The type
+// system: Anton (heavy condensed hero), Bebas Neue (kickers), Archivo Black
+// (labels/wordmark/chips), Barlow (body/data). All SIL OFL, committed under
+// data-pipeline/fonts/.
+// ════════════════════════════════════════════════════════════════════════════
+const fontkit = require('fontkit');
+const FONT_DIR = path.join(__dirname, 'fonts');
+const FK = {
+  anton: fontkit.openSync(path.join(FONT_DIR, 'Anton-Regular.ttf')),
+  bebas: fontkit.openSync(path.join(FONT_DIR, 'BebasNeue-Regular.ttf')),
+  black: fontkit.openSync(path.join(FONT_DIR, 'ArchivoBlack-Regular.ttf')),
+  body: fontkit.openSync(path.join(FONT_DIR, 'Barlow-SemiBold.ttf')),
+  bodyMed: fontkit.openSync(path.join(FONT_DIR, 'Barlow-Medium.ttf')),
+};
+// Width of a shaped string in px (includes kerning; tracking = extra px/gap).
+function measureT(fk, text, size, tracking = 0) {
+  const f = FK[fk], run = f.layout(String(text));
+  return run.positions.reduce((s, p) => s + p.xAdvance, 0) * size / f.unitsPerEm + tracking * Math.max(0, run.glyphs.length - 1);
+}
+// Text as one combined vector <path>. anchor start|middle|end; skew deg slant.
+function T(fk, text, x, y, size, { anchor = 'start', tracking = 0, fill = '#fff', opacity = 1, skew = 0 } = {}) {
+  const f = FK[fk], scale = size / f.unitsPerEm, run = f.layout(String(text));
+  const width = run.positions.reduce((s, p) => s + p.xAdvance, 0) * scale + tracking * Math.max(0, run.glyphs.length - 1);
+  let penX = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x, d = '';
+  run.glyphs.forEach((g, i) => {
+    const p = run.positions[i];
+    d += g.path.scale(scale, -scale).translate(penX + p.xOffset * scale, y - p.yOffset * scale).toSVG();
+    penX += p.xAdvance * scale + tracking;
+  });
+  // Anchor the italic slant at the baseline (plain skewX shears about y=0, so a
+  // slanted word low on the canvas would drift far left of its measured x).
+  const sk = skew ? ` transform="translate(${(-Math.tan(skew * Math.PI / 180) * y).toFixed(2)} 0) skewX(${skew})"` : '';
+  return { svg: `<path d="${d}" fill="${fill}" fill-opacity="${opacity}"${sk}/>`, width };
+}
+// Largest size <= size that keeps the string within maxW.
+const fitT = (fk, text, size, maxW, tracking = 0) => {
+  const w = measureT(fk, text, size, tracking);
+  return w <= maxW ? size : Math.max(10, Math.floor(size * maxW / w));
+};
+
+// ── Palette: Indigo default, per-slam overrides ─────────────────────────────
+const C_WHITE = '#ffffff', C_MUTE = '#93a6c0', C_FAINT = 'rgba(255,255,255,0.5)';
+const INK_INDIGO = ['#1a1640', '#0d0a22', '#060413']; // [mid, base, deep]
+// Semantic accent swaps on the shared indigo ink (content colour-coding).
+const PAL = {
+  calls: { key: '#c8ff2e', sub: '#9b7bff', ink: INK_INDIGO, name: 'calls' },       // lime + violet
+  receipts: { key: '#ffc24b', sub: '#c8ff2e', ink: INK_INDIGO, name: 'receipts' },  // gold + lime
+  edge: { key: '#31e1ff', sub: '#c8ff2e', ink: INK_INDIGO, name: 'edge' },          // cyan + lime
+  upset: { key: '#ff2e7e', sub: '#ffc24b', ink: INK_INDIGO, name: 'upset' },        // magenta + gold
+};
+// Grand slams get their own identity so a card FEELS like that event.
+const SLAM_PAL = {
+  'Australian Open': { key: '#3d9bff', sub: '#c8ff2e', ink: ['#0d2a5c', '#06152e', '#030a17'], name: 'ao' },
+  'Roland Garros': { key: '#ff7a3d', sub: '#ffd98a', ink: ['#3a1c10', '#1d0d06', '#0e0603'], name: 'rg' },
+  'French Open': { key: '#ff7a3d', sub: '#ffd98a', ink: ['#3a1c10', '#1d0d06', '#0e0603'], name: 'rg' },
+  'Wimbledon': { key: '#3ddc84', sub: '#b06bff', ink: ['#221a3f', '#0e0b1f', '#060411'], name: 'wb' },
+  'US Open': { key: '#4a90ff', sub: '#ffd54a', ink: ['#0b2a6b', '#04122e', '#020a17'], name: 'us' },
+};
+// kind is the semantic role for non-slam cards ('calls' default).
+const paletteFor = (eventName, kind = 'calls') => SLAM_PAL[eventName] || PAL[kind] || PAL.calls;
+
+// ── Stage: layered background (defs + fills + geometry + texture) ────────────
+function sDefs(a) {
+  const [mid, base, deep] = a.ink;
+  return `
+  <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="${mid}"/><stop offset="0.5" stop-color="${base}"/><stop offset="1" stop-color="${deep}"/></linearGradient>
+  <radialGradient id="bloom" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${a.key}" stop-opacity="0.18"/><stop offset="1" stop-color="${a.key}" stop-opacity="0"/></radialGradient>
+  <radialGradient id="bloom2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${a.sub}" stop-opacity="0.14"/><stop offset="1" stop-color="${a.sub}" stop-opacity="0"/></radialGradient>
+  <radialGradient id="vig" cx="0.5" cy="0.4" r="0.9"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.5"/></radialGradient>
+  <linearGradient id="keyGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${a.key}"/><stop offset="1" stop-color="${a.sub}"/></linearGradient>
+  <pattern id="halftone" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="2.2" fill="${a.key}" fill-opacity="0.5"/></pattern>
+  <filter id="glow" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="11"/></filter>
+  <filter id="pglow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="26"/></filter>`;
+}
+function sStage(a, w, h, { ghost = null } = {}) {
+  return `
+  <rect width="${w}" height="${h}" fill="url(#bg)"/>
+  <ellipse cx="${w * 0.22}" cy="${h * 0.15}" rx="${w * 0.62}" ry="${h * 0.46}" fill="url(#bloom)"/>
+  <ellipse cx="${w * 0.9}" cy="${h * 0.92}" rx="${w * 0.52}" ry="${h * 0.4}" fill="url(#bloom2)"/>
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="2.5" fill="none"><rect x="${w * 0.52}" y="${h * 0.12}" width="${w * 0.44}" height="${h * 0.74}"/><line x1="${w * 0.52}" y1="${h * 0.49}" x2="${w * 0.96}" y2="${h * 0.49}"/></g>
+  <polygon points="${w},0 ${w},${h * 0.28} ${w * 0.66},0" fill="${a.key}" fill-opacity="0.08"/>
+  <polygon points="${w},0 ${w},${h * 0.09} ${w * 0.84},0" fill="${a.key}"/>
+  <g transform="rotate(-8 0 ${h * 0.72})"><rect x="-20" y="${h * 0.64}" width="${w * 0.32}" height="${h * 0.4}" fill="url(#halftone)" opacity="0.5"/></g>
+  ${ghost ? T('anton', ghost, w / 2, h + 46, Math.min(w * 0.52, 560), { anchor: 'middle', fill: '#fff', opacity: 0.035 }).svg : ''}
+  <rect width="${w}" height="${h}" fill="url(#vig)"/>`;
+}
+// Brand tick + wordmark left; context kicker right.
+function sMast(w, kicker, a, { tour = null } = {}) {
+  const tagW = tour ? 94 : 0;
+  const k = fitT('black', kicker.toUpperCase(), 25, w - 220 - tagW, 3);
+  const tourTag = tour ? `<rect x="${w - 60 - 84}" y="52" width="84" height="44" rx="10" fill="${tour === 'wta' ? '#ff2e7e' : '#31e1ff'}"/>${T('black', tour.toUpperCase(), w - 60 - 42, 82, 22, { anchor: 'middle', fill: '#fff', tracking: 1 }).svg}` : '';
+  return `
+  <circle cx="62" cy="70" r="10" fill="${a.key}"/>${T('black', 'SMASH', 84, 82, 36, { fill: C_WHITE, tracking: 2 }).svg}
+  ${T('black', kicker.toUpperCase(), w - 60 - tagW - (tour ? 14 : 0), 80, k, { anchor: 'end', fill: a.key, tracking: 3 }).svg}
+  ${tourTag}
+  <rect x="60" y="100" width="${w - 120}" height="2" fill="#ffffff" fill-opacity="0.1"/>`;
+}
+// Bold accent slab at the bottom - the brand signature CTA bar.
+function sBar(w, h, text, a, { sub = 'EVERY CALL PUBLIC · GRADED DAILY' } = {}) {
+  const barY = h - 150, tw = fitT('anton', text, 62, w - 130);
+  return `
+  <polygon points="0,${barY + 20} ${w},${barY - 20} ${w},${h} 0,${h}" fill="url(#keyGrad)"/>
+  <polygon points="0,${barY + 20} ${w},${barY - 20} ${w},${barY - 8} 0,${barY + 32}" fill="#ffffff" fill-opacity="0.28"/>
+  ${T('anton', text, 60, barY + 86, tw, { fill: a.ink[2] }).svg}
+  ${T('black', sub, 62, barY + 122, 19, { fill: 'rgba(0,0,0,0.68)', tracking: 2 }).svg}`;
+}
+// Glass stat chip centered at cx, shrinking to stay within maxW.
+function sChip(cx, y, text, a, maxW = 820) {
+  const fs = fitT('black', text, 26, maxW - 64, 2), w = measureT('black', text, fs, 2) + 64;
+  return `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="58" rx="14" fill="rgba(255,255,255,0.06)" stroke="${a.key}" stroke-width="2"/>${T('black', text, cx, y + 39, fs, { anchor: 'middle', fill: a.key, tracking: 2 }).svg}`;
+}
+// Name plate pill centered at cx, text baseline at y.
+function sPlate(cx, y, text, color, filled, deep) {
+  const fs = 26, w = measureT('black', text, fs, 1) + 44;
+  return `<rect x="${cx - w / 2}" y="${y - 34}" width="${w}" height="48" rx="24" fill="${filled ? color : 'rgba(6,9,16,0.82)'}" stroke="${color}" stroke-width="3"/>${T('black', text, cx, y, fs, { anchor: 'middle', fill: filled ? deep : color, tracking: 1 }).svg}`;
+}
+// Up/down delta chip drawn as SVG triangles (the display fonts have no ▲/▼).
+// Right-anchored at xRight; number sits at the row's y+28.
+function deltaTag(xRight, yTop, delta) {
+  const col = delta > 0 ? '#3ddc84' : '#ff5c5c';
+  const num = String(Math.abs(delta));
+  const triR = xRight - measureT('black', num, 30) - 12, triL = triR - 22;
+  const tri = delta > 0
+    ? `<polygon points="${triL},${yTop + 26} ${triR},${yTop + 26} ${(triL + triR) / 2},${yTop + 4}" fill="${col}"/>`
+    : `<polygon points="${triL},${yTop + 4} ${triR},${yTop + 4} ${(triL + triR) / 2},${yTop + 26}" fill="${col}"/>`;
+  return `${tri}${T('black', num, xRight, yTop + 28, 30, { anchor: 'end', fill: col }).svg}`;
+}
+
+// Photo panel with a "spotlight" treatment that signals the model's pick:
+//   'winner' -> graded natural COLOUR (pops)
+//   'loser'  -> cool desaturated mono (filtered down)
+//   'base'   -> neutral cool duotone (poll / no revealed pick)
+// Rounded corners + a bottom shade so the name plate always sits on darkness.
+async function duoPanel(file, w, h, mode = 'base', radius = 28) {
+  const src = sharp(file).resize(w, h, { fit: 'cover', position: 'top' });
+  let body;
+  if (mode === 'winner') {
+    body = await src.modulate({ brightness: 1.06, saturation: 1.12 }).linear(1.08, -8).png().toBuffer();
+  } else {
+    const [tint, bg, lin, bright] = mode === 'loser'
+      ? ['#c9c9d2', '#0a0a12', [0.95, -18], 0.9]   // desaturated, darker
+      : ['#fdf1df', '#0c1524', [1.06, -6], 1];      // neutral duotone
+    const gray = await src.grayscale().normalise().linear(lin[0], lin[1]).modulate({ brightness: bright }).toBuffer();
+    const hi = await sharp(gray).tint(tint).toBuffer();
+    body = await sharp({ create: { width: w, height: h, channels: 3, background: bg } }).composite([{ input: hi, blend: 'screen' }]).png().toBuffer();
+  }
+  const shade = Buffer.from(`<svg width="${w}" height="${h}"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#04070e" stop-opacity="0.85"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#s)"/></svg>`);
+  const mask = Buffer.from(`<svg width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${radius}" fill="#fff"/></svg>`);
+  return sharp(body).composite([{ input: shade, blend: 'over' }, { input: mask, blend: 'dest-in' }]).png().toBuffer();
+}
+// Full-bleed duotone stadium, graded into the indigo ink so the photo cards
+// sit in the same world as the typographic ones (highlights lean violet, not
+// the neutral blue that reads green under a lime glow).
+async function duoStage(surfaceKey, w, h) {
+  const f = path.join(ROOT, 'src', 'assets', STADIUMS[surfaceKey] || STADIUMS.brand);
+  const gray = await sharp(f).resize(w, h, { fit: 'cover' }).grayscale().normalise().linear(0.9, -4).blur(1.2).toBuffer();
+  const hi = await sharp(gray).tint('#d7ccf6').toBuffer();
+  return sharp({ create: { width: w, height: h, channels: 3, background: '#0a0818' } }).composite([{ input: hi, blend: 'screen' }]).png().toBuffer();
+}
+
 // ── Design tokens ──────────────────────────────────────────────────────────
 const D = 'Barlow Condensed, Arial Narrow, DejaVu Sans Condensed, DejaVu Sans, sans-serif';
 const U = 'DejaVu Sans, Arial, Helvetica, sans-serif';
@@ -430,301 +595,269 @@ function bottomBar(w, text, { y = null, filled = true, color = LIME, textColor =
 async function matchCard(p, flags, file, result = null, context = null) {
   const favIsP1 = p.favorite === p.p1;
   const favPct = Math.round(p.favProb * 100);
-  const v = result
-    ? { headline: 'WE CALLED IT', sub: 'Locked before play, graded after' }
-    : verdict(p.favProb, flags.upset);
+  const a = paletteFor(p.event, flags.upset ? 'upset' : 'calls');
+  const v = result ? { headline: 'WE CALLED IT' } : verdict(p.favProb, flags.upset);
   const [hl1, hl2] = splitHeadline(v.headline);
-
   const favName = favIsP1 ? p.name1 : p.name2;
   const dogName = favIsP1 ? p.name2 : p.name1;
   const favRank = favIsP1 ? flags.rank1 : flags.rank2;
   const dogRank = favIsP1 ? flags.rank2 : flags.rank1;
+  const flagTxt = flags.upset ? 'UPSET PICK' : (flags.confidence === 'high' ? 'HIGH CONFIDENCE' : (flags.confidence === 'low' ? 'TOSS-UP' : 'OUR CALL'));
 
-  const bg = await stadiumBg(p.surface, SQ, SQ);
-  const PW = 444, PH = 456, PY = 480;
-  const dogX = 64, favX = SQ - 64 - PW;
+  const PW = 402, PH = 452, PY = 456, dogX = 60, favX = SQ - 60 - PW, midY = PY + PH / 2;
+  const bg = await duoStage(p.surface, SQ, SQ);
   const [dogImg, favImg] = await Promise.all([
-    panelPhoto(photoPath(p.tour, favIsP1 ? p.p2 : p.p1), PW, PH, { dim: 0.72 }),
-    panelPhoto(photoPath(p.tour, favIsP1 ? p.p1 : p.p2), PW, PH),
+    duoPanel(photoPath(p.tour, favIsP1 ? p.p2 : p.p1), PW, PH, 'loser'),
+    duoPanel(photoPath(p.tour, favIsP1 ? p.p1 : p.p2), PW, PH, 'winner'),
   ]);
 
-  // flags row between headline and panels; underline when no flags
-  let tagsSvg = '';
-  {
-    let tx = 64;
-    if (flags.upset) { const g = tag(tx, 420, 'UPSET PICK', NEG); tagsSvg += g.svg; tx += g.w + 14; }
-    if (flags.confidence === 'high') { const g = tag(tx, 420, 'HIGH CONFIDENCE', POS); tagsSvg += g.svg; tx += g.w + 14; }
-    if (flags.confidence === 'low') { const g = tag(tx, 420, 'TOSS-UP', AMBER); tagsSvg += g.svg; tx += g.w + 14; }
-    if (tx === 64) tagsSvg = `<rect x="64" y="434" width="230" height="14" fill="${LIME}"/>`;
-  }
+  // Bottom scrim: darken stadium + brand blooms + shard + panel rim-glows.
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.36"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.24} ${SQ * 0.7},0" fill="${a.key}" fill-opacity="0.1"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${dogX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.sub}" fill-opacity="0.38" filter="url(#pglow)"/>
+    <rect x="${favX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.key}" fill-opacity="0.42" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
 
-  // The headline column ends where the big right-anchored % begins.
-  const pctW = textWpx(`${favPct}%`, 168);
-  const hlMax = SQ - 60 - 64 - pctW - 30;
-  const hlFs = Math.min(fitFS(hl1, 116, hlMax), hl2 ? fitFS(hl2, 116, hlMax) : 116);
-  const kicker = `${p.event} · ${p.surface} · ${fmtDate(p.date)}`.toUpperCase();
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <rect x="${SQ - 128}" y="40" width="88" height="48" fill="${p.tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
-  <text x="${SQ - 84}" y="74" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${p.tour.toUpperCase()}</text>
+  const pctTop = T('anton', `${favPct}%`, SQ - 60, 300, 150, { anchor: 'end', fill: a.key });
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${p.event} · ${p.surface} · ${fmtDate(p.date)}`, a, { tour: p.tour })}
+    ${T('bebas', flagTxt, 60, 180, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', hl1, 60, 292, fitT('anton', hl1, 112, 520), { fill: C_WHITE }).svg}
+    ${hl2 ? T('anton', hl2, 60, 388, fitT('anton', hl2, 112, 520), { fill: a.key, skew: -7 }).svg : ''}
+    <g filter="url(#glow)" opacity="0.5">${pctTop.svg}</g>${pctTop.svg}
+    ${T('black', `${last(favName).toUpperCase()} TO WIN`, SQ - 60, 344, 23, { anchor: 'end', fill: 'rgba(255,255,255,0.72)', tracking: 2 }).svg}
+    <rect x="${dogX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+    <rect x="${favX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${a.key}" stroke-width="4"/>
+    <circle cx="${SQ / 2}" cy="${midY}" r="46" fill="${a.ink[2]}" stroke="${a.key}" stroke-width="3"/>
+    ${T('anton', 'VS', SQ / 2, midY + 16, 44, { anchor: 'middle', fill: C_WHITE }).svg}
+    ${sPlate(dogX + PW / 2, PY + PH - 28, `${last(dogName).toUpperCase()}${dogRank ? ` · NO. ${dogRank}` : ''}`, C_WHITE, false, a.ink[2])}
+    ${sPlate(favX + PW / 2, PY + PH - 28, `${last(favName).toUpperCase()}${favRank ? ` · NO. ${favRank}` : ''}`, a.key, true, a.ink[2])}
+    ${result ? `<g transform="rotate(-9 ${SQ / 2} 300)"><rect x="330" y="242" width="420" height="104" rx="16" fill="rgba(0,0,0,0.55)" stroke="#3ddc84" stroke-width="8"/>${T('anton', 'CALLED ✓', SQ / 2, 316, 66, { anchor: 'middle', fill: '#3ddc84' }).svg}</g>` : ''}
+    ${sBar(SQ, SQ, result
+      ? `${last(result.winnerName).toUpperCase()} WON · WE SAID ${favPct}%`
+      : `OUR CALL: ${last(favName).toUpperCase()} · ${favPct}%`, a)}
+    </svg>`;
 
-  <text x="64" y="172" font-family="${U}" font-size="${fitFS(kicker, 27, SQ - 64 - 152, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(kicker)}</text>
-  <text x="60" y="292" font-family="${D}" font-size="${hlFs}" font-weight="800" fill="#ffffff">${esc(hl1)}</text>
-  ${hl2 ? `<text x="60" y="398" font-family="${D}" font-size="${hlFs}" font-weight="800" fill="#ffffff">${esc(hl2)}</text>` : ''}
-  ${tagsSvg}
-
-  ${heroNum(SQ - 64, 322, `${favPct}%`, 168, LIME, 'end')}
-  <text x="${SQ - 64}" y="374" text-anchor="end" font-family="${U}" font-size="25" font-weight="700" letter-spacing="4" fill="rgba(255,255,255,0.75)">${esc(last(favName).toUpperCase())} TO WIN</text>
-  ${context?.h2h && (context.h2h.w1 + context.h2h.w2) > 0 ? `
-  <text x="${SQ - 64}" y="420" text-anchor="end" font-family="${U}" font-size="23" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">CAREER H2H ${context.h2h.w1}-${context.h2h.w2}${context.pair?.n ? ` · WE'RE ${context.pair.correct}/${context.pair.n} ON THIS PAIR` : ''}</text>` : ''}
-
-  <!-- ambient stage glow + offset accent frames behind the panels -->
-  ${glowSpot('glowDog', dogX + PW / 2, PY + PH / 2, 340, '#ffffff', 0.12)}
-  ${glowSpot('glowFav', favX + PW / 2, PY + PH / 2, 360, LIME, 0.2)}
-  <rect x="${dogX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
-  <rect x="${favX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/>
-</svg>`;
-
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${dogX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="3"/>
-  <rect x="${favX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/>
-  <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="46" fill="rgba(0,0,0,0.65)" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
-  <text x="${SQ / 2}" y="${PY + PH / 2 + 16}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">VS</text>
-  ${pill(dogX + PW / 2, PY + PH - 74, `${last(dogName).toUpperCase()}${dogRank ? ` · NO. ${dogRank}` : ''}`, '#ffffff', false, PW - 12)}
-  ${pill(favX + PW / 2, PY + PH - 74, `${last(favName).toUpperCase()}${favRank ? ` · NO. ${favRank}` : ''}`, LIME, true, PW - 12)}
-  ${result ? `
-  <g transform="rotate(-10 540 300)">
-    <rect x="310" y="236" width="460" height="118" rx="16" fill="rgba(0,0,0,0.55)" stroke="${POS}" stroke-width="9"/>
-    <text x="540" y="318" text-anchor="middle" font-family="${D}" font-size="${fitFS('CALLED W', 82, 420, 4)}" font-weight="800" letter-spacing="4" fill="${POS}">CALLED &#10003;</text>
-  </g>` : ''}
-  ${bottomBar(SQ, result
-    ? `${last(result.winnerName).toUpperCase()} WON${result.score ? ` ${result.score}` : ''} · WE SAID ${favPct}%`
-    : `OUR CALL: ${last(favName).toUpperCase()} WINS · ${favPct}%`, { y: 968 })}
-</svg>`;
-
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
-    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: await rr(scrim), left: 0, top: 0 },
     { input: dogImg, left: dogX, top: PY },
     { input: favImg, left: favX, top: PY },
-    { input: Buffer.from(topSvg), left: 0, top: 0 },
+    { input: await rr(top), left: 0, top: 0 },
   ]);
 }
 
 // ── DAILY: poll card (photo treatment, no % revealed) ──────────────────────
 async function pollCard(p, file) {
-  const bg = await stadiumBg(p.surface, SQ, SQ);
-  const PW = 444, PH = 456, PY = 480;
-  const aX = 64, bX = SQ - 64 - PW;
+  const a = paletteFor(p.event, 'calls');
+  const PW = 402, PH = 452, PY = 456, aX = 60, bX = SQ - 60 - PW, midY = PY + PH / 2;
+  const bg = await duoStage(p.surface, SQ, SQ);
   const [aImg, bImg] = await Promise.all([
-    panelPhoto(photoPath(p.tour, p.p1), PW, PH),
-    panelPhoto(photoPath(p.tour, p.p2), PW, PH),
+    duoPanel(photoPath(p.tour, p.p1), PW, PH, 'base'),
+    duoPanel(photoPath(p.tour, p.p2), PW, PH, 'base'),
   ]);
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)}`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
-  <text x="60" y="330" font-family="${D}" font-size="${fitFS('WHO WINS?', 200, SQ - 120)}" font-weight="800" fill="#ffffff">WHO <tspan fill="${LIME}">WINS?</tspan></text>
-  <rect x="64" y="366" width="230" height="14" fill="${LIME}"/>
-  <rect x="${aX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
-  <rect x="${bX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
-</svg>`;
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
-  <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
-  <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="46" fill="rgba(0,0,0,0.65)" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
-  <text x="${SQ / 2}" y="${PY + PH / 2 + 16}" text-anchor="middle" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">VS</text>
-  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff', false, PW - 12)}
-  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff', false, PW - 12)}
-  ${bottomBar(SQ, 'VOTE IN THE COMMENTS · ANSWER TOMORROW', { filled: false, y: 968 })}
-</svg>`;
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.36"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${aX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.sub}" fill-opacity="0.32" filter="url(#pglow)"/>
+    <rect x="${bX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.sub}" fill-opacity="0.32" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${p.event} · ${fmtDate(p.date)}`, a, { tour: p.tour })}
+    ${T('bebas', 'YOU MAKE THE CALL', 60, 180, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', 'WHO', 60, 300, 118, { fill: C_WHITE }).svg}
+    ${T('anton', 'WINS?', 60, 396, 118, { fill: a.key, skew: -7 }).svg}
+    <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+    <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+    <circle cx="${SQ / 2}" cy="${midY}" r="46" fill="${a.ink[2]}" stroke="${a.key}" stroke-width="3"/>
+    ${T('anton', 'VS', SQ / 2, midY + 16, 44, { anchor: 'middle', fill: C_WHITE }).svg}
+    ${sPlate(aX + PW / 2, PY + PH - 28, last(p.name1).toUpperCase(), C_WHITE, false, a.ink[2])}
+    ${sPlate(bX + PW / 2, PY + PH - 28, last(p.name2).toUpperCase(), C_WHITE, false, a.ink[2])}
+    ${sBar(SQ, SQ, 'VOTE IN THE COMMENTS  →', a, { sub: 'WE ALREADY PICKED A SIDE · ANSWER TOMORROW' })}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
-    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: await rr(scrim), left: 0, top: 0 },
     { input: aImg, left: aX, top: PY },
     { input: bImg, left: bX, top: PY },
-    { input: Buffer.from(topSvg), left: 0, top: 0 },
+    { input: await rr(top), left: 0, top: 0 },
   ]);
 }
 
 // ── DAILY: cover / parlay / slate story / results (typographic) ────────────
 async function coverCard(picks, sc, file) {
   const ev = picks[0]?.event || 'The Tour';
-  const t = eventTheme(ev, picks[0]?.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'CALLS', ghostY: 700 });
+  const a = paletteFor(ev, 'calls');
   const upsets = picks.filter((p) => p._flags.upset).length;
-  const base = `${c.open}
-  ${eyebrow(SQ, 200, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
-  <text x="${SQ / 2}" y="418" text-anchor="middle" font-family="${D}" font-size="${fitFS("TODAY'S", 196, SQ - 100)}" font-weight="800" fill="#ffffff">TODAY'S</text>
-  <text x="${SQ / 2}" y="588" text-anchor="middle" font-family="${D}" font-size="196" font-weight="800" fill="${LIME}">CALLS</text>
-  <text x="${SQ / 2}" y="688" text-anchor="middle" font-family="${U}" font-size="35" font-weight="600" fill="rgba(255,255,255,0.85)">${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before play${upsets ? ` · ${upsets} upset pick${upsets > 1 ? 's' : ''}` : ''}</text>
-  ${pill(SQ / 2, 742, sc.proofPill, LIME)}
-  <text x="${SQ / 2}" y="884" text-anchor="middle" font-family="${U}" font-size="29" font-weight="700" letter-spacing="5" fill="rgba(255,255,255,0.6)">SWIPE FOR THE PICKS &#8594;</text>
-${c.close}`;
+  const hs = 212;
+  const glowWord = T('anton', 'CALLS', 60, 592, hs, { fill: a.key });
+  const subTxt = `${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before a ball was struck${upsets ? ` · ${upsets} upset${upsets > 1 ? 's' : ''}` : ''}`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'CALLS' })}
+  ${sMast(SQ, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, a)}
+  ${T('bebas', 'THE PICKS ARE IN', 62, 190, 42, { fill: a.sub, tracking: 6 }).svg}
+  ${T('anton', "TODAY'S", 60, 392, hs, { fill: C_WHITE }).svg}
+  <g filter="url(#glow)" opacity="0.55">${glowWord.svg}</g>
+  ${T('anton', 'CALLS', 60, 592, hs, { fill: a.key, skew: -7 }).svg}
+  ${T('body', subTxt, 64, 672, 34, { fill: C_MUTE }).svg}
+  ${sChip(SQ / 2, 742, sc.proofPill.toUpperCase(), a)}
+  ${sBar(SQ, SQ, 'SWIPE FOR EVERY PICK  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
 async function parlayCard(picks, file) {
-  const t = eventTheme(picks[0]?.event, picks[0]?.surface);
+  const a = paletteFor(picks[0]?.event, 'calls');
   const n = Math.min(picks.length, 8);
-  const startY = 320 + Math.max(0, (5 - n)) * 30;
-  const c = chrome(SQ, SQ, t, { ghost: '$', ghostY: 760 });
-  const pAll = picks.reduce((m, p) => m * p.favProb, 1);
+  const startY = 300 + Math.max(0, (6 - n)) * 24;
   const mult = picks.reduce((m, p) => m * (1 / p.favProb), 1);
+  const pAll = picks.reduce((m, p) => m * p.favProb, 1);
   const rows = picks.slice(0, 8).map((p, i) => {
-    const y = startY + i * 62;
+    const y = startY + i * 58;
+    const fav = last(p.favName), opp = last(p.favorite === p.p1 ? p.name2 : p.name1);
+    const favW = measureT('body', fav + ' ', 32);
     return `
-    <text x="130" y="${y}" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.88)">${esc(last(p.favName))} <tspan fill="rgba(255,255,255,0.45)">over ${esc(last(p.favorite === p.p1 ? p.name2 : p.name1))}</tspan></text>
-    <text x="${SQ - 130}" y="${y}" text-anchor="end" font-family="${D}" font-size="38" font-weight="800" fill="${LIME}">${pctTxt(p.favProb)}</text>`;
+    ${T('body', fav, 130, y, 32, { fill: 'rgba(255,255,255,0.92)' }).svg}
+    ${T('bodyMed', `over ${opp}`, 130 + favW, y, 30, { fill: 'rgba(255,255,255,0.42)' }).svg}
+    ${T('black', pctTxt(p.favProb), SQ - 130, y, 36, { anchor: 'end', fill: a.key }).svg}`;
   }).join('');
-  const lineY = startY + 14 + n * 62;
-  // Cap the payout block so a full 8-pick slate can't push the disclaimer into
-  // the footer (divider at y=972, wordmark at y=1034). For short slates the
-  // block still floats just under the divider.
-  const heroY = Math.min(lineY + 110, 872);
-  // Keep the rule above the payout hero's cap-height, so a capped 8-pick slate
-  // doesn't draw the divider straight through the "$10 -> $X" numerals.
-  const divY = Math.min(lineY, heroY - 96);
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, 'if every call hits', t.accent)}
-  <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE SLATE</text>
+  const lineY = startY + 6 + n * 58;
+  const heroY = Math.min(lineY + 90, 852);
+  const divY = Math.min(lineY, heroY - 92);
+  const payTxt = `$10 → $${(10 * mult).toFixed(0)}`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: '$' })}
+  ${sMast(SQ, 'If Every Call Hits', a)}
+  ${T('anton', 'THE SLATE', 60, 252, 112, { fill: C_WHITE }).svg}
   ${rows}
-  <line x1="130" y1="${divY}" x2="${SQ - 130}" y2="${divY}" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-  <text x="${SQ / 2}" y="${heroY}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)}`, 124, SQ - 160)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)}</text>
-  <text x="${SQ / 2}" y="${heroY + 44}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.7)">at fair odds · all ${picks.length} hit ${pctTxt(pAll)} of the time by our math</text>
-  <text x="${SQ / 2}" y="${heroY + 80}" text-anchor="middle" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.45)">not betting advice - probabilities, publicly graded</text>
-${c.close}`;
+  <line x1="130" y1="${divY}" x2="${SQ - 130}" y2="${divY}" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+  ${T('anton', payTxt, SQ / 2, heroY, fitT('anton', payTxt, 128, SQ - 150), { anchor: 'middle', fill: a.key }).svg}
+  ${T('body', `at fair odds · all ${picks.length} hit ${pctTxt(pAll)} · not betting advice`, SQ / 2, heroY + 42, 25, { anchor: 'middle', fill: 'rgba(255,255,255,0.6)' }).svg}
+  ${sBar(SQ, SQ, 'SEE TODAY’S FULL SLATE  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
 async function slateStory(picks, sc, file) {
-  const t = eventTheme(picks[0]?.event, picks[0]?.surface);
-  const c = chrome(ST_W, ST_H, t, { ghost: 'SMASH', ghostY: 1210, ghostSize: 470 });
+  const a = paletteFor(picks[0]?.event, 'calls');
   const shown = picks.slice(0, 8);
-  const rowH = shown.length <= 4 ? 220 : 150;
-  const startY = shown.length <= 4 ? 560 : 460;
+  const rowH = shown.length <= 4 ? 210 : 148;
+  const startY = shown.length <= 4 ? 620 : 500;
   const rows = shown.map((p, i) => {
     const y = startY + i * rowH;
     const favIsP1 = p.favorite === p.p1;
     const flagTxt = p._flags.upset ? 'UPSET PICK' : (p._flags.confidence === 'high' ? 'HIGH CONFIDENCE' : (p._flags.confidence === 'low' ? 'TOSS-UP' : ''));
-    const flagColor = p._flags.upset ? NEG : (p._flags.confidence === 'high' ? POS : AMBER);
+    const flagColor = p._flags.upset ? '#ff2e7e' : (p._flags.confidence === 'high' ? '#3ddc84' : a.sub);
     return `
-    <text x="90" y="${y}" font-family="${D}" font-size="54" font-weight="${favIsP1 ? 800 : 500}" fill="${favIsP1 ? '#ffffff' : 'rgba(255,255,255,0.55)'}">${esc(last(p.name1).toUpperCase())}</text>
-    <text x="90" y="${y + 60}" font-family="${D}" font-size="54" font-weight="${favIsP1 ? 500 : 800}" fill="${favIsP1 ? 'rgba(255,255,255,0.55)' : '#ffffff'}">${esc(last(p.name2).toUpperCase())}</text>
-    <text x="${ST_W - 90}" y="${y + 28}" text-anchor="end" font-family="${D}" font-size="80" font-weight="800" fill="${LIME}">${pctTxt(p.favProb)}</text>
-    ${flagTxt ? `<text x="${ST_W - 90}" y="${y + 70}" text-anchor="end" font-family="${U}" font-size="24" font-weight="800" letter-spacing="2" fill="${flagColor}">${flagTxt}</text>` : ''}
-    <line x1="90" y1="${y + 96}" x2="${ST_W - 90}" y2="${y + 96}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+    ${T('anton', last(p.name1).toUpperCase(), 90, y, 52, { fill: favIsP1 ? C_WHITE : 'rgba(255,255,255,0.5)' }).svg}
+    ${T('anton', last(p.name2).toUpperCase(), 90, y + 58, 52, { fill: favIsP1 ? 'rgba(255,255,255,0.5)' : C_WHITE }).svg}
+    ${T('anton', pctTxt(p.favProb), ST_W - 90, y + 26, 78, { anchor: 'end', fill: a.key }).svg}
+    ${flagTxt ? T('black', flagTxt, ST_W - 90, y + 70, 22, { anchor: 'end', fill: flagColor, tracking: 2 }).svg : ''}
+    <line x1="90" y1="${y + 92}" x2="${ST_W - 90}" y2="${y + 92}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   }).join('');
   const mult = picks.reduce((m, p) => m * (1 / p.favProb), 1);
-  const footY = (shown.length <= 4 ? 580 : 480) + shown.length * rowH;
-  const base = `${c.open}
-  ${eyebrow(ST_W, 160, `${picks[0]?.event || ''} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
-  <text x="${ST_W / 2}" y="300" text-anchor="middle" font-family="${D}" font-size="${fitFS("TODAY'S CALLS", 136, ST_W - 120)}" font-weight="800" fill="#ffffff">TODAY'S CALLS</text>
-  <text x="${ST_W / 2}" y="368" text-anchor="middle" font-family="${U}" font-size="29" fill="rgba(255,255,255,0.7)">locked before play · the number is our win probability</text>
+  const footY = (shown.length <= 4 ? 620 : 500) + shown.length * rowH + 24;
+  const payTxt = `$10 → $${(10 * mult).toFixed(0)} IF EVERY CALL HITS`;
+  const base = `<svg width="${ST_W}" height="${ST_H}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, ST_W, ST_H, { ghost: 'SMASH' })}
+  ${sMast(ST_W, `${picks[0]?.event || ''} · ${fmtDate(picks[0]?.date || Date.now())}`, a)}
+  ${T('anton', "TODAY'S CALLS", ST_W / 2, 300, fitT('anton', "TODAY'S CALLS", 150, ST_W - 120), { anchor: 'middle', fill: C_WHITE }).svg}
+  ${T('body', 'locked before play · the number is our win probability', ST_W / 2, 360, 28, { anchor: 'middle', fill: C_MUTE }).svg}
   ${rows}
-  <rect x="90" y="${footY}" width="${ST_W - 180}" height="176" rx="20" fill="rgba(0,0,0,0.4)" stroke="${LIME}" stroke-width="3"/>
-  <text x="${ST_W / 2}" y="${footY + 76}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)} if every call hits`, 66, ST_W - 240)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)} if every call hits</text>
-  <text x="${ST_W / 2}" y="${footY + 132}" text-anchor="middle" font-family="${U}" font-size="${fitFS(`at fair odds · ${sc.proofLine}`, 26, ST_W - 240)}" fill="rgba(255,255,255,0.6)">at fair odds · ${esc(sc.proofLine)}</text>
-${c.close}`;
+  <rect x="90" y="${footY}" width="${ST_W - 180}" height="150" rx="20" fill="url(#keyGrad)"/>
+  ${T('anton', payTxt, ST_W / 2, footY + 74, fitT('anton', payTxt, 60, ST_W - 240), { anchor: 'middle', fill: a.ink[2] }).svg}
+  ${T('black', `AT FAIR ODDS · ${sc.proofLine.toUpperCase()}`, ST_W / 2, footY + 118, fitT('black', `AT FAIR ODDS · ${sc.proofLine.toUpperCase()}`, 24, ST_W - 240, 1), { anchor: 'middle', fill: 'rgba(0,0,0,0.62)', tracking: 1 }).svg}
+  </svg>`;
   await render(file, base);
 }
 
 async function resultsCard(sc, file) {
   const y = sc.yesterday;
-  const t = theme('brand');
-  const c = chrome(SQ, SQ, t, { ghost: 'W', ghostY: 640 });
+  const a = PAL.receipts;
   const lines = [];
-  if (y?.beatBookies?.length) lines.push({ txt: `Beat the bookies: ${y.beatBookies.map((b) => b.call).join(' · ')}`, color: LIME });
-  if (y?.boldest) lines.push({ txt: `Boldest hit: ${y.boldest.call} at ${y.boldest.prob}%`, color: '#ffffff' });
-  if (y?.worstMiss) lines.push({ txt: `The one we own: ${y.worstMiss.call} lost`, color: 'rgba(255,255,255,0.55)' });
-  const base = `${c.open}
-  ${eyebrow(SQ, 150, `receipts · ${y?.date || ''}`, t.accent)}
-  ${y ? heroNum(SQ / 2, 400, `${y.correct} OF ${y.n}`, 238, '#ffffff', 'middle', SQ - 120) : ''}
-  <text x="${SQ / 2}" y="478" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.75)">winners called on yesterday's matches</text>
-  ${lines.map((l, i) => `<text x="${SQ / 2}" y="${592 + i * 60}" text-anchor="middle" font-family="${U}" font-size="${fitFS(l.txt, 29, SQ - 120)}" font-weight="600" fill="${l.color}">${esc(l.txt)}</text>`).join('')}
-  ${pill(SQ / 2, 812, sc.proofPill, LIME)}
-${c.close}`;
+  if (y?.beatBookies?.length) lines.push({ txt: `Beat the bookies: ${y.beatBookies.map((b) => b.call).join(' · ')}`, color: a.sub });
+  if (y?.boldest) lines.push({ txt: `Boldest hit: ${y.boldest.call} at ${y.boldest.prob}%`, color: C_WHITE });
+  if (y?.worstMiss) lines.push({ txt: `The one we own: ${y.worstMiss.call} lost`, color: C_FAINT });
+  const heroTxt = y ? `${y.correct} OF ${y.n}` : '';
+  const hero = T('anton', heroTxt, SQ / 2, 452, fitT('anton', heroTxt, 268, SQ - 150), { anchor: 'middle', fill: a.key });
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'RECEIPTS' })}
+  ${sMast(SQ, `Receipts · ${y?.date ? fmtDate(y.date) : ''}`, a)}
+  ${T('bebas', 'YESTERDAY, GRADED IN PUBLIC', SQ / 2, 192, 40, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
+  ${y ? `<g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}` : ''}
+  ${T('body', "winners called on yesterday's matches", SQ / 2, 524, 32, { anchor: 'middle', fill: C_MUTE }).svg}
+  ${lines.map((l, i) => `<rect x="176" y="${596 + i * 60 - 23}" width="9" height="34" rx="2" fill="${l.color}"/>${T('body', l.txt, 208, 596 + i * 60, fitT('body', l.txt, 31, SQ - 260), { fill: l.color }).svg}`).join('')}
+  ${sBar(SQ, SQ, 'SEE EVERY GRADED CALL  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
 // ── DAILY: title odds / champion ───────────────────────────────────────────
 async function championCard(o, tour, file) {
-  const bg = await stadiumBg(o.surface, SQ, SQ);
+  const a = PAL.receipts; // trophy gold
   const hist = (o.history || []).map((h) => h.odds?.[o.champion.name]).filter((v) => v != null);
-  const start = (hist.length && hist[0] < 0.99) ? `${Math.round(hist[0] * 100)}% when tracking began` : 'tracked daily, graded in public';
-  const composites = [];
-  // The text column ends where the photo panel begins (PX below).
-  const colW = SQ - 64 - 440 - 60 - 26;
-  const champFs = fitFS('CHAMPION', 98, colW);
-  // Trophy moment: gold, not lime.
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <defs>${goldGrad('champGold')}</defs>
-  ${photoScrim(SQ, SQ)}
-  <text x="64" y="192" font-family="${U}" font-size="${fitFS(`${o.event} ${tour}`.toUpperCase(), 27, colW, 6)}" font-weight="700" letter-spacing="6" fill="${GOLD}">${esc(`${o.event} ${tour}`.toUpperCase())}</text>
-  <text x="60" y="340" font-family="${D}" font-size="${champFs}" font-weight="800" fill="#ffffff">YOUR</text>
-  <text x="60" y="442" font-family="${D}" font-size="${champFs}" font-weight="800" fill="url(#champGold)">CHAMPION</text>
-  <rect x="64" y="470" width="200" height="14" fill="url(#champGold)"/>
-  <text x="64" y="550" font-family="${U}" font-size="${fitFS(start, 26, colW)}" fill="rgba(255,255,255,0.75)">${esc(start)}</text>
-</svg>`;
-  composites.push({ input: Buffer.from(baseSvg), left: 0, top: 0 });
-  const PW = 440, PH = 620, PY = 300;
-  const PX = SQ - 64 - PW;
-  if (o.champion.id) {
-    composites.push({
-      input: Buffer.from(`<svg width="${SQ}" height="${SQ}">${glowSpot('champGlow', PX + PW / 2, PY + PH / 2, 460, GOLD, 0.28)}<rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${GOLD}"/></svg>`),
-      left: 0, top: 0,
-    });
-    composites.push({ input: await panelPhoto(photoPath(tour, o.champion.id), PW, PH), left: PX, top: PY });
-    composites.push({
-      input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${GOLD}" stroke-width="6"/></svg>`),
-      left: 0, top: 0,
-    });
-  }
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${bottomBar(SQ, o.champion.name.toUpperCase(), { y: 968, color: GOLD })}
-</svg>`;
-  composites.push({ input: Buffer.from(topSvg), left: 0, top: 0 });
-  await renderOn(file, bg, composites);
+  const start = (hist.length && hist[0] < 0.99) ? `We backed them from ${Math.round(hist[0] * 100)}%` : 'Tracked daily, graded in public';
+  const PW = 424, PH = 600, PY = 300, PX = SQ - 60 - PW, colW = PX - 60 - 30;
+  const bg = await duoStage(o.surface, SQ, SQ);
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.4"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${PX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.key}" fill-opacity="0.55" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const hlFs = fitT('anton', 'CHAMPION', 100, colW);
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${o.event} ${tour} · Champion`, a, { tour })}
+    ${T('bebas', 'THE DRAW IS DECIDED', 60, 232, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', 'YOUR', 60, 360, hlFs, { fill: C_WHITE }).svg}
+    ${T('anton', 'CHAMPION', 60, 360 + Math.round(hlFs * 0.92), hlFs, { fill: a.key, skew: -6 }).svg}
+    ${T('body', start, 62, 360 + Math.round(hlFs * 0.92) + 64, fitT('body', start, 30, colW), { fill: C_MUTE }).svg}
+    <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${a.key}" stroke-width="5"/>
+    ${sPlate(PX + PW / 2, PY + PH + 42, o.champion.name.toUpperCase(), a.key, true, a.ink[2])}
+    ${sBar(SQ, SQ, 'THE CALL, GRADED IN PUBLIC', a, { sub: 'EVERY ROUND SIMULATED, EVERY DAY' })}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
+  const comps = [{ input: await rr(scrim), left: 0, top: 0 }];
+  if (o.champion.id) comps.push({ input: await duoPanel(photoPath(tour, o.champion.id), PW, PH, 'winner'), left: PX, top: PY });
+  comps.push({ input: await rr(top), left: 0, top: 0 });
+  await renderOn(file, bg, comps);
 }
 
 async function titleOddsCard(o, tour, file) {
-  if (o.status === 'final' && o.champion) {
-    await championCard(o, tour, file);
-    return;
-  }
-  const t = eventTheme(o.event, o.surface);
-  const c = chrome(SQ, SQ, t, { ghost: '2000x', ghostY: 700 });
+  if (o.status === 'final' && o.champion) { await championCard(o, tour, file); return; }
+  const a = paletteFor(o.event, 'calls');
   const prevSnap = o.history?.length > 1 ? o.history[o.history.length - 2].odds : null;
   const top = o.odds.slice(0, 5);
   const maxProb = Math.max(...top.map((p) => p.prob), 0.01);
-  let rowsSvg = '';
+  const rowH = 122, startY = 348;
   const comps = [];
+  let rowsSvg = '';
   for (let i = 0; i < top.length; i++) {
-    const p = top[i];
-    const y = 306 + i * 138;
-    const pct = Math.round(p.prob * 100);
-    const w = Math.max(14, (p.prob / maxProb) * 400);
+    const p = top[i], y = startY + i * rowH, pct = Math.round(p.prob * 100);
+    const w = Math.max(16, (p.prob / maxProb) * 366);
     const prev = prevSnap?.[p.name];
     const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
     rowsSvg += `
-    <text x="236" y="${y + 24}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 52, SQ - 236 - 220)}" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
-    <rect x="236" y="${y + 44}" width="${w}" height="26" rx="13" fill="${LIME}" opacity="0.9"/>
-    <text x="${236 + w + 20}" y="${y + 66}" font-family="${D}" font-size="52" font-weight="800" fill="#ffffff">${pct < 1 ? '&lt;1' : pct}%</text>
-    ${delta ? `<text x="${SQ - 96}" y="${y + 40}" text-anchor="end" font-family="${U}" font-size="36" font-weight="800" fill="${delta > 0 ? POS : NEG}">${delta > 0 ? '&#9650;' : '&#9660;'}${Math.abs(delta)}</text>` : ''}`;
-    if (p.id) {
-      const ph = await circlePhoto(photoPath(tour, p.id), 104);
-      comps.push({ input: ph, left: 106, top: y - 12 });
-    }
+    ${T('black', p.name.toUpperCase(), 214, y, fitT('black', p.name.toUpperCase(), 40, SQ - 214 - 210, 1), { fill: C_WHITE, tracking: 1 }).svg}
+    <rect x="214" y="${y + 18}" width="${w.toFixed(0)}" height="24" rx="12" fill="url(#keyGrad)"/>
+    ${T('anton', pct < 1 ? '<1%' : `${pct}%`, 214 + w + 18, y + 44, 46, { fill: a.key }).svg}
+    ${delta ? deltaTag(SQ - 76, y - 6, delta) : ''}
+    <line x1="80" y1="${y + 64}" x2="${SQ - 80}" y2="${y + 64}" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>`;
+    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 92), left: 92, top: y - 32 });
   }
-  const base = `${c.open}
-  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · who wins it all?`, t.accent)}
-  <text x="${SQ / 2}" y="244" text-anchor="middle" font-family="${D}" font-size="${fitFS('TITLE ODDS TODAY', 108, SQ - 120)}" font-weight="800" fill="#ffffff">TITLE ODDS TODAY</text>
+  const hlW = measureT('anton', 'TITLE', 96) + 30;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'RACE' })}
+  ${sMast(SQ, `${o.event} ${tour.toUpperCase()} · Who Wins It All`, a)}
+  ${T('bebas', 'THE DRAW, SIMULATED 2,000× DAILY', 62, 200, 36, { fill: a.sub, tracking: 4 }).svg}
+  ${T('anton', 'TITLE', 60, 300, 96, { fill: C_WHITE }).svg}${T('anton', 'RACE', 60 + hlW, 300, 96, { fill: a.key, skew: -6 }).svg}
   ${rowsSvg}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS('the remaining draw, played out 2,000 times · arrows vs yesterday', 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">the remaining draw, played out 2,000 times · arrows vs yesterday</text>
-${c.close}`;
+  ${sBar(SQ, SQ, 'SEE THE FULL DRAW  →', a, { sub: 'ARROWS = THE MOVE VS YESTERDAY' })}
+  </svg>`;
   await render(file, base, comps);
 }
 
@@ -854,59 +987,58 @@ async function proofCard(track, file) {
   const them = odds.length ? Math.round(odds.filter((m) => m.oddCorrect).length / odds.length * 100) : null;
   const dis = odds.filter((m) => pickFav(m) !== m.oddFav);
   const disWin = dis.length ? Math.round(dis.filter((m) => pickCorrect(m)).length / dis.length * 100) : null;
-  const t = theme('brand');
-  const c = chrome(SQ, SQ, t, { ghost: `${acc}%`, ghostY: 680 });
-  const base = `${c.open}
-  ${eyebrow(SQ, 130, `the receipts · ${SEASON_YEAR} season`, LIME)}
-  ${heroNum(SQ / 2, 360, `${acc}%`, 250, LIME)}
-  <text x="${SQ / 2}" y="438" text-anchor="middle" font-family="${U}" font-size="${fitFS(`of winners called correctly · ${n.toLocaleString()} matches, all public`, 33, SQ - 130)}" fill="#ffffff">of winners called correctly · ${n.toLocaleString()} matches, all public</text>
+  const a = PAL.receipts;
+  const subTxt = `of winners called correctly · ${n.toLocaleString()} matches, all public`;
+  const hero = T('anton', `${acc}%`, SQ / 2, 392, 244, { anchor: 'middle', fill: a.key });
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'RECEIPTS' })}
+  ${sMast(SQ, `The Receipts · ${SEASON_YEAR} Season`, a)}
+  ${T('bebas', 'GRADED IN PUBLIC, NO TAKE-BACKS', SQ / 2, 188, 38, { anchor: 'middle', fill: a.sub, tracking: 4 }).svg}
+  <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+  ${T('body', subTxt, SQ / 2, 462, fitT('body', subTxt, 31, SQ - 150), { anchor: 'middle', fill: C_MUTE }).svg}
   ${us != null ? `
-  <line x1="150" y1="510" x2="${SQ - 150}" y2="510" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
-  <text x="${SQ / 2 - 190}" y="620" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">${us}%</text>
-  <text x="${SQ / 2 - 190}" y="668" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">US</text>
-  <text x="${SQ / 2}" y="620" text-anchor="middle" font-family="${D}" font-size="60" font-weight="700" fill="rgba(255,255,255,0.5)">vs</text>
-  <text x="${SQ / 2 + 190}" y="620" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="rgba(255,255,255,0.65)">${them}%</text>
-  <text x="${SQ / 2 + 190}" y="668" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">THE BOOKIES</text>` : ''}
-  ${disWin != null ? `<text x="${SQ / 2}" y="772" text-anchor="middle" font-family="${U}" font-size="${fitFS(`When we disagree with the bookies, we're right ${disWin}% of the time.`, 30, SQ - 130)}" font-weight="600" fill="${LIME}">When we disagree with the bookies, we're right ${disWin}% of the time.</text>` : ''}
-  <text x="${SQ / 2}" y="852" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">No cherry-picking. No deletions. Misses posted too.</text>
-${c.close}`;
+  <line x1="200" y1="516" x2="${SQ - 200}" y2="516" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
+  ${T('anton', `${us}%`, SQ / 2 - 196, 632, 104, { anchor: 'middle', fill: C_WHITE }).svg}
+  ${T('black', 'US', SQ / 2 - 196, 676, 24, { anchor: 'middle', fill: a.sub, tracking: 2 }).svg}
+  ${T('anton', 'vs', SQ / 2, 622, 52, { anchor: 'middle', fill: 'rgba(255,255,255,0.45)' }).svg}
+  ${T('anton', `${them}%`, SQ / 2 + 196, 632, 104, { anchor: 'middle', fill: 'rgba(255,255,255,0.62)' }).svg}
+  ${T('black', 'THE BOOKIES', SQ / 2 + 196, 676, 24, { anchor: 'middle', fill: 'rgba(255,255,255,0.5)', tracking: 2 }).svg}` : ''}
+  ${disWin != null ? T('body', `When we disagree with the book, we're right ${disWin}% of the time`, SQ / 2, 770, fitT('body', `When we disagree with the book, we're right ${disWin}% of the time`, 29, SQ - 150), { anchor: 'middle', fill: a.key }).svg : ''}
+  ${sBar(SQ, SQ, 'SEE THE FULL LEDGER  →', a, { sub: 'NO CHERRY-PICKING · MISSES POSTED TOO' })}
+  </svg>`;
   await render(file, base);
 }
 
 async function howItWorks(sc, file1, file2, file3) {
-  const t = theme('brand');
-  // Width-aware headline size: long lines shrink to stay inside the frame
-  // whatever font renders them, short lines keep the full 128px punch.
-  const fit = (s, max = 128) => fitFS(s, max, SQ - 130);
-  const slide = (num, ghost, headline1, headline2, sub, extra = '') => {
-    const c = chrome(SQ, SQ, t, { ghost, ghostY: 700 });
-    return `${c.open}
-  ${eyebrow(SQ, 130, `how it works · ${num} of 3`, LIME)}
-  <text x="${SQ / 2}" y="380" text-anchor="middle" font-family="${D}" font-size="${fit(headline1)}" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
-  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="${fit(headline2)}" font-weight="800" fill="${LIME}">${esc(headline2)}</text>
-  <text x="${SQ / 2}" y="618" text-anchor="middle" font-family="${U}" font-size="${fitFS(sub, 32, SQ - 130)}" fill="rgba(255,255,255,0.8)">${esc(sub)}</text>
-  ${extra}
-${c.close}`;
-  };
-  await render(file1, slide(1, 'EXACT', 'WE COMPUTE EVERY MATCH', 'POINT BY POINT', 'every path the match can take - before it happens',
-    `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">real serve and return stats, per surface, recency-weighted</text>`));
-  await render(file2, slide(2, 'PICK', 'THEN WE CALL IT,', 'IN PUBLIC', 'win probability · exact score · upset risk',
-    `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">locked before play - no edits, no take-backs</text>`));
-  await render(file3, slide(3, `${sc.season.acc}%`, 'THEN THE RESULTS', 'GRADE US', sc.proofLine,
-    `<text x="${SQ / 2}" y="700" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.55)">every hit and every miss on the record, updated daily</text>`));
+  const a = PAL.calls;
+  const slide = (num, ghost, kicker, h1, h2, sub, note, cta) => `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sStage(a, SQ, SQ, { ghost })}
+    ${sMast(SQ, `How It Works · ${num} of 3`, a)}
+    ${T('bebas', kicker, SQ / 2, 262, 40, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', h1, SQ / 2, 452, fitT('anton', h1, 108, SQ - 130), { anchor: 'middle', fill: C_WHITE }).svg}
+    ${T('anton', h2, SQ / 2, 566, fitT('anton', h2, 108, SQ - 130), { anchor: 'middle', fill: a.key, skew: -6 }).svg}
+    ${T('body', sub, SQ / 2, 646, fitT('body', sub, 33, SQ - 150), { anchor: 'middle', fill: C_MUTE }).svg}
+    ${T('bodyMed', note, SQ / 2, 700, fitT('bodyMed', note, 27, SQ - 150), { anchor: 'middle', fill: 'rgba(255,255,255,0.42)' }).svg}
+    ${sBar(SQ, SQ, cta, a)}
+    </svg>`;
+  await render(file1, slide(1, 'EXACT', 'STEP ONE', 'WE COMPUTE EVERY MATCH', 'POINT BY POINT', 'every path the match can take, before it happens', 'real serve + return stats, per surface, recency-weighted', 'HOW THE MODEL THINKS'));
+  await render(file2, slide(2, 'PICK', 'STEP TWO', 'THEN WE CALL IT,', 'IN PUBLIC', 'win probability · exact score · upset risk', 'locked before play - no edits, no take-backs', 'CALLED BEFORE PLAY'));
+  await render(file3, slide(3, `${sc.season.acc}%`, 'STEP THREE', 'THEN THE RESULTS', 'GRADE US', sc.proofLine, 'every hit and every miss on the record, updated daily', 'GRADED IN PUBLIC  →'));
 }
 
 async function poolPromoCard(file) {
-  const t = theme('brand');
-  const c = chrome(SQ, SQ, t, { ghost: 'POOL', ghostY: 690 });
-  const base = `${c.open}
-  ${eyebrow(SQ, 150, 'bracket pools', LIME)}
-  <text x="${SQ / 2}" y="380" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="#ffffff">BEAT THE</text>
-  <text x="${SQ / 2}" y="530" text-anchor="middle" font-family="${D}" font-size="170" font-weight="800" fill="${LIME}">HOUSE</text>
-  <text x="${SQ / 2}" y="640" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.85)">Build your bracket. Lock it before the draw plays out.</text>
-  <text x="${SQ / 2}" y="692" text-anchor="middle" font-family="${U}" font-size="33" fill="rgba(255,255,255,0.85)">Our model enters every pool - beat it if you can.</text>
-  ${pill(SQ / 2, 750, 'FREE · DREAM BRACKETS', LIME)}
-${c.close}`;
+  const a = PAL.calls;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'POOL' })}
+  ${sMast(SQ, 'Dream Brackets · Free to Play', a)}
+  ${T('bebas', 'BRACKET POOLS', 62, 200, 42, { fill: a.sub, tracking: 6 }).svg}
+  ${T('anton', 'BEAT', 60, 396, 172, { fill: C_WHITE }).svg}
+  ${T('anton', 'THE HOUSE', 60, 560, fitT('anton', 'THE HOUSE', 172, SQ - 120), { fill: a.key, skew: -7 }).svg}
+  ${T('body', 'Build your bracket. Lock it before the draw plays out.', 64, 648, 32, { fill: C_MUTE }).svg}
+  ${T('body', 'Our model enters every pool - beat it if you can.', 64, 692, 32, { fill: C_MUTE }).svg}
+  ${sChip(SQ / 2, 752, 'FREE · DREAM BRACKETS', a)}
+  ${sBar(SQ, SQ, 'BUILD YOUR BRACKET  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
@@ -974,24 +1106,27 @@ function scorelineHit(m) {
 
 // A period report card (tournament wrap / weekly recap share the layout).
 // `accent` switches the headline metal: lime for calls, gold for trophies.
-async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, themeKey, file, accent = LIME }) {
-  const t = theme(themeKey);
-  const c = chrome(SQ, SQ, t, { ghost: stats[0]?.value || '', ghostY: 700 });
+async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, file, accent = PAL.calls.key, cta }) {
+  const a = { key: accent, sub: accent === PAL.calls.key ? PAL.calls.sub : PAL.calls.key, ink: INK_INDIGO };
+  const hFs = Math.min(fitT('anton', headline1, 130, SQ - 140), headline2 ? fitT('anton', headline2, 130, SQ - 140) : 130);
+  const h2Y = 262 + Math.round(hFs * 0.9);
+  const startY = (headline2 ? h2Y : 262) + 118;
+  const step = stats.length >= 4 ? 104 : 118;
   const rows = stats.map((s, i) => {
-    const y = 470 + i * 118;
+    const y = startY + i * step;
     return `
-  <text x="120" y="${y}" font-family="${D}" font-size="${fitFS(s.value, 76, 500)}" font-weight="800" fill="${i === 0 ? accent : '#ffffff'}">${esc(s.value)}</text>
-  <text x="${SQ - 120}" y="${y - 8}" text-anchor="end" font-family="${U}" font-size="${fitFS(s.label, 27, 420)}" font-weight="600" fill="rgba(255,255,255,0.75)">${esc(s.label)}</text>
-  <line x1="120" y1="${y + 26}" x2="${SQ - 120}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+    ${T('anton', s.value, 120, y, fitT('anton', s.value, 72, 560), { fill: i === 0 ? a.key : C_WHITE }).svg}
+    ${T('body', s.label, SQ - 120, y - 6, fitT('body', s.label, 27, 400), { anchor: 'end', fill: 'rgba(255,255,255,0.72)' }).svg}
+    <line x1="120" y1="${y + 24}" x2="${SQ - 120}" y2="${y + 24}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   }).join('');
-  const hFs = Math.min(fitFS(headline1, 104, SQ - 140), headline2 ? fitFS(headline2, 104, SQ - 140) : 104);
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, eyebrowText, t.accent)}
-  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="${hFs}" font-weight="800" fill="#ffffff">${esc(headline1)}</text>
-  ${headline2 ? `<text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="${hFs}" font-weight="800" fill="${accent}">${esc(headline2)}</text>` : ''}
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: (headline2 || headline1 || '').split(' ')[0] })}
+  ${sMast(SQ, eyebrowText, a)}
+  ${T('anton', headline1, 60, 262, hFs, { fill: C_WHITE }).svg}
+  ${headline2 ? T('anton', headline2, 60, h2Y, hFs, { fill: a.key, skew: -6 }).svg : ''}
   ${rows}
-  ${footNote ? `<text x="${SQ / 2}" y="${SQ - 130}" text-anchor="middle" font-family="${U}" font-size="${fitFS(footNote, 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">${esc(footNote)}</text>` : ''}
-${c.close}`;
+  ${sBar(SQ, SQ, cta || 'SEE EVERY GRADED CALL  →', a, footNote ? { sub: footNote.toUpperCase() } : {})}
+  </svg>`;
   await render(file, base);
 }
 
@@ -1127,45 +1262,42 @@ async function receiptTicket(p, file) {
   const opp = p.favorite === p.p1 ? p.name2 : p.name1;
   const hit = !!p.correct;
   const pct = Math.round(p.favProb * 100);
-  const t = eventTheme(p.event, p.surface);
-  const c = chrome(SQ, SQ, t, { ghost: hit ? 'CALLED' : 'MISSED', ghostY: 980 });
-  const TX = 90, TY = 300, TW = 900, TH = 520;   // ticket rect
-  const PERF = TX + 640;                          // perforation x
-  const stamp = hit
-    ? `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
-         <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#1c7a3f" stroke-width="7"/>
-         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="${fitFS('CALLED W', 58, 264, 3)}" font-weight="800" letter-spacing="3" fill="#1c7a3f">CALLED &#10003;</text>
-       </g>`
-    : `<g transform="rotate(-9 ${TX + 480} ${TY + 122})">
-         <rect x="${TX + 335}" y="${TY + 78}" width="290" height="88" rx="12" fill="none" stroke="#b3392e" stroke-width="7"/>
-         <text x="${TX + 480}" y="${TY + 140}" text-anchor="middle" font-family="${D}" font-size="${fitFS('MISSED W', 58, 264, 3)}" font-weight="800" letter-spacing="3" fill="#b3392e">MISSED &#10007;</text>
-       </g>`;
-  const base = `${c.open}
-  ${eyebrow(SQ, 176, 'the receipts · graded in public', t.accent)}
+  const a = paletteFor(p.event, 'receipts');
+  const INKT = '#141210'; // ticket ink
+  const TX = 90, TY = 320, TW = 900, TH = 500, PERF = TX + 640;
+  const stampColor = hit ? '#1c7a3f' : '#b3392e';
+  const mark = hit
+    ? `<polyline points="${TX + 556},${TY + 128} ${TX + 574},${TY + 146} ${TX + 604},${TY + 102}" fill="none" stroke="${stampColor}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<g stroke="${stampColor}" stroke-width="9" stroke-linecap="round"><line x1="${TX + 562}" y1="${TY + 106}" x2="${TX + 600}" y2="${TY + 144}"/><line x1="${TX + 600}" y1="${TY + 106}" x2="${TX + 562}" y2="${TY + 144}"/></g>`;
+  const stamp = `<g transform="rotate(-9 ${TX + 470} ${TY + 122})">
+    <rect x="${TX + 330}" y="${TY + 80}" width="300" height="86" rx="12" fill="none" stroke="${stampColor}" stroke-width="7"/>
+    ${T('anton', hit ? 'CALLED' : 'MISSED', TX + 360, TY + 142, 52, { fill: stampColor }).svg}
+    ${mark}</g>`;
+  const result = `${p.winner === p.favorite ? 'WON' : 'LOST'}${p.score ? ` ${p.score}` : ''}`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: hit ? 'CALLED' : 'MISSED' })}
+  ${sMast(SQ, 'The Receipts · Graded in Public', a)}
+  ${T('bebas', hit ? 'WE CALLED IT' : 'THE ONE WE OWN', SQ / 2, 216, 40, { anchor: 'middle', fill: a.sub, tracking: 4 }).svg}
   <g transform="rotate(-2 ${SQ / 2} ${TY + TH / 2})">
     <rect x="${TX + 10}" y="${TY + 14}" width="${TW}" height="${TH}" rx="20" fill="rgba(0,0,0,0.45)"/>
     <rect x="${TX}" y="${TY}" width="${TW}" height="${TH}" rx="20" fill="#f2eee2"/>
     <line x1="${PERF}" y1="${TY + 14}" x2="${PERF}" y2="${TY + TH - 14}" stroke="#b9b2a0" stroke-width="3" stroke-dasharray="4 12"/>
-    <circle cx="${PERF}" cy="${TY}" r="18" fill="${t.top}"/>
-    <circle cx="${PERF}" cy="${TY + TH}" r="18" fill="${t.bottom}"/>
-
-    <text x="${TX + 44}" y="${TY + 62}" font-family="${U}" font-size="22" font-weight="800" letter-spacing="4" fill="rgba(20,24,30,0.55)">SMASH · OFFICIAL CALL</text>
-    <text x="${TX + 44}" y="${TY + 102}" font-family="${U}" font-size="24" font-weight="600" fill="rgba(20,24,30,0.75)">${esc(`${p.event || 'Tour'} · ${fmtDate(p.date)}`)}</text>
-    <text x="${TX + 44}" y="${TY + 210}" font-family="${D}" font-size="${fitFS(last(p.favName).toUpperCase(), 88, PERF - TX - 88)}" font-weight="800" fill="${INK}">${esc(last(p.favName).toUpperCase())}</text>
-    <text x="${TX + 44}" y="${TY + 258}" font-family="${U}" font-size="${fitFS(`over ${opp} · our number: ${pct}%`, 27, PERF - TX - 88)}" fill="rgba(20,24,30,0.7)">over ${esc(opp)} · our number: ${pct}%</text>
-    <text x="${TX + 44}" y="${TY + 330}" font-family="${D}" font-size="${fitFS(`${p.winner === p.favorite ? 'WON' : 'LOST'}${p.score ? ` ${p.score}` : ''}`, 46, PERF - TX - 88)}" font-weight="800" fill="${INK}">${esc(p.winner === p.favorite ? 'WON' : 'LOST')}${p.score ? ` ${esc(p.score)}` : ''}</text>
-    <text x="${TX + 44}" y="${TY + 380}" font-family="${U}" font-size="22" fill="rgba(20,24,30,0.55)">locked before play · no edits, no take-backs</text>
+    <circle cx="${PERF}" cy="${TY}" r="18" fill="${a.ink[1]}"/>
+    <circle cx="${PERF}" cy="${TY + TH}" r="18" fill="${a.ink[2]}"/>
+    ${T('black', 'SMASH · OFFICIAL CALL', TX + 44, TY + 60, 21, { fill: 'rgba(20,24,30,0.55)', tracking: 3 }).svg}
+    ${T('body', `${p.event || 'Tour'} · ${fmtDate(p.date)}`, TX + 44, TY + 100, 24, { fill: 'rgba(20,24,30,0.72)' }).svg}
+    ${T('anton', last(p.favName).toUpperCase(), TX + 44, TY + 206, fitT('anton', last(p.favName).toUpperCase(), 84, PERF - TX - 80), { fill: INKT }).svg}
+    ${T('body', `over ${opp} · our number ${pct}%`, TX + 44, TY + 252, fitT('body', `over ${opp} · our number ${pct}%`, 26, PERF - TX - 80), { fill: 'rgba(20,24,30,0.7)' }).svg}
+    ${T('anton', result, TX + 44, TY + 328, fitT('anton', result, 46, PERF - TX - 80), { fill: INKT }).svg}
+    ${T('bodyMed', 'locked before play · no edits, no take-backs', TX + 44, TY + 372, 22, { fill: 'rgba(20,24,30,0.55)' }).svg}
     ${stamp}
-
-    <g transform="rotate(90 ${PERF + 210} ${TY + 96})">
-      <text x="${PERF + 210}" y="${TY + 96}" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="4" fill="rgba(20,24,30,0.6)">CALL NO. ${esc(String(p.id).slice(-6))}</text>
-    </g>
-    <text x="${PERF + 44}" y="${TY + 258}" font-family="${D}" font-size="96" font-weight="800" fill="${INK}">${pct}%</text>
-    <text x="${PERF + 44}" y="${TY + 300}" font-family="${U}" font-size="21" fill="rgba(20,24,30,0.6)">stated win chance</text>
-    ${ticketBarcode(PERF + 44, TY + TH - 130, 76, p.id)}
+    <g transform="rotate(90 ${PERF + 208} ${TY + 96})">${T('black', `CALL NO. ${String(p.id).slice(-6)}`, PERF + 208, TY + 96, 22, { anchor: 'middle', fill: 'rgba(20,24,30,0.6)', tracking: 3 }).svg}</g>
+    ${T('anton', `${pct}%`, PERF + 44, TY + 250, 96, { fill: INKT }).svg}
+    ${T('bodyMed', 'stated win chance', PERF + 44, TY + 292, 21, { fill: 'rgba(20,24,30,0.6)' }).svg}
+    ${ticketBarcode(PERF + 44, TY + TH - 128, 76, p.id)}
   </g>
-  <text x="${SQ / 2}" y="${TY + TH + 120}" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">every call collects a receipt · wins and misses both</text>
-${c.close}`;
+  ${sBar(SQ, SQ, hit ? 'EVERY CALL COLLECTS A RECEIPT  →' : 'WINS AND MISSES, BOTH POSTED  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
@@ -1365,45 +1497,46 @@ ${c.close}`;
 
 // ── DAILY: tale of the tape for the marquee matchup ────────────────────────
 async function taleOfTheTape(p, ctx, forms, file) {
-  const bg = await stadiumBg(p.surface, SQ, SQ);
-  const PW = 330, PH = 420, PY = 340;
-  const aX = 64, bX = SQ - 64 - PW;
-  const [aImg, bImg] = await Promise.all([
-    panelPhoto(photoPath(p.tour, p.p1), PW, PH),
-    panelPhoto(photoPath(p.tour, p.p2), PW, PH),
-  ]);
+  const a = paletteFor(p.event, 'calls');
   const favIsP1 = p.favorite === p.p1;
+  const PW = 330, PH = 430, PY = 356, aX = 64, bX = SQ - 64 - PW;
+  const bg = await duoStage(p.surface, SQ, SQ);
+  const [aImg, bImg] = await Promise.all([
+    duoPanel(photoPath(p.tour, p.p1), PW, PH, favIsP1 ? 'winner' : 'loser'),
+    duoPanel(photoPath(p.tour, p.p2), PW, PH, favIsP1 ? 'loser' : 'winner'),
+  ]);
   const f1 = forms.get(p.p1), f2 = forms.get(p.p2);
-  const midRow = (y, label, a, b) => `
-  <text x="${SQ / 2}" y="${y}" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.5)">${esc(label)}</text>
-  <text x="${SQ / 2 - 90}" y="${y + 44}" text-anchor="middle" font-family="${D}" font-size="46" font-weight="800" fill="#ffffff">${esc(a)}</text>
-  <text x="${SQ / 2 + 90}" y="${y + 44}" text-anchor="middle" font-family="${D}" font-size="46" font-weight="800" fill="#ffffff">${esc(b)}</text>`;
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)} · the marquee`.toUpperCase())}</text>
-  <text x="60" y="292" font-family="${D}" font-size="${fitFS('TALE OF THE TAPE', 112, SQ - 120)}" font-weight="800" fill="#ffffff">TALE OF <tspan fill="${LIME}">THE TAPE</tspan></text>
-  ${glowSpot('tapeA', aX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
-  ${glowSpot('tapeB', bX + PW / 2, PY + PH / 2, 300, '#ffffff', 0.12)}
-  <rect x="${aX - 10}" y="${PY + 10}" width="${PW}" height="${PH}" rx="24" fill="${favIsP1 ? LIME : 'rgba(255,255,255,0.3)'}"/>
-  <rect x="${bX + 10}" y="${PY + 10}" width="${PW}" height="${PH}" rx="24" fill="${favIsP1 ? 'rgba(255,255,255,0.3)' : LIME}"/>
-</svg>`;
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? LIME : 'rgba(255,255,255,0.45)'}" stroke-width="${favIsP1 ? 6 : 3}"/>
-  <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.45)' : LIME}" stroke-width="${favIsP1 ? 3 : 6}"/>
-  ${pill(aX + PW / 2, PY + PH + 24, last(p.name1).toUpperCase(), favIsP1 ? LIME : '#ffffff', favIsP1, PW + 40)}
-  ${pill(bX + PW / 2, PY + PH + 24, last(p.name2).toUpperCase(), favIsP1 ? '#ffffff' : LIME, !favIsP1, PW + 40)}
-  ${midRow(400, 'RANK', p.rank1 ? `#${p.rank1}` : '-', p.rank2 ? `#${p.rank2}` : '-')}
-  ${midRow(510, 'RECENT FORM', f1 ? `${f1.w}-${f1.l}` : '-', f2 ? `${f2.w}-${f2.l}` : '-')}
-  ${midRow(620, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '-', ctx?.h2h ? String(ctx.h2h.w2) : '-')}
-  ${bottomBar(SQ, `OUR CALL: ${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`, { y: 950 })}
-</svg>`;
+  const midRow = (y, label, va, vb) => `
+    ${T('black', label, SQ / 2, y, 22, { anchor: 'middle', fill: 'rgba(255,255,255,0.5)', tracking: 3 }).svg}
+    ${T('anton', va, SQ / 2 - 94, y + 48, 46, { anchor: 'middle', fill: favIsP1 ? a.key : C_WHITE }).svg}
+    ${T('anton', vb, SQ / 2 + 94, y + 48, 46, { anchor: 'middle', fill: favIsP1 ? C_WHITE : a.key }).svg}`;
+  const hlW = measureT('anton', 'TALE OF', 96) + 50;
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.36"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.16}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${aX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${favIsP1 ? a.key : a.sub}" fill-opacity="${favIsP1 ? 0.5 : 0.3}" filter="url(#pglow)"/>
+    <rect x="${bX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${favIsP1 ? a.sub : a.key}" fill-opacity="${favIsP1 ? 0.3 : 0.5}" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${p.event} · ${fmtDate(p.date)} · The Marquee`, a, { tour: p.tour })}
+    ${T('anton', 'TALE OF ', 60, 296, 96, { fill: C_WHITE }).svg}
+    ${T('anton', 'THE TAPE', 60 + hlW, 296, 96, { fill: a.key, skew: -6 }).svg}
+    <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? a.key : 'rgba(255,255,255,0.45)'}" stroke-width="${favIsP1 ? 4 : 3}"/>
+    <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.45)' : a.key}" stroke-width="${favIsP1 ? 3 : 4}"/>
+    ${sPlate(aX + PW / 2, PY + PH + 40, last(p.name1).toUpperCase(), favIsP1 ? a.key : C_WHITE, favIsP1, a.ink[2])}
+    ${sPlate(bX + PW / 2, PY + PH + 40, last(p.name2).toUpperCase(), favIsP1 ? C_WHITE : a.key, !favIsP1, a.ink[2])}
+    ${midRow(452, 'RANK', p.rank1 ? `#${p.rank1}` : '–', p.rank2 ? `#${p.rank2}` : '–')}
+    ${midRow(556, 'RECENT FORM', f1 ? `${f1.w}-${f1.l}` : '–', f2 ? `${f2.w}-${f2.l}` : '–')}
+    ${midRow(660, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '–', ctx?.h2h ? String(ctx.h2h.w2) : '–')}
+    ${sBar(SQ, SQ, `OUR CALL: ${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`, a)}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
-    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: await rr(scrim), left: 0, top: 0 },
     { input: aImg, left: aX, top: PY },
     { input: bImg, left: bX, top: PY },
-    { input: Buffer.from(topSvg), left: 0, top: 0 },
+    { input: await rr(top), left: 0, top: 0 },
   ]);
 }
 
@@ -1445,19 +1578,36 @@ ${c.close}`;
 // ── FORMATS: 4:5 portrait variants + 16:9 banner ───────────────────────────
 const PT_W = 1080, PT_H = 1350;
 
+// Centered multi-part line (mixed colours) via exact fontkit widths. Parts are
+// trimmed and separated by an explicit gap (fontkit drops trailing spaces, and
+// a skewed accent word would otherwise lean into the previous word).
+function centerLine(w, y, size, parts) {
+  const gap = size * 0.32;
+  const widths = parts.map((pp) => measureT('anton', pp.t.trim(), size));
+  const total = widths.reduce((s, x) => s + x, 0) + gap * (parts.length - 1);
+  let x = w / 2 - total / 2, out = '';
+  parts.forEach((pp, i) => { out += T('anton', pp.t.trim(), x, y, size, { fill: pp.c, skew: pp.skew || 0 }).svg; x += widths[i] + gap; });
+  return out;
+}
+
 async function coverPortrait(picks, sc, file) {
   const ev = picks[0]?.event || 'The Tour';
-  const t = eventTheme(ev, picks[0]?.surface);
-  const c = chrome(PT_W, PT_H, t, { ghost: 'CALLS', ghostY: 880 });
+  const a = paletteFor(ev, 'calls');
   const upsets = picks.filter((p) => p._flags.upset).length;
-  const base = `${c.open}
-  ${eyebrow(PT_W, 280, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, t.accent)}
-  <text x="${PT_W / 2}" y="520" text-anchor="middle" font-family="${D}" font-size="200" font-weight="800" fill="#ffffff">TODAY'S</text>
-  <text x="${PT_W / 2}" y="694" text-anchor="middle" font-family="${D}" font-size="200" font-weight="800" fill="${LIME}">CALLS</text>
-  <text x="${PT_W / 2}" y="800" text-anchor="middle" font-family="${U}" font-size="35" font-weight="600" fill="rgba(255,255,255,0.85)">${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before play${upsets ? ` · ${upsets} upset pick${upsets > 1 ? 's' : ''}` : ''}</text>
-  ${pill(PT_W / 2, 858, sc.proofPill, LIME)}
-  <text x="${PT_W / 2}" y="1044" text-anchor="middle" font-family="${U}" font-size="29" font-weight="700" letter-spacing="5" fill="rgba(255,255,255,0.6)">SWIPE FOR THE PICKS &#8594;</text>
-${c.close}`;
+  const hs = 212;
+  const glowWord = T('anton', 'CALLS', 60, 724, hs, { fill: a.key });
+  const subTxt = `${picks.length} match${picks.length > 1 ? 'es' : ''}, locked before a ball was struck${upsets ? ` · ${upsets} upset${upsets > 1 ? 's' : ''}` : ''}`;
+  const base = `<svg width="${PT_W}" height="${PT_H}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, PT_W, PT_H, { ghost: 'CALLS' })}
+  ${sMast(PT_W, `${ev} · ${fmtDate(picks[0]?.date || Date.now())}`, a)}
+  ${T('bebas', 'THE PICKS ARE IN', 62, 320, 44, { fill: a.sub, tracking: 6 }).svg}
+  ${T('anton', "TODAY'S", 60, 524, hs, { fill: C_WHITE }).svg}
+  <g filter="url(#glow)" opacity="0.55">${glowWord.svg}</g>
+  ${T('anton', 'CALLS', 60, 724, hs, { fill: a.key, skew: -7 }).svg}
+  ${T('body', subTxt, 64, 806, 34, { fill: C_MUTE }).svg}
+  ${sChip(PT_W / 2, 878, sc.proofPill.toUpperCase(), a)}
+  ${sBar(PT_W, PT_H, 'SWIPE FOR EVERY PICK  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
@@ -1465,29 +1615,33 @@ async function proofPortrait(track, sc, file) {
   const ms = track.matches || [];
   const n = ms.length;
   const acc = n ? Math.round(ms.filter((m) => pickCorrect(m)).length / n * 100) : 0;
-  const t = theme('brand');
-  const c = chrome(PT_W, PT_H, t, { ghost: `${acc}%`, ghostY: 860 });
-  const base = `${c.open}
-  ${eyebrow(PT_W, 250, `the receipts · ${SEASON_YEAR} season`, LIME)}
-  ${heroNum(PT_W / 2, 560, `${acc}%`, 300, LIME)}
-  <text x="${PT_W / 2}" y="650" text-anchor="middle" font-family="${U}" font-size="34" fill="#ffffff">of winners called correctly</text>
-  <text x="${PT_W / 2}" y="702" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">${n.toLocaleString()} matches, every one public</text>
-  ${pill(PT_W / 2, 780, sc.proofPill, LIME)}
-  <text x="${PT_W / 2}" y="960" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.6)">no cherry-picking · no deletions · misses posted too</text>
-${c.close}`;
+  const a = PAL.receipts;
+  const hero = T('anton', `${acc}%`, PT_W / 2, 640, 300, { anchor: 'middle', fill: a.key });
+  const base = `<svg width="${PT_W}" height="${PT_H}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, PT_W, PT_H, { ghost: 'RECEIPTS' })}
+  ${sMast(PT_W, `The Receipts · ${SEASON_YEAR} Season`, a)}
+  ${T('bebas', 'GRADED IN PUBLIC, ALL SEASON', PT_W / 2, 330, 42, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
+  <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+  ${T('body', 'of winners called correctly', PT_W / 2, 726, 34, { anchor: 'middle', fill: C_WHITE }).svg}
+  ${T('bodyMed', `${n.toLocaleString()} matches, every one public`, PT_W / 2, 772, 28, { anchor: 'middle', fill: C_MUTE }).svg}
+  ${sChip(PT_W / 2, 836, sc.proofPill.toUpperCase(), a)}
+  ${T('bodyMed', 'no cherry-picking · no deletions · misses posted too', PT_W / 2, 968, 27, { anchor: 'middle', fill: C_MUTE }).svg}
+  ${sBar(PT_W, PT_H, 'SEE THE FULL LEDGER  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
 async function bannerWide(sc, file) {
-  const W = 1600, H = 900;
-  const t = theme('brand');
-  const c = chrome(W, H, t, { ghost: 'SMASH', ghostY: 620, ghostSize: 430 });
-  const base = `${c.open}
-  ${eyebrow(W, 180, 'grand slam prediction engine', LIME)}
-  <text x="${W / 2}" y="400" text-anchor="middle" font-family="${D}" font-size="${fitFS('EVERY CALL PUBLIC.', 170, W - 160)}" font-weight="800" fill="#ffffff">EVERY CALL <tspan fill="${LIME}">PUBLIC.</tspan></text>
-  <text x="${W / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="${fitFS('EVERY CALL PUBLIC.', 170, W - 160)}" font-weight="800" fill="#ffffff">EVERY MISS <tspan fill="${LIME}">TOO.</tspan></text>
-  <text x="${W / 2}" y="640" text-anchor="middle" font-family="${U}" font-size="${fitFS(sc.proofLine, 34, W - 200)}" fill="rgba(255,255,255,0.8)">${esc(sc.proofLine[0].toUpperCase() + sc.proofLine.slice(1))}</text>
-${c.close}`;
+  const W = 1600, H = 900, a = PAL.calls;
+  const fs = fitT('anton', 'EVERY CALL PUBLIC.', 150, W - 200);
+  const sub = sc.proofLine[0].toUpperCase() + sc.proofLine.slice(1);
+  const base = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, W, H, { ghost: 'SMASH' })}
+  ${sMast(W, 'Grand Slam Prediction Engine', a)}
+  ${centerLine(W, 420, fs, [{ t: 'EVERY CALL ', c: C_WHITE }, { t: 'PUBLIC.', c: a.key }])}
+  ${centerLine(W, 560, fs, [{ t: 'EVERY MISS ', c: C_WHITE }, { t: 'TOO.', c: a.sub, skew: -6 }])}
+  ${T('body', sub, W / 2, 660, fitT('body', sub, 34, W - 260) || 34, { anchor: 'middle', fill: C_MUTE }).svg}
+  </svg>`;
   await render(file, base);
 }
 
