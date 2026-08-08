@@ -579,14 +579,21 @@ async function parlayCard(picks, file) {
     <text x="${SQ - 130}" y="${y}" text-anchor="end" font-family="${D}" font-size="38" font-weight="800" fill="${LIME}">${pctTxt(p.favProb)}</text>`;
   }).join('');
   const lineY = startY + 14 + n * 62;
+  // Cap the payout block so a full 8-pick slate can't push the disclaimer into
+  // the footer (divider at y=972, wordmark at y=1034). For short slates the
+  // block still floats just under the divider.
+  const heroY = Math.min(lineY + 110, 872);
+  // Keep the rule above the payout hero's cap-height, so a capped 8-pick slate
+  // doesn't draw the divider straight through the "$10 -> $X" numerals.
+  const divY = Math.min(lineY, heroY - 96);
   const base = `${c.open}
   ${eyebrow(SQ, 140, 'if every call hits', t.accent)}
   <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE SLATE</text>
   ${rows}
-  <line x1="130" y1="${lineY}" x2="${SQ - 130}" y2="${lineY}" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-  <text x="${SQ / 2}" y="${lineY + 118}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)}`, 124, SQ - 160)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)}</text>
-  <text x="${SQ / 2}" y="${lineY + 178}" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">at fair odds · all ${picks.length} hit ${pctTxt(pAll)} of the time by our math</text>
-  <text x="${SQ / 2}" y="${lineY + 224}" text-anchor="middle" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.45)">not betting advice - probabilities, publicly graded</text>
+  <line x1="130" y1="${divY}" x2="${SQ - 130}" y2="${divY}" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <text x="${SQ / 2}" y="${heroY}" text-anchor="middle" font-family="${D}" font-size="${fitFS(`$10 > $${(10 * mult).toFixed(0)}`, 124, SQ - 160)}" font-weight="800" fill="${LIME}">$10 &#8594; $${(10 * mult).toFixed(0)}</text>
+  <text x="${SQ / 2}" y="${heroY + 44}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.7)">at fair odds · all ${picks.length} hit ${pctTxt(pAll)} of the time by our math</text>
+  <text x="${SQ / 2}" y="${heroY + 80}" text-anchor="middle" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.45)">not betting advice - probabilities, publicly graded</text>
 ${c.close}`;
   await render(file, base);
 }
@@ -1557,8 +1564,18 @@ async function run() {
   // the six combined 1000s (their weeks get the same daily treatment, and a
   // Cincinnati carousel is US Open marketing). Draws, brackets, and the hype
   // collection stay slam-exclusive by design.
+  //
+  // Only matches that HAVEN'T STARTED YET are eligible - the daily cards are a
+  // "called before play" showcase, so they must feature tonight's marquee
+  // slate, not yesterday's straggler that finished but hasn't been graded
+  // (result not yet fetched). Without the date gate, the sort-ascending below
+  // surfaces the oldest ungraded pending row first, and the flagship cover /
+  // match / parlay / tape cards end up built around days-old #100-ranked
+  // coin-flips instead of the day's real headliners.
+  const NOW = Date.now();
   const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending' && ['slam', '1000'].includes(p.tier || 'slam'))
+    .filter((p) => p.status === 'pending' && ['slam', '1000'].includes(p.tier || 'slam')
+      && new Date(p.date).getTime() >= NOW)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
     .map(decorate);

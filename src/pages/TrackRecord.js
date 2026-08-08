@@ -173,7 +173,17 @@ export default function TrackRecord() {
     const list = majors.filter((p) =>
       (tour === 'all' || p.tour === tour) && (surface === 'all' || p.surface === surface)
       && (eventF === 'all' || p.event === eventF));
-    const pending = list.filter((p) => p.status === 'pending').sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Lead with genuinely-upcoming calls (soonest first) - the panel is about
+    // "called before it happens". Past-dated calls that finished but weren't
+    // graded yet ("Awaiting result") sink below, freshest first, so a handful
+    // of ungraded stragglers can't bury tonight's picks out of the top 8.
+    const now = Date.now();
+    const isUpcoming = (p) => new Date(p.date).getTime() >= now;
+    const pending = list.filter((p) => p.status === 'pending').sort((a, b) => {
+      const ua = isUpcoming(a), ub = isUpcoming(b);
+      if (ua !== ub) return ua ? -1 : 1;
+      return ua ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
+    });
     const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
     // Graded calls only guest-star here briefly: after a few days they live
     // in the match log below (every graded call lands there), and this panel
