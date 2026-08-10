@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T06:34:44.642Z",
+  "generatedAt": "2026-08-10T11:50:18.091Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,25 +9,24 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "alert",
-      "n": 376,
+      "n": 384,
       "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 45,
-      "rankRecentAcc": 45,
+      "recentAcc": 55,
+      "rankRecentAcc": 50,
       "recentEngines": {
-        "smash": 45,
+        "smash": 55,
         "sim": 53,
-        "elo": 45,
-        "rank": 45,
-        "upset": 80
+        "elo": 50,
+        "rank": 50,
+        "upset": 78
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 80
+        "acc": 78
       },
       "reasons": [
-        "recent accuracy 45% is below a coin flip (last 40 matches)",
-        "recent accuracy 45% is 23 points below the season's 68% (last 40 matches)"
+        "recent accuracy 55% is 13 points below the season's 68% (last 40 matches)"
       ]
     },
     {
@@ -84,21 +83,21 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 347,
+      "n": 355,
       "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 75,
-      "rankRecentAcc": 75,
+      "recentAcc": 73,
+      "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 75,
-        "sim": 73,
-        "elo": 78,
-        "rank": 75,
-        "upset": 80
+        "smash": 73,
+        "sim": 63,
+        "elo": 73,
+        "rank": 73,
+        "upset": 75
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 80
+        "acc": 75
       },
       "reasons": []
     },
@@ -152,13 +151,12 @@
     }
   ],
   "forward": {
-    "n": 109,
+    "n": 124,
     "recentN": 40,
-    "recentAcc": 65,
+    "recentAcc": 73,
     "status": "ok"
   },
   "alerts": [
-    "ATP hard (smash): recent accuracy 45% is below a coin flip (last 40 matches)",
-    "ATP hard (smash): recent accuracy 45% is 23 points below the season's 68% (last 40 matches)"
+    "ATP hard (smash): recent accuracy 55% is 13 points below the season's 68% (last 40 matches)"
   ]
 }
