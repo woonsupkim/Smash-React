@@ -1674,7 +1674,7 @@ async function run() {
   // locked-before-play record has 25+ verified calls it IS the proof line;
   // until then the season number appears, labeled as the resimulated
   // benchmark it is. Cards and captions read these off sc.
-  const fwdDecided = (preds.predictions || []).filter((p) => p.status !== 'pending');
+  const fwdDecided = (preds.predictions || []).filter((p) => p.status === 'won' || p.status === 'lost');
   const fwd = { n: fwdDecided.length, correct: fwdDecided.filter((p) => p.correct).length };
   fwd.acc = fwd.n ? Math.round((fwd.correct / fwd.n) * 100) : 0;
   const fwdArmed = fwd.n >= 25;

@@ -240,6 +240,24 @@ async function run() {
     }
   }
 
+  // ── 1a. Void orphan pending predictions ─────────────────────────────────
+  // A pick whose match never produced a fetchable result - walkover,
+  // withdrawal, reschedule, or a name/id the results feed spells differently -
+  // would otherwise sit 'pending' forever: lingering on Today with no line on
+  // FanDuel, and never counting toward the graded record either way. Once it
+  // is past the grading window above with still no result, retire it as
+  // 'void' - not a win, not a loss, just closed. Consumers exclude 'void'.
+  const VOID_AFTER_DAYS = 6; // beyond the 5-day grading window above
+  let voided = 0;
+  for (const p of store.predictions) {
+    if (p.status !== 'pending') continue;
+    if ((Date.now() - new Date(p.date).getTime()) > VOID_AFTER_DAYS * 864e5) {
+      p.status = 'void';
+      voided++;
+    }
+  }
+  if (voided) console.log(`  voided ${voided} orphan pending prediction(s) past the grading window`);
+
   // ── 1b. Refresh still-pending picks with the current best engine ─────────
   // They haven't been played yet, so re-locking them with the best-performing
   // engine for their surface (and any newly tuned weights) is still leak-free.

@@ -184,7 +184,7 @@ export default function TrackRecord() {
       if (ua !== ub) return ua ? -1 : 1;
       return ua ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
     });
-    const decided = list.filter((p) => p.status !== 'pending').sort((a, b) => new Date(b.date) - new Date(a.date));
+    const decided = list.filter((p) => p.status === 'won' || p.status === 'lost').sort((a, b) => new Date(b.date) - new Date(a.date));
     // Graded calls only guest-star here briefly: after a few days they live
     // in the match log below (every graded call lands there), and this panel
     // stays focused on fresh calls. The record count keeps ALL of them.
@@ -197,7 +197,7 @@ export default function TrackRecord() {
   // the page's headline once it has enough verified calls behind it.
   const forwardAll = useMemo(() => {
     const all = dedupePreds((predictions?.predictions || []).filter(isForwardEvent));
-    const decided = all.filter((p) => p.status !== 'pending');
+    const decided = all.filter((p) => p.status === 'won' || p.status === 'lost');
     const correct = decided.filter((p) => p.correct).length;
     const dates = all.map((p) => new Date(p.date)).filter((d) => !isNaN(d));
     return {
