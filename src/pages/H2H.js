@@ -10,7 +10,7 @@ import { toast } from '../components/ui/Toast';
 import AppModal from '../components/ui/AppModal';
 import Chip from '../components/ui/Chip';
 import { simulateBatch, simulateMatchStepwise, seedFromString } from '../simulator';
-import { matchProb } from '../analyticProb';
+import { matchProb, matchDetail } from '../analyticProb';
 import AdvancedSimPanel, { STAT_KEYS } from '../components/AdvancedSimPanel';
 import { countryFlagUrl } from '../components/countryFlags';
 import UiButton from '../components/ui/Button';
@@ -535,14 +535,21 @@ export default function H2H({ tour = 'atp' }) {
   const favPct = probA != null ? Math.round(Math.max(probA, 1 - probA) * 100) : null;
 
   const scoreline = useMemo(() => {
-    if (!batchResult || probA == null) return null;
-    const favIdx = favoredIsA ? 0 : 1;
-    const target = Math.ceil(bestOf / 2);
-    const dist = batchResult.lostInWins[favIdx].slice(0, target);
+    if (!statsA || !statsB || probA == null) return null;
+    // Use the SAME tempered analytic set-score distribution the pipeline grades
+    // against (buildTrackRecord applies setTemp = scoreline.bo5Temp on
+    // best-of-five). Deriving the live score from the untempered Monte Carlo
+    // batch instead made the displayed bo5 scoreline disagree with the very
+    // predScore it's later graded on.
+    const pA = STAT_KEYS.map(([k]) => (statsA[k] || 0) / 100);
+    const pB = STAT_KEYS.map(([k]) => (statsB[k] || 0) / 100);
+    const setTemp = bestOf >= 5 ? (CONFIG.scoreline?.bo5Temp || 1) : 1;
+    const detail = matchDetail(pA, pB, bestOf, setTemp);
+    const dist = detail.lossDist[favoredIsA ? 0 : 1];
     let maxI = 0;
     for (let i = 1; i < dist.length; i++) if ((dist[i] || 0) > (dist[maxI] || 0)) maxI = i;
-    return `${target}–${maxI}`;
-  }, [batchResult, probA, favoredIsA, bestOf]);
+    return `${detail.target}–${maxI}`;
+  }, [statsA, statsB, probA, favoredIsA, bestOf]);
 
   // How the Smart Blend adds up: each component's signed push toward the
   // favored player, in probability points (they sum to favPct - 50).
@@ -985,6 +992,7 @@ export default function H2H({ tour = 'atp' }) {
                   isRunning={isRunning}
                   progress={progress}
                   batchResult={batchResult}
+                  predictedScoreline={scoreline}
                   showResults={showResults}
                   liveLog={liveLog}
                   isWatching={isWatching}

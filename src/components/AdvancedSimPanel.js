@@ -96,6 +96,7 @@ export default function AdvancedSimPanel({
   engineOptions = null, // [{id, label, acc, recommended}] - renders the manual engine picker
   onEngineChange = null,
   engineWinProbA = null, // authoritative engine P(A wins) from the shared batch - pie/headline render this so it matches the MatchHero number exactly
+  predictedScoreline = null, // authoritative tempered scoreline from H2H (same analytic + bo5Temp path the pipeline grades) - the shared card cites this, not the untempered Monte Carlo mode, so a downloaded card never contradicts the headline or the record
   onSimulate,
   onWatchMatch,
   bestOf = 5, // 5 (ATP Grand Slam) or 3 (WTA Grand Slam)
@@ -170,12 +171,18 @@ export default function AdvancedSimPanel({
         return Math.min(prob, 1);
       })();
 
-      // Winner's most likely scoreline, e.g. "3–1"
+      // Winner's most likely scoreline. Prefer the authoritative tempered value
+      // from H2H (same analytic + bo5Temp path the record is graded on) so a
+      // downloaded card matches the headline; fall back to the Monte Carlo mode
+      // only if the prop wasn't supplied.
       const tSets = Math.ceil(bestOf / 2);
-      const dist = batchResult.lostInWins[favIdx].slice(0, tSets);
-      let maxI = 0;
-      for (let i = 1; i < dist.length; i++) if ((dist[i] || 0) > (dist[maxI] || 0)) maxI = i;
-      const scoreline = `${tSets}–${maxI}`;
+      let scoreline = predictedScoreline;
+      if (!scoreline) {
+        const dist = batchResult.lostInWins[favIdx].slice(0, tSets);
+        let maxI = 0;
+        for (let i = 1; i < dist.length; i++) if ((dist[i] || 0) > (dist[maxI] || 0)) maxI = i;
+        scoreline = `${tSets}–${maxI}`;
+      }
 
       // Career head-to-head from h2h.json (same lookup as MatchHero)
       const h2hRecord = (() => {
@@ -210,7 +217,7 @@ export default function AdvancedSimPanel({
     } finally {
       setIsGenerating(false);
     }
-  }, [batchResult, playerA, playerB, colorA, colorB, getPlayerImageSrc, tournamentLabel, surfaceLabel, surfaceKey, h2hData, bestOf, simCount]);
+  }, [batchResult, playerA, playerB, colorA, colorB, getPlayerImageSrc, tournamentLabel, surfaceLabel, surfaceKey, h2hData, bestOf, simCount, predictedScoreline]);
 
   const handleDownload = () => {
     if (!shareUrl) return;

@@ -19,10 +19,14 @@ export function rankProb(rankA, rankB) {
   return 1 / (1 + Math.pow(10, (Math.log10(a) - Math.log10(b)) * CONFIG.rankScale));
 }
 
-// Elo-implied P(player 1 wins) on a surface, from two elo.json entries.
+// Elo-implied P(player 1 wins) on a surface, from two elo.json entries. The
+// overall+surface blend uses the SAME rho the pipeline's eloCore.predElo uses
+// (engineConfig.elo.rho), so the live prediction can't silently diverge from
+// the graded record when the walk-forward tuner moves rho off 0.5.
 export function eloProb(eloA, eloB, surfaceKey) {
   if (!eloA || !eloB) return null;
-  const pred = (r) => 0.5 * r.all + 0.5 * (r[surfaceKey] ?? r.all);
+  const rho = CONFIG.elo?.rho ?? 0.5;
+  const pred = (r) => rho * r.all + (1 - rho) * (r[surfaceKey] ?? r.all);
   return 1 / (1 + Math.pow(10, (pred(eloB) - pred(eloA)) / 400));
 }
 
