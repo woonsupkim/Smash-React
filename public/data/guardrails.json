@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T11:50:18.091Z",
+  "generatedAt": "2026-08-11T10:04:11.896Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -83,20 +83,20 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 355,
+      "n": 357,
       "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 73,
-      "rankRecentAcc": 73,
+      "recentAcc": 75,
+      "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 73,
+        "smash": 75,
         "sim": 63,
         "elo": 73,
-        "rank": 73,
+        "rank": 75,
         "upset": 75
       },
       "bestRecent": {
-        "engine": "upset",
+        "engine": "smash",
         "acc": 75
       },
       "reasons": []
@@ -151,7 +151,7 @@
     }
   ],
   "forward": {
-    "n": 124,
+    "n": 126,
     "recentN": 40,
     "recentAcc": 73,
     "status": "ok"
