@@ -165,7 +165,8 @@ function sStage(a, w, h, { ghost = null } = {}) {
 // Brand tick + wordmark left; context kicker right.
 function sMast(w, kicker, a, { tour = null } = {}) {
   const tagW = tour ? 94 : 0;
-  const k = fitT('black', kicker.toUpperCase(), 25, w - 220 - tagW, 3);
+  // Cap the kicker so it can never run left into the SMASH wordmark (~x230).
+  const k = fitT('black', kicker.toUpperCase(), 25, w - 320 - tagW, 3);
   const tourTag = tour ? `<rect x="${w - 60 - 84}" y="52" width="84" height="44" rx="10" fill="${tour === 'wta' ? '#ff2e7e' : '#31e1ff'}"/>${T('black', tour.toUpperCase(), w - 60 - 42, 82, 22, { anchor: 'middle', fill: '#fff', tracking: 1 }).svg}` : '';
   return `
   <circle cx="62" cy="70" r="10" fill="${a.key}"/>${T('black', 'SMASH', 84, 82, 36, { fill: C_WHITE, tracking: 2 }).svg}
@@ -192,6 +193,14 @@ function sPlate(cx, y, text, color, filled, deep) {
   const fs = 26, w = measureT('black', text, fs, 1) + 44;
   return `<rect x="${cx - w / 2}" y="${y - 34}" width="${w}" height="48" rx="24" fill="${filled ? color : 'rgba(6,9,16,0.82)'}" stroke="${color}" stroke-width="3"/>${T('black', text, cx, y, fs, { anchor: 'middle', fill: filled ? deep : color, tracking: 1 }).svg}`;
 }
+// Label-left / value-right comparison row with an underline (edge + autopsy).
+function statRow(y, label, txt, color = C_WHITE) {
+  return `
+    ${T('black', label, 140, y, 24, { fill: 'rgba(255,255,255,0.55)', tracking: 3 }).svg}
+    ${T('anton', txt, SQ - 140, y, fitT('anton', txt, 44, 520), { anchor: 'end', fill: color }).svg}
+    <line x1="140" y1="${y + 24}" x2="${SQ - 140}" y2="${y + 24}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+}
+
 // Up/down delta chip drawn as SVG triangles (the display fonts have no ▲/▼).
 // Right-anchored at xRight; number sits at the row's y+28.
 function deltaTag(xRight, yTop, delta) {
@@ -871,50 +880,42 @@ async function drawRoadCard(o, tour, file) {
   const { field, survival } = o.draw;
   const nRounds = survival[0]?.length || 0;
   if (!nRounds || field.length < 4) return false;
-  const tEvent = eventTheme(o.event, o.surface);
+  const a = paletteFor(o.event, 'calls');
   const cols = Math.min(4, nRounds);
   const colStart = nRounds - cols;
   const labels = [];
   for (let r = colStart; r < nRounds; r++) labels.push(roundLabel(field.length / Math.pow(2, r + 1)));
-
   const rows = field.map((p, i) => ({ ...p, surv: survival[i] || [] }))
-    .sort((a, b) => (b.surv[nRounds - 1] || 0) - (a.surv[nRounds - 1] || 0))
+    .sort((x, y2) => (y2.surv[nRounds - 1] || 0) - (x.surv[nRounds - 1] || 0))
     .slice(0, 8);
-
-  const t = tEvent;
-  const c = chrome(SQ, SQ, t, { ghost: 'DRAW', ghostY: 700 });
   const colX = (j) => 588 + j * 116;
-  let grid = '';
-  labels.forEach((l, j) => {
-    grid += `<text x="${colX(j) + 48}" y="330" text-anchor="middle" font-family="${U}" font-size="22" font-weight="800" letter-spacing="2" fill="rgba(255,255,255,0.55)">${esc(l)}</text>`;
-  });
   const comps = [];
+  let grid = '';
+  labels.forEach((l, j) => { grid += T('black', l, colX(j) + 48, 372, 22, { anchor: 'middle', fill: 'rgba(255,255,255,0.55)', tracking: 2 }).svg; });
   for (let i = 0; i < rows.length; i++) {
     const p = rows[i];
-    const y = 368 + i * 70;
-    const lastName = (p.name || '').split(' ').pop().toUpperCase();
-    grid += `<text x="176" y="${y + 38}" font-family="${D}" font-size="${fitFS(lastName, 42, colX(0) - 176 - 24)}" font-weight="700" fill="#ffffff">${esc(lastName)}</text>`;
+    const y = 400 + i * 64;
+    const ln = (p.name || '').split(' ').pop().toUpperCase();
+    grid += T('black', ln, 176, y + 34, fitT('black', ln, 38, colX(0) - 176 - 24), { fill: C_WHITE }).svg;
     for (let j = 0; j < cols; j++) {
       const v = p.surv[colStart + j] ?? 0;
-      const pct = v >= 0.995 ? '&gt;99' : v < 0.005 ? '&lt;1' : Math.round(v * 100);
-      const alpha = Math.min(0.85, 0.06 + v * 0.85);
-      grid += `
-      <rect x="${colX(j)}" y="${y}" width="96" height="52" rx="10" fill="${LIME}" opacity="${alpha.toFixed(2)}"/>
-      <text x="${colX(j) + 48}" y="${y + 36}" text-anchor="middle" font-family="${D}" font-size="30" font-weight="800" fill="${v >= 0.4 ? INK : '#ffffff'}">${pct}%</text>`;
+      const pct = v >= 0.995 ? '>99' : v < 0.005 ? '<1' : Math.round(v * 100);
+      const alpha = Math.min(0.9, 0.08 + v * 0.82);
+      grid += `<rect x="${colX(j)}" y="${y}" width="96" height="48" rx="10" fill="${a.key}" opacity="${alpha.toFixed(2)}"/>${T('black', `${pct}%`, colX(j) + 48, y + 32, 28, { anchor: 'middle', fill: v >= 0.4 ? a.ink[2] : C_WHITE }).svg}`;
     }
-    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 56), left: 104, top: y - 2 });
+    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 52), left: 108, top: y - 2 });
   }
-  const foot = o.status === 'projection'
-    ? "projected field from today's rankings · re-priced with every refresh"
-    : o.status === 'live'
-      ? 'the remaining draw, simulated 2,000 times daily'
-      : 'our last look at the bracket before it was decided';
-  const base = `${c.open}
-  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · the draw`, t.accent)}
-  <text x="${SQ / 2}" y="252" text-anchor="middle" font-family="${D}" font-size="${fitFS('THE ROAD TO THE TITLE', 104, SQ - 120)}" font-weight="800" fill="#ffffff">THE ROAD TO <tspan fill="${LIME}">THE TITLE</tspan></text>
+  const foot = o.status === 'projection' ? "projected field · re-priced every refresh"
+    : o.status === 'live' ? 'the remaining draw, simulated 2,000× daily'
+      : 'our last look before the bracket was decided';
+  const hlW = measureT('anton', 'THE ROAD TO', 84) + 28;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'DRAW' })}
+  ${sMast(SQ, `${o.event} ${tour.toUpperCase()} · The Draw`, a)}
+  ${T('anton', 'THE ROAD TO', 60, 268, fitT('anton', 'THE ROAD TO', 84, SQ - 120), { fill: C_WHITE }).svg}${T('anton', 'THE TITLE', 60 + hlW, 268, fitT('anton', 'THE TITLE', 84, SQ - 60 - hlW - 60), { fill: a.key, skew: -5 }).svg}
   ${grid}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS(foot, 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">${esc(foot)}</text>
-${c.close}`;
+  ${sBar(SQ, SQ, 'THE FULL DRAW  →', a, { sub: foot.toUpperCase() })}
+  </svg>`;
   await render(file, base, comps);
   return true;
 }
@@ -934,46 +935,41 @@ async function drawPathCard(o, tour, file) {
   const cols = Math.min(4, nRounds);
   const colStart = nRounds - cols;
   const lastName = fav.p.name.split(' ').pop().toUpperCase();
-  const bg = await stadiumBg(o.surface, SQ, SQ);
-  const composites = [];
-
+  const a = paletteFor(o.event, 'calls');
+  const PW = 420, PH = 558, PY = 300, PX = SQ - 60 - PW, colW = PX - 60 - 20;
+  const bg = await duoStage(o.surface, SQ, SQ);
   let steps = '';
   for (let j = 0; j < cols; j++) {
     const v = fav.surv[colStart + j] ?? 0;
-    const y = 470 + j * 108;
+    const y = 500 + j * 96;
     const label = roundLabel(field.length / Math.pow(2, colStart + j + 1));
-    const w = Math.max(12, v * 300);
-    steps += `
-  <text x="64" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.65)">${esc(label)}</text>
-  <rect x="64" y="${y + 14}" width="${w.toFixed(0)}" height="20" rx="10" fill="${LIME}" opacity="0.9"/>
-  <text x="${64 + w + 18}" y="${y + 32}" font-family="${D}" font-size="44" font-weight="800" fill="#ffffff">${v >= 0.995 ? '&gt;99' : Math.round(v * 100)}%</text>`;
+    const w = Math.max(14, v * (colW - 140));
+    steps += `${T('black', label, 60, y, 26, { fill: 'rgba(255,255,255,0.65)', tracking: 3 }).svg}
+      <rect x="60" y="${y + 14}" width="${w.toFixed(0)}" height="20" rx="10" fill="url(#keyGrad)"/>
+      ${T('anton', `${v >= 0.995 ? '>99' : Math.round(v * 100)}%`, 60 + w + 16, y + 34, 44, { fill: C_WHITE }).svg}`;
   }
-
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <text x="64" y="192" font-family="${U}" font-size="${fitFS(`${o.event} ${tour} · the favorite`.toUpperCase(), 27, SQ - 64 - 420 - 90, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${o.event} ${tour} · the favorite`.toUpperCase())}</text>
-  <text x="60" y="330" font-family="${D}" font-size="${fitFS(`${lastName}'S`, 96, SQ - 60 - 420 - 90)}" font-weight="800" fill="#ffffff">${esc(lastName)}'S</text>
-  <text x="60" y="428" font-family="${D}" font-size="96" font-weight="800" fill="${LIME}">PATH</text>
-  ${steps}
-</svg>`;
-  composites.push({ input: Buffer.from(baseSvg), left: 0, top: 0 });
-  const PW = 420, PH = 590, PY = 300;
-  const PX = SQ - 64 - PW;
-  composites.push({
-    input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/></svg>`),
-    left: 0, top: 0,
-  });
-  composites.push({ input: await panelPhoto(photoPath(tour, fav.p.id), PW, PH), left: PX, top: PY });
-  composites.push({
-    input: Buffer.from(`<svg width="${SQ}" height="${SQ}"><rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="${LIME}" stroke-width="6"/></svg>`),
-    left: 0, top: 0,
-  });
-  composites.push({
-    input: Buffer.from(`<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">${bottomBar(SQ, 'THE FULL DRAW, ROUND BY ROUND', { y: 968 })}</svg>`),
-    left: 0, top: 0,
-  });
-  await renderOn(file, bg, composites);
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.4"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${PX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.key}" fill-opacity="0.55" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${o.event} ${tour} · The Favorite`, a, { tour })}
+    ${T('bebas', 'ROAD TO THE TITLE', 60, 232, 38, { fill: a.sub, tracking: 4 }).svg}
+    ${T('anton', `${lastName}'S`, 60, 344, fitT('anton', `${lastName}'S`, 92, colW), { fill: C_WHITE }).svg}
+    ${T('anton', 'PATH', 60, 432, fitT('anton', 'PATH', 92, colW), { fill: a.key, skew: -6 }).svg}
+    ${steps}
+    <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${a.key}" stroke-width="5"/>
+    ${sPlate(PX + PW / 2, PY + PH + 40, lastName, a.key, true, a.ink[2])}
+    ${sBar(SQ, SQ, 'THE FULL DRAW, ROUND BY ROUND', a)}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
+  await renderOn(file, bg, [
+    { input: await rr(scrim), left: 0, top: 0 },
+    { input: await duoPanel(photoPath(tour, fav.p.id), PW, PH, 'winner'), left: PX, top: PY },
+    { input: await rr(top), left: 0, top: 0 },
+  ]);
   return true;
 }
 
@@ -1054,40 +1050,32 @@ async function hotStreakCard(tour, file) {
   const hot = rows[0];
   if (!hot) return false;
 
-  const bg = await stadiumBg('brand', SQ, SQ);
-  const PW = 440, PH = 620, PY = 290;
-  const PX = SQ - 64 - PW;
-  const img = await panelPhoto(photoPath(tour, hot.id), PW, PH);
-  // Trading-card treatment: holographic foil double frame + series line +
-  // collector serial. The spotlight is the card people keep.
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <defs>${foilGrad('hotFoil')}</defs>
-  ${photoScrim(SQ, SQ)}
-  <rect x="${SQ - 148}" y="60" width="88" height="48" fill="${tour === 'wta' ? '#8b5cf6' : '#2563eb'}"/>
-  <text x="${SQ - 104}" y="94" text-anchor="middle" font-family="${U}" font-size="25" font-weight="800" letter-spacing="3" fill="#ffffff">${tour.toUpperCase()}</text>
-  <text x="84" y="212" font-family="${U}" font-size="${fitFS('HOTTEST RACKET RIGHT NOW', 27, PX - 84 - 20, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">HOTTEST RACKET RIGHT NOW</text>
-  <text x="80" y="388" font-family="${D}" font-size="${fitFS('FIRE', 180, PX - 80 - 16)}" font-weight="800" fill="#ffffff">ON</text>
-  <text x="80" y="548" font-family="${D}" font-size="${fitFS('FIRE', 180, PX - 80 - 16)}" font-weight="800" fill="url(#hotFoil)">FIRE</text>
-  <rect x="84" y="576" width="230" height="14" fill="url(#hotFoil)"/>
-  ${heroNum(84, 700, `${hot.w}-${hot.l}`, 96, '#ffffff', 'start', PX - 84 - 20)}
-  <text x="84" y="748" font-family="${U}" font-size="${fitFS(`in recent matches · World No. ${hot.rank || 1}`, 26, PX - 84 - 20)}" fill="rgba(255,255,255,0.7)">in recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}</text>
-  ${glowSpot('hotGlow', PX + PW / 2, PY + PH / 2, 440, LIME, 0.22)}
-  <rect x="${PX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="${LIME}"/>
-</svg>`;
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <defs>${foilGrad('hotFoil2')}</defs>
-  <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="url(#hotFoil2)" stroke-width="6"/>
-  <rect x="28" y="28" width="${SQ - 56}" height="${SQ - 56}" rx="34" fill="none" stroke="url(#hotFoil2)" stroke-width="7"/>
-  <rect x="44" y="44" width="${SQ - 88}" height="${SQ - 88}" rx="26" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
-  <text x="${SQ - 52}" y="${SQ / 2}" text-anchor="middle" font-family="${U}" font-size="21" font-weight="800" letter-spacing="5" fill="rgba(255,255,255,0.55)" transform="rotate(90 ${SQ - 52} ${SQ / 2})">SMASH SERIES · ${SEASON_YEAR}${hot.rank ? ` · NO. ${hot.rank}` : ''}</text>
-  ${bottomBar(SQ, hot.name.toUpperCase(), { y: 950 })}
-</svg>`;
+  const a = PAL.receipts; // collectible gold
+  const PW = 420, PH = 600, PY = 300, PX = SQ - 60 - PW, colW = PX - 60 - 30;
+  const bg = await duoStage('brand', SQ, SQ);
+  const fFs = fitT('anton', 'FIRE', 118, colW);
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.4"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${PX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.key}" fill-opacity="0.55" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, 'Hottest Racket Right Now', a, { tour })}
+    ${T('bebas', 'FORM WATCH', 60, 232, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', 'ON', 60, 366, fFs, { fill: C_WHITE }).svg}
+    ${T('anton', 'FIRE', 60, 366 + Math.round(fFs * 0.92), fFs, { fill: a.key, skew: -7 }).svg}
+    ${T('anton', `${hot.w}-${hot.l}`, 62, 636, 96, { fill: a.key }).svg}
+    ${T('body', `recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}`, 62, 686, fitT('body', `recent matches${hot.rank ? ` · World No. ${hot.rank}` : ''}`, 26, colW), { fill: C_MUTE }).svg}
+    <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${a.key}" stroke-width="5"/>
+    ${sPlate(PX + PW / 2, PY + PH + 42, hot.name.toUpperCase(), a.key, true, a.ink[2])}
+    ${sBar(SQ, SQ, 'FORM IS LOUD, RECEIPTS ARE LOUDER', a, { sub: `SMASH SERIES · ${SEASON_YEAR}` })}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
-    { input: Buffer.from(baseSvg), left: 0, top: 0 },
-    { input: img, left: PX, top: PY },
-    { input: Buffer.from(topSvg), left: 0, top: 0 },
+    { input: await rr(scrim), left: 0, top: 0 },
+    { input: await duoPanel(photoPath(tour, hot.id), PW, PH, 'winner'), left: PX, top: PY },
+    { input: await rr(top), left: 0, top: 0 },
   ]);
   return { id: hot.id, name: hot.name, w: hot.w, l: hot.l };
 }
@@ -1132,40 +1120,43 @@ async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, 
 
 // Rivalry card: an upcoming pick where the pair has real history.
 async function rivalryCard(p, h2hRec, ourRecord, file) {
-  const bg = await stadiumBg(p.surface, SQ, SQ);
-  const PW = 444, PH = 420, PY = 430;
-  const aX = 64, bX = SQ - 64 - PW;
+  const a = paletteFor(p.event, 'calls');
+  const favIsP1 = p.favorite === p.p1;
+  const PW = 402, PH = 452, PY = 456, aX = 60, bX = SQ - 60 - PW, midY = PY + PH / 2;
+  const bg = await duoStage(p.surface, SQ, SQ);
   const [aImg, bImg] = await Promise.all([
-    panelPhoto(photoPath(p.tour, p.p1), PW, PH),
-    panelPhoto(photoPath(p.tour, p.p2), PW, PH),
+    duoPanel(photoPath(p.tour, p.p1), PW, PH, favIsP1 ? 'winner' : 'loser'),
+    duoPanel(photoPath(p.tour, p.p2), PW, PH, favIsP1 ? 'loser' : 'winner'),
   ]);
   const meetings = h2hRec.w1 + h2hRec.w2;
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <text x="64" y="172" font-family="${U}" font-size="${fitFS(`${p.event} · ${fmtDate(p.date)}`.toUpperCase(), 27, SQ - 128, 6)}" font-weight="700" letter-spacing="6" fill="${LIME}">${esc(`${p.event} · ${fmtDate(p.date)}`.toUpperCase())}</text>
-  <text x="60" y="300" font-family="${D}" font-size="${fitFS('THE RIVALRY,', 128, SQ - 120)}" font-weight="800" fill="#ffffff">THE RIVALRY,</text>
-  <text x="60" y="410" font-family="${D}" font-size="${fitFS(`ROUND ${meetings + 1}`, 128, SQ - 120)}" font-weight="800" fill="${LIME}">ROUND ${meetings + 1}</text>
-  <rect x="${aX - 12}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
-  <rect x="${bX + 14}" y="${PY + 12}" width="${PW}" height="${PH}" rx="24" fill="rgba(255,255,255,0.30)"/>
-</svg>`;
-  const topSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
-  <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>
-  <circle cx="${SQ / 2}" cy="${PY + PH / 2}" r="58" fill="rgba(0,0,0,0.7)" stroke="${LIME}" stroke-width="4"/>
-  <text x="${SQ / 2}" y="${PY + PH / 2 + 20}" text-anchor="middle" font-family="${D}" font-size="52" font-weight="800" fill="#ffffff">${h2hRec.w1}-${h2hRec.w2}</text>
-  ${pill(aX + PW / 2, PY + PH - 74, last(p.name1).toUpperCase(), '#ffffff', false, PW - 12)}
-  ${pill(bX + PW / 2, PY + PH - 74, last(p.name2).toUpperCase(), '#ffffff', false, PW - 12)}
-  ${bottomBar(SQ, ourRecord && ourRecord.n > 0
-    ? `WE'VE CALLED ${ourRecord.correct} OF ${ourRecord.n} OF THEIR MEETINGS`
-    : `OUR CALL: ${last(p.favName).toUpperCase()} · ${pctTxt(p.favProb)}`, { y: 968 })}
-</svg>`;
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.36"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${aX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${favIsP1 ? a.key : a.sub}" fill-opacity="${favIsP1 ? 0.5 : 0.3}" filter="url(#pglow)"/>
+    <rect x="${bX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${favIsP1 ? a.sub : a.key}" fill-opacity="${favIsP1 ? 0.3 : 0.5}" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${p.event} · ${fmtDate(p.date)}`, a, { tour: p.tour })}
+    ${T('bebas', 'THEY MEET AGAIN', 60, 180, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', 'THE RIVALRY,', 60, 296, fitT('anton', 'THE RIVALRY,', 92, SQ - 120), { fill: C_WHITE }).svg}
+    ${T('anton', `ROUND ${meetings + 1}`, 60, 392, fitT('anton', `ROUND ${meetings + 1}`, 92, SQ - 120), { fill: a.key, skew: -6 }).svg}
+    <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? a.key : 'rgba(255,255,255,0.5)'}" stroke-width="${favIsP1 ? 4 : 3}"/>
+    <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.5)' : a.key}" stroke-width="${favIsP1 ? 3 : 4}"/>
+    <circle cx="${SQ / 2}" cy="${midY}" r="54" fill="${a.ink[2]}" stroke="${a.key}" stroke-width="3"/>
+    ${T('anton', `${h2hRec.w1}-${h2hRec.w2}`, SQ / 2, midY + 16, 46, { anchor: 'middle', fill: C_WHITE }).svg}
+    ${sPlate(aX + PW / 2, PY + PH - 28, last(p.name1).toUpperCase(), favIsP1 ? a.key : C_WHITE, favIsP1, a.ink[2])}
+    ${sPlate(bX + PW / 2, PY + PH - 28, last(p.name2).toUpperCase(), favIsP1 ? C_WHITE : a.key, !favIsP1, a.ink[2])}
+    ${sBar(SQ, SQ, ourRecord && ourRecord.n > 0
+      ? `WE'VE CALLED ${ourRecord.correct} OF ${ourRecord.n} MEETINGS`
+      : `OUR CALL: ${last(p.favName).toUpperCase()} · ${pctTxt(p.favProb)}`, a)}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
-    { input: Buffer.from(baseSvg), left: 0, top: 0 },
+    { input: await rr(scrim), left: 0, top: 0 },
     { input: aImg, left: aX, top: PY },
     { input: bImg, left: bX, top: PY },
-    { input: Buffer.from(topSvg), left: 0, top: 0 },
+    { input: await rr(top), left: 0, top: 0 },
   ]);
 }
 
@@ -1173,20 +1164,26 @@ async function rivalryCard(p, h2hRec, ourRecord, file) {
 // Photo countdown hero: the slam's own stadium, the day count, and the
 // promise ("picks live the moment the draw drops").
 async function hypeCountdownCard(next, days, file) {
-  const bg = await stadiumBg(next.surface, SQ, SQ);
-  const nameFs = fitFS(next.label.toUpperCase(), 150, 950);
+  const a = SLAM_PAL[next.label] || PAL.calls;
+  const bg = await duoStage(next.surface, SQ, SQ);
   const dateTxt = new Date(next.startsAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
-  const baseSvg = `
-<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg">
-  ${photoScrim(SQ, SQ)}
-  <text x="${SQ / 2}" y="220" text-anchor="middle" font-family="${U}" font-size="28" font-weight="700" letter-spacing="7" fill="${LIME}">THE NEXT MAJOR</text>
-  <text x="${SQ / 2}" y="${228 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff">${esc(next.label.toUpperCase())}</text>
-  ${heroNum(SQ / 2, 700, String(days), 320, LIME)}
-  <text x="${SQ / 2}" y="778" text-anchor="middle" font-family="${U}" font-size="34" font-weight="700" letter-spacing="8" fill="rgba(255,255,255,0.85)">DAYS TO GO</text>
-  <text x="${SQ / 2}" y="846" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.65)">${esc(`first ball ${dateTxt} · ${next.surface} court`)}</text>
-  ${bottomBar(SQ, 'PICKS LIVE THE MOMENT THE DRAW DROPS', { y: 956 })}
-</svg>`;
-  await renderOn(file, bg, [{ input: Buffer.from(baseSvg), left: 0, top: 0 }]);
+  const hero = T('anton', String(days), SQ / 2, 700, 300, { anchor: 'middle', fill: a.key });
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.42"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.2}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, 'The Next Major', a)}
+    ${T('bebas', 'COUNTDOWN', SQ / 2, 250, 42, { anchor: 'middle', fill: a.sub, tracking: 7 }).svg}
+    ${T('anton', next.label.toUpperCase(), SQ / 2, 360, fitT('anton', next.label.toUpperCase(), 120, SQ - 120), { anchor: 'middle', fill: C_WHITE }).svg}
+    <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+    ${T('black', 'DAYS TO GO', SQ / 2, 770, 34, { anchor: 'middle', fill: C_WHITE, tracking: 6 }).svg}
+    ${T('body', `first ball ${dateTxt} · ${next.surface} court`, SQ / 2, 828, fitT('body', `first ball ${dateTxt} · ${next.surface} court`, 27, SQ - 140), { anchor: 'middle', fill: C_MUTE }).svg}
+    ${sBar(SQ, SQ, 'PICKS DROP WHEN THE DRAW DOES  →', a)}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
+  await renderOn(file, bg, [{ input: await rr(scrim), left: 0, top: 0 }, { input: await rr(top), left: 0, top: 0 }]);
 }
 
 // Projected favorites for the next slam - only when the off-season
@@ -1195,28 +1192,30 @@ async function hypeCountdownCard(next, days, file) {
 async function hypeFavoritesCard(o, tour, file) {
   const top = (o.odds || []).filter((p) => p.prob > 0).slice(0, 5);
   if (top.length < 5) return false;
-  const t = eventTheme(o.event, o.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'NEXT', ghostY: 700 });
+  const a = paletteFor(o.event, 'calls');
   const maxProb = Math.max(...top.map((p) => p.prob), 0.01);
-  let rowsSvg = '';
+  const rowH = 122, startY = 348;
   const comps = [];
+  let rowsSvg = '';
   for (let i = 0; i < top.length; i++) {
-    const p = top[i];
-    const y = 320 + i * 132;
-    const pct = Math.round(p.prob * 100);
-    const w = Math.max(14, (p.prob / maxProb) * 380);
+    const p = top[i], y = startY + i * rowH, pct = Math.round(p.prob * 100);
+    const w = Math.max(16, (p.prob / maxProb) * 380);
     rowsSvg += `
-    <text x="236" y="${y + 24}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 50, SQ - 236 - 220)}" font-weight="700" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
-    <rect x="236" y="${y + 42}" width="${w.toFixed(0)}" height="24" rx="12" fill="${LIME}" opacity="0.9"/>
-    <text x="${(236 + w + 20).toFixed(0)}" y="${y + 62}" font-family="${D}" font-size="50" font-weight="800" fill="#ffffff">${pct < 1 ? '&lt;1' : pct}%</text>`;
-    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 100), left: 110, top: y - 10 });
+    ${T('black', p.name.toUpperCase(), 214, y, fitT('black', p.name.toUpperCase(), 40, SQ - 214 - 170, 1), { fill: C_WHITE, tracking: 1 }).svg}
+    <rect x="214" y="${y + 18}" width="${w.toFixed(0)}" height="24" rx="12" fill="url(#keyGrad)"/>
+    ${T('anton', pct < 1 ? '<1%' : `${pct}%`, 214 + w + 18, y + 44, 46, { fill: a.key }).svg}
+    <line x1="80" y1="${y + 64}" x2="${SQ - 80}" y2="${y + 64}" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>`;
+    if (p.id) comps.push({ input: await circlePhoto(photoPath(tour, p.id), 92), left: 92, top: y - 32 });
   }
-  const base = `${c.open}
-  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · projected field`, t.accent)}
-  <text x="${SQ / 2}" y="248" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">THE <tspan fill="${LIME}">FAVORITES</tspan></text>
+  const hlW = measureT('anton', 'THE', 96) + 30;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'NEXT' })}
+  ${sMast(SQ, `${o.event} ${tour.toUpperCase()} · Projected Field`, a)}
+  ${T('bebas', 'PRICED FROM DAY ONE', 62, 200, 36, { fill: a.sub, tracking: 4 }).svg}
+  ${T('anton', 'THE', 60, 300, 96, { fill: C_WHITE }).svg}${T('anton', 'FAVORITES', 60 + hlW, 300, fitT('anton', 'FAVORITES', 96, SQ - 60 - hlW - 60), { fill: a.key, skew: -6 }).svg}
   ${rowsSvg}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS("from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops", 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">from today's rankings, simulated 2,000 times · re-priced weekly until the draw drops</text>
-${c.close}`;
+  ${sBar(SQ, SQ, 'RE-PRICED UNTIL THE DRAW DROPS  →', a, { sub: "FROM TODAY'S RANKINGS · SIMULATED 2,000×" })}
+  </svg>`;
   await render(file, base, comps);
   return true;
 }
@@ -1224,21 +1223,20 @@ ${c.close}`;
 // Story-format countdown: day count + the model's record on the slam's
 // surface + the promise, sized for an Instagram story.
 async function hypeStoryCard(next, days, recs, file) {
-  const t = eventTheme(next.label, next.surface);
-  const c = chrome(ST_W, ST_H, t, { ghost: String(days), ghostY: 1210, ghostSize: 700 });
-  const nameFs = fitFS(next.label.toUpperCase(), 136, 950);
-  const recRows = recs.map((r, i) => `
-  <text x="${ST_W / 2}" y="${1246 + i * 62}" text-anchor="middle" font-family="${U}" font-size="30" fill="rgba(255,255,255,0.8)">${esc(`${r.tour.toUpperCase()} on ${next.surface} this season: ${r.acc}% of winners called`)}</text>`).join('');
-  const base = `${c.open}
-  ${eyebrow(ST_W, 210, 'the next major', t.accent)}
-  <text x="${ST_W / 2}" y="${218 + nameFs}" text-anchor="middle" font-family="${D}" font-size="${nameFs}" font-weight="800" fill="#ffffff">${esc(next.label.toUpperCase())}</text>
-  <text x="${ST_W / 2}" y="820" text-anchor="middle" font-family="${D}" font-size="380" font-weight="800" fill="${LIME}">${days}</text>
-  <text x="${ST_W / 2}" y="920" text-anchor="middle" font-family="${U}" font-size="38" font-weight="700" letter-spacing="10" fill="rgba(255,255,255,0.85)">DAYS TO GO</text>
+  const a = SLAM_PAL[next.label] || PAL.calls;
+  const hero = T('anton', String(days), ST_W / 2, 900, 400, { anchor: 'middle', fill: a.key });
+  const recRows = recs.map((r, i) => T('body', `${r.tour.toUpperCase()} on ${next.surface} this season: ${r.acc}% of winners called`, ST_W / 2, 1180 + i * 58, fitT('body', `${r.tour.toUpperCase()} on ${next.surface} this season: ${r.acc}% of winners called`, 30, ST_W - 140), { anchor: 'middle', fill: C_MUTE }).svg).join('');
+  const base = `<svg width="${ST_W}" height="${ST_H}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, ST_W, ST_H, { ghost: 'MAJOR' })}
+  ${sMast(ST_W, 'The Next Major', a)}
+  ${T('bebas', 'COUNTDOWN', ST_W / 2, 320, 46, { anchor: 'middle', fill: a.sub, tracking: 8 }).svg}
+  ${T('anton', next.label.toUpperCase(), ST_W / 2, 440, fitT('anton', next.label.toUpperCase(), 130, ST_W - 120), { anchor: 'middle', fill: C_WHITE }).svg}
+  <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+  ${T('black', 'DAYS TO GO', ST_W / 2, 1000, 40, { anchor: 'middle', fill: C_WHITE, tracking: 8 }).svg}
   ${recRows}
-  ${recs.length ? `<text x="${ST_W / 2}" y="${1246 + recs.length * 62 + 8}" text-anchor="middle" font-family="${U}" font-size="23" fill="rgba(255,255,255,0.45)">season benchmark, re-simulated daily</text>` : ''}
-  ${pill(ST_W / 2, 1560, 'THE DRAW, PRICED FROM DAY ONE', LIME)}
-  <text x="${ST_W / 2}" y="1690" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">every pick locked before play · graded in public</text>
-${c.close}`;
+  ${recs.length ? T('bodyMed', 'season benchmark, re-simulated daily', ST_W / 2, 1180 + recs.length * 58 + 12, 24, { anchor: 'middle', fill: 'rgba(255,255,255,0.42)' }).svg : ''}
+  ${sBar(ST_W, ST_H, 'LOCKED BEFORE PLAY, GRADED IN PUBLIC', a, { sub: 'THE DRAW, PRICED FROM DAY ONE' })}
+  </svg>`;
   await render(file, base);
 }
 
@@ -1315,35 +1313,39 @@ async function oddsMoversCard(o, tour, file) {
   const faller = [...deltas].sort((a, b) => a.delta - b.delta)[0];
   if (!riser || riser.delta <= 0) return false;
 
+  const a = paletteFor(o.event, 'calls');
   const spark = (name) => {
     const series = hist.map((h) => h.odds?.[name]).filter((v) => v != null);
     if (series.length < 2) return '';
     const maxV = Math.max(...series, 0.01);
     const pts = series.map((v, i) => `${(i / (series.length - 1)) * 240},${54 - (v / maxV) * 50}`).join(' ');
-    return `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4"/>`;
+    return `<polyline points="${pts}" fill="none" stroke="${a.key}" stroke-opacity="0.7" stroke-width="4"/>`;
   };
-  const t = eventTheme(o.event, o.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'ODDS', ghostY: 700 });
   const comps = [];
   const row = (p, y, up) => {
-    const pct = Math.round(p.prob * 100);
-    const d = Math.round(Math.abs(p.delta) * 100);
+    const pct = Math.round(p.prob * 100), d = Math.round(Math.abs(p.delta) * 100), col = up ? '#3ddc84' : '#ff5c5c';
+    const numW = measureT('anton', String(d), 108), triR = SQ - 96 - numW - 18, triL = triR - 46, triC = (triL + triR) / 2;
+    const tri = up
+      ? `<polygon points="${triL},${y + 20} ${triR},${y + 20} ${triC},${y - 22}" fill="${col}"/>`
+      : `<polygon points="${triL},${y - 22} ${triR},${y - 22} ${triC},${y + 20}" fill="${col}"/>`;
     return `
-    <text x="250" y="${y}" font-family="${D}" font-size="${fitFS(p.name.toUpperCase(), 62, SQ - 250 - 340)}" font-weight="800" fill="#ffffff">${esc(p.name.toUpperCase())}</text>
-    <text x="250" y="${y + 52}" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">title chance today: ${pct < 1 ? '<1' : pct}%</text>
-    <g transform="translate(250 ${y + 76})">${spark(p.name)}</g>
-    <text x="${SQ - 96}" y="${y + 30}" text-anchor="end" font-family="${D}" font-size="110" font-weight="800" fill="${up ? POS : NEG}">${up ? '&#9650;' : '&#9660;'}${d}</text>
-    <text x="${SQ - 96}" y="${y + 74}" text-anchor="end" font-family="${U}" font-size="23" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">${up ? 'POINTS OVERNIGHT' : 'POINTS OVERNIGHT'}</text>`;
+    ${T('anton', p.name.toUpperCase(), 250, y, fitT('anton', p.name.toUpperCase(), 58, SQ - 250 - 330), { fill: C_WHITE }).svg}
+    ${T('body', `title chance today: ${pct < 1 ? '<1' : pct}%`, 250, y + 48, 27, { fill: C_MUTE }).svg}
+    <g transform="translate(250 ${y + 72})">${spark(p.name)}</g>
+    ${tri}${T('anton', String(d), SQ - 96, y + 16, 108, { anchor: 'end', fill: col }).svg}
+    ${T('black', 'PTS OVERNIGHT', SQ - 96, y + 56, 22, { anchor: 'end', fill: 'rgba(255,255,255,0.6)', tracking: 2 }).svg}`;
   };
-  if (riser.id) comps.push({ input: await circlePhoto(photoPath(tour, riser.id), 150), left: 80, top: 300 });
-  if (faller?.id && faller.delta < 0) comps.push({ input: await circlePhoto(photoPath(tour, faller.id), 150), left: 80, top: 620 });
-  const base = `${c.open}
-  ${eyebrow(SQ, 126, `${o.event} ${tour.toUpperCase()} · the market moved`, t.accent)}
-  <text x="${SQ / 2}" y="250" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">ODDS <tspan fill="${LIME}">MOVERS</tspan></text>
-  ${row(riser, 360, true)}
-  ${faller && faller.delta < 0 ? row(faller, 680, false) : ''}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the remaining draw, re-simulated 2,000 times every day</text>
-${c.close}`;
+  if (riser.id) comps.push({ input: await circlePhoto(photoPath(tour, riser.id), 140), left: 84, top: 384 });
+  if (faller?.id && faller.delta < 0) comps.push({ input: await circlePhoto(photoPath(tour, faller.id), 140), left: 84, top: 664 });
+  const hlW = measureT('anton', 'ODDS', 96) + 30;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'ODDS' })}
+  ${sMast(SQ, `${o.event} ${tour.toUpperCase()} · The Market Moved`, a)}
+  ${T('anton', 'ODDS', 60, 300, 96, { fill: C_WHITE }).svg}${T('anton', 'MOVERS', 60 + hlW, 300, fitT('anton', 'MOVERS', 96, SQ - 60 - hlW - 60), { fill: a.key, skew: -6 }).svg}
+  ${row(riser, 444, true)}
+  ${faller && faller.delta < 0 ? row(faller, 724, false) : ''}
+  ${sBar(SQ, SQ, 'THE DRAW, RE-PRICED DAILY  →', a, { sub: 'MOVES SINCE YESTERDAY · SIMULATED 2,000×' })}
+  </svg>`;
   await render(file, base, comps);
   return true;
 }
@@ -1369,15 +1371,18 @@ function currentStreaks(track) {
 }
 
 async function streakCard(streak, file) {
-  const t = theme(streak.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'HOT', ghostY: 700 });
-  const base = `${c.open}
-  ${eyebrow(SQ, 150, 'the model is rolling', t.accent)}
-  ${heroNum(SQ / 2, 480, String(streak.len), 380, LIME)}
-  <text x="${SQ / 2}" y="592" text-anchor="middle" font-family="${D}" font-size="104" font-weight="800" fill="#ffffff">STRAIGHT</text>
-  <text x="${SQ / 2}" y="668" text-anchor="middle" font-family="${U}" font-size="32" fill="rgba(255,255,255,0.85)">${esc(`${streak.tour.toUpperCase()} ${streak.surface}-court winners called in a row`)}</text>
-  <text x="${SQ / 2}" y="742" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">deployed calls, graded in public · streaks end - receipts don't</text>
-${c.close}`;
+  const a = PAL.calls;
+  const hero = T('anton', String(streak.len), SQ / 2, 476, 300, { anchor: 'middle', fill: a.key });
+  const sub = `${streak.tour.toUpperCase()} ${streak.surface}-court winners called in a row`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'HOT' })}
+  ${sMast(SQ, 'The Model Is Rolling', a)}
+  ${T('bebas', 'ON A HEATER', SQ / 2, 200, 40, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
+  <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+  ${T('anton', 'STRAIGHT', SQ / 2, 572, fitT('anton', 'STRAIGHT', 100, SQ - 140), { anchor: 'middle', fill: C_WHITE, skew: -5 }).svg}
+  ${T('body', sub, SQ / 2, 644, fitT('body', sub, 32, SQ - 150), { anchor: 'middle', fill: C_MUTE }).svg}
+  ${sBar(SQ, SQ, 'STREAKS END, RECEIPTS DON’T  →', a)}
+  </svg>`;
   await render(file, base);
 }
 
@@ -1389,25 +1394,21 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const weCalled = pickFav(m) === m.winner;
   const wePct = Math.round(pickFavProb(m) * 100);
   const marketCalled = m.oddFav != null ? m.oddFav === m.winner : null;
-  const t = eventTheme(m.event, m.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'UPSET', ghostY: 700 });
-  const vRow = (y, label, txt, good) => `
-  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="${good == null ? '#ffffff' : good ? POS : NEG}">${esc(txt)}</text>
-  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
-  const comps = [];
+  const a = PAL.upset;
   const wid = m.winner === m.p1 ? m.p1 : m.p2;
-  comps.push({ input: await circlePhoto(photoPath(tour, wid), 170), left: SQ / 2 - 85, top: 250 });
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, `${m.event || 'tour'} · seed down`, t.accent)}
-  <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="120" font-weight="800" fill="${NEG}">UPSET</text>
-  <text x="${SQ / 2}" y="500" text-anchor="middle" font-family="${D}" font-size="${fitFS(`${last(wName).toUpperCase()} d. ${last(lName).toUpperCase()}`, 66, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">d.</tspan> ${esc(last(lName).toUpperCase())}</text>
-  <text x="${SQ / 2}" y="552" text-anchor="middle" font-family="${U}" font-size="28" fill="rgba(255,255,255,0.7)">No. ${wRank} beats No. ${lRank}${m.score ? ` · ${esc(m.score)}` : ''}</text>
-  ${vRow(650, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ON ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ON ${last(lName).toUpperCase()}`, weCalled)}
-  ${vRow(730, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled)}
-  ${vRow(810, 'THE RANKINGS', 'NEVER SAW IT', false)}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">graded in public either way - that's the whole point</text>
-${c.close}`;
+  const comps = [{ input: await circlePhoto(photoPath(tour, wid), 156), left: SQ / 2 - 78, top: 262 }];
+  const matchup = `${last(wName).toUpperCase()} D. ${last(lName).toUpperCase()}`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'UPSET' })}
+  ${sMast(SQ, `${m.event || 'Tour'} · Seed Down`, a)}
+  ${T('anton', 'UPSET', SQ / 2, 232, 116, { anchor: 'middle', fill: a.key }).svg}
+  ${T('anton', matchup, SQ / 2, 494, fitT('anton', matchup, 58, SQ - 140), { anchor: 'middle', fill: C_WHITE }).svg}
+  ${T('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, SQ / 2, 540, fitT('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, 28, SQ - 160), { anchor: 'middle', fill: C_MUTE }).svg}
+  ${statRow(632, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ${last(lName).toUpperCase()}`, weCalled ? '#3ddc84' : '#ff5c5c')}
+  ${statRow(712, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled == null ? C_WHITE : marketCalled ? '#3ddc84' : '#ff5c5c')}
+  ${statRow(792, 'THE RANKINGS', 'NEVER SAW IT', '#ff5c5c')}
+  ${sBar(SQ, SQ, 'GRADED EITHER WAY  →', a, { sub: "THAT'S THE WHOLE POINT" })}
+  </svg>`;
   await render(file, base, comps);
 }
 
@@ -1430,24 +1431,20 @@ async function edgeSplitCard(m, tour, file) {
   const mktP1 = impliedP1(m.od1, m.od2);
   const mktPct = Math.round((m.oddFav === m.p1 ? mktP1 : 1 - mktP1) * 100);
   const weWon = pickCorrect(m);
-  const t = eventTheme(m.event, m.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'SPLIT', ghostY: 700 });
-  const vRow = (y, label, txt, good) => `
-  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="${good ? POS : NEG}">${esc(txt)}</text>
-  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
-  const comps = [{ input: await circlePhoto(photoPath(tour, m.winner), 170), left: SQ / 2 - 85, top: 260 }];
+  const a = PAL.edge;
   const wName = m.winner === m.p1 ? m.name1 : m.name2;
-  const wLine = `${last(wName).toUpperCase()} WON${m.score ? ` ${m.score}` : ''}`;
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, `${m.event || 'tour'} · we disagreed with the market`, t.accent)}
-  <text x="${SQ / 2}" y="238" text-anchor="middle" font-family="${D}" font-size="110" font-weight="800" fill="#ffffff">THE <tspan fill="${weWon ? LIME : NEG}">${weWon ? 'EDGE' : 'MISS'}</tspan></text>
-  <text x="${SQ / 2}" y="512" text-anchor="middle" font-family="${D}" font-size="${fitFS(wLine, 60, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(wName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">WON</tspan>${m.score ? ` <tspan font-size="40" fill="rgba(255,255,255,0.7)">${esc(m.score)}</tspan>` : ''}</text>
-  ${vRow(640, 'WE SAID', `${last(ourName).toUpperCase()} · ${ourPct}% ${weWon ? '✓' : '✗'}`, weWon)}
-  ${vRow(724, 'MARKET SAID', `${last(mktName).toUpperCase()} · ${mktPct}% ${m.oddCorrect ? '✓' : '✗'}`, !!m.oddCorrect)}
-  <text x="${SQ / 2}" y="820" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">only one side of a split can be right - both get graded</text>
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">every split this season, graded: ${esc(String(SITE).replace(/^https?:\/\//, ''))}/edge</text>
-${c.close}`;
+  const comps = [{ input: await circlePhoto(photoPath(tour, m.winner), 156), left: SQ / 2 - 78, top: 268 }];
+  const wonLine = `${last(wName).toUpperCase()} WON`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'SPLIT' })}
+  ${sMast(SQ, `${m.event || 'Tour'} · The Split`, a)}
+  ${centerLine(SQ, 236, fitT('anton', 'THE EDGE', 110, SQ - 140), [{ t: 'THE ', c: C_WHITE }, { t: weWon ? 'EDGE' : 'MISS', c: weWon ? a.key : '#ff5c5c', skew: -6 }])}
+  ${T('anton', wonLine, SQ / 2, 508, fitT('anton', wonLine, 56, SQ - 140), { anchor: 'middle', fill: C_WHITE }).svg}
+  ${m.score ? T('body', m.score, SQ / 2, 550, 30, { anchor: 'middle', fill: C_MUTE }).svg : ''}
+  ${statRow(640, 'WE SAID', `${last(ourName).toUpperCase()} · ${ourPct}%`, weWon ? '#3ddc84' : '#ff5c5c')}
+  ${statRow(720, 'MARKET SAID', `${last(mktName).toUpperCase()} · ${mktPct}%`, m.oddCorrect ? '#3ddc84' : '#ff5c5c')}
+  ${sBar(SQ, SQ, 'EVERY SPLIT, GRADED  →', a, { sub: 'ONE SIDE IS RIGHT · BOTH GET GRADED' })}
+  </svg>`;
   await render(file, base, comps);
 }
 
@@ -1457,41 +1454,37 @@ ${c.close}`;
 async function dollarTestCard(edge, file) {
   const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`;
   await reportCard({
-    eyebrowText: 'the edge · the $1 test',
+    eyebrowText: 'The Edge · The $1 Test',
     headline1: '$1 ON EVERY',
     headline2: 'SPLIT',
     stats: [
       { value: money(edge.usNet), label: `our picks, net of $${edge.n} staked` },
-      { value: money(edge.mktNet), label: 'the market\'s own favorites, same stakes' },
+      { value: money(edge.mktNet), label: "the market's own favorites, same stakes" },
       { value: `${edge.usAcc}% VS ${edge.mktAcc}%`, label: `winners called on the ${edge.n} splits` },
     ],
     footNote: 'hypothetical · settled at closing odds · not betting advice',
-    themeKey: 'brand',
     file,
-    accent: edge.usNet >= 0 ? LIME : NEG,
+    accent: edge.usNet >= 0 ? PAL.edge.key : '#ff5c5c',
+    cta: 'THE EDGE BOARD  →',
   });
 }
 
 // A FORWARD split: a still-pending pick where we back the market's underdog
 // at lock time. The receipt is written before the match - that's the brag.
 async function forwardEdgeCard(p, mktPct, file) {
-  const t = eventTheme(p.event, p.surface);
-  const c = chrome(SQ, SQ, t, { ghost: 'LOCKED', ghostY: 700 });
+  const a = PAL.edge;
   const oppName = p.favorite === p.p1 ? p.name2 : p.name1;
-  const vRow = (y, label, txt) => `
-  <text x="140" y="${y}" font-family="${U}" font-size="26" font-weight="800" letter-spacing="3" fill="rgba(255,255,255,0.55)">${esc(label)}</text>
-  <text x="${SQ - 140}" y="${y}" text-anchor="end" font-family="${D}" font-size="${fitFS(txt, 44, 500)}" font-weight="800" fill="#ffffff">${esc(txt)}</text>
-  <line x1="140" y1="${y + 26}" x2="${SQ - 140}" y2="${y + 26}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
-  const comps = [{ input: await circlePhoto(photoPath(p.tour, p.favorite), 190), left: SQ / 2 - 95, top: 268 }];
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, `${p.event || 'tour'} · locked, not yet played`, t.accent)}
-  <text x="${SQ / 2}" y="240" text-anchor="middle" font-family="${D}" font-size="${fitFS('WE TOOK THE DOG', 96, SQ - 140)}" font-weight="800" fill="#ffffff">WE TOOK THE <tspan fill="${LIME}">DOG</tspan></text>
-  <text x="${SQ / 2}" y="540" text-anchor="middle" font-family="${D}" font-size="${fitFS(`${last(p.favName).toUpperCase()} OVER ${last(oppName).toUpperCase()}`, 64, SQ - 140)}" font-weight="800" fill="#ffffff">${esc(last(p.favName).toUpperCase())} <tspan fill="rgba(255,255,255,0.55)">OVER</tspan> ${esc(last(oppName).toUpperCase())}</text>
-  ${vRow(650, 'WE SAY', `${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`)}
-  ${vRow(734, 'MARKET SAYS', `${last(p.favName).toUpperCase()} · ONLY ${mktPct}%`)}
-  <text x="${SQ / 2}" y="830" text-anchor="middle" font-family="${U}" font-size="27" fill="rgba(255,255,255,0.7)">odds captured the moment we locked - graded in days, no take-backs</text>
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="26" fill="rgba(255,255,255,0.6)">the forward board: ${esc(String(SITE).replace(/^https?:\/\//, ''))}/edge</text>
-${c.close}`;
+  const comps = [{ input: await circlePhoto(photoPath(p.tour, p.favorite), 160), left: SQ / 2 - 80, top: 268 }];
+  const matchup = `${last(p.favName).toUpperCase()} OVER ${last(oppName).toUpperCase()}`;
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'LOCKED' })}
+  ${sMast(SQ, `${p.event || 'Tour'} · Locked, Not Yet Played`, a)}
+  ${centerLine(SQ, 234, fitT('anton', 'WE TOOK THE DOG', 92, SQ - 140), [{ t: 'WE TOOK THE ', c: C_WHITE }, { t: 'DOG', c: a.key, skew: -6 }])}
+  ${T('anton', matchup, SQ / 2, 516, fitT('anton', matchup, 56, SQ - 140), { anchor: 'middle', fill: C_WHITE }).svg}
+  ${statRow(636, 'WE SAY', `${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`, a.key)}
+  ${statRow(716, 'MARKET SAYS', `${last(p.favName).toUpperCase()} · ONLY ${mktPct}%`, C_WHITE)}
+  ${sBar(SQ, SQ, 'THE FORWARD BOARD  →', a, { sub: 'ODDS CAUGHT AT LOCK · GRADED IN DAYS' })}
+  </svg>`;
   await render(file, base, comps);
 }
 
@@ -1554,23 +1547,25 @@ async function trustCard(track, file) {
     return { ...b, n: list.length, won: list.length ? Math.round((won / list.length) * 100) : null };
   }).filter((b) => b.n >= 30);
   if (buckets.length < 3) return false;
-  const t = theme('brand');
-  const c = chrome(SQ, SQ, t, { ghost: 'TRUST', ghostY: 720 });
+  const a = PAL.receipts;
+  const startY = buckets.length >= 4 ? 486 : 512;
+  const step = buckets.length >= 4 ? 104 : 118;
   const rows = buckets.map((b, i) => {
-    const y = 430 + i * 118;
+    const y = startY + i * step;
     return `
-  <text x="130" y="${y}" font-family="${U}" font-size="30" font-weight="700" fill="rgba(255,255,255,0.8)">we said <tspan font-weight="800" fill="#ffffff">${esc(b.label)}</tspan></text>
-  <text x="${SQ - 130}" y="${y}" text-anchor="end" font-family="${D}" font-size="52" font-weight="800" fill="${LIME}">won ${b.won}%</text>
-  <text x="${SQ - 130}" y="${y + 34}" text-anchor="end" font-family="${U}" font-size="22" fill="rgba(255,255,255,0.5)">${b.n.toLocaleString()} calls</text>
-  <line x1="130" y1="${y + 52}" x2="${SQ - 130}" y2="${y + 52}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
+    ${T('body', 'we said', 130, y - 8, 26, { fill: 'rgba(255,255,255,0.7)' }).svg}${T('anton', b.label, 130 + measureT('body', 'we said ', 26), y, 40, { fill: C_WHITE }).svg}
+    ${T('anton', `WON ${b.won}%`, SQ - 130, y, 50, { anchor: 'end', fill: a.key }).svg}
+    ${T('bodyMed', `${b.n.toLocaleString()} calls`, SQ - 130, y + 32, 22, { anchor: 'end', fill: 'rgba(255,255,255,0.5)' }).svg}
+    <line x1="130" y1="${y + 50}" x2="${SQ - 130}" y2="${y + 50}" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>`;
   }).join('');
-  const base = `${c.open}
-  ${eyebrow(SQ, 140, 'calibration check · updated monthly', LIME)}
-  <text x="${SQ / 2}" y="272" text-anchor="middle" font-family="${D}" font-size="${fitFS('WHEN WE SAY IT,', 104, SQ - 140)}" font-weight="800" fill="#ffffff">WHEN WE SAY IT,</text>
-  <text x="${SQ / 2}" y="376" text-anchor="middle" font-family="${D}" font-size="${fitFS('WHEN WE SAY IT,', 104, SQ - 140)}" font-weight="800" fill="${LIME}">WE MEAN IT</text>
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: 'TRUST' })}
+  ${sMast(SQ, 'Calibration Check · Updated Monthly', a)}
+  ${T('anton', 'WHEN WE SAY IT,', 60, 268, fitT('anton', 'WHEN WE SAY IT,', 100, SQ - 120), { fill: C_WHITE }).svg}
+  ${T('anton', 'WE MEAN IT', 60, 366, fitT('anton', 'WE MEAN IT', 100, SQ - 120), { fill: a.key, skew: -6 }).svg}
   ${rows}
-  <text x="${SQ / 2}" y="${SQ - 136}" text-anchor="middle" font-family="${U}" font-size="${fitFS('stated confidence vs what actually happened · every graded call this season', 26, SQ - 120)}" fill="rgba(255,255,255,0.6)">stated confidence vs what actually happened · every graded call this season</text>
-${c.close}`;
+  ${sBar(SQ, SQ, 'DO THE ODDS MEAN IT?  →', a, { sub: 'STATED CONFIDENCE VS WHAT HAPPENED' })}
+  </svg>`;
   await render(file, base);
   return true;
 }

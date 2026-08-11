@@ -1,160 +1,12 @@
 {
-  "generatedAt": "2026-08-08T18:09:14.131Z",
+  "generatedAt": "2026-08-11T02:46:42.857Z",
   "seasonN": 4636,
   "lastStreak": {
     "key": "wta|grass",
     "len": 6
   },
-  "thread": [
-    "Today at the Canada: 8 calls, every one locked before play. 67% of winners called before play (73 of 109 verified, no take-backs). Picks below.",
-    "1/8 Rafael Jodar over Jiri Lehecka at 50% on hard. https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775",
-    "2/8 Aryna Sabalenka over Ekaterina Alexandrova at 91% on hard. High confidence. https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-aryna-sabalenka-182224",
-    "3/8 Arthur Fils over Cameron Norrie at 57% on hard. https://smash-react.vercel.app/match/cameron-norrie-vs-arthur-fils-181745",
-    "4/8 Amanda Anisimova over Elina Svitolina at 57% on hard. https://smash-react.vercel.app/match/amanda-anisimova-vs-elina-svitolina-182200",
-    "5/8 Jakub Mensik over Botic Van De Zandschulp at 71% on hard. High confidence. https://smash-react.vercel.app/match/jakub-mensik-vs-botic-van-de-zandschulp-181723",
-    "6/8 Learner Tien over Thiago Agustin Tirante at 64% on hard. https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-learner-tien-181744",
-    "7/8 Ben Shelton over Joao Fonseca at 61% on hard. https://smash-react.vercel.app/match/ben-shelton-vs-joao-fonseca-181772",
-    "8/8 Naomi Osaka over Leylah Annie Fernandez at 72% on hard. High confidence. https://smash-react.vercel.app/match/naomi-osaka-vs-leylah-annie-fernandez-182169",
-    "If every call hits, $10 at fair odds returns $331. Not betting advice, just the math on our own confidence.",
-    "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
-  ],
+  "thread": null,
   "assets": [
-    {
-      "file": "cover.png",
-      "type": "carousel-cover",
-      "format": "square",
-      "category": "daily",
-      "caption": "Today's calls at the Canada: 8 matches, locked before play. Swipe for every pick. 67% of winners called before play (73 of 109 verified, no take-backs). All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "alt": "Today's Calls cover card: 8 locked predictions at the Canada."
-    },
-    {
-      "file": "cover-45.png",
-      "type": "carousel-cover",
-      "format": "portrait",
-      "category": "daily",
-      "caption": "Today's calls at the Canada, 4:5 feed format. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "alt": "Today's Calls cover card in portrait format for the Canada."
-    },
-    {
-      "file": "match-1.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Rafael Jodar over Jiri Lehecka at 50%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775 #tennis #atp #wta #tennisprediction",
-      "alt": " Rafael Jodar over Jiri Lehecka at 50%, Canada (hard)."
-    },
-    {
-      "file": "match-2.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " High confidence: Aryna Sabalenka over Ekaterina Alexandrova at 91%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-aryna-sabalenka-182224 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Aryna Sabalenka over Ekaterina Alexandrova at 91%, Canada (hard)."
-    },
-    {
-      "file": "match-3.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Arthur Fils over Cameron Norrie at 57%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/cameron-norrie-vs-arthur-fils-181745 #tennis #atp #wta #tennisprediction",
-      "alt": " Arthur Fils over Cameron Norrie at 57%, Canada (hard)."
-    },
-    {
-      "file": "match-4.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Amanda Anisimova over Elina Svitolina at 57%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/amanda-anisimova-vs-elina-svitolina-182200 #tennis #atp #wta #tennisprediction",
-      "alt": " Amanda Anisimova over Elina Svitolina at 57%, Canada (hard)."
-    },
-    {
-      "file": "match-5.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " High confidence: Jakub Mensik over Botic Van De Zandschulp at 71%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/jakub-mensik-vs-botic-van-de-zandschulp-181723 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Jakub Mensik over Botic Van De Zandschulp at 71%, Canada (hard)."
-    },
-    {
-      "file": "match-6.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Learner Tien over Thiago Agustin Tirante at 64%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-learner-tien-181744 #tennis #atp #wta #tennisprediction",
-      "alt": " Learner Tien over Thiago Agustin Tirante at 64%, Canada (hard)."
-    },
-    {
-      "file": "match-7.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " Ben Shelton over Joao Fonseca at 61%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/ben-shelton-vs-joao-fonseca-181772 #tennis #atp #wta #tennisprediction",
-      "alt": " Ben Shelton over Joao Fonseca at 61%, Canada (hard)."
-    },
-    {
-      "file": "match-8.png",
-      "type": "match",
-      "format": "square",
-      "category": "daily",
-      "caption": " High confidence: Naomi Osaka over Leylah Annie Fernandez at 72%, Canada (hard). Full breakdown: https://smash-react.vercel.app/match/naomi-osaka-vs-leylah-annie-fernandez-182169 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Naomi Osaka over Leylah Annie Fernandez at 72%, Canada (hard)."
-    },
-    {
-      "file": "parlay.png",
-      "type": "carousel-closer",
-      "format": "square",
-      "category": "daily",
-      "caption": "If every call today hits, $10 at fair odds returns $331. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "alt": "If every call today hits, $10 at fair odds returns $331."
-    },
-    {
-      "file": "slate-story.png",
-      "type": "slate",
-      "format": "story",
-      "category": "daily",
-      "caption": "The full slate for Aug 8: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "alt": "The full slate for Aug 8: every call with win probability and flags."
-    },
-    {
-      "file": "poll.png",
-      "type": "poll",
-      "format": "square",
-      "category": "daily",
-      "caption": "Jodar or Lehecka at the Canada? Our model already picked a side - drop yours below, answer tomorrow. https://smash-react.vercel.app/match/rafael-jodar-vs-jiri-lehecka-181775 #tennis #atp #wta #tennisprediction",
-      "alt": "Jodar or Lehecka at the Canada? Our model already picked a side - drop yours below, answer tomorrow."
-    },
-    {
-      "file": "tape.png",
-      "type": "tale-of-the-tape",
-      "format": "square",
-      "category": "daily",
-      "caption": "Tale of the tape: Anisimova vs Svitolina at the Canada. Rank, form, career head-to-head, and our call. https://smash-react.vercel.app/match/amanda-anisimova-vs-elina-svitolina-182200 #tennis #atp #wta #tennisprediction",
-      "alt": "Tale of the tape stat comparison for Amanda Anisimova vs Elina Svitolina."
-    },
-    {
-      "file": "called-1.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Alexandra Eala over Caty McNally at 70%, locked before play. Final: Alexandra Eala won 6-3 5-7 6-4. Receipts: https://smash-react.vercel.app/match/alexandra-eala-vs-caty-mcnally-182215 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 70% call on Alexandra Eala, graded correct."
-    },
-    {
-      "file": "called-2.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Thiago Agustin Tirante over Alexei Popyrin at 68%, locked before play. Final: Thiago Agustin Tirante won 6-3 6-4. Receipts: https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-alexei-popyrin-181766 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 68% call on Thiago Agustin Tirante, graded correct."
-    },
-    {
-      "file": "called-3.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Cori Gauff over Maria Sakkari at 75%, locked before play. Final: Cori Gauff won 6-1 6-4. Receipts: https://smash-react.vercel.app/match/cori-gauff-vs-maria-sakkari-182222 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 75% call on Cori Gauff, graded correct."
-    },
     {
       "file": "title-odds-atp.png",
       "type": "title-odds",
@@ -216,16 +68,8 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 129 of 200 winners called, 6 wins over the bookies. Season benchmark: 67%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 129 of 200 winners called, 6 wins over the bookies."
-    },
-    {
-      "file": "autopsy.png",
-      "type": "upset-autopsy",
-      "format": "square",
-      "category": "moments",
-      "caption": "Upset autopsy: No. 58 Griekspoor takes down No. 3. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Upset autopsy card: rank 58 beat rank 3, with our call and the market's."
+      "caption": "The week in calls: 107 of 158 winners called, 6 wins over the bookies. Season benchmark: 67%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 107 of 158 winners called, 6 wins over the bookies."
     },
     {
       "file": "edge-dollar.png",
@@ -320,8 +164,8 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "23 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "23 days until the US Open."
+      "caption": "20 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "20 days until the US Open."
     },
     {
       "file": "hype-surface.png",
@@ -352,8 +196,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "23 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "23 days to the US Open."
+      "caption": "20 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "20 days to the US Open."
     }
   ]
 }
