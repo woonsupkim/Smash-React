@@ -104,6 +104,16 @@
   border-radius: var(--radius-md);
   text-align: center;
 }
+.parlay-restore {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-brand);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
 /* Inline links here fell through to Bootstrap's default blue, which fails
    contrast against this background at fine-print size. */
 .parlay-empty a,

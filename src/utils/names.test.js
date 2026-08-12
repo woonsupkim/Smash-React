@@ -39,4 +39,19 @@ describe('cleanEventName', () => {
     expect(cleanEventName('Wimbledon')).toBe('Wimbledon');
     expect(cleanEventName(null)).toBe(null);
   });
+  // The schedule feed and the match-history feed name the same tournament
+  // differently; both have to land on one label or the Ledger's event filter
+  // lists them twice and neither search finds the whole event.
+  it('merges the schedule and history names for one tournament', () => {
+    expect(cleanEventName('National Bank Open')).toBe('Canada');
+    expect(cleanEventName('Canada')).toBe('Canada');
+    expect(cleanEventName('Cincinnati Open')).toBe('Cincinnati');
+    expect(cleanEventName('Cincinnati')).toBe('Cincinnati');
+  });
+  it('still aliases once the city suffix is stripped', () => {
+    expect(cleanEventName('National Bank Open - Toronto')).toBe('Canada');
+  });
+  it('does not merge different events that share a city word', () => {
+    expect(cleanEventName('Grand Prix Open Villa de Madrid')).toBe('Grand Prix Open Villa de Madrid');
+  });
 });

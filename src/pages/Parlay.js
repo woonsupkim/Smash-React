@@ -64,7 +64,11 @@ export default function Parlay() {
     "Stack today's locked picks and see the real combined probability, our fair price, and what the market offers."
   );
   const [all, setAll] = useState(null);
-  const [picked, setPicked] = useState(() => new Set());
+  // Today's whole card is in by default and you take legs OUT. Tracking the
+  // REMOVALS rather than the selections is what makes that work: a set that
+  // starts empty already means "everything", so the plan below is priced and
+  // sized the moment the page loads instead of after N clicks.
+  const [dropped, setDropped] = useState(() => new Set());
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
@@ -75,13 +79,12 @@ export default function Parlay() {
       .catch(() => setAll([]));
   }, []);
 
-  const byKey = useMemo(() => new Map((all || []).map((p) => [legKey(p), p])), [all]);
   const legs = useMemo(
-    () => [...picked].map((k) => byKey.get(k)).filter(Boolean),
-    [picked, byKey]
+    () => (all || []).filter((p) => !dropped.has(legKey(p))),
+    [all, dropped]
   );
 
-  const toggle = (k) => setPicked((prev) => {
+  const toggle = (k) => setDropped((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
     return next;
@@ -131,17 +134,22 @@ export default function Parlay() {
     return out;
   }, [all]);
 
-  const applySuggestion = (keys) => setPicked(new Set(keys));
+  // A suggestion narrows the card down to its own legs: everything not in the
+  // set gets dropped.
+  const applySuggestion = (keys) => {
+    const keep = new Set(keys);
+    setDropped(new Set((all || []).map(legKey).filter((k) => !keep.has(k))));
+  };
 
   return (
     <div className="parlay-page">
       <div className="eyebrow">THE PARLAY BUILDER</div>
       <h1 className="parlay-title">Stack today's calls</h1>
       <p className="parlay-intro">
-        Every pick below is already locked and will be graded in public whatever happens.
-        Combine them and the page shows the one number that matters: how often that exact
-        set of results actually comes in, by our own probabilities. Adding legs always makes
-        it smaller.
+        Every call on today's card is already locked, graded in public whatever happens,
+        and stacked below by default. Untick the ones you don't want and the plan re-prices
+        as you go: the honest number is how often that exact set of results actually comes
+        in, and every leg you keep makes it smaller.
       </p>
 
       {all === null && <div className="skeleton parlay-skel" />}
@@ -159,7 +167,7 @@ export default function Parlay() {
         <>
           {suggestions.length > 0 && (
             <div className="parlay-suggest">
-              <div className="parlay-suggest-cap">Start from one of ours</div>
+              <div className="parlay-suggest-cap">Or narrow it to one of ours</div>
               <div className="parlay-suggest-row">
                 {suggestions.map((s) => (
                   <button key={s.id} type="button" className="parlay-chip" onClick={() => applySuggestion(s.keys)}>
@@ -167,10 +175,10 @@ export default function Parlay() {
                     <span className="parlay-chip-sub">{s.sub}</span>
                   </button>
                 ))}
-                {picked.size > 0 && (
-                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setPicked(new Set())}>
-                    <span className="parlay-chip-title">Clear</span>
-                    <span className="parlay-chip-sub">start from scratch</span>
+                {dropped.size > 0 && (
+                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setDropped(new Set())}>
+                    <span className="parlay-chip-title">All {all.length} back</span>
+                    <span className="parlay-chip-sub">put today's whole card in</span>
                   </button>
                 )}
               </div>
@@ -181,7 +189,7 @@ export default function Parlay() {
             <div className="parlay-list" role="group" aria-label="Today's calls">
               {all.map((p) => {
                 const k = legKey(p);
-                const on = picked.has(k);
+                const on = !dropped.has(k);
                 const mkt = marketProb(p);
                 const o = ourOdds(p);
                 return (
@@ -212,12 +220,14 @@ export default function Parlay() {
 
           </div>
 
-          {/* Nothing ticked yet: the plan below is where every number lives,
-              so this is the only prompt the page needs. */}
+          {/* Everything is in by default, so an empty slip means you took the
+              last leg out - offer the way back rather than a generic prompt. */}
           {legs.length === 0 && (
             <p className="parlay-slip-empty">
-              Tick any calls above, or start from one of our suggestions, and the
-              plan will price the combination and size the stakes.
+              You've taken every leg out, so there's nothing left to price.{' '}
+              <button type="button" className="parlay-restore" onClick={() => setDropped(new Set())}>
+                Put today's {all.length} calls back
+              </button>
             </p>
           )}
 

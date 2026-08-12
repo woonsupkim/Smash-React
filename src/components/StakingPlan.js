@@ -26,13 +26,17 @@ const pct = (v) => `${(v * 100).toFixed(1)}%`;
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
 export default function StakingPlan({ legs }) {
-  const [mode, setMode] = useState('mine');
+  // Opens on "From budget": it answers the question people actually arrive
+  // with (here is what I have, what should I do with it) and needs no input
+  // to show a full, break-even-or-better plan. "My stakes" is the grade-my-own
+  // -slip mode, which is the rarer, more deliberate one.
+  const [mode, setMode] = useState('budget');
   const [stakes, setStakes] = useState({});        // { id: singleStake }
   const [oddsOverride, setOddsOverride] = useState({}); // { id: decimalOdds }
   const [inParlay, setInParlay] = useState({});    // { id: bool }, default true
   const [useParlay, setUseParlay] = useState(true); // master switch: singles only when off
   const [parlayStake, setParlayStake] = useState(0);
-  const [budget, setBudget] = useState(50);
+  const [budget, setBudget] = useState(100);
 
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
