@@ -1,0 +1,94 @@
+/* src/components/StakingPlan.css */
+.stake-plan {
+  margin-top: 2rem;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius, 16px);
+  background: var(--surface-1, rgba(255, 255, 255, 0.02));
+  padding: 1.25rem 1.35rem 1.1rem;
+}
+.stake-head { display: flex; gap: 1rem; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.stake-cap { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2, #9aa4b2); }
+.stake-sub { margin: 0.35rem 0 0; font-size: 0.86rem; line-height: 1.5; color: var(--text-3, #7c8698); max-width: 46ch; }
+.stake-sub strong { color: var(--text-1, #fff); font-weight: 700; }
+
+.stake-modes { display: inline-flex; border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12)); border-radius: 999px; padding: 3px; gap: 2px; flex: none; }
+.stake-modes button { border: none; background: none; color: var(--text-3, #7c8698); font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 999px; cursor: pointer; }
+.stake-modes button.on { background: var(--accent-brand, #c8ff2e); color: #0c0f14; }
+
+.stake-budget { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin: 1rem 0 0.25rem; font-size: 0.82rem; font-weight: 700; color: var(--text-2, #9aa4b2); }
+.stake-budget-in { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--text-1, #fff); }
+.stake-budget-in input { width: 90px; }
+.stake-budget-note { font-weight: 500; color: var(--text-3, #7c8698); font-size: 0.78rem; }
+
+.stake-table { margin-top: 1rem; }
+.stake-row {
+  display: grid;
+  grid-template-columns: 1fr 92px 74px 96px 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.07));
+}
+.stake-row-head { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3, #7c8698); border-bottom-color: rgba(255, 255, 255, 0.14); }
+.stake-row-head span:nth-child(n+2) { text-align: center; }
+.stake-row.neg { opacity: 0.72; }
+.stake-pick { display: flex; flex-direction: column; min-width: 0; }
+.stake-pick strong { color: var(--text-1, #fff); font-weight: 700; font-size: 0.9rem; }
+.stake-pick em { font-style: normal; color: var(--text-3, #7c8698); font-size: 0.74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.stake-plan input[type="number"] {
+  width: 100%; text-align: center;
+  background: var(--surface-2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.14));
+  border-radius: 8px; color: var(--text-1, #fff);
+  font-size: 0.84rem; font-variant-numeric: tabular-nums; padding: 0.34rem 0.3rem;
+}
+.stake-plan input[type="number"]:disabled { opacity: 0.4; }
+.stake-odds, .stake-single { text-align: center; }
+.stake-odds.fixed { font-variant-numeric: tabular-nums; color: var(--text-2, #9aa4b2); font-weight: 700; }
+.stake-suggest { display: inline-block; font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent-brand, #c8ff2e); }
+.stake-inpar { text-align: center; }
+.stake-inpar input { width: 17px; height: 17px; accent-color: var(--accent-brand, #c8ff2e); }
+
+.stake-edge { text-align: center; font-weight: 800; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+.stake-edge.pos { color: var(--accent-positive, #4caf7d); }
+.stake-edge.neg { color: var(--accent-negative, #ff5c5c); }
+.stake-edge.na { color: var(--text-3, #7c8698); font-weight: 600; font-size: 0.76rem; }
+
+.stake-row-parlay { border-top: 1px solid rgba(255, 255, 255, 0.16); border-bottom: none; margin-top: 2px; padding-top: 0.7rem; }
+.stake-row-parlay .stake-pick strong { color: var(--accent-brand, #c8ff2e); }
+
+.stake-out {
+  margin-top: 1rem; border-radius: 12px; padding: 1rem 1.1rem;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  background: rgba(255, 255, 255, 0.02);
+}
+.stake-out.pos { border-color: rgba(76, 175, 125, 0.4); }
+.stake-out.neg { border-color: rgba(255, 92, 92, 0.35); }
+.stake-out-grid { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: flex-end; }
+.stake-metric { display: flex; flex-direction: column; }
+.stake-metric-v { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-1, #fff); }
+.stake-metric.big .stake-metric-v { font-size: 1.9rem; }
+.stake-out.pos .stake-metric.big .stake-metric-v { color: var(--accent-positive, #4caf7d); }
+.stake-out.neg .stake-metric.big .stake-metric-v { color: var(--accent-negative, #ff5c5c); }
+.stake-metric-l { font-size: 0.72rem; color: var(--text-3, #7c8698); margin-top: 0.15rem; }
+.stake-metric-l em { font-style: normal; }
+
+.stake-verdict { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.stake-badge { font-size: 0.76rem; font-weight: 800; padding: 0.28rem 0.6rem; border-radius: 999px; }
+.stake-badge.pos { background: rgba(76, 175, 125, 0.16); color: var(--accent-positive, #4caf7d); }
+.stake-badge.neg { background: rgba(255, 92, 92, 0.14); color: var(--accent-negative, #ff5c5c); }
+.stake-verdict-txt { font-size: 0.8rem; color: var(--text-3, #7c8698); flex: 1 1 12rem; min-width: 0; }
+.stake-balance { border: 1px solid var(--accent-brand, #c8ff2e); background: none; color: var(--accent-brand, #c8ff2e); font-weight: 800; font-size: 0.8rem; padding: 0.4rem 0.85rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.stake-balance:hover { background: var(--accent-brand, #c8ff2e); color: #0c0f14; }
+
+.stake-note { font-size: 0.82rem; margin: 0.9rem 0 0; }
+.stake-note.muted, .muted { color: var(--text-3, #7c8698); }
+.stake-fine { font-size: 0.72rem; color: var(--text-3, #7c8698); line-height: 1.5; margin: 1rem 0 0; }
+.stake-fine a { color: inherit; text-decoration: underline; }
+
+@media (max-width: 560px) {
+  .stake-row { grid-template-columns: 1fr 68px 60px 74px 32px; gap: 0.35rem; }
+  .stake-pick em { font-size: 0.68rem; }
+  .stake-out-grid { gap: 1rem 1.4rem; }
+}

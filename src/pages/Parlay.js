@@ -23,6 +23,7 @@ import { lastName } from '../utils/names';
 import { playerPhoto } from '../utils/playerPhotos';
 import { isToday, matchSlug } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
+import StakingPlan from '../components/StakingPlan';
 import './Parlay.css';
 
 const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
@@ -308,6 +309,8 @@ export default function Parlay() {
               </ul>
             </div>
           )}
+
+          {legs.length > 0 && <StakingPlan legs={legs} />}
         </>
       )}
 
