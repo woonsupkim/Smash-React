@@ -13,6 +13,12 @@ const STORE = 'smash_bracket_pools_v1';
 
 export const poolKey = (tour, tournament, stage) => `${tour}|${tournament}|${stage}`;
 
+// Links from the retired server-backed pools were bare uuids with nothing
+// encoded in them. They can't be rebuilt client-side, so the page recognises
+// the shape to explain itself rather than failing as a corrupt bracket.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isPoolId = (s) => UUID_RE.test(s || '');
+
 function loadStore() {
   try {
     return JSON.parse(localStorage.getItem(STORE)) || {};

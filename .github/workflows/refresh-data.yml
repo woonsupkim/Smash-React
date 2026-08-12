@@ -199,10 +199,17 @@ jobs:
           SITE_URL: ${{ vars.SITE_URL }}
         run: npm run build-sitemap
 
-      # Weekly email digest: Mondays only, matching the off-season heartbeat
-      # cron. Send is optional - without RESEND_API_KEY/DIGEST_TO it just
-      # writes public/data/digest.html + digest.txt.
-      - name: Build and send weekly digest (Mondays)
+      # Email digest, every run. The script picks its own edition: the weekly
+      # recap on Mondays (UTC), the short daily otherwise - so this lands
+      # daily through the tournament windows and weekly off-season, matching
+      # the crons above without duplicating that logic here.
+      #
+      # Send is optional but NOT silent: without RESEND_API_KEY (or with no
+      # recipients) the step writes the files and logs a loud warning saying
+      # no mail went out. That combination is why the digest appeared to work
+      # for months while never actually mailing anyone.
+      - name: Build and send the email digest
+        continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -211,8 +218,7 @@ jobs:
           # Public subscriber list (digest_subscribers, service-role only)
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          if [ "$(date -u +%u)" = "1" ]; then npm run build-digest; else echo "Not Monday; skipping digest."; fi
+        run: npm run build-digest
 
       # The four generators below are presentation layers over data that is
       # already computed. continue-on-error on each: a sharp/ffmpeg crash in

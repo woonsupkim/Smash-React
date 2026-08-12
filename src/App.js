@@ -8,8 +8,6 @@ import TabBar from './components/TabBar';
 
 import GATracker from './components/GATracker'; // <-- added this line
 import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider } from './auth/AuthContext';
-import AccountButton from './auth/AccountButton';
 import { initMonitoring } from './utils/monitoring';
 import { CHANGELOG } from './data/changelog';
 import { ToastHost } from './components/ui/Toast';
@@ -254,9 +252,6 @@ function NavBar() {
                 </li>
               );
             })}
-            <li className="nav-item">
-              <AccountButton />
-            </li>
           </ul>
         </div>
       </div>
@@ -267,7 +262,6 @@ function NavBar() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
       <GATracker /> {/* <-- Google Analytics route change tracker */}
       <Analytics /> {/* <-- Vercel Web Analytics */}
       <ToastHost />
@@ -346,7 +340,6 @@ function App() {
       </main>
       <SiteFooter />
       <TabBar />
-      </AuthProvider>
     </Router>
   );
 }

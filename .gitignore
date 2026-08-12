@@ -1,6 +1,10 @@
 /node_modules
 /public/assets
-/.env
+# Every .env variant, not just the exact name: /.env alone did not cover
+# .env.bak, which is how a backup carrying live keys got committed.
+.env
+.env.*
+!.env.example
 /data-pipeline/raw
 
 # Playwright artifacts

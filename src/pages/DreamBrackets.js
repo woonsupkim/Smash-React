@@ -20,12 +20,10 @@ import EngineSelector from '../components/ui/EngineSelector';
 import { credibleInterval } from '../credibleInterval';
 import { generateBracketShareCard } from '../utils/generateBracketShareCard';
 import { countryFlagUrl } from '../components/countryFlags';
-import { poolKey, getPool, savePool, clearMine, addFriendEntry, encodeEntry, decodeEntry, scoreEntry } from '../utils/bracketPool';
-import { isPoolId, createPoolWithEntries, joinPool, fetchPool, fetchMyLatestPool } from '../utils/cloudPool';
+import { poolKey, getPool, savePool, clearMine, addFriendEntry, encodeEntry, decodeEntry, scoreEntry, isPoolId } from '../utils/bracketPool';
 import { currentSlamCsv } from '../utils/currentSlam';
 import defaultAvatar from '../assets/player-default.png';
 import { playerPhoto } from '../utils/playerPhotos';
-import { useAuth } from '../auth/AuthContext';
 import logoRG from '../assets/logo_rg.png';
 import logoWB from '../assets/logo_wb.png';
 import logoUS from '../assets/logo_us.png';
@@ -296,21 +294,13 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [realSets, setRealSets] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
 
-  // Cloud pools (Supabase). When configured AND signed in, locking creates a
-  // real shared pool; otherwise everything below falls back to localStorage.
-  const { user, cloudEnabled: cloudOn, openSignIn } = useAuth();
-  const useCloud = cloudOn && !!user;
-  const [cloudPoolData, setCloudPoolData] = useState(null); // { pool, entries }
-  const [isSavingLock, setIsSavingLock] = useState(false);
-  const myCloudEntry = (cloudPoolData && user)
-    ? cloudPoolData.entries.find((e) => e.userId === user.id) || null
-    : null;
-  // Locked = this bracket is immutable. In cloud mode a stale local lock is
-  // ignored; the cloud entry is the source of truth.
-  const isLocked = cloudPoolData ? !!myCloudEntry : (useCloud ? false : !!pool.mine);
-  // Viewing someone else's cloud pool: the FIELD is fixed (everyone predicts
-  // the same draw) but your picks are still yours to make.
-  const fieldLocked = isLocked || (!!cloudPoolData && !myCloudEntry);
+  // Pools are local to this browser and shared by link: the whole bracket
+  // travels in the URL, so friends can join without anyone holding an
+  // account. (This used to have a parallel Supabase path behind a sign-in;
+  // it was the only reason the app needed auth at all.)
+  // Locked = this bracket is immutable.
+  const isLocked = !!pool.mine;
+  const fieldLocked = isLocked;
 
   // Completed bracket: the last rounds entry is a single champion.
   const champion = rounds.length > 1 && rounds[rounds.length - 1]?.length === 1
@@ -560,14 +550,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const handleReset = () => resetBracketState(stageConfig.slots);
 
   // ── Pool Play: state restoration ───────────────────────────────────────
-  // Reload the LOCAL pool whenever the bracket context changes; if this
-  // device has a locked local bracket, restore it read-only. Skipped in
-  // cloud contexts, where the cloud effects below own restoration.
+  // Reload the pool whenever the bracket context changes; if this device has
+  // a locked bracket, restore it read-only.
   useEffect(() => {
     const p = getPool(key);
     setPool(p);
     setRealSets(null);
-    if (useCloud || cloudPoolData) return;
     if (p.mine && playersPool.length) {
       const byId = Object.fromEntries(playersPool.map((pl) => [pl.id, pl]));
       setMode('picks');
@@ -578,38 +566,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
       ]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, playersPool, useCloud]);
-
-  // Signed in: restore this user's most recent cloud pool for the current
-  // bracket context (their lock survives devices, not just reloads). Skipped
-  // when a pool was already loaded from a share link.
-  useEffect(() => {
-    if (!useCloud || cloudPoolData) return undefined;
-    let stale = false;
-    fetchMyLatestPool(key, user.id)
-      .then((data) => { if (!stale && data) setCloudPoolData(data); })
-      .catch(() => { /* cloud unreachable: stay in fresh-bracket state */ });
-    return () => { stale = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, useCloud, user?.id]);
-
-  // Materialize a loaded cloud pool onto the bracket: everyone shares the
-  // creator's field; your own entry (if any) restores read-only.
-  useEffect(() => {
-    if (!cloudPoolData || !playersPool.length) return;
-    const base = myCloudEntry || cloudPoolData.entries[0];
-    if (!base) return;
-    const byId = Object.fromEntries(playersPool.map((pl) => [pl.id, pl]));
-    setMode('picks');
-    setSlots(base.slots.map((id) => byId[id] || null));
-    if (myCloudEntry) {
-      setUserRounds([
-        base.slots.map((id) => byId[id] || null),
-        ...myCloudEntry.picks.map((r) => r.map((id) => (id ? byId[id] || null : null))),
-      ]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cloudPoolData, playersPool, myCloudEntry?.id]);
+  }, [key, playersPool]);
 
   // Fresh empty pick rounds whenever the field changes while unlocked.
   useEffect(() => {
@@ -670,12 +627,6 @@ export default function DreamBrackets({ tour = 'atp' }) {
   };
 
   const handleLock = () => {
-    // Entering someone's cloud pool requires an identity to lock against.
-    if (cloudPoolData && !user) {
-      toast({ type: 'info', title: 'Sign in to enter this pool', message: 'Your bracket locks to your account so it counts in the standings.' });
-      openSignIn();
-      return;
-    }
     if (!picksComplete || slots.some((s) => !s)) {
       toast({ type: 'warning', title: 'Bracket incomplete', message: 'Advance a winner through every round before locking.' });
       return;
@@ -686,7 +637,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   const confirmLock = async () => {
     const name = entrantName.trim();
-    if (!name || !picksComplete || isSavingLock) return;
+    if (!name || !picksComplete) return;
     const lockedAt = new Date().toISOString();
     const mine = {
       name,
@@ -695,30 +646,6 @@ export default function DreamBrackets({ tour = 'atp' }) {
       picks: userRounds.slice(1).map((r) => r.map((p) => p.id)),
     };
 
-    // Cloud path: joining an open pool, or creating a new one (with the
-    // model ghost locked in alongside).
-    if (useCloud) {
-      setIsSavingLock(true);
-      try {
-        if (cloudPoolData) {
-          const entry = await joinPool(cloudPoolData.pool.id, user.id, mine);
-          setCloudPoolData((d) => ({ ...d, entries: [...d.entries, entry] }));
-          toast({ type: 'success', title: 'You are in the pool', message: `Locked as ${name}. Standings update as results land.` });
-        } else {
-          const created = await createPoolWithEntries(key, user.id, mine, computeGhostPicks());
-          setCloudPoolData(created);
-          toast({ type: 'success', title: 'Pool created', message: 'Copy your pool link and send it to friends. The model is already in.' });
-        }
-        setLockModalOpen(false);
-      } catch (err) {
-        toast({ type: 'error', title: 'Could not lock bracket', message: err.message, duration: 7000 });
-      } finally {
-        setIsSavingLock(false);
-      }
-      return;
-    }
-
-    // Local fallback (no Supabase configured, or signed out).
     const ghost = { name: 'Smash Model', lockedAt, slots: mine.slots, picks: computeGhostPicks() };
     const next = { ...getPool(key), mine, ghost };
     savePool(key, next);
@@ -736,14 +663,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
   };
 
   const handleCopyPoolLink = async () => {
-    let url;
-    if (cloudPoolData) {
-      url = `${window.location.origin}${window.location.pathname}?pool=${cloudPoolData.pool.id}`;
-    } else if (pool.mine) {
-      url = `${window.location.origin}${window.location.pathname}?pool=${encodeEntry(key, pool.mine)}`;
-    } else {
-      return;
-    }
+    if (!pool.mine) return;
+    const url = `${window.location.origin}${window.location.pathname}?pool=${encodeEntry(key, pool.mine)}`;
     try {
       await navigator.clipboard.writeText(url);
       toast({ type: 'success', title: 'Pool link copied', message: 'Anyone who opens it joins your pool with their own locked bracket.' });
@@ -786,10 +707,13 @@ export default function DreamBrackets({ tour = 'atp' }) {
     }
   };
 
-  // A friend's pool link. Two link generations: a cloud pool id (uuid) that
-  // we fetch from Supabase, or the legacy base64 bracket that folds into the
-  // local pool. Either way, hop tours first if the link is for the other
-  // draw (same resume pattern as the ESPN import above).
+  // A friend's pool link: the whole bracket travels base64-encoded in the
+  // URL and folds into the local pool. Hop tours first if the link is for the
+  // other draw (same resume pattern as the ESPN import above).
+  //
+  // Links from the old cloud pools were bare uuids with nothing encoded in
+  // them, so they cannot be reconstructed client-side; those say so plainly
+  // rather than failing as a corrupt bracket.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('pool');
@@ -797,27 +721,13 @@ export default function DreamBrackets({ tour = 'atp' }) {
     const clearParam = () => navigate(window.location.pathname, { replace: true });
 
     if (isPoolId(raw)) {
-      fetchPool(raw)
-        .then(({ pool: cp, entries }) => {
-          const [pTour, pTournament, pStage] = cp.key.split('|');
-          if (!TOURNAMENTS.some((t) => t.value === pTournament) || !STAGES.some((s) => s.value === pStage)) {
-            throw new Error('Unknown tournament or round in that pool.');
-          }
-          if (pTour !== tour) {
-            navigate(`${pTour === 'wta' ? '/women' : ''}/dream-brackets?pool=${raw}`, { replace: true });
-            return;
-          }
-          setTournament(pTournament);
-          if (pStage !== stage) handleStageChange(pStage);
-          setMode('picks');
-          setCloudPoolData({ pool: cp, entries });
-          toast({ type: 'success', title: `Welcome to ${cp.name}`, message: 'Make your picks and lock your bracket to enter the standings.' });
-          clearParam();
-        })
-        .catch((err) => {
-          toast({ type: 'error', title: 'Could not open pool', message: err.message, duration: 7000 });
-          clearParam();
-        });
+      toast({
+        type: 'info',
+        title: 'That pool link has retired',
+        message: 'Shared pools now travel entirely in the link. Build a bracket, lock it, and copy a fresh link to share.',
+        duration: 9000,
+      });
+      clearParam();
       return;
     }
 
@@ -1049,16 +959,11 @@ export default function DreamBrackets({ tour = 'atp' }) {
 
   // Pool standings. Cloud pool when loaded (one shared list for everyone),
   // otherwise the local pool: you, the model ghost, and link imports.
-  const poolEntries = cloudPoolData
-    ? cloudPoolData.entries.map((e) => ({
-        ...e,
-        tag: e.isGhost ? 'model' : (user && e.userId === user.id ? 'you' : undefined),
-      }))
-    : [
-        ...(pool.mine ? [{ ...pool.mine, tag: 'you' }] : []),
-        ...(pool.ghost ? [{ ...pool.ghost, tag: 'model' }] : []),
-        ...pool.friends,
-      ];
+  const poolEntries = [
+    ...(pool.mine ? [{ ...pool.mine, tag: 'you' }] : []),
+    ...(pool.ghost ? [{ ...pool.ghost, tag: 'model' }] : []),
+    ...pool.friends,
+  ];
   const standings = poolEntries
     .map((e) => ({ ...e, score: scoreEntry(e, realSets || []) }))
     .sort((a, b) => b.score.total - a.score.total);
@@ -1138,12 +1043,10 @@ export default function DreamBrackets({ tour = 'atp' }) {
                 className="bracket-primary-btn"
                 style={{ background: 'var(--bracket-accent)', borderColor: 'var(--bracket-accent)' }}
                 onClick={isLocked ? handleCopyPoolLink : handleLock}
-                disabled={isSavingLock || (!isLocked && !picksComplete && !(cloudPoolData && !user))}
+                disabled={!isLocked && !picksComplete}
                 title={isLocked ? 'Copy your pool link' : (picksComplete ? 'Lock your bracket into the pool' : 'Advance a winner through every round first')}
               >
-                {isLocked
-                  ? 'Copy Pool Link'
-                  : (cloudPoolData && !user ? 'Sign in to Enter' : (isSavingLock ? 'Locking…' : 'Lock Bracket'))}
+                {isLocked ? 'Copy Pool Link' : 'Lock Bracket'}
               </Button>
             )}
             <div className="bracket-actions-secondary">
@@ -1161,19 +1064,15 @@ export default function DreamBrackets({ tour = 'atp' }) {
           </div>
         </div>
 
-        {(mode === 'picks' || pool.friends.length > 0 || cloudPoolData) && (
+        {(mode === 'picks' || pool.friends.length > 0) && (
           <div className="pool-panel">
             <div className="pool-head">
               <span className="pool-title">
-                Pool Play · {cloudPoolData ? cloudPoolData.pool.name : `${tournamentConfig.label}${isWta ? " Women's" : ''}`} · from the {stageConfig.label}
+                Pool Play · {tournamentConfig.label}{isWta ? " Women's" : ''} · from the {stageConfig.label}
               </span>
               {isLocked ? (
                 <span className="pool-locked-tag">
-                  Locked as {(myCloudEntry || pool.mine).name} · {new Date((myCloudEntry || pool.mine).lockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
-              ) : cloudPoolData ? (
-                <span className="pool-hint">
-                  You're viewing this pool. Tap a winner through every round and lock your bracket to enter.
+                  Locked as {pool.mine.name} · {new Date(pool.mine.lockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               ) : (
                 <span className="pool-hint">
@@ -1182,25 +1081,17 @@ export default function DreamBrackets({ tour = 'atp' }) {
               )}
             </div>
 
-            {(isLocked || cloudPoolData) && (
+            {isLocked && (
               <div className="pool-actions">
                 <Button variant="outline-light" size="sm" onClick={handleScore} disabled={isScoring}>
                   {isScoring ? <><Spinner animation="border" size="sm" /> Checking…</> : 'Score vs reality'}
                 </Button>
-                {(cloudPoolData || pool.mine) && (
+                {pool.mine && (
                   <Button variant="outline-light" size="sm" onClick={handleCopyPoolLink}>Copy pool link</Button>
                 )}
-                {!cloudPoolData && pool.mine && (
+                {pool.mine && (
                   <button type="button" className="pool-delete" onClick={handleDeleteMine}>Delete my bracket</button>
                 )}
-              </div>
-            )}
-
-            {cloudOn && !user && mode === 'picks' && !cloudPoolData && (
-              <div className="pool-signin-nudge">
-                Locking while signed out keeps your bracket on this device only.{' '}
-                <button type="button" className="pool-signin-link" onClick={openSignIn}>Sign in</button>
-                {' '}to create cloud pools that friends can join from anywhere.
               </div>
             )}
 

@@ -72,9 +72,24 @@ export function Privacy() {
     <LegalShell eyebrow="LEGAL" title="Privacy Policy" updated="July 12, 2026">
       <h2>What we collect</h2>
       <p>
-        Smash has no user accounts and collects no personal information directly. We
-        use two analytics services to understand aggregate usage: Google Analytics
-        and Vercel Web Analytics. These record standard usage signals (pages
+        Smash has no user accounts and nothing on this site requires signing in. Two
+        things are stored only if you choose to hand them over:
+      </p>
+      <ul>
+        <li>
+          <strong>Your email address</strong>, if you subscribe to the digest. It is used
+          to send that email and nothing else. Reply "stop" to any digest and it is
+          removed.
+        </li>
+        <li>
+          <strong>A browser push subscription</strong>, if you turn on upset alerts. That
+          is a delivery address issued by your browser, stored without any name or
+          account attached. Turning alerts off removes it.
+        </li>
+      </ul>
+      <p>
+        We also use two analytics services to understand aggregate usage: Google
+        Analytics and Vercel Web Analytics. These record standard usage signals (pages
         visited, approximate region, device type) and may set cookies.
       </p>
 
@@ -87,9 +102,10 @@ export function Privacy() {
 
       <h2>Local storage</h2>
       <p>
-        The site stores small preferences in your browser's local storage (for
-        example, whether you've seen the intro animation). This data never leaves
-        your device.
+        Everything else stays in your browser's local storage: preferences (whether
+        you've seen the intro animation), and anything you build here, including your
+        locked brackets and bracket pools. That data never leaves your device, which
+        also means clearing your site data clears your brackets.
       </p>
 
       <h2>Your choices</h2>

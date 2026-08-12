@@ -3,14 +3,14 @@
 // THE SLAM BRACKET CHALLENGE: when a slam's round of 16 is set, lock a
 // full bracket (8 R16 calls -> champion), then watch it grade round by
 // round against the public ledger. The model locks its own bracket from
-// the survival matrix and sits on the leaderboard like any other entrant.
-// Storage is one insert-only Supabase row per user per slam; grading is
-// entirely client-side, and without Supabase the page still shows the
-// model's bracket and the rules.
+// the survival matrix and sits opposite yours on the board.
+//
+// Your bracket is kept in this browser (one entry per slam, no take-backs)
+// and grading is entirely client-side. It used to be a Supabase row behind a
+// sign-in, which made a one-player game need an account; the challenge is
+// you versus the model either way.
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase, cloudEnabled } from '../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
 import { toast } from '../components/ui/Toast';
 import { playerPhoto } from '../utils/playerPhotos';
 import { lastName } from '../utils/names';
@@ -27,8 +27,23 @@ const ROUND_META = [
 ];
 const MAX_SCORE = ROUND_META.reduce((s, r) => s + r.size * r.points, 0); // 32
 
-const displayNameFor = (user) => (user?.email || 'player').split('@')[0].slice(0, 24);
 const emptyPicks = () => ROUND_META.map((r) => Array(r.size).fill(null));
+
+// One locked bracket per slam, in this browser. localStorage throws in some
+// private modes, so both helpers fail soft and the page carries on.
+const entryKey = (eventKey) => `smash_challenge_${eventKey}`;
+function readEntry(eventKey) {
+  try {
+    const raw = localStorage.getItem(entryKey(eventKey));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeEntry(eventKey, entry) {
+  try {
+    localStorage.setItem(entryKey(eventKey), JSON.stringify(entry));
+    return true;
+  } catch { return false; }
+}
 
 // The model's bracket from the survival matrix: in every matchup, advance
 // whichever player the sim gives the better chance of reaching the NEXT round.
@@ -88,14 +103,16 @@ function scoreEntry(picks, wins) {
 export default function BracketChallenge() {
   useDocMeta(
     'Slam Bracket Challenge: Beat the Model\'s Bracket | Smash',
-    'Lock a full bracket when the round of 16 is set, then get graded round by round in public - against everyone, including the model.'
+    'Lock a full bracket when the round of 16 is set, then get graded round by round against the real results and the model.'
   );
-  const { user, openSignIn } = useAuth();
   const [odds, setOdds] = useState(null);
   const [track, setTrack] = useState(null);
   const [tour, setTour] = useState('atp');
   const [sel, setSel] = useState(emptyPicks());
-  const [entries, setEntries] = useState(null);
+  // Your locked bracket lives in this browser. The challenge was always "beat
+  // the model", so the board is you against it - no account, no shared
+  // leaderboard, and nothing to sign in for.
+  const [mine, setMine] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -118,12 +135,12 @@ export default function BracketChallenge() {
   const open = !!(field && entry.status === 'live' && entry.fieldSize === 16);
   const gradeable = !!(field && (entry.fieldSize < 16 || entry.status === 'final'));
 
-  useEffect(() => { setSel(emptyPicks()); setEntries(null); }, [tour, eventKey]);
+  useEffect(() => { setSel(emptyPicks()); }, [tour, eventKey]);
 
+  // Re-read the saved bracket whenever the event changes.
   useEffect(() => {
-    if (!supabase || !eventKey) return;
-    supabase.from('bracket_entries').select('user_id, display_name, picks, created_at').eq('event_key', eventKey)
-      .then(({ data }) => setEntries(data || []));
+    if (!eventKey) { setMine(null); return; }
+    setMine(readEntry(eventKey));
   }, [eventKey]);
 
   // Real roster ids only: slotN ids can never appear in the ledger.
@@ -134,7 +151,6 @@ export default function BracketChallenge() {
   );
   const model = useMemo(() => (field && survival ? modelBracket(field, survival) : null), [field, survival]);
   const byId = useMemo(() => new Map((field || []).map((p) => [p.id, p])), [field]);
-  const mine = user && entries ? entries.find((e) => e.user_id === user.id) : null;
 
   // Picker interaction: choosing a winner clears any downstream pick that
   // depended on the player being replaced.
@@ -156,37 +172,27 @@ export default function BracketChallenge() {
   };
   const complete = sel.every((round) => round.every(Boolean));
 
-  const lockBracket = async () => {
-    if (!user) { openSignIn(); return; }
-    if (!complete || saving) return;
+  const lockBracket = () => {
+    if (!complete || saving || mine) return;
     setSaving(true);
-    try {
-      const picks = Object.fromEntries(ROUND_META.map((r, i) => [r.key, sel[i]]));
-      const { error } = await supabase.from('bracket_entries').insert({
-        user_id: user.id,
-        display_name: displayNameFor(user),
-        event_key: eventKey,
-        picks,
-      });
-      if (error && error.code !== '23505') throw error;
-      toast(error
-        ? { type: 'error', title: 'Already locked', message: 'You have a bracket for this slam - one entry, no take-backs.' }
-        : { type: 'success', title: 'Bracket locked', message: 'Graded round by round from here. No take-backs.' });
-      const { data } = await supabase.from('bracket_entries').select('user_id, display_name, picks, created_at').eq('event_key', eventKey);
-      setEntries(data || []);
-    } catch (err) {
-      toast({ type: 'error', title: 'Bracket not saved', message: err.message });
-    } finally {
-      setSaving(false);
+    const picks = Object.fromEntries(ROUND_META.map((r, i) => [r.key, sel[i]]));
+    const entry = { picks, lockedAt: new Date().toISOString() };
+    if (writeEntry(eventKey, entry)) {
+      setMine(entry);
+      toast({ type: 'success', title: 'Bracket locked', message: 'Graded round by round from here. No take-backs.' });
+    } else {
+      toast({ type: 'error', title: 'Bracket not saved', message: 'This browser is blocking local storage, so it could not be kept.' });
     }
+    setSaving(false);
   };
 
   const leaderboard = useMemo(() => {
     if (!field) return [];
-    const rows = (entries || []).map((e) => ({ name: e.display_name, ...scoreEntry(e.picks, wins), isModel: false }));
+    const rows = [];
+    if (mine) rows.push({ name: 'You', ...scoreEntry(mine.picks, wins), isModel: false });
     if (model) rows.push({ name: 'The Model', ...scoreEntry(Object.fromEntries(ROUND_META.map((r, i) => [r.key, model[i]])), wins), isModel: true });
     return rows.sort((a, b) => b.score - a.score);
-  }, [entries, model, wins, field]);
+  }, [mine, model, wins, field]);
 
   if (!odds || !track) return <div className="challenge-page"><div className="skeleton challenge-skel" /></div>;
 
@@ -195,9 +201,11 @@ export default function BracketChallenge() {
       <div className="eyebrow">THE BRACKET CHALLENGE</div>
       <h1 className="challenge-title">Beat the model's bracket</h1>
       <p className="challenge-sub">
-        When a slam's round of 16 is set, everyone locks a full bracket - you, the field,
-        and the model. One point per round-of-16 call, doubling every round to 8 for the
-        champion ({MAX_SCORE} is a perfect bracket). Graded in public as results land.
+        When a slam's round of 16 is set, you and the model both lock a full bracket.
+        One point per round-of-16 call, doubling every round to 8 for the champion
+        ({MAX_SCORE} is a perfect bracket), graded against the real results as they land.
+        The model's picks come from the same simulation that prices the draw, so it has
+        nowhere to hide either.
       </p>
 
       <div className="challenge-seg" role="group" aria-label="Tour">
@@ -221,10 +229,7 @@ export default function BracketChallenge() {
             {open ? 'ENTRIES OPEN - LOCK YOURS BEFORE RESULTS START' : entry.status === 'final' ? 'FINAL - GRADED' : 'IN FLIGHT - ENTRIES CLOSED, GRADING LIVE'}
           </div>
 
-          {/* With cloud on, wait for entries to load before offering the
-              picker - otherwise a fast finger could double-submit while
-              `mine` is still unknown. */}
-          {open && !mine && (!cloudEnabled || entries !== null) && (
+          {open && !mine && (
             <>
               <div className="challenge-bracket">
                 {ROUND_META.map((round, r) => (
@@ -260,16 +265,12 @@ export default function BracketChallenge() {
                   </div>
                 ))}
               </div>
-              {cloudEnabled ? (
-                <button type="button" className="challenge-lock" disabled={!complete || saving} onClick={lockBracket}>
-                  {complete ? (user ? 'Lock my bracket' : 'Sign in to lock it') : 'Finish every round to lock'}
-                </button>
-              ) : (
-                <div className="challenge-nocloud">
-                  Accounts aren't switched on in this deployment yet, so brackets can't be
-                  saved - but the model's bracket below is live, and the picker works.
-                </div>
-              )}
+              <button type="button" className="challenge-lock" disabled={!complete || saving} onClick={lockBracket}>
+                {complete ? 'Lock my bracket' : 'Finish every round to lock'}
+              </button>
+              <div className="challenge-nocloud">
+                Kept in this browser, so clearing your site data clears the bracket.
+              </div>
             </>
           )}
 

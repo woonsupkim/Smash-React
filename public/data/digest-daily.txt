@@ -1,0 +1,16 @@
+SMASH DAILY · 2026-08-12
+
+Yesterday: 6 of 7
+  86% of winners called, every one locked before play.
+The one we own: Sebastian Ofner (we said 63%)
+  Marco Trungelliti won it. Misses go in the record at full weight.
+Boldest call: Jaime Faria over Nikoloz Basilashvili
+  Our narrowest pick of the day at 55%.
+Locked for today: 6 calls
+  Already locked and public. Whatever happens, they get graded tomorrow.
+Season benchmark: 67%
+  3,124 of 4,666 - today's engines replayed over the season.
+
+See today's calls: https://smash-react.vercel.app/today
+
+Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.

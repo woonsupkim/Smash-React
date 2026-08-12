@@ -1,5 +1,15 @@
 /**
- * Weekly email digest - public/data/digest.html + public/data/digest.txt.
+ * The email digest, in two editions:
+ *
+ *   DAILY  (public/data/digest-daily.html + .txt) - yesterday's graded calls,
+ *          the miss we own, and what is locked for today. Perishable.
+ *   WEEKLY (public/data/digest.html + .txt) - the seven-day recap, season
+ *          benchmark, streak, and forward test. The standing summary.
+ *
+ * Edition comes from DIGEST_MODE (daily|weekly), defaulting to weekly on
+ * Mondays (UTC) and daily otherwise, so callers need no date logic. Note the
+ * daily edition only lands on days the refresh workflow actually runs: daily
+ * inside the tournament windows, Mondays only off-season.
  *
  * A self-contained recap built entirely from committed pipeline artifacts,
  * so it can regenerate (and optionally send) from CI with no extra fetches:
@@ -24,7 +34,13 @@
  * script - the files on disk are the deliverable.
  *
  * Usage: node data-pipeline/buildDigest.js
- * Env:   RESEND_API_KEY, DIGEST_TO, DIGEST_FROM, SITE_URL (all optional)
+ * Env:   DIGEST_MODE (daily|weekly), RESEND_API_KEY, DIGEST_TO, DIGEST_FROM,
+ *        SITE_URL (all optional)
+ *
+ * Nothing is emailed unless RESEND_API_KEY is set AND there is at least one
+ * recipient (DIGEST_TO, or a row in Supabase digest_subscribers). Both are
+ * logged loudly below rather than passing silently, because a digest that
+ * builds every week and quietly mails nobody looks exactly like success.
  */
 const fs = require('fs');
 const path = require('path');
@@ -102,57 +118,132 @@ async function main() {
   }
   const slamDays = slam ? Math.max(0, Math.ceil((Date.parse(slam.startsAt) - now.getTime()) / 86400000)) : null;
 
-  // ── Assemble the copy once; render it twice.
+  // ── Two editions off the same artifacts.
+  //
+  // DAILY  - what happened yesterday and what is locked for today. Short,
+  //          perishable, and it leads with the miss so the honesty is the
+  //          format rather than a disclaimer.
+  // WEEKLY - the seven-day recap, the season benchmark, and the forward
+  //          test. The standing summary.
+  //
+  // Mode comes from DIGEST_MODE, defaulting to weekly on Mondays (UTC) and
+  // daily on any other day, so the workflow needs no date logic of its own.
+  const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
+  const isWeekly = MODE === 'weekly';
+
   const dateLabel = now.toISOString().slice(0, 10);
-  const subject = week.length
-    ? `Smash weekly: ${weekCorrect} of ${week.length} winners called this week`
-    : season
-      ? `Smash weekly: season benchmark ${season.acc}% over ${season.n.toLocaleString()} matches`
-      : `Smash weekly digest · ${dateLabel}`;
+  const yday = scorecard && scorecard.yesterday ? scorecard.yesterday : null;
+  const upsets = (scorecard && scorecard.upsetWatch) || [];
+  // Today's locked, not-yet-played calls: the reason to open the mail today.
+  const todayISO = dateLabel;
+  const todaysCalls = preds.filter((p) => p.status === 'pending' && String(p.date || '').slice(0, 10) === todayISO);
 
   const lines = [];
-  if (week.length) {
-    lines.push({
-      label: 'Last 7 days',
-      value: `${weekCorrect} of ${week.length}`,
-      note: `${pct(weekCorrect, week.length)}% of winners called across every graded match this week.`,
-    });
+  let subject;
+  let tease;
+
+  if (isWeekly) {
+    subject = week.length
+      ? `Smash weekly: ${weekCorrect} of ${week.length} winners called this week`
+      : season
+        ? `Smash weekly: season benchmark ${season.acc}% over ${season.n.toLocaleString()} matches`
+        : `Smash weekly digest · ${dateLabel}`;
+    if (week.length) {
+      lines.push({
+        label: 'Last 7 days',
+        value: `${weekCorrect} of ${week.length}`,
+        note: `${pct(weekCorrect, week.length)}% of winners called across every graded match this week.`,
+      });
+    }
+    if (season && season.n) {
+      lines.push({
+        label: 'Season benchmark',
+        value: `${season.correct.toLocaleString()} of ${season.n.toLocaleString()}`,
+        note: `${season.acc}% - today's engines replayed over the season. A benchmark, not a live betting record.`,
+      });
+    }
+    if (streak >= 3) {
+      lines.push({
+        label: 'Current streak',
+        value: `${streak} straight`,
+        note: 'Consecutive winners called, counting back from the most recent graded match.',
+      });
+    }
+    if (decided.length) {
+      lines.push({
+        label: 'Forward test',
+        value: `${fwdWon}-${decided.length - fwdWon}`,
+        note: `Predictions locked before play, then graded in public.${pending ? ` ${pending} more pending.` : ''}`,
+      });
+    }
+    tease = slam
+      ? `Next up: ${slam.label} on ${slam.surface}, ${slamDays === 0 ? 'starting today' : `${slamDays} day${slamDays === 1 ? '' : 's'} out`}.`
+      : null;
+  } else {
+    subject = yday && yday.n
+      ? `Smash daily: ${yday.correct} of ${yday.n} winners called yesterday`
+      : todaysCalls.length
+        ? `Smash daily: ${todaysCalls.length} call${todaysCalls.length === 1 ? '' : 's'} locked for today`
+        : `Smash daily · ${dateLabel}`;
+    if (yday && yday.n) {
+      lines.push({
+        label: 'Yesterday',
+        value: `${yday.correct} of ${yday.n}`,
+        note: `${pct(yday.correct, yday.n)}% of winners called, every one locked before play.`,
+      });
+      if (yday.worstMiss && yday.worstMiss.call) {
+        lines.push({
+          label: 'The one we own',
+          value: yday.worstMiss.call,
+          note: `${yday.worstMiss.winner || 'The other player'} won it. Misses go in the record at full weight.`,
+        });
+      }
+      if (yday.boldest && yday.boldest.call) {
+        lines.push({
+          label: 'Boldest call',
+          value: yday.boldest.call,
+          note: `Our narrowest pick of the day at ${yday.boldest.prob}%.`,
+        });
+      }
+    }
+    if (todaysCalls.length) {
+      lines.push({
+        label: 'Locked for today',
+        value: `${todaysCalls.length} call${todaysCalls.length === 1 ? '' : 's'}`,
+        note: 'Already locked and public. Whatever happens, they get graded tomorrow.',
+      });
+    }
+    if (season && season.n) {
+      lines.push({
+        label: 'Season benchmark',
+        value: `${season.acc}%`,
+        note: `${season.correct.toLocaleString()} of ${season.n.toLocaleString()} - today's engines replayed over the season.`,
+      });
+    }
+    tease = upsets.length
+      ? `Upset watch: ${upsets.length} match${upsets.length === 1 ? '' : 'es'} on today's card where the favorite is shakier than the price suggests.`
+      : null;
   }
-  if (season && season.n) {
-    lines.push({
-      label: 'Season benchmark',
-      value: `${season.correct.toLocaleString()} of ${season.n.toLocaleString()}`,
-      note: `${season.acc}% - today's engines replayed over the season. A benchmark, not a live betting record.`,
-    });
-  }
-  if (streak >= 3) {
-    lines.push({
-      label: 'Current streak',
-      value: `${streak} straight`,
-      note: 'Consecutive winners called, counting back from the most recent graded match.',
-    });
-  }
-  if (decided.length) {
-    lines.push({
-      label: 'Forward test',
-      value: `${fwdWon}-${decided.length - fwdWon}`,
-      note: `Predictions locked before play, then graded in public.${pending ? ` ${pending} more pending.` : ''}`,
-    });
-  }
-  const tease = slam ? `Next up: ${slam.label} on ${slam.surface}, ${slamDays === 0 ? 'starting today' : `${slamDays} day${slamDays === 1 ? '' : 's'} out`}.` : null;
+
+  const editionLabel = isWeekly ? 'weekly digest' : 'daily';
+  const ctaHref = isWeekly ? `${SITE}/track-record` : `${SITE}/today`;
+  const ctaText = isWeekly ? 'See the full track record' : "See today's calls";
 
   // ── digest.txt
   const txt = [
-    `SMASH WEEKLY DIGEST · ${dateLabel}`,
+    `SMASH ${isWeekly ? 'WEEKLY DIGEST' : 'DAILY'} · ${dateLabel}`,
     '',
     ...lines.map((l) => `${l.label}: ${l.value}\n  ${l.note}`),
     ...(tease ? ['', tease] : []),
     '',
-    `Every call, graded in public: ${SITE}/track-record`,
+    `${ctaText}: ${ctaHref}`,
     '',
     'Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.',
   ].join('\n');
-  fs.writeFileSync(path.join(DATA, 'digest.txt'), `${txt}\n`);
+  // The two editions write to their own files so a daily send cannot clobber
+  // the weekly artifact (and the Monday weekly can be diffed week to week).
+  const stem = isWeekly ? 'digest' : 'digest-daily';
+  fs.writeFileSync(path.join(DATA, `${stem}.txt`), `${txt}\n`);
 
   // ── digest.html (inline-styled dark email)
   const rows = lines
@@ -175,7 +266,7 @@ async function main() {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#11151d;border:1px solid #232a38;border-radius:12px;overflow:hidden;">
         <tr>
           <td style="padding:22px 20px 16px;border-bottom:2px solid ${LIME};">
-            <div style="font-size:20px;font-weight:800;color:#ffffff;">SMASH · weekly digest</div>
+            <div style="font-size:20px;font-weight:800;color:#ffffff;">SMASH · ${esc(editionLabel)}</div>
             <div style="font-size:12px;color:#8b93a7;padding-top:4px;">${esc(dateLabel)} · every call graded in public</div>
           </td>
         </tr>
@@ -183,7 +274,7 @@ async function main() {
         ${tease ? `<tr><td style="padding:14px 20px;border-bottom:1px solid #232a38;font-size:14px;color:#e8ebf2;">${esc(tease)}</td></tr>` : ''}
         <tr>
           <td style="padding:18px 20px;" align="center">
-            <a href="${SITE}/track-record" style="display:inline-block;background:${LIME};color:#0c0f14;font-size:14px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:8px;">See the full track record</a>
+            <a href="${ctaHref}" style="display:inline-block;background:${LIME};color:#0c0f14;font-size:14px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:8px;">${esc(ctaText)}</a>
           </td>
         </tr>
         <tr>
@@ -197,8 +288,12 @@ async function main() {
 </body>
 </html>
 `;
-  fs.writeFileSync(path.join(DATA, 'digest.html'), html);
-  console.log(`Wrote public/data/digest.html and digest.txt (${lines.length} stat rows). Subject: ${subject}`);
+  fs.writeFileSync(path.join(DATA, `${stem}.html`), html);
+  console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${lines.length} stat rows). Subject: ${subject}`);
+  if (!lines.length) {
+    console.log('Nothing worth mailing today (no graded results, no locked calls); skipping send.');
+    return;
+  }
 
   // ── Optional send via Resend. Never fatal.
   // Recipients = DIGEST_TO (owner) + the public subscriber list from
@@ -207,7 +302,11 @@ async function main() {
   // joint "to" line. Capped per run to stay inside Resend's free tier.
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.log('RESEND_API_KEY not set; skipping send.');
+    console.warn(
+      '  ! RESEND_API_KEY is not set, so NO EMAIL WAS SENT - the digest only wrote files.\n'
+      + '    To actually mail it: add RESEND_API_KEY (and DIGEST_FROM on a verified\n'
+      + '    domain, plus DIGEST_TO for yourself) to the repository secrets.'
+    );
     return;
   }
   const recipients = new Set((process.env.DIGEST_TO || '').split(',').map((s) => s.trim()).filter(Boolean));
@@ -224,7 +323,12 @@ async function main() {
     }
   }
   if (!recipients.size) {
-    console.log('No digest recipients (no DIGEST_TO, no subscribers); skipping send.');
+    console.warn(
+      '  ! RESEND_API_KEY is set but there are NO RECIPIENTS, so nothing was sent.\n'
+      + '    Set DIGEST_TO, and check the footer signup can reach Supabase\n'
+      + '    (digest_subscribers must exist - see supabase/digest.sql - and the\n'
+      + '    deployed site needs REACT_APP_SUPABASE_URL / _ANON_KEY at build time).'
+    );
     return;
   }
   const CAP = 90; // Resend free tier is 100/day; leave headroom for alerts
