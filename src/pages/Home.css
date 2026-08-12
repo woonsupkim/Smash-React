@@ -135,6 +135,14 @@
 }
 .home-stat-ci { font-size: 0.95rem; color: var(--text-2); font-weight: 700; }
 .home-stat-vs { font-size: 0.95rem; color: var(--text-3); font-weight: 600; }
+/* Recent form running ahead of the season number: the record improving is
+   itself the story, so it gets colour rather than a footnote. */
+.home-stat-trend {
+  font-size: 0.8rem;
+  color: var(--accent-positive, #4caf7d);
+  font-weight: 800;
+  white-space: nowrap;
+}
 .home-stat-cap {
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -310,10 +318,124 @@
 
 /* ── Live board ──────────────────────────────────────────────────────── */
 .home-board { margin-bottom: 3rem; }
+/* Board and slip sit side by side once there is a slip to show; the board
+   keeps the whole row to itself otherwise. */
+.home-board-wrap { display: grid; gap: 0.85rem; }
+.home-board-wrap.has-slip { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
 .home-board-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 0.85rem;
+}
+@media (max-width: 900px) {
+  .home-board-wrap.has-slip { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── Today's slip: the parlay/staking preview beside the board ────────── */
+.home-slip {
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1rem 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.home-slip-cap {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.home-slip-hero { display: flex; flex-direction: column; gap: 0.25rem; }
+.home-slip-val {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-brand);
+  font-variant-numeric: tabular-nums;
+}
+.home-slip-valcap { font-size: 0.78rem; color: var(--text-2); line-height: 1.35; }
+.home-slip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-1);
+}
+.home-slip-row-k { color: var(--text-3); }
+.home-slip-row-v { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.home-slip-row-v.pos { color: var(--accent-positive, #4caf7d); }
+.home-slip-note { font-size: 0.74rem; color: var(--text-3); line-height: 1.5; margin: 0; }
+.home-slip-cta {
+  margin-top: auto;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent-brand);
+  text-decoration: none;
+}
+.home-slip-cta:hover { text-decoration: underline; color: var(--accent-brand); }
+
+/* ── Engine health: the guardrail board in one strip ──────────────────── */
+.home-health { margin-bottom: 3rem; }
+.home-health-card {
+  display: block;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.home-health-card:hover { background: rgba(255, 255, 255, 0.06); border-color: var(--border-2); }
+.home-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.6rem;
+}
+.home-health-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(0, 0, 0, 0.2);
+}
+.home-health-top { display: flex; align-items: center; gap: 0.4rem; }
+.home-health-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent-positive, #4caf7d);
+  flex: none;
+}
+.home-health-cell.warn .home-health-dot,
+.home-health-cell.review .home-health-dot { background: #e8a33d; }
+.home-health-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.home-health-acc {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.home-health-sub { font-size: 0.68rem; color: var(--text-3); }
+.home-health-note {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  line-height: 1.55;
+  margin: 0.9rem 0 0.6rem;
+  max-width: 68ch;
 }
 .home-board-skel {
   height: 148px;

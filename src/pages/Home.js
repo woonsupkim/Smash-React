@@ -9,7 +9,12 @@ import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect, pickFavorite } from '../utils/deployedPick';
+import { edgePerDollar, parlayCombo } from '../utils/staking';
 import './Home.css';
+
+// Recent-form window for the forward record, matching the guardrail board's
+// own window so the two never disagree about what "lately" means.
+const RECENT_WINDOW = 40;
 
 // Tiny inline sparkline for a player's title-odds history.
 function Sparkline({ values }) {
@@ -123,9 +128,24 @@ export default function Home() {
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         const list = [...upcoming, ...awaiting].slice(0, 6);
         setPicks({ state: 'ready', list, live: upcoming.length > 0 });
-        const decided = all.filter((p) => p.status !== 'pending');
+        // "Decided" means GRADED, not merely "not pending". A void is a call
+        // that never resolved (walkover, retirement, an orphaned fixture the
+        // pipeline retired), and p.correct is false on all of them - counting
+        // those as misses understated the forward record by five points. Same
+        // rule the Track Record page and the share cards already use.
+        const decided = all
+          .filter((p) => p.status === 'won' || p.status === 'lost')
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
         const correct = decided.filter((p) => p.correct).length;
-        setForward({ n: decided.length, correct, acc: decided.length ? Math.round((correct / decided.length) * 100) : 0 });
+        const recent = decided.slice(-RECENT_WINDOW);
+        const recentCorrect = recent.filter((p) => p.correct).length;
+        setForward({
+          n: decided.length,
+          correct,
+          acc: decided.length ? Math.round((correct / decided.length) * 100) : 0,
+          recentN: recent.length,
+          recentAcc: recent.length >= 20 ? Math.round((recentCorrect / recent.length) * 100) : null,
+        });
       })
       .catch(() => setPicks({ state: 'error', list: [] }));
   }, []);
@@ -146,10 +166,43 @@ export default function Home() {
       .catch(() => setScorecard(null));
   }, []);
 
+  // Guardrail board: one status per tour x surface, plus any open alerts.
+  // Summarised here so the front door can say the engines are being policed
+  // without making anyone open the model card to find that out.
+  const [health, setHealth] = useState(null);
+  useEffect(() => {
+    fetch(process.env.PUBLIC_URL + '/data/guardrails.json')
+      .then((r) => { if (!r.ok) throw new Error('bad response'); return r.json(); })
+      .then(setHealth)
+      .catch(() => setHealth(null));
+  }, []);
+
   const upsetById = useMemo(
     () => new Map((scorecard?.upsetWatch || []).map((u) => [u.id, u])),
     [scorecard]
   );
+
+  // Today's slip: the same edge math the Parlay builder runs, previewed next
+  // to the live board so the staking tools are visible from the front door
+  // instead of two clicks down. Only picks that carried a market price can be
+  // graded for edge, so unpriced calls sit this section out.
+  const slip = useMemo(() => {
+    const oddsOf = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
+    const priced = (picks.list || []).filter((p) => oddsOf(p) > 1 && p.favProb > 0);
+    if (priced.length < 2) return null;
+    const bets = priced.map((p) => ({ key: p.id, p: p.favProb, o: oddsOf(p) }));
+    const plus = bets.filter((b) => edgePerDollar(b.p, b.o) > 0);
+    const combo = parlayCombo(bets, plus.map((b) => b.key));
+    const best = bets.reduce((m, b) => (edgePerDollar(b.p, b.o) > edgePerDollar(m.p, m.o) ? b : m), bets[0]);
+    const bestPick = priced.find((p) => p.id === best.key);
+    return {
+      n: priced.length,
+      plus: plus.length,
+      combo: combo.priced ? combo : null,
+      bestEdge: edgePerDollar(best.p, best.o),
+      bestName: bestPick ? lastName(bestPick.favName) : null,
+    };
+  }, [picks.list]);
 
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
@@ -219,6 +272,95 @@ export default function Home() {
     return () => clearTimeout(tid);
   }, [showIntro]);
 
+  // Title odds, hoisted out of the JSX so the page order below stays readable.
+  // It sits under the live board now: what is on court today matters more to a
+  // first-time visitor than a field projected weeks out.
+  const titleOddsSection = (titleOdds?.atp || titleOdds?.wta) ? (() => {
+    // Heading/footer copy: the tours can briefly be in mixed states (one
+    // final, one projecting the next slam), so lead with the most "alive"
+    // status either tour is in.
+    const entries = [titleOdds.atp, titleOdds.wta].filter(Boolean);
+    const headStatus = ['live', 'projection', 'final'].find((s) => entries.some((e) => e.status === s));
+    const headEntry = entries.find((e) => e.status === headStatus) || entries[0];
+    return (
+      <section className="home-odds">
+        <div className="home-section-head">
+          <h2 className="home-section-title">
+            {headStatus === 'projection' ? `Road to the ${headEntry.event}` : 'Title Odds'}
+          </h2>
+          <span className="home-section-sub">
+            {headStatus === 'projection'
+              ? 'projected from current rankings · each player\'s chance to win it all'
+              : `${headEntry.event} · each player's chance to win it all`}
+          </span>
+        </div>
+        <div className="home-odds-tours">
+          {['atp', 'wta'].map((t) => {
+            const o = titleOdds[t];
+            if (!o) return null;
+            const prevSnap = o.history?.length > 1 ? o.history[o.history.length - 2].odds : null;
+            return (
+              <div className="home-odds-tour" key={t}>
+                <div className="home-odds-tour-label">{t === 'wta' ? 'WTA' : 'ATP'}</div>
+                {o.status === 'final' && o.champion ? (
+                  <div className="home-odds-champion">
+                    {o.champion.id && (
+                      <img className="home-odds-champ-photo" src={playerPhoto(t, o.champion.id)} alt="" />
+                    )}
+                    <span className="home-odds-trophy" aria-hidden="true">🏆</span>
+                    <span>
+                      {o.champion.id
+                        ? <Link className="home-odds-champ-link" to={`/player/${t}/${o.champion.id}`}><strong>{o.champion.name}</strong></Link>
+                        : <strong>{o.champion.name}</strong>}
+                      {' '}is the {o.event} champion.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="home-odds-list">
+                    {(o.odds || []).slice(0, 6).map((p, i) => {
+                      const pct = Math.round(p.prob * 100);
+                      const prev = prevSnap?.[p.name];
+                      const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
+                      const series = (o.history || []).map((hh) => hh.odds?.[p.name]).filter((v) => v != null);
+                      return (
+                        <div className="home-odds-row" key={p.name}>
+                          <span className="home-odds-rank">{i + 1}</span>
+                          {p.id ? (
+                            <Link className="home-odds-name linked" to={`/player/${t}/${p.id}`}>
+                              <img className="home-odds-photo" src={playerPhoto(t, p.id)} alt="" loading="lazy" />
+                              {p.name}
+                            </Link>
+                          ) : (
+                            <span className="home-odds-name">{p.name}</span>
+                          )}
+                          <div className="home-odds-track">
+                            <div className="home-odds-fill" style={{ width: `${Math.max(pct, 2)}%` }} />
+                          </div>
+                          <Sparkline values={series} />
+                          <span className="home-odds-pct">{pct < 1 ? '<1' : pct}%</span>
+                          <span className={`home-odds-delta${delta > 0 ? ' up' : delta < 0 ? ' down' : ''}`}>
+                            {delta ? (delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`) : ''}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="home-odds-note">
+          {headStatus === 'live'
+            ? "The remaining draw, played out 2,000 times before each day's play. Arrows show movement since yesterday."
+            : headStatus === 'projection'
+              ? <>A hypothetical seeded field from today's rankings, simulated 2,000 times. It re-prices with every refresh until the real draw drops. <Link to="/draw">See the full projected draw</Link>.</>
+              : <>The champions are crowned. The road to the next slam appears here as rankings move. <Link to="/draw">Revisit the final bracket</Link>.</>}
+        </div>
+      </section>
+    );
+  })() : null;
+
   return (
     <div className="home-page">
       <AnimatePresence>
@@ -278,14 +420,15 @@ export default function Home() {
           <div className="eyebrow">MODEL VS MARKET · ATP + WTA</div>
           <h1 className="main-title">We Beat the<br />Bookmakers</h1>
           <p className="sub-title">
-            Every match gets a pick before it is played and a grade in public,
-            nothing quietly deleted. On the calls where we split from the betting
-            favorite, our pick has landed more often than theirs. Here is the
-            record, misses and all.
+            Every ATP and WTA match gets a call locked before play and graded in
+            public after, wins and misses alike. When we split from the betting
+            favorite, our pick lands more often than theirs
+            {proof.state === 'ready' && proof.edge ? ` (${proof.edge.usAcc}% against their ${proof.edge.mktAcc}%)` : ''}.
+            Today's card is live below, priced and ready to stack.
           </p>
           <div className="hero-ctas">
-            <Button as={Link} to="/edge" className="cta-primary">
-              See the receipts
+            <Button as={Link} to="/today" className="cta-primary">
+              See today's calls
             </Button>
             <Button as={Link} to="/h2h" className="cta-secondary">
               Run any matchup
@@ -299,39 +442,40 @@ export default function Home() {
         {proof.state === 'loading' && <div className="skeleton home-stats-skel" aria-hidden="true" />}
         {proof.state === 'ready' && proof.n > 0 && (
           <Link to="/track-record" className="home-stats">
-            {proof.marketAcc != null ? (
-              <div className="home-stat">
-                <span className="home-stat-val">{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></span>
-                <span className="home-stat-cap">us vs the bookmakers</span>
+            {[
+              // 1. The thesis, when we have prices to compare against.
+              proof.marketAcc != null && {
+                key: 'mkt',
+                val: <>{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></>,
+                cap: 'us vs the bookmakers',
+              },
+              // 2. Locked before play is the number that has moved most, so it
+              //    carries its own recent form instead of a bare season figure.
+              forward && forward.n >= 25 && {
+                key: 'fwd',
+                val: (
+                  <>
+                    {forward.acc}%
+                    {forward.recentAcc != null && forward.recentAcc > forward.acc && (
+                      <span className="home-stat-trend"> ▲{forward.recentAcc}% last {forward.recentN}</span>
+                    )}
+                  </>
+                ),
+                cap: `called before play · ${forward.n.toLocaleString()} verified`,
+              },
+              // 3. Season benchmark, only where it isn't already implied above.
+              proof.marketAcc == null && {
+                key: 'season',
+                val: <>{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></>,
+                cap: 'winners called · season',
+              },
+              { key: 'n', val: proof.n.toLocaleString(), cap: 'matches graded in public' },
+            ].filter(Boolean).map((s) => (
+              <div className="home-stat" key={s.key}>
+                <span className="home-stat-val">{s.val}</span>
+                <span className="home-stat-cap">{s.cap}</span>
               </div>
-            ) : forward && forward.n >= 25 ? (
-              <div className="home-stat">
-                <span className="home-stat-val">{forward.acc}%</span>
-                <span className="home-stat-cap">called before play · {forward.n.toLocaleString()} verified</span>
-              </div>
-            ) : (
-              <div className="home-stat">
-                <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
-                <span className="home-stat-cap">winners called · season</span>
-              </div>
-            )}
-            {proof.marketAcc != null && (
-              forward && forward.n >= 25 ? (
-                <div className="home-stat">
-                  <span className="home-stat-val">{forward.acc}%</span>
-                  <span className="home-stat-cap">called before play</span>
-                </div>
-              ) : (
-                <div className="home-stat">
-                  <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
-                  <span className="home-stat-cap">winners called · season</span>
-                </div>
-              )
-            )}
-            <div className="home-stat">
-              <span className="home-stat-val">{proof.n.toLocaleString()}</span>
-              <span className="home-stat-cap">graded in public</span>
-            </div>
+            ))}
             <div className="home-stat home-stat-link">
               <span aria-hidden="true">→</span>
               <span className="home-stat-cap">full record</span>
@@ -339,92 +483,46 @@ export default function Home() {
           </Link>
         )}
 
-        {/* ── Title odds: both tours' draws, played out 2,000 times ─────── */}
-        {(titleOdds?.atp || titleOdds?.wta) && (() => {
-          // Section heading/footer copy: the tours can briefly be in mixed
-          // states (one final, one projecting the next slam), so lead with
-          // the most "alive" status either tour is in.
-          const entries = [titleOdds.atp, titleOdds.wta].filter(Boolean);
-          const headStatus = ['live', 'projection', 'final'].find((s) => entries.some((e) => e.status === s));
-          const headEntry = entries.find((e) => e.status === headStatus) || entries[0];
-          return (
-          <section className="home-odds">
+        {/* ── The Edge, directly under the numbers it explains ───────────
+            The stat rail claims we beat the bookmakers; this is the working.
+            Only the matches where our pick and the bookmakers' favorite were
+            different people, because agreeing with the market proves nothing. */}
+        {proof.state === 'ready' && proof.edge && (
+          <section className="home-edge">
             <div className="home-section-head">
-              <h2 className="home-section-title">
-                {headStatus === 'projection' ? `Road to the ${headEntry.event}` : 'Title Odds'}
-              </h2>
-              <span className="home-section-sub">
-                {headStatus === 'projection'
-                  ? 'projected from current rankings · each player\'s chance to win it all'
-                  : `${headEntry.event} · each player's chance to win it all`}
-              </span>
+              <h2 className="home-section-title">When we disagree with the bookmakers</h2>
+              <span className="home-section-sub">{proof.edge.n} graded splits this season</span>
             </div>
-            <div className="home-odds-tours">
-              {['atp', 'wta'].map((t) => {
-                const o = titleOdds[t];
-                if (!o) return null;
-                const prevSnap = o.history?.length > 1 ? o.history[o.history.length - 2].odds : null;
-                return (
-                  <div className="home-odds-tour" key={t}>
-                    <div className="home-odds-tour-label">{t === 'wta' ? 'WTA' : 'ATP'}</div>
-                    {o.status === 'final' && o.champion ? (
-                      <div className="home-odds-champion">
-                        {o.champion.id && (
-                          <img className="home-odds-champ-photo" src={playerPhoto(t, o.champion.id)} alt="" />
-                        )}
-                        <span className="home-odds-trophy" aria-hidden="true">🏆</span>
-                        <span>
-                          {o.champion.id
-                            ? <Link className="home-odds-champ-link" to={`/player/${t}/${o.champion.id}`}><strong>{o.champion.name}</strong></Link>
-                            : <strong>{o.champion.name}</strong>}
-                          {' '}is the {o.event} champion.
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="home-odds-list">
-                        {(o.odds || []).slice(0, 6).map((p, i) => {
-                          const pct = Math.round(p.prob * 100);
-                          const prev = prevSnap?.[p.name];
-                          const delta = prev != null ? Math.round((p.prob - prev) * 100) : null;
-                          const series = (o.history || []).map((hh) => hh.odds?.[p.name]).filter((v) => v != null);
-                          return (
-                            <div className="home-odds-row" key={p.name}>
-                              <span className="home-odds-rank">{i + 1}</span>
-                              {p.id ? (
-                                <Link className="home-odds-name linked" to={`/player/${t}/${p.id}`}>
-                                  <img className="home-odds-photo" src={playerPhoto(t, p.id)} alt="" loading="lazy" />
-                                  {p.name}
-                                </Link>
-                              ) : (
-                                <span className="home-odds-name">{p.name}</span>
-                              )}
-                              <div className="home-odds-track">
-                                <div className="home-odds-fill" style={{ width: `${Math.max(pct, 2)}%` }} />
-                              </div>
-                              <Sparkline values={series} />
-                              <span className="home-odds-pct">{pct < 1 ? '<1' : pct}%</span>
-                              <span className={`home-odds-delta${delta > 0 ? ' up' : delta < 0 ? ' down' : ''}`}>
-                                {delta ? (delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`) : ''}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="home-odds-note">
-              {headStatus === 'live'
-                ? "The remaining draw, played out 2,000 times before each day's play. Arrows show movement since yesterday."
-                : headStatus === 'projection'
-                  ? <>A hypothetical seeded field from today's rankings, simulated 2,000 times. It re-prices with every refresh until the real draw drops. <Link to="/draw">See the full projected draw</Link>.</>
-                  : <>The champions are crowned. The road to the next slam appears here as rankings move. <Link to="/draw">Revisit the final bracket</Link>.</>}
-            </div>
+            <Link to="/edge" className="home-edge-card">
+              <div className="home-edge-split">
+                <div className="home-edge-side">
+                  <span className="home-edge-val">{proof.edge.usAcc}%</span>
+                  <span className="home-edge-cap">us</span>
+                </div>
+                <span className="home-edge-vs">vs</span>
+                <div className="home-edge-side muted">
+                  <span className="home-edge-val">{proof.edge.mktAcc}%</span>
+                  <span className="home-edge-cap">the bookmakers</span>
+                </div>
+              </div>
+              <div className="home-edge-body">
+                <p className="home-edge-line">
+                  Anyone can agree with the favorite. These are the {proof.edge.n} matches this season
+                  where we named a different winner than the market did, and one of us had to be wrong.
+                </p>
+                <p className="home-edge-money">
+                  Staking $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
+                    {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
+                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
+                    {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
+                  </strong> backing theirs.
+                </p>
+                <span className="home-edge-note">Settled at closing odds, every split graded. Not betting advice.</span>
+              </div>
+              <span className="home-nav-go">See every split →</span>
+            </Link>
           </section>
-          );
-        })()}
+        )}
 
         {/* ── Live board: what's on the tour right now ─────────────────── */}
         <section className="home-board">
@@ -504,6 +602,7 @@ export default function Home() {
             </Link>
           )}
           {picks.list.length > 0 && (
+          <div className={`home-board-wrap${slip ? ' has-slip' : ''}`}>
             <div className="home-board-grid">
               {picks.list.map((p) => {
                 const when = timeUntil(p.date);
@@ -545,51 +644,90 @@ export default function Home() {
                 );
               })}
             </div>
+
+            {/* Today's slip: the Parlay builder's own edge math, previewed.
+                It answers "is there anything worth backing today" before you
+                commit a click, and hands off to the full staking plan. */}
+            {slip && (
+              <aside className="home-slip" aria-label="Today's slip">
+                <div className="home-slip-cap">Today's slip</div>
+                <div className="home-slip-hero">
+                  <span className="home-slip-val">{slip.plus}</span>
+                  <span className="home-slip-valcap">
+                    of {slip.n} priced calls beat their price
+                  </span>
+                </div>
+                {slip.bestName && slip.bestEdge > 0 && (
+                  <div className="home-slip-row">
+                    <span className="home-slip-row-k">Biggest edge</span>
+                    <span className="home-slip-row-v pos">
+                      +{Math.round(slip.bestEdge * 100)}% · {slip.bestName}
+                    </span>
+                  </div>
+                )}
+                {slip.combo && (
+                  <div className="home-slip-row">
+                    <span className="home-slip-row-k">All {slip.combo.n} together</span>
+                    <span className="home-slip-row-v">
+                      {Math.round(slip.combo.p * 100)}% at {slip.combo.o.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <p className="home-slip-note">
+                  {slip.plus > 0
+                    ? 'Edge is our win probability times the price on offer, minus one. The builder sizes your stakes so the slip is break-even or better.'
+                    : 'Nothing on today\'s card beats its price, so the honest answer is to stake nothing. The builder shows you why.'}
+                </p>
+                <Link to="/parlay" className="home-slip-cta">Build and size a slip →</Link>
+              </aside>
+            )}
+          </div>
           )}
         </section>
 
-        {/* ── Destinations ─────────────────────────────────────────────── */}
-        {/* ── The Edge, on the front door ────────────────────────────────
-            The single hardest thing this app can claim, and it used to be
-            one number in the stat rail. Only the matches where our pick and
-            the bookmakers' favorite were different people: agreeing with the
-            market proves nothing. */}
-        {proof.state === 'ready' && proof.edge && (
-          <section className="home-edge">
-            <div className="home-section-head">
-              <h2 className="home-section-title">When we disagree with the bookmakers</h2>
-              <span className="home-section-sub">{proof.edge.n} graded splits this season</span>
-            </div>
-            <Link to="/edge" className="home-edge-card">
-              <div className="home-edge-split">
-                <div className="home-edge-side">
-                  <span className="home-edge-val">{proof.edge.usAcc}%</span>
-                  <span className="home-edge-cap">us</span>
-                </div>
-                <span className="home-edge-vs">vs</span>
-                <div className="home-edge-side muted">
-                  <span className="home-edge-val">{proof.edge.mktAcc}%</span>
-                  <span className="home-edge-cap">the bookmakers</span>
-                </div>
+        {/* ── Engine health: the guardrail board, summarised ─────────────
+            Five engines compete per surface and only one gets deployed; this
+            says whether each is still earning it, without making anyone open
+            the model card to find out. */}
+        {health?.cells?.length > 0 && (() => {
+          const cells = health.cells;
+          const passing = cells.filter((c) => c.status === 'ok').length;
+          const alerts = (health.alerts || []).length;
+          return (
+            <section className="home-health">
+              <div className="home-section-head">
+                <h2 className="home-section-title">The engines, right now</h2>
+                <span className="home-section-sub">
+                  {passing === cells.length
+                    ? `all ${cells.length} surfaces passing`
+                    : `${cells.length - passing} of ${cells.length} under review`}
+                </span>
               </div>
-              <div className="home-edge-body">
-                <p className="home-edge-line">
-                  On the {proof.edge.n} matches where our pick was a different player than the
-                  market's favorite, we called {proof.edge.usAcc}% of the winners.
+              <Link to="/model" className="home-health-card">
+                <div className="home-health-grid">
+                  {cells.map((c) => (
+                    <div className={`home-health-cell ${c.status}`} key={c.label}>
+                      <span className="home-health-top">
+                        <span className="home-health-dot" aria-hidden="true" />
+                        <span className="home-health-label">{c.label}</span>
+                      </span>
+                      <span className="home-health-acc">{c.recentAcc == null ? '--' : `${c.recentAcc}%`}</span>
+                      <span className="home-health-sub">last {c.recentN}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="home-health-note">
+                  Every surface runs five engines against each other and deploys the one earning the
+                  job. A cell goes under review the moment its recent form slips behind its season
+                  mark, and {alerts === 0 ? 'nothing is flagged today' : `${alerts} is flagged today`}.
                 </p>
-                <p className="home-edge-money">
-                  Staking $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
-                    {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
-                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
-                    {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
-                  </strong> backing theirs.
-                </p>
-                <span className="home-edge-note">Settled at closing odds, every split graded. Not betting advice.</span>
-              </div>
-              <span className="home-nav-go">See every split →</span>
-            </Link>
-          </section>
-        )}
+                <span className="home-nav-go">Look under the hood →</span>
+              </Link>
+            </section>
+          );
+        })()}
+
+        {titleOddsSection}
 
         <section className="home-nav">
           <div className="home-section-head">
