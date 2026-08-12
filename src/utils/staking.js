@@ -55,10 +55,20 @@ export function analyzeSlip(bets, parlay) {
   );
   const n = involved.length;
 
-  let pProfit = null, best = null;
-  const worst = -staked; // everything loses
+  // The extremes are closed-form: everything loses = -staked; everything wins =
+  // every single and the parlay pay out. No need to search for them.
+  const worst = -staked;
+  const best = bets.reduce((s, b) => s + ((b.single || 0) > 0 ? b.single * (b.o - 1) : 0), 0)
+    + (parlayActive ? parlay.stake * (combo.o - 1) : 0);
+
+  // Enumerate every outcome once: probability of finishing ahead + a P&L
+  // histogram (BINS buckets from worst to best) for the distribution bar.
+  const BINS = 15;
+  let pProfit = null, dist = null;
   if (n > 0 && n <= 16) {
-    let pPos = 0, bestP = -Infinity;
+    const span = best - worst || 1;
+    const bins = new Array(BINS).fill(0);
+    let pPos = 0;
     for (let mask = 0; mask < (1 << n); mask++) {
       let prob = 1, pl = 0;
       const win = {};
@@ -76,10 +86,13 @@ export function analyzeSlip(bets, parlay) {
         pl += parlay.legs.every((k) => win[k]) ? parlay.stake * (combo.o - 1) : -parlay.stake;
       }
       if (pl > 1e-9) pPos += prob;
-      if (pl > bestP) bestP = pl;
+      let bi = Math.floor(((pl - worst) / span) * BINS);
+      if (bi >= BINS) bi = BINS - 1;
+      if (bi < 0) bi = 0;
+      bins[bi] += prob;
     }
     pProfit = pPos;
-    best = bestP;
+    dist = { lo: worst, hi: best, bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })) };
   }
 
   return {
@@ -91,6 +104,7 @@ export function analyzeSlip(bets, parlay) {
     expProfit: ev,
     worst,
     best,
+    dist,
     parlay: parlayActive ? combo : null,
   };
 }

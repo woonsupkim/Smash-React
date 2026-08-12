@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { playerPhoto } from '../utils/playerPhotos';
-import { isToday, matchSlug } from '../utils/matchTime';
+import { isToday, matchSlug, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import './Parlay.css';
@@ -71,7 +71,7 @@ export default function Parlay() {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
       .then((d) => setAll((d.predictions || [])
-        .filter((p) => p.status === 'pending' && isToday(p.date))
+        .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
         .sort((a, b) => b.favProb - a.favProb)))
       .catch(() => setAll([]));
   }, []);

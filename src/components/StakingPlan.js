@@ -154,6 +154,33 @@ export default function StakingPlan({ legs }) {
             <div className="stake-metric"><span className="stake-metric-v">{money(analysis.best)}</span><span className="stake-metric-l">best case</span></div>
             <div className="stake-metric"><span className="stake-metric-v">{money(analysis.worst)}</span><span className="stake-metric-l">worst case</span></div>
           </div>
+
+          {analysis.dist && (() => {
+            const { lo, hi, bins } = analysis.dist;
+            const max = Math.max(...bins.map((b) => b.prob), 1e-9);
+            const zeroPct = hi > lo ? ((0 - lo) / (hi - lo)) * 100 : 50;
+            return (
+              <div className="stake-dist">
+                <div className="stake-dist-cap">Where you land, by our probabilities</div>
+                <div className="stake-dist-plot">
+                  <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
+                  <div className="stake-dist-bars">
+                    {bins.map((b, i) => (
+                      <span key={i} className={`stake-dist-bar ${b.win ? 'win' : 'loss'}`}
+                        style={{ height: `${Math.max(3, (b.prob / max) * 100)}%` }}
+                        title={`${pct(b.prob)} chance`} />
+                    ))}
+                  </div>
+                </div>
+                <div className="stake-dist-axis">
+                  <span>{money(lo)}</span>
+                  <span className="stake-dist-mid">loss ← break-even → profit</span>
+                  <span>+{money(hi).replace('-', '')}</span>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="stake-verdict">
             {analysis.breakEven
               ? <span className="stake-badge pos">✓ Break-even or better</span>

@@ -12,16 +12,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
-import { timeUntil, matchSlug, isToday, isPlaceholderTime } from '../utils/matchTime';
+import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import PushToggle from '../components/PushToggle';
 import useDocMeta from '../utils/useDocMeta';
 import './Today.css';
-
-// A real-timed match that kicked off well over a match-length ago has already
-// finished; drop it so already-played calls don't linger on today's board.
-// Placeholder-timed matches carry no real clock, so they stay for their day.
-const FINISHED_AFTER_MS = 5.5 * 60 * 60 * 1000; // a long best-of-five, plus a buffer
-const stillUpcoming = (p) => isPlaceholderTime(p.date) || (Date.now() - new Date(p.date).getTime()) < FINISHED_AFTER_MS;
 
 const SORTS = {
   time: { label: 'Start time', fn: (a, b) => new Date(a.date) - new Date(b.date) },
@@ -43,7 +37,7 @@ export default function Today() {
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
-      .then((d) => setAll((d.predictions || []).filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p))))
+      .then((d) => setAll((d.predictions || []).filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))))
       .catch(() => setAll([]));
     fetch(process.env.PUBLIC_URL + '/data/daily_scorecard.json')
       .then((r) => r.json())

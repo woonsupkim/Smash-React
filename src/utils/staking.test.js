@@ -43,6 +43,17 @@ describe('staking math', () => {
     expect(r.worst).toBe(-20);
   });
 
+  it('analyzeSlip returns a P&L histogram whose probabilities sum to 1', () => {
+    const r = analyzeSlip(
+      [{ key: 'a', p: 0.6, o: 2.0, single: 10 }, { key: 'b', p: 0.55, o: 2.1, single: 8 }],
+      { stake: 4, legs: ['a', 'b'] }
+    );
+    expect(r.dist).toBeTruthy();
+    expect(r.dist.bins.reduce((s, b) => s + b.prob, 0)).toBeCloseTo(1, 10);
+    expect(r.dist.lo).toBe(r.worst);
+    expect(r.dist.hi).toBeCloseTo(r.best, 10);
+  });
+
   it('recommendStakes puts the whole budget on +EV bets, nothing on -EV', () => {
     const bets = [
       { key: 'a', p: 0.6, o: 2.0 },  // +EV, kelly 0.2
