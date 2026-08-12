@@ -56,8 +56,9 @@ initMonitoring();
 //              title odds, who's hot) - everything whose value expires
 //   Simulate - "what if?" (the tools you drive: any matchup, any set of
 //              players, any rivalry, computed point by point)
-//   Proof    - "why should I believe it?" (the market head-to-head, the
-//              graded ledger, the engine internals)
+//   Receipts - "why should I believe it?" (the market head-to-head, the
+//              graded ledger, the engine internals) - the hero's "see the
+//              receipts" CTA lands here
 //   Brackets - "let me play with it" (build a draw, or take on the model)
 //
 // Today and Simulate were one pillar until it became clear they answer
@@ -92,7 +93,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Proof',
+    label: 'The Receipts',
     items: [
       { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
       { to: '/track-record', label: 'The Ledger · Every Call Graded' },
@@ -128,7 +129,7 @@ function NavBar() {
   const [openGroup, setOpenGroup] = useState(null);
 
   // What's-new pulse: a one-time dot whenever a release ships that this
-  // browser hasn't seen. It rides the Proof pillar now - releases here are
+  // browser hasn't seen. It rides the Receipts pillar now - releases here are
   // mostly changes to how calls are made and graded, and that pillar is
   // where the changelog link lives to explain them.
   const releaseKey = `${CHANGELOG[0]?.version}-${CHANGELOG[0]?.date}`;
@@ -179,7 +180,7 @@ function NavBar() {
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
             {NAV_GROUPS.map((group) => {
-              const showPulse = unseenRelease && group.label === 'Proof';
+              const showPulse = unseenRelease && group.label === 'The Receipts';
               return (
                 <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
                   <button
@@ -210,7 +211,7 @@ function NavBar() {
                         </li>
                       );
                     })}
-                    {group.label === 'Proof' && (
+                    {group.label === 'The Receipts' && (
                       <li>
                         <NavLink to="/changelog" className="nav-pillar-link nav-pillar-whatsnew">
                           What's new in v{CHANGELOG[0]?.version} →

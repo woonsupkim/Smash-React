@@ -275,19 +275,20 @@ export default function Home() {
       >
         {/* ── Hero: one centered column, everything on the same axis ───── */}
         <header className="home-hero">
-          <div className="eyebrow">GRAND SLAM PREDICTION ENGINE · ATP + WTA</div>
-          <h1 className="main-title">Simulate the Slams<br />in Seconds</h1>
+          <div className="eyebrow">MODEL VS MARKET · ATP + WTA</div>
+          <h1 className="main-title">We Beat the<br />Bookmakers</h1>
           <p className="sub-title">
-            Pick any two players. We compute the match point by point, every
-            path it can take, and show you who wins, how often, and by what
-            score. And we keep score on ourselves in public, match after match.
+            Every match gets a pick before it is played and a grade in public,
+            nothing quietly deleted. On the calls where we split from the betting
+            favorite, our pick has landed more often than theirs. Here is the
+            record, misses and all.
           </p>
           <div className="hero-ctas">
-            <Button as={Link} to="/h2h" className="cta-primary">
-              Simulate a Match
+            <Button as={Link} to="/edge" className="cta-primary">
+              See the receipts
             </Button>
-            <Button as={Link} to="/dream-brackets" className="cta-secondary">
-              Build a Bracket
+            <Button as={Link} to="/h2h" className="cta-secondary">
+              Run any matchup
             </Button>
           </div>
         </header>
@@ -298,7 +299,12 @@ export default function Home() {
         {proof.state === 'loading' && <div className="skeleton home-stats-skel" aria-hidden="true" />}
         {proof.state === 'ready' && proof.n > 0 && (
           <Link to="/track-record" className="home-stats">
-            {forward && forward.n >= 25 ? (
+            {proof.marketAcc != null ? (
+              <div className="home-stat">
+                <span className="home-stat-val">{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></span>
+                <span className="home-stat-cap">us vs the bookmakers</span>
+              </div>
+            ) : forward && forward.n >= 25 ? (
               <div className="home-stat">
                 <span className="home-stat-val">{forward.acc}%</span>
                 <span className="home-stat-cap">called before play · {forward.n.toLocaleString()} verified</span>
@@ -306,19 +312,26 @@ export default function Home() {
             ) : (
               <div className="home-stat">
                 <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
-                <span className="home-stat-cap">winners called · season benchmark</span>
+                <span className="home-stat-cap">winners called · season</span>
               </div>
+            )}
+            {proof.marketAcc != null && (
+              forward && forward.n >= 25 ? (
+                <div className="home-stat">
+                  <span className="home-stat-val">{forward.acc}%</span>
+                  <span className="home-stat-cap">called before play</span>
+                </div>
+              ) : (
+                <div className="home-stat">
+                  <span className="home-stat-val">{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></span>
+                  <span className="home-stat-cap">winners called · season</span>
+                </div>
+              )
             )}
             <div className="home-stat">
               <span className="home-stat-val">{proof.n.toLocaleString()}</span>
-              <span className="home-stat-cap">matches on the public record</span>
+              <span className="home-stat-cap">graded in public</span>
             </div>
-            {proof.marketAcc != null && (
-              <div className="home-stat">
-                <span className="home-stat-val">{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></span>
-                <span className="home-stat-cap">us vs the bookies</span>
-              </div>
-            )}
             <div className="home-stat home-stat-link">
               <span aria-hidden="true">→</span>
               <span className="home-stat-cap">full record</span>
@@ -580,26 +593,27 @@ export default function Home() {
 
         <section className="home-nav">
           <div className="home-section-head">
-            <h2 className="home-section-title">Explore</h2>
+            <h2 className="home-section-title">Where to go next</h2>
+            <span className="home-section-sub">start with the proof, then put the model to work</span>
           </div>
           <div className="home-nav-grid">
-            <Link to="/h2h" className="home-nav-card">
-              <div className="home-nav-num">01</div>
-              <div className="home-nav-name">H2H Studio</div>
-              <p className="home-nav-desc">Any two players, any surface. We compute the match point by point, every path it can take, and show you who wins, how often, and by what score.</p>
-              <span className="home-nav-go">Open the studio →</span>
-            </Link>
             <Link to="/edge" className="home-nav-card">
-              <div className="home-nav-num">02</div>
+              <div className="home-nav-num">01</div>
               <div className="home-nav-name">The Edge</div>
               <p className="home-nav-desc">Where we disagree with the betting market, and who turned out to be right. Both sides graded, misses included.</p>
               <span className="home-nav-go">See the splits →</span>
             </Link>
             <Link to="/track-record" className="home-nav-card">
-              <div className="home-nav-num">03</div>
+              <div className="home-nav-num">02</div>
               <div className="home-nav-name">The Ledger</div>
               <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
               <span className="home-nav-go">View the record →</span>
+            </Link>
+            <Link to="/h2h" className="home-nav-card">
+              <div className="home-nav-num">03</div>
+              <div className="home-nav-name">H2H Studio</div>
+              <p className="home-nav-desc">Any two players, any surface. We compute the match point by point, every path it can take, and show you who wins, how often, and by what score.</p>
+              <span className="home-nav-go">Open the studio →</span>
             </Link>
             <Link to="/draw" className="home-nav-card">
               <div className="home-nav-num">04</div>
