@@ -47,6 +47,8 @@
 }
 .match-result-chip.hit { color: var(--accent-positive); border-color: rgba(76, 175, 125, 0.5); background: rgba(76, 175, 125, 0.1); }
 .match-result-chip.miss { color: var(--accent-negative); border-color: rgba(224, 86, 86, 0.5); background: rgba(224, 86, 86, 0.1); }
+/* Voided: neither a hit nor a miss, so it must not borrow either colour. */
+.match-result-chip.void { color: var(--text-3); border-color: var(--border-1); background: rgba(255, 255, 255, 0.03); }
 
 /* Live win probability strip (broadcast graphic) */
 .live-prob {

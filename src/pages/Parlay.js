@@ -232,7 +232,7 @@ export default function Parlay() {
       <div className="parlay-footer">
         <Link to="/today">Today's calls</Link>
         <Link to="/edge">The Edge</Link>
-        <Link to="/track-record">The receipts</Link>
+        <Link to="/track-record">The Ledger</Link>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export default function Changelog() {
       <p className="changelog-sub">
         Every change to the prediction engine and the product, dated and versioned.
         The current engine is <strong>model v{MODEL_VERSION}</strong>; its live accuracy is
-        graded on the <Link to="/track-record">track record</Link>.
+        graded on <Link to="/track-record">the Ledger</Link>.
       </p>
 
       <div className="changelog-list">

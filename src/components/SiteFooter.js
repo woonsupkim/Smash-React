@@ -43,7 +43,7 @@ export default function SiteFooter() {
         <div className="site-footer-brand">
           <div className="site-footer-logo">SMASH</div>
           <p className="site-footer-tag">
-            Grand slam prediction engine. Every call graded in public.
+            Tennis calls locked before play, graded in public, and measured against the bookmakers.
           </p>
           <p className="site-footer-sla">
             Model v{MODEL_VERSION}
@@ -60,45 +60,52 @@ export default function SiteFooter() {
           <DigestSignup />
         </div>
 
+        {/* Columns mirror the top nav's pillars exactly, in the same order.
+            They used to be grouped differently (Simulate / Proof), so the same
+            page sat under two different headings depending on where you
+            looked. Legal moved to the bottom bar to keep this to four. */}
         <div className="site-footer-colgroup">
-          <nav className="site-footer-col" aria-label="Simulate">
-            <div className="site-footer-head">Simulate</div>
-            <Link to={prefix('/h2h')}>H2H Studio</Link>
+          <nav className="site-footer-col" aria-label="Today">
+            <div className="site-footer-head">Today</div>
             <Link to="/today">Today's Calls</Link>
+            <Link to="/parlay">The Parlay Builder</Link>
             <Link to="/draw">The Draw · Title Odds</Link>
             <Link to="/form">The Form Chart</Link>
+          </nav>
+
+          <nav className="site-footer-col" aria-label="H2H">
+            <div className="site-footer-head">H2H</div>
+            <Link to={prefix('/h2h')}>H2H Studio</Link>
             <Link to="/compare">Compare Players</Link>
             <Link to="/rivalries">Rivalries</Link>
           </nav>
+        </div>
 
+        <div className="site-footer-colgroup">
           <nav className="site-footer-col" aria-label="Brackets">
             <div className="site-footer-head">Brackets</div>
             <Link to={prefix('/dream-brackets')}>Dream Brackets</Link>
             <Link to="/challenge">Bracket Challenge</Link>
           </nav>
-        </div>
 
-        <div className="site-footer-colgroup">
-          <nav className="site-footer-col" aria-label="Proof">
-            <div className="site-footer-head">Proof</div>
-            <Link to={prefix('/track-record')}>The Ledger · Track Record</Link>
+          <nav className="site-footer-col" aria-label="The Receipts">
+            <div className="site-footer-head">The Receipts</div>
+            <Link to={prefix('/track-record')}>The Ledger · Every Call Graded</Link>
             <Link to="/edge">The Edge · Vs the Market</Link>
             <Link to="/model">The Engine Room · Model</Link>
             <Link to="/season">The Rewind · Season</Link>
-            <Link to="/methodology">Methodology</Link>
+            <Link to="/methodology">How It Works</Link>
             <Link to="/changelog">Changelog</Link>
-          </nav>
-
-          <nav className="site-footer-col" aria-label="Legal">
-            <div className="site-footer-head">Legal</div>
-            <Link to="/terms">Terms of Use</Link>
-            <Link to="/privacy">Privacy</Link>
-            <Link to="/disclaimer">Responsible Use</Link>
           </nav>
         </div>
       </div>
 
       <div className="site-footer-legal">
+        <span className="site-footer-legal-links">
+          <Link to="/terms">Terms of Use</Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/disclaimer">Responsible Use</Link>
+        </span>
         © {new Date().getFullYear()} Smash. For research and entertainment only -
         probabilities, not betting advice. Not affiliated with the ATP or WTA tours.
       </div>

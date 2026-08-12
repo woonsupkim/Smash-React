@@ -10,6 +10,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect, pickFavorite } from '../utils/deployedPick';
 import { edgePerDollar, parlayCombo, recommendStakes, analyzeSlip } from '../utils/staking';
+import { nextSlam, prevSlam } from '../utils/slamCalendar';
 import './Home.css';
 
 // Recent-form window for the forward record, matching the guardrail board's
@@ -47,45 +48,6 @@ function introAlreadySeen() {
 }
 function markIntroSeen() {
   try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch { /* private browsing */ }
-}
-
-// Grand slam calendar rules (mirrors data-pipeline/lib/slamCalendar.js):
-// AO = 3rd Monday of January, RG = last Sunday of May, Wimbledon = last
-// Monday of June, US Open = last Monday of August. Good to within a day or
-// two, which is all a countdown needs.
-// UTC like the pipeline's slamCalendar, so the countdown can't drift a day
-// from the rest of the app for viewers west of UTC.
-function nthMonday(year, month, n) {
-  const d = new Date(Date.UTC(year, month, 1));
-  const offset = (8 - d.getUTCDay()) % 7;
-  return new Date(Date.UTC(year, month, 1 + offset + (n - 1) * 7));
-}
-function lastWeekday(year, month, weekday) {
-  const d = new Date(Date.UTC(year, month + 1, 0));
-  const back = (d.getUTCDay() - weekday + 7) % 7;
-  return new Date(Date.UTC(year, month, d.getUTCDate() - back));
-}
-const slamsIn = (y) => [
-  { name: 'Australian Open', surface: 'hard', start: nthMonday(y, 0, 3) },
-  { name: 'French Open', surface: 'clay', start: lastWeekday(y, 4, 0) },
-  { name: 'Wimbledon', surface: 'grass', start: lastWeekday(y, 5, 1) },
-  { name: 'US Open', surface: 'hard', start: lastWeekday(y, 7, 1) },
-];
-function nextSlam(now = new Date()) {
-  const all = [...slamsIn(now.getFullYear()), ...slamsIn(now.getFullYear() + 1)];
-  return all.find((s) => s.start > now);
-}
-// The most recent slam already underway or finished. Slams start on a
-// Monday and the final lands on the second Sunday (start + 13 days), so
-// "ended" = the Monday after (start + 14 days). Everything dated from that
-// Monday on is "between the slams": the summer/spring swings the weekly
-// refresh feeds in.
-function prevSlam(now = new Date()) {
-  const all = [...slamsIn(now.getFullYear() - 1), ...slamsIn(now.getFullYear())];
-  const past = all.filter((s) => s.start <= now);
-  const last = past[past.length - 1];
-  if (!last) return null;
-  return { ...last, end: new Date(last.start.getTime() + 14 * 864e5) };
 }
 
 // Wilson 95% interval - same as the Track Record / Methodology headline, so

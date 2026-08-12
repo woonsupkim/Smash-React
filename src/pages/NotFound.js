@@ -12,7 +12,7 @@ export default function NotFound() {
       <div className="notfound-links">
         <Link to="/">Home</Link>
         <Link to="/h2h">Head to Head</Link>
-        <Link to="/track-record">Track Record</Link>
+        <Link to="/track-record">The Ledger</Link>
         <Link to="/methodology">Methodology</Link>
       </div>
     </div>

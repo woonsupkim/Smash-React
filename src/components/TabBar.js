@@ -17,7 +17,7 @@ const TABS = [
   { key: 'home', label: 'Home', icon: Home, path: '/', match: (p) => p === '/' || p === '/women', tourAware: true },
   { key: 'h2h', label: 'H2H', icon: Swords, path: '/h2h', match: (p) => p.endsWith('/h2h'), tourAware: true },
   { key: 'edge', label: 'Edge', icon: TrendingUp, path: '/edge', match: (p) => p.endsWith('/edge') },
-  { key: 'record', label: 'Record', icon: BarChart2, path: '/track-record', match: (p) => p.endsWith('/track-record'), tourAware: true },
+  { key: 'record', label: 'Ledger', icon: BarChart2, path: '/track-record', match: (p) => p.endsWith('/track-record'), tourAware: true },
 ];
 
 export default function TabBar() {

@@ -110,8 +110,11 @@ function run() {
   }
 
   // Forward test: the locked-before-play record over its own recent window.
+  // Graded only: a 'void' call carries no winner and correct === undefined, so
+  // counting it here both understated the record and could trip the sub-50%
+  // alert below on matches nobody ever played.
   const decided = (preds.predictions || [])
-    .filter((p) => p.status !== 'pending')
+    .filter((p) => p.status === 'won' || p.status === 'lost')
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const fRecent = decided.slice(-WINDOW);
   const fAcc = pct(fRecent, (p) => p.correct);

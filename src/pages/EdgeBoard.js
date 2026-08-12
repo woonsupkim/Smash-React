@@ -262,7 +262,7 @@ export default function EdgeBoard() {
       <p className="edge-note">
         Market probabilities are the vig-stripped implied probabilities of the closing odds
         recorded for each match. "Our pick" is the deployed call from the{' '}
-        <Link to="/track-record">public ledger</Link> - the same one graded on every page of
+        <Link to="/track-record">the Ledger</Link> - the same one graded on every page of
         this site. Methodology in <Link to="/model">the Engine Room</Link>.
       </p>
     </div>

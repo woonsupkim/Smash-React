@@ -395,9 +395,10 @@ async function run() {
   fs.writeFileSync(outPath, JSON.stringify(store));
 
   const pending = store.predictions.filter((p) => p.status === 'pending').length;
-  const decided = store.predictions.filter((p) => p.status !== 'pending');
+  const decided = store.predictions.filter((p) => p.status === 'won' || p.status === 'lost');
+  const voids = store.predictions.filter((p) => p.status === 'void').length;
   const wins = decided.filter((p) => p.correct).length;
-  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}, rescheduled ${rescheduled}, lock-odds stamped ${stamped}. Now ${pending} pending, ${decided.length} decided (${wins} correct).`);
+  console.log(`Graded ${graded}, refreshed ${refreshed}, added ${added}, rescheduled ${rescheduled}, lock-odds stamped ${stamped}. Now ${pending} pending, ${decided.length} graded (${wins} correct), ${voids} void.`);
   if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 

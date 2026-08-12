@@ -319,7 +319,7 @@ export default function ModelCard() {
       </section>
 
       <p className="mc-foot">
-        Every graded call stays public on the <Link to="/track-record">track record</Link>.
+        Every graded call stays public on <Link to="/track-record">the Ledger</Link>.
         Changes ship through the <Link to="/changelog">changelog</Link>.
       </p>
     </div>

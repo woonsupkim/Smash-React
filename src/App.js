@@ -15,6 +15,7 @@ import { CHANGELOG } from './data/changelog';
 import { ToastHost } from './components/ui/Toast';
 import { Analytics } from '@vercel/analytics/react';
 import { motion } from 'framer-motion';
+import { liveSlam } from './utils/slamCalendar';
 
 import logoHome from './assets/ball.png';
 
@@ -78,18 +79,21 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // Three surfaces here take two players. The labels have to say what each
+    // one is FOR, or they read as three doors to the same room: the studio
+    // prices a matchup, Compare lines the numbers up, Rivalries is history.
     label: 'H2H',
     items: [
-      { to: '/h2h', label: 'H2H Studio · Any Matchup' },
-      { to: '/compare', label: 'Compare Players', tourAgnostic: true },
-      { to: '/rivalries', label: 'Rivalries', tourAgnostic: true },
+      { to: '/h2h', label: 'H2H Studio · Price Any Matchup' },
+      { to: '/compare', label: 'Compare Players · Stat by Stat', tourAgnostic: true },
+      { to: '/rivalries', label: 'Rivalries · The Long Stories', tourAgnostic: true },
     ],
   },
   {
     label: 'Brackets',
     items: [
       { to: '/dream-brackets', label: 'Dream Brackets · Build One' },
-      { to: '/challenge', label: 'Bracket Challenge · Beat the Model', tourAgnostic: true },
+      { to: '/challenge', label: 'Bracket Challenge · Beat the Model', tourAgnostic: true, slamOnly: true },
     ],
   },
   {
@@ -98,10 +102,21 @@ const NAV_GROUPS = [
       { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
       { to: '/track-record', label: 'The Ledger · Every Call Graded' },
       { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
-      { to: '/season', label: 'The Rewind · Season', tourAgnostic: true },
+      { to: '/season', label: 'The Rewind · Season', tourAgnostic: true, slamOnly: true },
     ],
   },
 ];
+
+// Seasonal items (`slamOnly`) drop out of the top nav between slams, when
+// there is no bracket to pick and no season to look back on. The pages and
+// their URLs stay live and stay listed in the footer - this only stops two of
+// fourteen nav slots being dead weight for most of the year.
+function visibleGroups(now) {
+  const live = liveSlam(now) != null;
+  return NAV_GROUPS
+    .map((g) => ({ ...g, items: g.items.filter((i) => !i.slamOnly || live) }))
+    .filter((g) => g.items.length > 0);
+}
 
 // Prefixes a men's-side path with /women, or strips it back off - the single
 // source of truth both the nav links and the toggle use for "which tour am I
@@ -160,6 +175,10 @@ function NavBar() {
   const groupActive = (group) =>
     group.items.some(({ to, tourAgnostic }) => isLinkActive(tourAgnostic ? to : withTour(to, isWomen)));
 
+  // Recomputed per render rather than memoised: it only changes when a slam
+  // starts or ends, and this is a handful of date comparisons.
+  const groups = visibleGroups(new Date());
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" onKeyDown={(e) => { if (e.key === 'Escape') setOpenGroup(null); }}>
       <div className="container">
@@ -179,8 +198,21 @@ function NavBar() {
         </button>
         <div className={`collapse navbar-collapse${navOpen ? ' show' : ''}`} id="navbarNav">
           <ul className="navbar-nav ms-auto d-flex align-items-center">
-            {NAV_GROUPS.map((group) => {
+            {groups.map((group) => {
               const showPulse = unseenRelease && group.label === 'The Receipts';
+              // A pillar left with one item is a dropdown that costs a click to
+              // reveal a single link, so it renders as that link instead.
+              if (group.items.length === 1 && group.label !== 'The Receipts') {
+                const only = group.items[0];
+                const target = only.tourAgnostic ? only.to : withTour(only.to, isWomen);
+                return (
+                  <li className="nav-item nav-pillar" key={group.label}>
+                    <NavLink to={target} className={`nav-link nav-pillar-btn${isLinkActive(target) ? ' active' : ''}`}>
+                      {group.label}
+                    </NavLink>
+                  </li>
+                );
+              }
               return (
                 <li className={`nav-item nav-pillar${openGroup === group.label ? ' open' : ''}`} key={group.label}>
                   <button

@@ -127,7 +127,7 @@ export default function MatchPage() {
         <div className="eyebrow">MATCH</div>
         <h1 className="match-title-line">Match not found</h1>
         <p className="match-sub">This call may have rotated off the board. The record keeps everything:</p>
-        <Link className="match-cta" to="/track-record">See the track record →</Link>
+        <Link className="match-cta" to="/track-record">See the Ledger →</Link>
       </div>
     );
   }
@@ -135,7 +135,13 @@ export default function MatchPage() {
   const favIsP1 = pred.favorite === pred.p1;
   const favPct = Math.round(pred.favProb * 100);
   const favLast = lastName(pred.favName);
-  const decided = pred.status !== 'pending';
+  // Graded means won or lost. A 'void' call never resolved (walkover,
+  // retirement, a fixture that vanished from the schedule) and carries no
+  // winner and no score - treating it as decided rendered "Missed, <the other
+  // player> won", inventing a result for a match nobody played.
+  const graded = pred.status === 'won' || pred.status === 'lost';
+  const voided = pred.status === 'void';
+  const decided = graded || voided;
   const accent = SURFACE_ACCENTS[pred.surface] || '#fff';
   const studioHref = `${pred.tour === 'wta' ? '/women' : ''}/h2h?surface=${pred.surface}&a=${pred.p1}&b=${pred.p2}`;
 
@@ -165,9 +171,13 @@ export default function MatchPage() {
       <h1 className="match-title-line">{pred.name1} <span className="match-vs">vs</span> {pred.name2}</h1>
 
       <div className="match-when">
-        {decided ? (
+        {graded ? (
           <span className={`match-result-chip ${pred.correct ? 'hit' : 'miss'}`}>
             {pred.correct ? '✓ Called it' : '✗ Missed'} · {pred.winner === pred.p1 ? pred.name1 : pred.name2} won{pred.score ? ` ${pred.score}` : ''}
+          </span>
+        ) : voided ? (
+          <span className="match-result-chip void">
+            Never played · this call was voided, not graded
           </span>
         ) : (
           <>
@@ -194,7 +204,10 @@ export default function MatchPage() {
         <div className="match-bar">
           <div className="match-bar-fill" style={{ width: `${favIsP1 ? favPct : 100 - favPct}%` }} />
         </div>
-        <p className="match-verdict-line">{verdictLine(pred.favProb, favLast)} Locked before play{decided ? ', graded after' : ''}.</p>
+        <p className="match-verdict-line">
+          {verdictLine(pred.favProb, favLast)} Locked before play
+          {graded ? ', graded after' : voided ? '. The match was never played, so it counts for nothing either way' : ''}.
+        </p>
       </div>
 
       {/* Your call + the fan tally. Voting closes at kickoff, not at grading:

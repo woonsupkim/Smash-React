@@ -69,7 +69,7 @@ export default function Methodology() {
         <div className="method-page">
           <div className="method-header">
             <div className="eyebrow">HOW IT WORKS</div>
-            <h1 className="method-title">Methodology</h1>
+            <h1 className="method-title">No black box</h1>
             <p className="method-sub">
               A tennis prediction is only as good as its scorecard. Here is exactly how
               the model makes a pick, what it is measured against, and where it falls short.
@@ -177,7 +177,7 @@ export default function Methodology() {
               <strong> bookmaker favorite</strong>: the market's shortest price already prices in
               everything public, so matching or beating the closing line is the most credible claim in
               sports prediction. Both are shown on the{' '}
-              <Link to="/track-record">Track Record</Link> page over the exact same matches.
+              <Link to="/track-record">the Ledger</Link> over the exact same matches.
             </p>
           </section>
 
@@ -193,7 +193,7 @@ export default function Methodology() {
           </section>
 
           <div className="method-footer">
-            <Button as={Link} variant="primary" to="/track-record">See the full track record →</Button>
+            <Button as={Link} variant="primary" to="/track-record">See every graded call →</Button>
           </div>
         </div>
       </div>

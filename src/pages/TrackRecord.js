@@ -394,10 +394,11 @@ export default function TrackRecord() {
         <div className="track-page">
           <div className="track-header">
             <div className="eyebrow">THE LEDGER · {new Date().getFullYear()} SEASON</div>
-            <h1 className="track-title">Track Record</h1>
+            <h1 className="track-title">Every call, graded</h1>
             <p className="track-sub">
               Every completed {new Date().getFullYear()} tour match between two ranked players, scored
-              against what actually happened. No cherry-picking. Every match counts.
+              against what actually happened. No cherry-picking, no quiet deletions. The misses are
+              in here too, and they count the same.
             </p>
             <div className="track-header-meta">
               <Link className="track-method-link" to="/methodology">How it works →</Link>
