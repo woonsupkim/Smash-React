@@ -1,16 +1,33 @@
-SMASH WEEKLY DIGEST · 2026-08-12
+SMASH WEEKLY · 2026-08-12
 
-Last 7 days: 82 of 126
-  65% of winners called across every graded match this week.
-Season benchmark: 3,124 of 4,666
-  67% - today's engines replayed over the season. A benchmark, not a live betting record.
-Current streak: 4 straight
-  Consecutive winners called, counting back from the most recent graded match.
-Forward test: 94-41
-  Predictions locked before play, then graded in public. 42 more pending.
+THE WEEK: 82 of 126 (65%)
 
-Next up: US Open on hard, 19 days out.
+DAY BY DAY
+  Thu: 15/30 (50%)
+  Fri: 9/14 (64%)
+  Sat: 10/12 (83%)
+  Sun: 6/10 (60%)
+  Mon: 4/4 (100%)
+  Tue: 4/5 (80%)
+  Wed: 6/7 (86%)
 
-See the full track record: https://smash-react.vercel.app/track-record
+BOLD CALLS THAT LANDED
+  + Zandschulp (against the market) 3-6 7-6(4) 7-5
+  + Tien (against the market) 6-3 6-2
+
+THE ONES WE GOT WRONG
+  - Sabalenka lost to Alexandrova 7-6(3) 4-6 6-4
+  - Andreeva lost to Fernandez 6-1 6-4
+  - Zverev lost to Griekspoor 6-7(3) 6-2 6-4
+
+US VS THE BOOKMAKERS: 60% vs 77% (48 priced matches)
+
+FORWARD TEST: 94-41 (42 pending)
+SEASON BENCHMARK: 67% (3,124 of 4,666)
+
+NEXT UP: 19 days to the US Open
+
+Open the Ledger: https://smash-react.vercel.app/track-record
 
 Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.
+Unsubscribe by replying "stop". https://smash-react.vercel.app

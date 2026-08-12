@@ -1,16 +1,28 @@
 SMASH DAILY · 2026-08-12
 
-Yesterday: 6 of 7
-  86% of winners called, every one locked before play.
-The one we own: Sebastian Ofner (we said 63%)
-  Marco Trungelliti won it. Misses go in the record at full weight.
-Boldest call: Jaime Faria over Nikoloz Basilashvili
-  Our narrowest pick of the day at 55%.
-Locked for today: 6 calls
-  Already locked and public. Whatever happens, they get graded tomorrow.
-Season benchmark: 67%
-  3,124 of 4,666 - today's engines replayed over the season.
+YESTERDAY: 6 of 7 (86%)
+  The one we own: Sebastian Ofner (we said 63%) (Marco Trungelliti won)
 
-See today's calls: https://smash-react.vercel.app/today
+ON COURT TODAY (6 locked)
+  Halys over Yunchaokete · 52% · Cincinnati
+    https://smash-react.vercel.app/match/bu-yunchaokete-vs-quentin-halys-184435
+  Korneeva over Charaeva · 64% · Cincinnati
+    https://smash-react.vercel.app/match/alina-charaeva-vs-alina-korneeva-184477
+  Lys over Blinkova · 66% · Cincinnati
+    https://smash-react.vercel.app/match/anna-blinkova-vs-eva-lys-184468
+  Jodar over Nakashima · 62% · Canada
+    https://smash-react.vercel.app/match/brandon-nakashima-vs-rafael-jodar-181793
+  Swiatek over Svitolina · 72% · Canada
+    https://smash-react.vercel.app/match/iga-swiatek-vs-elina-svitolina-182206
+
+SIZE TODAY'S SLIP: https://smash-react.vercel.app/parlay
+
+COUNTDOWN: 19 days to the US Open (hard)
+  https://smash-react.vercel.app/draw
+
+SEASON BENCHMARK: 67% (3,124 of 4,666)
+
+Size today's slip: https://smash-react.vercel.app/parlay
 
 Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.
+Unsubscribe by replying "stop". https://smash-react.vercel.app
