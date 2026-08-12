@@ -54,6 +54,30 @@ describe('staking math', () => {
     expect(r.dist.hi).toBeCloseTo(r.best, 10);
   });
 
+  it('dropping the parlay (no legs) sizes and grades singles only', () => {
+    const bets = [
+      { key: 'a', p: 0.6, o: 2.0, single: 10 },
+      { key: 'b', p: 0.7, o: 1.8, single: 10 },
+    ];
+    // Same slip, with and without the parlay switched on. Unticking it is
+    // modelled as "no legs carry the parlay", which is what the master
+    // checkbox does, so the parlay must contribute nothing at all.
+    const withPar = analyzeSlip(bets, { stake: 5, legs: ['a', 'b'] });
+    const singlesOnly = analyzeSlip(bets, { stake: 0, legs: [] });
+
+    expect(singlesOnly.staked).toBe(20);           // the 5 parlay stake is gone
+    expect(singlesOnly.parlay).toBeNull();
+    expect(singlesOnly.ev).toBeCloseTo(10 * (0.6 * 2 - 1) + 10 * (0.7 * 1.8 - 1), 10);
+    expect(singlesOnly.worst).toBe(-20);
+    expect(singlesOnly.best).toBeCloseTo(10 * 1.0 + 10 * 0.8, 10);
+    expect(withPar.staked).toBe(25);
+
+    // Budget mode: with no parlay legs the recommender can only fund singles.
+    const rec = recommendStakes(bets, [], 100);
+    expect(rec.parlay).toBe(0);
+    expect((rec.singles.a || 0) + (rec.singles.b || 0)).toBeCloseTo(100, 6);
+  });
+
   it('recommendStakes puts the whole budget on +EV bets, nothing on -EV', () => {
     const bets = [
       { key: 'a', p: 0.6, o: 2.0 },  // +EV, kelly 0.2

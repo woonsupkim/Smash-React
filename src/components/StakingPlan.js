@@ -3,9 +3,20 @@
 // The Parlay builder's Staking Plan: honest EV + risk for a slip of singles
 // and a parlay, in two modes - "My stakes" (grade what you'd bet, then balance
 // it to break-even) and "From budget" (recommend a break-even-or-better split).
+//
+// The parlay is optional. Untick it and every number below is re-derived for
+// singles only, which is the common case: you want per-match stakes and the
+// parlay is a separate decision. It stays on screen while switched off so you
+// can see what you are leaving on the table.
+//
+// This table is also the page's only list of your selection - the picks link
+// out to their match pages - so the slip above can stay a verdict on value
+// while this answers what to actually stake.
 // All the math lives in utils/staking; this is just the controls and readout.
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
+import { matchSlug } from '../utils/matchTime';
 import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo } from '../utils/staking';
 import './StakingPlan.css';
 
@@ -19,12 +30,25 @@ export default function StakingPlan({ legs }) {
   const [stakes, setStakes] = useState({});        // { id: singleStake }
   const [oddsOverride, setOddsOverride] = useState({}); // { id: decimalOdds }
   const [inParlay, setInParlay] = useState({});    // { id: bool }, default true
+  const [useParlay, setUseParlay] = useState(true); // master switch: singles only when off
   const [parlayStake, setParlayStake] = useState(0);
   const [budget, setBudget] = useState(50);
 
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
-  const parlayLegIds = legs.filter(isIn).map((l) => l.id);
+  // Which legs the parlay WOULD cover, versus which it actually does. The
+  // master switch only empties the second: the per-leg ticks stay live so
+  // switching the parlay back on restores exactly the combination you built.
+  // Both are memoised because analyzeSlip enumerates 2^n outcomes off them.
+  const pickedLegIds = useMemo(
+    () => legs.filter(isIn).map((l) => l.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [legs, oddsOverride, inParlay]
+  );
+  const parlayLegIds = useMemo(
+    () => (useParlay ? pickedLegIds : []),
+    [useParlay, pickedLegIds]
+  );
 
   // Bets carry the odds you'll actually get; singles come from your inputs
   // (My stakes) or from the recommender (From budget).
@@ -37,17 +61,21 @@ export default function StakingPlan({ legs }) {
     const bets = priceBets(() => 0);
     return recommendStakes(bets, parlayLegIds, Number(budget) || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, budget, legs, oddsOverride, inParlay]);
+  }, [mode, budget, legs, oddsOverride, inParlay, useParlay]);
 
   const singleFor = (l) => (mode === 'budget' ? (rec?.singles[l.id] || 0) : (Number(stakes[l.id]) || 0));
   const bets = priceBets(singleFor);
-  const parStake = mode === 'budget' ? (rec?.parlay || 0) : (Number(parlayStake) || 0);
+  const parStake = useParlay
+    ? (mode === 'budget' ? (rec?.parlay || 0) : (Number(parlayStake) || 0))
+    : 0;
   const analysis = useMemo(
     () => analyzeSlip(bets, { stake: parStake, legs: parlayLegIds }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [bets, parStake, parlayLegIds]
   );
-  const combo = parlayCombo(bets, parlayLegIds);
+  // Priced off the legs you ticked, not off what is switched on, so the row
+  // can still show what the parlay is worth while it sits idle.
+  const combo = parlayCombo(bets, pickedLegIds);
 
   // "Balance to break-even": keep the same total on the table, but move it onto
   // the +EV bets only (a -EV leg can't be sized to break even, so it goes to 0).
@@ -69,7 +97,7 @@ export default function StakingPlan({ legs }) {
           <p className="stake-sub">
             Size your singles and parlay so the slip's expected value is break-even or better.
             Edge is <strong>your odds × our win probability − 1</strong>; a bet is only worth
-            staking when that's positive.
+            staking when that's positive. Untick the parlay to size the singles on their own.
           </p>
         </div>
         <div className="stake-modes" role="tablist" aria-label="Staking mode">
@@ -82,11 +110,14 @@ export default function StakingPlan({ legs }) {
         <label className="stake-budget">
           Total to stake
           <span className="stake-budget-in">$<input type="number" min="0" step="5" value={budget} onChange={(e) => setBudget(e.target.value)} /></span>
-          <span className="stake-budget-note">Split across only the +EV bets, by edge strength (Kelly). Guaranteed break-even or better.</span>
+          <span className="stake-budget-note">
+            Split across only the +EV {useParlay ? 'bets' : 'singles'}, by edge strength (Kelly).
+            Guaranteed break-even or better.
+          </span>
         </label>
       )}
 
-      <div className="stake-table" role="table">
+      <div className={`stake-table${useParlay ? '' : ' no-parlay'}`} role="table">
         <div className="stake-row stake-row-head" role="row">
           <span>Pick</span><span>Your odds</span><span>Edge</span><span>{mode === 'budget' ? 'Suggested' : 'Single $'}</span><span>Parlay</span>
         </div>
@@ -97,7 +128,7 @@ export default function StakingPlan({ legs }) {
           return (
             <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}`} role="row" key={l.id}>
               <span className="stake-pick">
-                <strong>{lastName(l.favName)}</strong>
+                <strong><Link to={`/match/${matchSlug(l)}`}>{lastName(l.favName)}</Link></strong>
                 <em>over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}</em>
               </span>
               <span className="stake-odds">
@@ -123,17 +154,27 @@ export default function StakingPlan({ legs }) {
         })}
 
         {combo.priced && (
-          <div className="stake-row stake-row-parlay" role="row">
-            <span className="stake-pick"><strong>Parlay</strong><em>{combo.n} legs · lands {pct(combo.p)}</em></span>
+          <div className={`stake-row stake-row-parlay${useParlay ? '' : ' off'}`} role="row">
+            <span className="stake-pick">
+              <strong>Parlay</strong>
+              <em>
+                {combo.n} legs · lands {pct(combo.p)} · fair {(1 / combo.p).toFixed(2)}
+                {!useParlay && ' · not staked'}
+              </em>
+            </span>
             <span className="stake-odds fixed">{combo.o.toFixed(2)}</span>
             <span className={`stake-edge ${combo.edge >= 0 ? 'pos' : 'neg'}`}>{pctSigned(combo.edge)}</span>
             <span className="stake-single">
               {mode === 'budget'
                 ? <span className="stake-suggest">{parStake > 0 ? money(parStake) : '—'}</span>
                 : <input type="number" min="0" step="1" value={parlayStake || ''} placeholder="0"
+                    disabled={!useParlay}
                     onChange={(e2) => setParlayStake(e2.target.value)} />}
             </span>
-            <span />
+            <span className="stake-inpar">
+              <input type="checkbox" aria-label="Include the parlay in this plan"
+                checked={useParlay} onChange={() => setUseParlay((v) => !v)} />
+            </span>
           </div>
         )}
       </div>
@@ -201,9 +242,9 @@ export default function StakingPlan({ legs }) {
       )}
 
       <p className="stake-fine">
-        Expected value is a long-run average across many identical slips — any single slip can lose,
+        Expected value is a long-run average across many identical slips: any single slip can lose,
         and the worst case above is real. Odds default to the price we locked; edit them to your live
-        book. Legs are treated as independent. A probability tool, not betting advice — see{' '}
+        book. Legs are treated as independent. A probability tool, not betting advice, see{' '}
         <a href="/disclaimer">responsible use</a>.
       </p>
     </div>

@@ -165,27 +165,8 @@
 .parlay-empty a,
 .parlay-intro a { color: var(--accent-brand); }
 
-/* ── Selected legs, spelled out ───────────────────────────────────────── */
-.parlay-legs-out { margin-top: 1.5rem; }
-.parlay-legs-cap {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-3);
-  margin-bottom: 0.5rem;
-}
-.parlay-legs-out ul { list-style: none; margin: 0; padding: 0; }
-.parlay-legs-out li {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-1);
-}
-.parlay-legs-out a { color: var(--text-1); text-decoration: none; font-weight: 600; }
-.parlay-legs-out a:hover { color: var(--accent-brand); }
-.parlay-legs-out .muted { color: var(--text-3); font-weight: 400; }
-.parlay-legs-pct { color: var(--accent-brand); font-weight: 700; }
+/* The selected legs used to be spelled out again here; the staking plan's
+   table is now the single list (see StakingPlan.css). */
 
 .parlay-footer {
   display: flex;

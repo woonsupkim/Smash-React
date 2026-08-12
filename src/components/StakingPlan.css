@@ -34,6 +34,8 @@
 .stake-row.neg { opacity: 0.72; }
 .stake-pick { display: flex; flex-direction: column; min-width: 0; }
 .stake-pick strong { color: var(--text-1, #fff); font-weight: 700; font-size: 0.9rem; }
+.stake-pick strong a { color: inherit; text-decoration: none; }
+.stake-pick strong a:hover { text-decoration: underline; }
 .stake-pick em { font-style: normal; color: var(--text-3, #7c8698); font-size: 0.74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .stake-plan input[type="number"] {
@@ -57,6 +59,12 @@
 
 .stake-row-parlay { border-top: 1px solid rgba(255, 255, 255, 0.16); border-bottom: none; margin-top: 2px; padding-top: 0.7rem; }
 .stake-row-parlay .stake-pick strong { color: var(--accent-brand, #c8ff2e); }
+/* Switched off: still legible (it says what you'd be turning back on) but
+   visibly out of the plan, and the per-leg parlay ticks dim with it. */
+.stake-row-parlay.off { opacity: 0.6; }
+.stake-row-parlay.off .stake-pick strong { color: var(--text-2, #9aa4b2); }
+.stake-row-parlay.off .stake-edge { color: var(--text-3, #7c8698); }
+.stake-table.no-parlay .stake-row:not(.stake-row-parlay) .stake-inpar { opacity: 0.4; }
 
 .stake-out {
   margin-top: 1rem; border-radius: 12px; padding: 1rem 1.1rem;

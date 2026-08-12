@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { playerPhoto } from '../utils/playerPhotos';
-import { isToday, matchSlug, stillUpcoming } from '../utils/matchTime';
+import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import './Parlay.css';
@@ -294,22 +294,10 @@ export default function Parlay() {
             </aside>
           </div>
 
-          {legs.length > 0 && (
-            <div className="parlay-legs-out">
-              <div className="parlay-legs-cap">In your selection</div>
-              <ul>
-                {legs.map((p) => (
-                  <li key={legKey(p)}>
-                    <Link to={`/match/${matchSlug(p)}`}>
-                      {lastName(p.favName)} <span className="muted">over {lastName(p.favorite === p.p1 ? p.name2 : p.name1)}</span>
-                    </Link>
-                    <span className="parlay-legs-pct">{pct(p.favProb)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
+          {/* One list, not two: the staking plan's table already names every
+              leg (and links each to its match page), so it doubles as "in
+              your selection" while answering what to actually stake. The slip
+              above stays a verdict on value; this is the verdict on size. */}
           {legs.length > 0 && <StakingPlan legs={legs} />}
         </>
       )}
