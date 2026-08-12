@@ -6,6 +6,51 @@
   background: var(--surface-1, rgba(255, 255, 255, 0.02));
   padding: 1.25rem 1.35rem 1.1rem;
 }
+/* ── Selection value: what the combination is worth, before staking ─────
+   Merged in from the Parlay page's old side panel so one block answers both
+   "is this worth backing" and "how much". */
+.stake-value {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem 2.5rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+}
+.stake-value-hero { display: flex; flex-direction: column; gap: 0.3rem; flex: none; }
+.stake-value-pct {
+  font-family: var(--font-display, inherit);
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-brand, #c8ff2e);
+  font-variant-numeric: tabular-nums;
+}
+.stake-value-cap { font-size: 0.8rem; color: var(--text-3, #7c8698); }
+.stake-value-rows {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 0;
+  flex: 1 1 auto;
+}
+.stake-value-rows > div { display: flex; flex-direction: column; gap: 0.2rem; }
+.stake-value-rows dt { font-size: 0.74rem; color: var(--text-3, #7c8698); margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.stake-value-rows dd {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-1, #fff);
+  font-variant-numeric: tabular-nums;
+}
+.stake-value-rows .muted { font-family: inherit; font-weight: 400; color: var(--text-3, #7c8698); font-size: 0.85rem; }
+.stake-value-verdict { font-size: 0.84rem; line-height: 1.55; margin: 0 0 1rem; }
+.stake-value-verdict.pos { color: var(--accent-brand, #c8ff2e); }
+.stake-value-verdict.neg { color: var(--text-2, #9aa4b2); }
+.stake-value-caveat { color: var(--text-3, #7c8698); font-weight: 400; }
+
 .stake-head { display: flex; gap: 1rem; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
 .stake-cap { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2, #9aa4b2); }
 .stake-sub { margin: 0.35rem 0 0; font-size: 0.86rem; line-height: 1.5; color: var(--text-3, #7c8698); max-width: 46ch; }

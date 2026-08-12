@@ -39,7 +39,6 @@ function marketProb(p) {
   return share;
 }
 const pct = (v) => `${Math.round(v * 100)}%`;
-const money = (v) => `$${v.toFixed(2)}`;
 
 // How far our number has to sit above the market's before it is worth
 // pointing at, and where that stops being a good sign.
@@ -88,31 +87,12 @@ export default function Parlay() {
     return next;
   });
 
-  // ── The maths. Legs are treated as independent, which is close enough for
-  // separate matches on one day and is stated on the page rather than
-  // buried: correlated legs would make the true number LOWER, not higher,
-  // so the honest error is the conservative one.
-  const summary = useMemo(() => {
-    if (!legs.length) return null;
-    let p = 1, fair = 1, market = 1, priced = 0;
-    for (const leg of legs) {
-      p *= leg.favProb;
-      fair *= 1 / leg.favProb;
-      const o = ourOdds(leg);
-      if (o > 1) { market *= o; priced++; }
-    }
-    const allPriced = priced === legs.length;
-    return {
-      n: legs.length,
-      prob: p,
-      fair,
-      market: allPriced ? market : null,
-      unpriced: legs.length - priced,
-      // "About one in N" lands harder than a bare percentage once the
-      // number gets small - but only then. Next to 59% it says nothing.
-      oneIn: p > 0 && p < 0.4 ? Math.round(1 / p) : null,
-    };
-  }, [legs]);
+  // The combined maths (chance all land, our fair price, the market's price)
+  // now lives in the staking plan, which owns the odds you can edit and so is
+  // the only place those numbers can be right. Legs are treated as
+  // independent, which is close enough for separate matches on one day and is
+  // stated rather than buried: correlated legs would make the true number
+  // LOWER, not higher, so the honest error is the conservative one.
 
   // ── Suggestions. Named for what they are, never for what they might win.
   const suggestions = useMemo(() => {
@@ -230,69 +210,16 @@ export default function Parlay() {
               })}
             </div>
 
-            <aside className="parlay-slip" aria-label="Your selection">
-              <div className="parlay-slip-head">Your selection</div>
-              {!summary && (
-                <p className="parlay-slip-empty">
-                  Tick any calls on the left, or start from one of our suggestions above.
-                </p>
-              )}
-              {summary && (
-                <>
-                  <div className="parlay-slip-hero">
-                    <span className="parlay-slip-pct">{pct(summary.prob)}</span>
-                    <span className="parlay-slip-cap">
-                      chance all {summary.n} land{summary.oneIn ? ` · about 1 in ${summary.oneIn}` : ''}
-                    </span>
-                  </div>
-
-                  <dl className="parlay-slip-rows">
-                    <div>
-                      <dt>Our fair price</dt>
-                      <dd>{summary.fair.toFixed(2)}</dd>
-                    </div>
-                    <div>
-                      <dt>The market's price</dt>
-                      <dd>{summary.market ? summary.market.toFixed(2) : <span className="muted">not fully priced</span>}</dd>
-                    </div>
-                    <div>
-                      <dt>$10 would return</dt>
-                      <dd>{summary.market ? money(10 * summary.market) : <span className="muted">-</span>}</dd>
-                    </div>
-                  </dl>
-
-                  {summary.market != null && (
-                    <p className={`parlay-verdict ${summary.market > summary.fair ? 'pos' : 'neg'}`}>
-                      {summary.market > summary.fair
-                        ? `The market prices this longer than we do: worth ${summary.fair.toFixed(2)} by our numbers, paying ${summary.market.toFixed(2)}.`
-                        : `The market prices this shorter than we do: worth ${summary.fair.toFixed(2)} by our numbers, paying only ${summary.market.toFixed(2)}.`}
-                      {summary.market > summary.fair && (
-                        <span className="parlay-verdict-caveat">
-                          {' '}Expect to see that often, and read it carefully: we always show the player
-                          we favour, so our number sits about 2 points above the market's on a typical
-                          pick before anyone has been proved right. Only gaps past 10 points have
-                          historically meant anything.
-                        </span>
-                      )}
-                    </p>
-                  )}
-                  {summary.unpriced > 0 && (
-                    <p className="parlay-note">
-                      {summary.unpriced} of these had no market price when we locked them, so only our own
-                      fair price is shown.
-                    </p>
-                  )}
-                </>
-              )}
-
-              <p className="parlay-fineprint">
-                Legs are treated as independent matches. Prices are the bookmakers' own numbers
-                captured at the moment we locked each pick, not live quotes. This is a probability
-                tool and a record of what we said, not betting advice - see{' '}
-                <Link to="/disclaimer">responsible use</Link>.
-              </p>
-            </aside>
           </div>
+
+          {/* Nothing ticked yet: the plan below is where every number lives,
+              so this is the only prompt the page needs. */}
+          {legs.length === 0 && (
+            <p className="parlay-slip-empty">
+              Tick any calls above, or start from one of our suggestions, and the
+              plan will price the combination and size the stakes.
+            </p>
+          )}
 
           {/* One list, not two: the staking plan's table already names every
               leg (and links each to its match page), so it doubles as "in

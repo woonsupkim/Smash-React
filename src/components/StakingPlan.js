@@ -89,8 +89,67 @@ export default function StakingPlan({ legs }) {
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
 
+  // What the whole selection is worth, before any staking question. Computed
+  // over EVERY selected leg (not just the ones ticked into the parlay) and off
+  // the odds in the table, so editing a price moves this too. This used to be
+  // a separate "Your selection" panel above the plan; same numbers, one place.
+  const allProb = legs.reduce((m, l) => m * l.favProb, 1);
+  const fairAll = allProb > 0 ? 1 / allProb : null;
+  const allPriced = legs.length > 0 && legs.every((l) => oddsOf(l) > 1);
+  const marketAll = allPriced ? legs.reduce((m, l) => m * oddsOf(l), 1) : null;
+  const unpriced = legs.filter((l) => !(oddsOf(l) > 1)).length;
+  // "About one in N" only earns its place once the number gets small; next to
+  // 59% it says nothing.
+  const oneIn = allProb > 0 && allProb < 0.4 ? Math.round(1 / allProb) : null;
+
   return (
     <div className="stake-plan">
+      <div className="stake-value">
+        <div className="stake-value-hero">
+          <span className="stake-value-pct">{pct(allProb)}</span>
+          <span className="stake-value-cap">
+            {legs.length === 1 ? 'chance this lands' : `chance all ${legs.length} land`}
+            {oneIn ? ` · about 1 in ${oneIn}` : ''}
+          </span>
+        </div>
+        <dl className="stake-value-rows">
+          <div>
+            <dt>Our fair price</dt>
+            <dd>{fairAll ? fairAll.toFixed(2) : '-'}</dd>
+          </div>
+          <div>
+            <dt>The market's price</dt>
+            <dd>{marketAll ? marketAll.toFixed(2) : <span className="muted">not fully priced</span>}</dd>
+          </div>
+          <div>
+            <dt>$10 would return</dt>
+            <dd>{marketAll ? money(10 * marketAll) : <span className="muted">-</span>}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {marketAll != null && fairAll != null && (
+        <p className={`stake-value-verdict ${marketAll > fairAll ? 'pos' : 'neg'}`}>
+          {marketAll > fairAll
+            ? `The market prices this longer than we do: worth ${fairAll.toFixed(2)} by our numbers, paying ${marketAll.toFixed(2)}.`
+            : `The market prices this shorter than we do: worth ${fairAll.toFixed(2)} by our numbers, paying only ${marketAll.toFixed(2)}.`}
+          {marketAll > fairAll && (
+            <span className="stake-value-caveat">
+              {' '}Expect to see that often, and read it carefully: we always show the player we
+              favour, so our number sits about 2 points above the market's on a typical pick
+              before anyone has been proved right. Only gaps past 10 points have historically
+              meant anything.
+            </span>
+          )}
+        </p>
+      )}
+      {unpriced > 0 && (
+        <p className="stake-note muted">
+          {unpriced} of these had no market price when we locked {unpriced === 1 ? 'it' : 'them'}, so
+          only our own fair price is shown above. Enter the odds you are offered below to size them.
+        </p>
+      )}
+
       <div className="stake-head">
         <div>
           <div className="stake-cap">Staking plan</div>
@@ -132,7 +191,7 @@ export default function StakingPlan({ legs }) {
                 <em>over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}</em>
               </span>
               <span className="stake-odds">
-                <input type="number" min="1" step="0.01" value={o || ''} placeholder="—"
+                <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
                   onChange={(e2) => setOddsOverride((s) => ({ ...s, [l.id]: parseFloat(e2.target.value) || 0 }))} />
               </span>
               <span className={`stake-edge ${e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
@@ -140,7 +199,7 @@ export default function StakingPlan({ legs }) {
               </span>
               <span className="stake-single">
                 {mode === 'budget'
-                  ? <span className="stake-suggest">{stake > 0 ? money(stake) : '—'}</span>
+                  ? <span className="stake-suggest">{stake > 0 ? money(stake) : '–'}</span>
                   : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
                       disabled={!(o > 1)}
                       onChange={(e2) => setStakes((s) => ({ ...s, [l.id]: e2.target.value }))} />}
@@ -166,7 +225,7 @@ export default function StakingPlan({ legs }) {
             <span className={`stake-edge ${combo.edge >= 0 ? 'pos' : 'neg'}`}>{pctSigned(combo.edge)}</span>
             <span className="stake-single">
               {mode === 'budget'
-                ? <span className="stake-suggest">{parStake > 0 ? money(parStake) : '—'}</span>
+                ? <span className="stake-suggest">{parStake > 0 ? money(parStake) : '–'}</span>
                 : <input type="number" min="0" step="1" value={parlayStake || ''} placeholder="0"
                     disabled={!useParlay}
                     onChange={(e2) => setParlayStake(e2.target.value)} />}
@@ -191,7 +250,7 @@ export default function StakingPlan({ legs }) {
               <span className="stake-metric-l">expected value {analysis.staked > 0 && <em>({pctSigned(analysis.roi)} of stake)</em>}</span>
             </div>
             <div className="stake-metric"><span className="stake-metric-v">{money(analysis.staked)}</span><span className="stake-metric-l">total staked</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '—'}</span><span className="stake-metric-l">chance you finish ahead</span></div>
+            <div className="stake-metric"><span className="stake-metric-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span><span className="stake-metric-l">chance you finish ahead</span></div>
             <div className="stake-metric"><span className="stake-metric-v">{money(analysis.best)}</span><span className="stake-metric-l">best case</span></div>
             <div className="stake-metric"><span className="stake-metric-v">{money(analysis.worst)}</span><span className="stake-metric-l">worst case</span></div>
           </div>
@@ -233,7 +292,7 @@ export default function StakingPlan({ legs }) {
               </>
             )}
             {mode === 'budget' && !rec?.anyPositive && (
-              <span className="stake-verdict-txt">No +EV bets on this slate at these odds — the market prices all of them at or above our number, so nothing is worth staking.</span>
+              <span className="stake-verdict-txt">No +EV bets on this slate at these odds: the market prices all of them at or above our number, so nothing is worth staking.</span>
             )}
           </div>
         </div>

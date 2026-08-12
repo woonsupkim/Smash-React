@@ -9,12 +9,15 @@ import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect, pickFavorite } from '../utils/deployedPick';
-import { edgePerDollar, parlayCombo } from '../utils/staking';
+import { edgePerDollar, parlayCombo, recommendStakes, analyzeSlip } from '../utils/staking';
 import './Home.css';
 
 // Recent-form window for the forward record, matching the guardrail board's
 // own window so the two never disagree about what "lately" means.
 const RECENT_WINDOW = 40;
+// Sample bankroll the suggested plan splits. A round number so the shares
+// read as proportions at a glance; the builder lets you set your own.
+const PLAN_BUDGET = 100;
 
 // Tiny inline sparkline for a player's title-odds history.
 function Sparkline({ values }) {
@@ -182,25 +185,36 @@ export default function Home() {
     [scorecard]
   );
 
-  // Today's slip: the same edge math the Parlay builder runs, previewed next
-  // to the live board so the staking tools are visible from the front door
-  // instead of two clicks down. Only picks that carried a market price can be
-  // graded for edge, so unpriced calls sit this section out.
-  const slip = useMemo(() => {
+  // Today's suggested plan: one concrete answer, not a browse. It runs the
+  // Parlay builder's own recommender over today's priced calls, weighing the
+  // individual matches AND the parlay of the +EV ones together, then splits a
+  // sample bankroll by edge strength (Kelly). Only bets that beat their price
+  // get money, so the suggestion is break-even or better by construction.
+  // Unpriced calls sit it out: with no price there is no edge to size against.
+  const plan = useMemo(() => {
     const oddsOf = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
     const priced = (picks.list || []).filter((p) => oddsOf(p) > 1 && p.favProb > 0);
     if (priced.length < 2) return null;
     const bets = priced.map((p) => ({ key: p.id, p: p.favProb, o: oddsOf(p) }));
-    const plus = bets.filter((b) => edgePerDollar(b.p, b.o) > 0);
-    const combo = parlayCombo(bets, plus.map((b) => b.key));
-    const best = bets.reduce((m, b) => (edgePerDollar(b.p, b.o) > edgePerDollar(m.p, m.o) ? b : m), bets[0]);
-    const bestPick = priced.find((p) => p.id === best.key);
+    // The parlay is only ever built from legs that are +EV on their own, the
+    // same rule the builder applies before it will fund a combination.
+    const plusKeys = bets.filter((b) => edgePerDollar(b.p, b.o) > 0).map((b) => b.key);
+    const rec = recommendStakes(bets, plusKeys, PLAN_BUDGET);
+    if (!rec.anyPositive) return { n: priced.length, none: true };
+    const staked = bets.map((b) => ({ ...b, single: rec.singles[b.key] || 0 }));
+    const analysis = analyzeSlip(staked, { stake: rec.parlay, legs: plusKeys });
+    const combo = parlayCombo(bets, plusKeys);
+    const singles = priced
+      .map((p) => ({ name: lastName(p.favName), stake: rec.singles[p.id] || 0 }))
+      .filter((r) => r.stake >= 0.005)
+      .sort((a, b) => b.stake - a.stake);
     return {
       n: priced.length,
-      plus: plus.length,
-      combo: combo.priced ? combo : null,
-      bestEdge: edgePerDollar(best.p, best.o),
-      bestName: bestPick ? lastName(bestPick.favName) : null,
+      singles,
+      parlay: rec.parlay >= 0.005 ? { stake: rec.parlay, n: combo.n, o: combo.o } : null,
+      ev: analysis.ev,
+      roi: analysis.roi,
+      pProfit: analysis.pProfit,
     };
   }, [picks.list]);
 
@@ -602,7 +616,7 @@ export default function Home() {
             </Link>
           )}
           {picks.list.length > 0 && (
-          <div className={`home-board-wrap${slip ? ' has-slip' : ''}`}>
+          <div className={`home-board-wrap${plan ? ' has-slip' : ''}`}>
             <div className="home-board-grid">
               {picks.list.map((p) => {
                 const when = timeUntil(p.date);
@@ -645,50 +659,74 @@ export default function Home() {
               })}
             </div>
 
-            {/* Today's slip: the Parlay builder's own edge math, previewed.
-                It answers "is there anything worth backing today" before you
-                commit a click, and hands off to the full staking plan. */}
-            {slip && (
-              <aside className="home-slip" aria-label="Today's slip">
-                <div className="home-slip-cap">Today's slip</div>
-                <div className="home-slip-hero">
-                  <span className="home-slip-val">{slip.plus}</span>
-                  <span className="home-slip-valcap">
-                    of {slip.n} priced calls beat their price
-                  </span>
-                </div>
-                {slip.bestName && slip.bestEdge > 0 && (
-                  <div className="home-slip-row">
-                    <span className="home-slip-row-k">Biggest edge</span>
-                    <span className="home-slip-row-v pos">
-                      +{Math.round(slip.bestEdge * 100)}% · {slip.bestName}
-                    </span>
-                  </div>
+            {/* One suggested plan, not a browse: the builder's recommender
+                weighs every priced call and the parlay of the +EV ones
+                together, then hands back a split that is break-even or
+                better. Sized on a sample bankroll you can change over there. */}
+            {plan && (
+              <aside className="home-plan" aria-label="Suggested stake plan">
+                <div className="home-plan-cap">Suggested plan</div>
+                {plan.none ? (
+                  <>
+                    <p className="home-plan-none">
+                      Nothing on today's card beats the price it is offered at, so the
+                      plan is to stake nothing. That is the answer more often than
+                      anyone selling picks will admit.
+                    </p>
+                    <Link to="/parlay" className="home-plan-cta">See why for each call →</Link>
+                  </>
+                ) : (
+                  <>
+                    <div className="home-plan-sub">
+                      splitting ${PLAN_BUDGET} across today's {plan.n} priced calls, by edge
+                    </div>
+                    <div className="home-plan-rows">
+                      {plan.singles.map((r) => (
+                        <div className="home-plan-row" key={r.name}>
+                          <span className="home-plan-row-k">{r.name}</span>
+                          <span className="home-plan-row-v">${r.stake.toFixed(2)}</span>
+                        </div>
+                      ))}
+                      {plan.parlay && (
+                        <div className="home-plan-row parlay">
+                          <span className="home-plan-row-k">
+                            Parlay <em>{plan.parlay.n} legs at {plan.parlay.o.toFixed(2)}</em>
+                          </span>
+                          <span className="home-plan-row-v">${plan.parlay.stake.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {plan.singles.length === 0 && !plan.parlay && (
+                        <div className="home-plan-row">
+                          <span className="home-plan-row-k">No bet</span>
+                          <span className="home-plan-row-v">$0.00</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="home-plan-out">
+                      <span className="home-plan-ev">
+                        {plan.ev >= 0 ? '+' : '-'}${Math.abs(plan.ev).toFixed(2)}
+                      </span>
+                      <span className="home-plan-evcap">
+                        expected value ({plan.roi >= 0 ? '+' : ''}{(plan.roi * 100).toFixed(1)}%)
+                        {plan.pProfit != null && ` · ${Math.round(plan.pProfit * 100)}% chance you finish ahead`}
+                      </span>
+                    </div>
+                    <Link to="/parlay" className="home-plan-cta">Size it your way →</Link>
+                  </>
                 )}
-                {slip.combo && (
-                  <div className="home-slip-row">
-                    <span className="home-slip-row-k">All {slip.combo.n} together</span>
-                    <span className="home-slip-row-v">
-                      {Math.round(slip.combo.p * 100)}% at {slip.combo.o.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <p className="home-slip-note">
-                  {slip.plus > 0
-                    ? 'Edge is our win probability times the price on offer, minus one. The builder sizes your stakes so the slip is break-even or better.'
-                    : 'Nothing on today\'s card beats its price, so the honest answer is to stake nothing. The builder shows you why.'}
-                </p>
-                <Link to="/parlay" className="home-slip-cta">Build and size a slip →</Link>
               </aside>
             )}
           </div>
           )}
         </section>
 
+        {titleOddsSection}
+
         {/* ── Engine health: the guardrail board, summarised ─────────────
             Five engines compete per surface and only one gets deployed; this
             says whether each is still earning it, without making anyone open
-            the model card to find out. */}
+            the model card to find out. Sits last of the content sections: it
+            is the "how do I know this is maintained" answer, not a headline. */}
         {health?.cells?.length > 0 && (() => {
           const cells = health.cells;
           const passing = cells.filter((c) => c.status === 'ok').length;
@@ -726,8 +764,6 @@ export default function Home() {
             </section>
           );
         })()}
-
-        {titleOddsSection}
 
         <section className="home-nav">
           <div className="home-section-head">

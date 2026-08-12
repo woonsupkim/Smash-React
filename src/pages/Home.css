@@ -331,53 +331,76 @@
   .home-board-wrap.has-slip { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* ── Today's slip: the parlay/staking preview beside the board ────────── */
-.home-slip {
+/* ── Suggested plan: one sized answer beside the board ────────────────── */
+.home-plan {
   border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.04);
   padding: 1rem 1.1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.55rem;
 }
-.home-slip-cap {
+.home-plan-cap {
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-3);
 }
-.home-slip-hero { display: flex; flex-direction: column; gap: 0.25rem; }
-.home-slip-val {
-  font-family: var(--font-display);
-  font-size: 2.4rem;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--accent-brand);
-  font-variant-numeric: tabular-nums;
-}
-.home-slip-valcap { font-size: 0.78rem; color: var(--text-2); line-height: 1.35; }
-.home-slip-row {
+.home-plan-sub { font-size: 0.76rem; color: var(--text-3); line-height: 1.4; }
+.home-plan-none { font-size: 0.8rem; color: var(--text-2); line-height: 1.5; margin: 0; }
+.home-plan-rows { display: flex; flex-direction: column; }
+.home-plan-row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 0.6rem;
-  font-size: 0.8rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border-1);
+  font-size: 0.84rem;
+  padding: 0.42rem 0;
+  border-bottom: 1px solid var(--border-1);
 }
-.home-slip-row-k { color: var(--text-3); }
-.home-slip-row-v { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
-.home-slip-row-v.pos { color: var(--accent-positive, #4caf7d); }
-.home-slip-note { font-size: 0.74rem; color: var(--text-3); line-height: 1.5; margin: 0; }
-.home-slip-cta {
+.home-plan-row:last-child { border-bottom: none; }
+.home-plan-row-k { color: var(--text-1); font-weight: 700; min-width: 0; }
+.home-plan-row-k em {
+  display: block;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.7rem;
+  color: var(--text-3);
+}
+.home-plan-row.parlay .home-plan-row-k { color: var(--accent-brand); }
+.home-plan-row-v {
+  color: #fff;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.home-plan-out {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.16));
+}
+.home-plan-ev {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-positive, #4caf7d);
+  font-variant-numeric: tabular-nums;
+}
+.home-plan-evcap { font-size: 0.7rem; color: var(--text-3); line-height: 1.4; }
+.home-plan-cta {
   margin-top: auto;
+  padding-top: 0.3rem;
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--accent-brand);
   text-decoration: none;
 }
-.home-slip-cta:hover { text-decoration: underline; color: var(--accent-brand); }
+.home-plan-cta:hover { text-decoration: underline; color: var(--accent-brand); }
 
 /* ── Engine health: the guardrail board in one strip ──────────────────── */
 .home-health { margin-bottom: 3rem; }
@@ -430,12 +453,13 @@
   font-variant-numeric: tabular-nums;
 }
 .home-health-sub { font-size: 0.68rem; color: var(--text-3); }
+/* No max-width here: the card is already page-width, and capping the measure
+   made this wrap two lines early on desktop. */
 .home-health-note {
   font-size: 0.8rem;
   color: var(--text-3);
   line-height: 1.55;
   margin: 0.9rem 0 0.6rem;
-  max-width: 68ch;
 }
 .home-board-skel {
   height: 148px;
