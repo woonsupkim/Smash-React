@@ -2,27 +2,33 @@
  * The email digest, in two editions.
  *
  *   DAILY  (public/data/digest-daily.html + .txt)
- *     Yesterday's grade, then TODAY: every locked call with a win-probability
- *     bar, the upset watch, links straight into each match and a head-to-head
- *     comparison, a staking-plan CTA, and the countdown to the next slam.
+ *     How yesterday's calls landed, then every match on today's card with a
+ *     headshot, a win-probability bar, one line of read on where we stand
+ *     against the market, and links to the full call / a stat comparison / a
+ *     live simulation. Closes with the staking plan and the slam countdown.
  *
  *   WEEKLY (public/data/digest.html + .txt)
- *     How the week ended: the hit rate, a day-by-day bar chart, the bold calls
- *     that landed, the ones that missed (named, not buried), and where we
- *     stood against the bookmakers.
+ *     The week in prose: hit rate, a day-by-day chart, the bold calls that
+ *     landed, the ones that missed, and where we finished against the
+ *     bookmakers.
  *
  * Edition comes from DIGEST_MODE (daily|weekly), defaulting to weekly on
- * Mondays (UTC) and daily otherwise, so callers need no date logic. Note the
- * daily edition only lands on days the refresh workflow actually runs: daily
- * inside the tournament windows, Mondays only off-season.
+ * Mondays (UTC) and daily otherwise. The daily edition only lands on days the
+ * refresh workflow runs: daily inside the tournament windows, Mondays only
+ * off-season.
  *
- * Everything is built from committed pipeline artifacts, so it regenerates in
- * CI with no extra fetches. Email constraints drive the rendering: table
- * layout, inline styles only, no external CSS or webfonts, and charts drawn as
- * coloured table cells rather than images so they survive image blocking.
- * Photographs come from public/data/share (already generated each run and
- * served at a public URL); player headshots are bundled by Vite and have no
- * stable URL, so they are deliberately not used here.
+ * DESIGN NOTES (this is an email, not a web page):
+ *   - Light background. Dark-themed mail looks broken in clients that force
+ *     their own light palette, and prints badly.
+ *   - Tables and inline styles only. No flexbox, no <style> block, no
+ *     webfonts, no background-image: Outlook and Gmail strip or ignore them.
+ *   - Charts are coloured table cells, so they survive image blocking.
+ *   - Photographs are real player headshots mirrored out of src/assets into
+ *     public/data (see mirrorPhoto). The Instagram share cards are
+ *     deliberately NOT reused: they are 1080px square, dark, and designed to
+ *     be read at arm's length on a phone feed, which is the wrong shape and
+ *     the wrong contrast for an inbox.
+ *   - Prose carries the email. A wall of numbers is what the site is for.
  *
  * Usage: node data-pipeline/buildDigest.js
  * Env:   DIGEST_MODE (daily|weekly), DIGEST_TO, SITE_URL, and ONE transport:
@@ -31,16 +37,11 @@
  *        Subscriber list: SUPABASE_URL + SUPABASE_SERVICE_KEY.
  *
  * Nothing is emailed unless a transport is configured AND there is at least
- * one recipient (DIGEST_TO, or a row in Supabase digest_subscribers). Every
- * one of those conditions logs loudly when it fails rather than passing
- * silently, because a digest that builds every week and quietly mails nobody
- * looks exactly like success - which is precisely how this went unnoticed.
+ * one recipient. Every one of those conditions logs loudly when it fails
+ * rather than passing silently, because a digest that builds every week and
+ * quietly mails nobody looks exactly like success.
  */
 // Load .env like the other pipeline scripts (fetch.js, buildRoster.js, ...).
-// Without this, putting RESEND_API_KEY in .env for a local test did nothing
-// and the send skipped as if no key existed. In CI the secrets arrive as real
-// environment variables and this is a no-op; wrapped so a slim install that
-// omits dotenv cannot take the whole digest step down.
 try { require('dotenv').config(); } catch { /* dotenv optional */ }
 
 const fs = require('fs');
@@ -48,45 +49,215 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
+const PHOTO_SRC = { atp: path.join(ROOT, 'src', 'assets', 'players'), wta: path.join(ROOT, 'src', 'assets', 'players-women') };
+const PHOTO_OUT = path.join(DATA, 'digest', 'players');
 
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
+
+// Light palette. The brand lime is unreadable as text on white, so it lives
+// on dark buttons and chips instead, and links use a deep green that passes
+// contrast on a white card.
+const PAGE = '#eef1f5';
+const CARD = '#ffffff';
+const INK = '#14171c';
+const BODY = '#39414d';
+const MUTED = '#6b7480';
+const LINE = '#e2e7ee';
+const BTN = '#14171c';
 const LIME = '#c6ff1c';
-const INK = '#0c0f14';
-const CARD = '#11151d';
-const LINE = '#232a38';
-const TEXT = '#e8ebf2';
-const MUTED = '#8b93a7';
-const DIM = '#c7cdd9';
-const WIN = '#4caf7d';
-const LOSS = '#e05656';
+const LINK = '#14652f';
+const WIN = '#157f4c';
+const LOSS = '#c0392b';
+const TRACK = '#e8ecf2';
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-// Deployed-call grade with Smart Blend fallback (same convention as
-// buildShareAssets.js) - rows that predate the pickCorrect annotation still
-// count.
 const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
 const pickFavorite = (m) => m.pickFavorite || m.smashFavorite;
 
 const readJson = (file) => {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
 };
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const pct = (correct, n) => (n ? Math.round((100 * correct) / n) : 0);
 const lastName = (full) => String(full || '').trim().split(/\s+/).slice(-1)[0] || String(full || '');
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-// MUST stay byte-identical to src/utils/slug.js and the pipeline's other
-// copies, or the links in this email will 404.
+// MUST stay byte-identical to src/utils/slug.js, or every link 404s.
 const slugify = (s) => String(s || '')
   .toLowerCase()
   .normalize('NFD')
   .replace(/[̀-ͯ]/g, '')
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '');
+
+const matchUrl = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
+const compareUrl = (p) => `${SITE}/compare/${p.tour || 'atp'}/${slugify(p.name1)}-vs-${slugify(p.name2)}`;
+// Opens the H2H studio pre-loaded with this matchup, ready to simulate.
+const simUrl = (p) => `${SITE}${p.tour === 'wta' ? '/women' : ''}/h2h?surface=${p.surface}&a=${p.p1}&b=${p.p2}`;
+
+// Player headshots live in src/assets and are bundled by Vite, so they have no
+// stable public URL an email can reference. Mirror the ones this email needs
+// into public/data (which the workflow commits) - each player is copied once,
+// ever, and skipped on every later run.
+function mirrorPhoto(tour, id) {
+  const t = tour === 'wta' ? 'wta' : 'atp';
+  if (!id) return null;
+  const src = path.join(PHOTO_SRC[t], `${id}.png`);
+  if (!fs.existsSync(src)) return null;
+  const dir = path.join(PHOTO_OUT, t);
+  const dest = path.join(dir, `${id}.png`);
+  try {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.copyFileSync(src, dest);
+    }
+    return `${SITE}/data/digest/players/${t}/${id}.png`;
+  } catch { return null; }
+}
+
+// The market's own read on our pick, with the bookmaker's margin divided out.
+// Same vig-stripping the Parlay builder uses, so the two never disagree.
+function marketProb(p) {
+  if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1)) return null;
+  const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
+  return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
+}
+
+// ── Email primitives ────────────────────────────────────────────────────────
+function bar(percent, color = INK, height = 10) {
+  const w = Math.max(0, Math.min(100, Math.round(percent)));
+  const cell = `height:${height}px;font-size:0;line-height:0;mso-line-height-rule:exactly;`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed;">
+    <tr>
+      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};border-radius:5px 0 0 5px;">&nbsp;</td>` : ''}
+      ${w < 100 ? `<td style="${cell}background:${TRACK};border-radius:${w > 0 ? '0 5px 5px 0' : '5px'};">&nbsp;</td>` : ''}
+    </tr>
+  </table>`;
+}
+
+const button = (href, label) =>
+  `<a href="${href}" style="display:inline-block;background:${BTN};color:${LIME};font-size:15px;font-weight:700;text-decoration:none;padding:13px 24px;border-radius:8px;">${esc(label)}</a>`;
+
+const textLink = (href, label) =>
+  `<a href="${href}" style="color:${LINK};text-decoration:none;font-weight:700;border-bottom:1px solid ${LINE};">${esc(label)}</a>`;
+
+// Section wrapper: a white card on the page tint.
+const section = (inner) =>
+  `<tr><td style="padding:26px 28px;border-top:1px solid ${LINE};">${inner}</td></tr>`;
+
+const h2 = (text) =>
+  `<h2 style="margin:0 0 12px;font-size:19px;line-height:1.3;font-weight:800;color:${INK};">${esc(text)}</h2>`;
+
+const p = (html, extra = '') =>
+  `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:${BODY};${extra}">${html}</p>`;
+
+const kicker = (text) =>
+  `<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:8px;">${esc(text)}</div>`;
+
+// ── Content builders ────────────────────────────────────────────────────────
+
+// One upcoming match: two headshots, the call, a probability bar, a line of
+// read on the market, and the three ways into the app.
+function matchCard(pr, upset) {
+  const favIsP1 = pr.favorite === pr.p1;
+  const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
+  const dogName = favIsP1 ? pr.name2 : pr.name1;
+  const favId = favIsP1 ? pr.p1 : pr.p2;
+  const dogId = favIsP1 ? pr.p2 : pr.p1;
+  const prob = Math.round((pr.favProb || 0) * 100);
+  const favPhoto = mirrorPhoto(pr.tour, favId);
+  const dogPhoto = mirrorPhoto(pr.tour, dogId);
+  const when = new Date(pr.date);
+  const timeLabel = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
+    ? `${when.toISOString().slice(11, 16)} UTC`
+    : 'time to be confirmed';
+
+  // The read: what the market thinks, versus us. This is the line that makes
+  // the email worth opening rather than a fixture list.
+  const mkt = marketProb(pr);
+  let read;
+  if (upset) {
+    read = `Upset watch: ${esc(upset.reason)}`;
+  } else if (mkt != null) {
+    const gap = Math.round((pr.favProb - mkt) * 100);
+    if (gap >= 10) {
+      read = `We rate ${esc(lastName(favName))} ${gap} points higher than the bookmakers do, and calls in that band have come in about 69% of the time.`;
+    } else if (gap <= -8) {
+      read = `The market is warmer on ${esc(lastName(favName))} than we are, pricing this nearer ${Math.round(mkt * 100)}%. We still take the same side, with less conviction than they have.`;
+    } else if (prob <= 56) {
+      read = `Close to a coin toss, and we say so: ${prob}% is the honest number, not a headline.`;
+    } else {
+      read = `The bookmakers land in much the same place at ${Math.round(mkt * 100)}%, so there is no argument here, just a favourite.`;
+    }
+  } else {
+    read = prob >= 70
+      ? `A clear favourite on our numbers. No closing price was quoted when we locked it.`
+      : `Tight on our numbers, and unpriced at lock time, so there is no market to argue with.`;
+  }
+
+  const face = (url, alt, dim) => (url
+    ? `<img src="${url}" width="54" height="54" alt="${esc(alt)}" style="display:block;width:54px;height:54px;border-radius:27px;border:2px solid ${dim ? LINE : INK};" />`
+    : `<div style="width:54px;height:54px;border-radius:27px;background:${TRACK};"></div>`);
+
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;margin-bottom:16px;">
+    <tr><td style="padding:18px 20px;">
+      <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:12px;">
+        ${esc((pr.tour || '').toUpperCase())} &nbsp;&middot;&nbsp; ${esc(pr.event || '')} &nbsp;&middot;&nbsp; ${esc(pr.surface || '')} &nbsp;&middot;&nbsp; ${esc(timeLabel)}
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td width="54" style="padding-right:12px;">${face(favPhoto, favName, false)}</td>
+          <td style="font-size:17px;font-weight:800;color:${INK};line-height:1.35;">
+            ${esc(lastName(favName))}
+            <span style="font-weight:400;color:${MUTED};font-size:15px;"> to beat ${esc(lastName(dogName))}</span>
+          </td>
+          <td width="54" style="padding-left:12px;">${face(dogPhoto, dogName, true)}</td>
+        </tr>
+      </table>
+      <div style="font-size:14px;color:${BODY};padding:14px 0 6px;">Our number: <strong style="color:${INK};font-size:16px;">${prob}%</strong></div>
+      ${bar(prob)}
+      <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:${BODY};">${read}</p>
+      <div style="padding-top:14px;font-size:14px;line-height:2;">
+        ${textLink(matchUrl(pr), 'Read the full call')}
+        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
+        ${textLink(compareUrl(pr), 'Compare them')}
+        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
+        ${textLink(simUrl(pr), 'Run the simulation')}
+      </div>
+    </td></tr>
+  </table>`;
+}
+
+// A graded result, with the face of whoever we backed.
+function resultRow(m) {
+  const hit = !!pickCorrect(m);
+  const fav = pickFavorite(m);
+  const favIsP1 = fav === m.p1;
+  const ourPick = favIsP1 ? m.name1 : m.name2;
+  const other = favIsP1 ? m.name2 : m.name1;
+  const winner = m.winner === m.p1 ? m.name1 : m.name2;
+  const raw = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
+  const prob = Math.round((favIsP1 ? raw : 1 - raw) * 100);
+  const photo = mirrorPhoto(m.tour, fav);
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid ${LINE};">
+    <tr>
+      <td width="40" style="padding:12px 12px 12px 0;">
+        ${photo
+    ? `<img src="${photo}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:18px;border:2px solid ${hit ? WIN : LOSS};" />`
+    : `<div style="width:36px;height:36px;border-radius:18px;background:${TRACK};"></div>`}
+      </td>
+      <td style="padding:12px 0;font-size:14px;line-height:1.5;color:${BODY};">
+        <strong style="color:${INK};">${esc(lastName(ourPick))}</strong> over ${esc(lastName(other))} at ${prob}%
+        <div style="color:${hit ? WIN : LOSS};font-weight:700;padding-top:2px;">
+          ${hit ? 'Landed' : `Missed, ${esc(lastName(winner))} won`}${m.score ? `<span style="color:${MUTED};font-weight:400;"> &nbsp;${esc(m.score)}</span>` : ''}
+        </div>
+      </td>
+    </tr>
+  </table>`;
+}
 
 // ── Mail transports ─────────────────────────────────────────────────────────
 // Two ways out, same interface. Gmail SMTP needs no domain (Google already
@@ -141,97 +312,13 @@ function pickTransport() {
   return null;
 }
 
-const matchUrl = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
-const compareUrl = (p) => `${SITE}/compare/${p.tour || 'atp'}/${slugify(p.name1)}-vs-${slugify(p.name2)}`;
-// Only link a share card that actually rendered this run.
-const shareImg = (file) => (fs.existsSync(path.join(DATA, 'share', file)) ? `${SITE}/data/share/${file}` : null);
-
-// ── Email primitives ────────────────────────────────────────────────────────
-// A horizontal bar drawn as two table cells. Images-off safe, and it renders
-// in Outlook, where divs with percentage widths do not.
-function bar(percent, color = LIME, height = 8) {
-  const w = Math.max(0, Math.min(100, Math.round(percent)));
-  const cell = `height:${height}px;font-size:0;line-height:0;mso-line-height-rule:exactly;`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed;">
-    <tr>
-      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};border-radius:4px 0 0 4px;">&nbsp;</td>` : ''}
-      ${w < 100 ? `<td style="${cell}background:${LINE};border-radius:${w > 0 ? '0 4px 4px 0' : '4px'};">&nbsp;</td>` : ''}
-    </tr>
-  </table>`;
-}
-
-function button(href, label, { primary = true } = {}) {
-  const bg = primary ? LIME : 'transparent';
-  const fg = primary ? INK : LIME;
-  const border = primary ? LIME : LINE;
-  return `<a href="${href}" style="display:inline-block;background:${bg};color:${fg};border:1px solid ${border};font-size:14px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:8px;">${esc(label)}</a>`;
-}
-
-const sectionRow = (inner, extra = '') =>
-  `<tr><td style="padding:16px 20px;border-bottom:1px solid ${LINE};${extra}">${inner}</td></tr>`;
-
-const kicker = (text) =>
-  `<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${MUTED};padding-bottom:8px;">${esc(text)}</div>`;
-
-// ── Content builders ────────────────────────────────────────────────────────
-
-// One upcoming match: the call, a probability bar, and the two ways in.
-function upcomingCard(p) {
-  const favIsP1 = p.favorite === p.p1;
-  const favName = p.favName || (favIsP1 ? p.name1 : p.name2);
-  const dogName = favIsP1 ? p.name2 : p.name1;
-  const prob = Math.round((p.favProb || 0) * 100);
-  const when = new Date(p.date);
-  const timeLabel = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
-    ? `${when.toISOString().slice(11, 16)} UTC`
-    : 'time TBC';
-  return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:${INK};border:1px solid ${LINE};border-radius:10px;">
-      <tr><td style="padding:14px 16px;">
-        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${MUTED};">
-          ${esc((p.tour || '').toUpperCase())} · ${esc(p.event || '')} · ${esc(p.surface || '')} · ${esc(timeLabel)}
-        </div>
-        <div style="font-size:17px;font-weight:700;color:${TEXT};padding:6px 0 2px;">
-          <span style="color:${LIME};">${esc(lastName(favName))}</span>
-          <span style="color:${MUTED};font-weight:400;font-size:14px;"> over ${esc(lastName(dogName))}</span>
-        </div>
-        <div style="font-size:13px;color:${DIM};padding-bottom:8px;">We make it <strong style="color:${TEXT};">${prob}%</strong></div>
-        ${bar(prob)}
-        <div style="padding-top:12px;font-size:13px;">
-          <a href="${matchUrl(p)}" style="color:${LIME};text-decoration:none;font-weight:700;">The full call &rarr;</a>
-          <span style="color:${LINE};padding:0 8px;">|</span>
-          <a href="${compareUrl(p)}" style="color:${DIM};text-decoration:none;">Compare them stat by stat</a>
-        </div>
-      </td></tr>
-    </table>`;
-}
-
-// A graded result line: who we took, what happened, coloured by outcome.
-function resultLine(m) {
-  const hit = !!pickCorrect(m);
-  const fav = pickFavorite(m);
-  const favIsP1 = fav === m.p1;
-  const ourPick = favIsP1 ? m.name1 : m.name2;
-  const other = favIsP1 ? m.name2 : m.name1;
-  const winner = m.winner === m.p1 ? m.name1 : m.name2;
-  const prob = Math.round((favIsP1 ? (m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1) : 1 - (m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1)) * 100);
-  return `
-    <div style="padding:9px 0;border-bottom:1px solid ${LINE};">
-      <span style="display:inline-block;width:18px;color:${hit ? WIN : LOSS};font-weight:700;">${hit ? '&#10003;' : '&#10007;'}</span>
-      <a href="${matchUrl(m)}" style="color:${TEXT};text-decoration:none;font-weight:600;">${esc(lastName(ourPick))}</a>
-      <span style="color:${MUTED};"> over ${esc(lastName(other))} at ${prob}%</span>
-      <span style="color:${hit ? WIN : LOSS};"> &middot; ${hit ? 'landed' : `${esc(lastName(winner))} won`}</span>
-      ${m.score ? `<span style="color:${MUTED};"> ${esc(m.score)}</span>` : ''}
-    </div>`;
-}
-
 async function main() {
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
 
   if (!scorecard && !track && !predsDoc) {
-    console.log('No digest inputs found (daily_scorecard.json, track_record.json, predictions.json); nothing to build.');
+    console.log('No digest inputs found; nothing to build.');
     return;
   }
 
@@ -239,28 +326,26 @@ async function main() {
   const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
   const isWeekly = MODE === 'weekly';
   const dateLabel = now.toISOString().slice(0, 10);
+  const prettyDate = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
   const season = scorecard && scorecard.season ? scorecard.season : null;
   const yday = scorecard && scorecard.yesterday ? scorecard.yesterday : null;
-  const upsets = (scorecard && scorecard.upsetWatch) || [];
-  const upsetById = new Map(upsets.map((u) => [u.id, u]));
+  const upsetById = new Map(((scorecard && scorecard.upsetWatch) || []).map((u) => [u.id, u]));
   const matches = (track && track.matches) || [];
   const graded = matches.filter((m) => m.date && pickCorrect(m) != null);
   const preds = (predsDoc && predsDoc.predictions) || [];
 
-  // Next slam, for the countdown.
   let slam = null;
   try {
     const { nextSlam } = require('./lib/slamCalendar');
     slam = nextSlam(now);
-  } catch { /* no tease */ }
+  } catch { /* no countdown */ }
   const slamDays = slam ? Math.max(0, Math.ceil((Date.parse(slam.startsAt) - now.getTime()) / 86400000)) : null;
 
   let subject = '';
-  let heroImage = null;
-  let heroAlt = '';
-  const blocks = [];   // rendered HTML rows
-  const txtLines = []; // plain-text twin
+  let preheader = '';
+  const blocks = [];
+  const txtLines = [];
   let ctaHref = `${SITE}/today`;
   let ctaText = "See today's calls";
 
@@ -268,94 +353,112 @@ async function main() {
     // ── DAILY ───────────────────────────────────────────────────────────────
     const todayISO = dateLabel;
     const upcoming = preds
-      .filter((p) => p.status === 'pending' && String(p.date || '').slice(0, 10) >= todayISO)
+      .filter((pr) => pr.status === 'pending' && String(pr.date || '').slice(0, 10) >= todayISO)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-    const todays = upcoming.filter((p) => String(p.date || '').slice(0, 10) === todayISO);
+    const todays = upcoming.filter((pr) => String(pr.date || '').slice(0, 10) === todayISO);
     const card = todays.length ? todays : upcoming.slice(0, 6);
     const shown = card.slice(0, 5);
+    const events = [...new Set(card.map((pr) => pr.event).filter(Boolean))];
+    const splits = card.filter((pr) => {
+      const mk = marketProb(pr);
+      return mk != null && pr.favProb - mk >= 0.10;
+    });
 
     subject = yday && yday.n
-      ? `${yday.correct} of ${yday.n} yesterday, and ${card.length} call${card.length === 1 ? '' : 's'} locked for today`
-      : card.length
-        ? `${card.length} call${card.length === 1 ? '' : 's'} locked and priced for today`
-        : `Smash daily · ${dateLabel}`;
-    heroImage = shareImg('cover.png');
-    heroAlt = "Today's locked calls";
-    ctaHref = `${SITE}/parlay`;
-    ctaText = 'Size today\'s slip';
+      ? `${yday.correct} of ${yday.n} yesterday, ${plural(card.length, 'call', 'calls')} locked for today`
+      : `${plural(card.length, 'call', 'calls')} locked for today`;
+    preheader = card.length
+      ? `Every pick below was locked before play. ${events.length ? events.join(' and ') + '. ' : ''}Plus what we would stake, and ${slamDays != null ? `${slamDays} days to the ${slam.label}` : 'the road ahead'}.`
+      : 'Yesterday graded, and what comes next.';
+    ctaHref = `${SITE}/today`;
+    ctaText = "See today's full card";
 
-    txtLines.push(`SMASH DAILY · ${dateLabel}`, '');
+    txtLines.push(`SMASH DAILY - ${prettyDate}`, '');
 
-    // Yesterday, in one strip with a bar.
+    // Lede: set the scene in prose before any numbers.
+    const ledeBits = [];
     if (yday && yday.n) {
-      const p = pct(yday.correct, yday.n);
-      blocks.push(sectionRow(`
-        ${kicker('Yesterday')}
-        <div style="font-size:30px;font-weight:800;color:${LIME};line-height:1;">${yday.correct} of ${yday.n}</div>
-        <div style="font-size:13px;color:${DIM};padding:6px 0 10px;">${p}% of winners called, every one locked before play.</div>
-        ${bar(p)}
-        ${yday.worstMiss && yday.worstMiss.call ? `<div style="font-size:13px;color:${DIM};padding-top:10px;"><span style="color:${LOSS};font-weight:700;">The one we own:</span> ${esc(yday.worstMiss.call)}${yday.worstMiss.winner ? ` &middot; ${esc(yday.worstMiss.winner)} won it.` : '.'}</div>` : ''}
+      ledeBits.push(`Yesterday we called ${yday.correct} of ${yday.n} winners`);
+      ledeBits.push(yday.correct === yday.n
+        ? ', a clean sweep.'
+        : pct(yday.correct, yday.n) >= 70 ? ', a good day.' : ', and we own the ones that got away.');
+    }
+    if (card.length) {
+      ledeBits.push(` Today there ${card.length === 1 ? 'is' : 'are'} ${plural(card.length, 'match', 'matches')} on the card${events.length ? ` at ${events.join(' and ')}` : ''}, every pick locked and public before a ball is struck.`);
+    }
+    if (ledeBits.length) {
+      blocks.push(section(p(ledeBits.join('').trim())));
+      txtLines.push(ledeBits.join('').trim(), '');
+    }
+
+    // Yesterday, graded.
+    if (yday && yday.n) {
+      const ypct = pct(yday.correct, yday.n);
+      const ydayRows = graded
+        .filter((m) => String(m.date).slice(0, 10) === String(yday.date).slice(0, 10))
+        .slice(0, 6);
+      blocks.push(section(`
+        ${kicker('How yesterday landed')}
+        ${h2(`${yday.correct} of ${yday.n} winners called`)}
+        ${p(`That is ${ypct}% on the day, and every one of those calls was public before the match started. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} won it` : ''}. It goes in the record at full weight, like everything else.` : ''}`)}
+        ${bar(ypct, ypct >= 50 ? WIN : LOSS)}
+        ${ydayRows.length ? `<div style="padding-top:16px;">${ydayRows.map(resultRow).join('')}</div>` : ''}
+        <div style="padding-top:16px;">${textLink(`${SITE}/track-record`, 'Every call ever made, graded')}</div>
       `));
-      txtLines.push(`YESTERDAY: ${yday.correct} of ${yday.n} (${p}%)`);
-      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one we own: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` (${yday.worstMiss.winner} won)` : ''}`);
+      txtLines.push(`HOW YESTERDAY LANDED: ${yday.correct} of ${yday.n} (${ypct}%)`);
+      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` (${yday.worstMiss.winner} won)` : ''}`);
       txtLines.push('');
     }
 
-    // Today's card: the reason to open this email.
+    // Today's card.
     if (shown.length) {
-      const cards = shown.map((p) => {
-        const u = upsetById.get(p.id);
-        return `${upcomingCard(p)}${u ? `<div style="font-size:12px;color:#e8a33d;padding:6px 2px 0;">&#9888; Upset watch: ${esc(u.reason)}</div>` : ''}`;
-      }).join('<div style="height:10px;line-height:10px;font-size:0;">&nbsp;</div>');
-      blocks.push(sectionRow(`
-        ${kicker(todays.length ? `On court today · ${card.length} locked` : `Next up · ${card.length} locked`)}
-        ${cards}
-        ${card.length > shown.length ? `<div style="padding-top:12px;font-size:13px;"><a href="${SITE}/today" style="color:${LIME};text-decoration:none;font-weight:700;">And ${card.length - shown.length} more &rarr;</a></div>` : ''}
+      const intro = splits.length
+        ? `We disagree with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your attention: agreeing with the favourite proves nothing.`
+        : 'We land close to the market on today\'s card, so these are about conviction rather than argument.';
+      blocks.push(section(`
+        ${kicker(todays.length ? 'On court today' : 'Next up')}
+        ${h2(`${plural(card.length, 'match', 'matches')}, already locked`)}
+        ${p(intro)}
+        ${shown.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')}
+        ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
       `));
-      txtLines.push(todays.length ? `ON COURT TODAY (${card.length} locked)` : `NEXT UP (${card.length} locked)`);
-      for (const p of shown) {
-        const favIsP1 = p.favorite === p.p1;
-        txtLines.push(`  ${lastName(p.favName || (favIsP1 ? p.name1 : p.name2))} over ${lastName(favIsP1 ? p.name2 : p.name1)} · ${Math.round(p.favProb * 100)}% · ${p.event}`);
-        txtLines.push(`    ${matchUrl(p)}`);
+      txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
+      for (const pr of shown) {
+        const favIsP1 = pr.favorite === pr.p1;
+        txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}% - ${pr.event}`);
+        txtLines.push(`    Call: ${matchUrl(pr)}`);
+        txtLines.push(`    Compare: ${compareUrl(pr)}`);
+        txtLines.push(`    Simulate: ${simUrl(pr)}`);
       }
       txtLines.push('');
     }
 
-    // The staking plan: the app's sharpest tool, one tap away.
-    blocks.push(sectionRow(`
-      ${kicker('What to do about it')}
-      <div style="font-size:15px;color:${TEXT};line-height:1.55;padding-bottom:12px;">
-        The builder prices every call against the odds you are actually offered, then splits a
-        budget across only the bets that beat their price, so the slip is break-even or better
-        before you stake a penny.
-      </div>
-      ${button(`${SITE}/parlay`, 'Size today\'s slip')}
+    // Staking plan.
+    blocks.push(section(`
+      ${kicker('What we would stake')}
+      ${h2('The slip, sized honestly')}
+      ${p('A probability is only half an answer. The parlay builder takes today\'s calls, prices each one against the odds you are actually offered, and splits a budget across only the bets that beat their price. Anything the market has already sharpened past our number gets nothing.')}
+      ${p('It will tell you to stake less than you expected, and some days it will tell you to stake nothing at all. That is the point.')}
+      <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size today\'s slip')}</div>
     `));
-    txtLines.push(`SIZE TODAY'S SLIP: ${SITE}/parlay`, '');
+    txtLines.push(`WHAT WE WOULD STAKE: ${SITE}/parlay`, '');
 
     // Countdown.
     if (slam && slamDays != null) {
-      blocks.push(sectionRow(`
+      blocks.push(section(`
         ${kicker('Countdown')}
-        <div style="font-size:15px;color:${TEXT};">
-          <strong style="color:${LIME};font-size:22px;">${slamDays === 0 ? 'Today' : `${slamDays} day${slamDays === 1 ? '' : 's'}`}</strong>
-          ${slamDays === 0 ? `the ${esc(slam.label)} begins` : `to the ${esc(slam.label)}`}, on ${esc(slam.surface)}.
-        </div>
-        <div style="font-size:13px;color:${MUTED};padding-top:6px;">The projected draw re-prices with every refresh until the real one drops.</div>
-        <div style="padding-top:12px;">${button(`${SITE}/draw`, 'See the projected draw', { primary: false })}</div>
+        ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
+        ${p(`On ${esc(slam.surface)}. Until the real draw lands we simulate a seeded field from current rankings, two thousand times over, and re-price it with every refresh. It is the closest thing to a look at the tournament before the tournament exists.`)}
+        <div style="padding-top:4px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
       `));
-      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} begins today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`, `  ${SITE}/draw`, '');
+      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`, `  ${SITE}/draw`, '');
     }
 
     if (season && season.n) {
-      blocks.push(sectionRow(`
-        ${kicker('Season benchmark')}
-        <div style="font-size:13px;color:${DIM};">
-          <strong style="color:${TEXT};">${season.acc}%</strong> of winners called across
-          ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} matches, today's engines replayed over the season.
-        </div>
-      `));
-      txtLines.push(`SEASON BENCHMARK: ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()})`, '');
+      blocks.push(section(p(
+        `<span style="color:${MUTED};">For the record: ${season.acc}% of winners called across ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} matches this season, today's engines replayed over every one of them.</span>`
+      )));
+      txtLines.push(`SEASON: ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()})`, '');
     }
   } else {
     // ── WEEKLY ──────────────────────────────────────────────────────────────
@@ -368,32 +471,26 @@ async function main() {
     const weekPct = pct(weekCorrect, week.length);
 
     subject = week.length
-      ? `Your week: ${weekCorrect} of ${week.length} winners called (${weekPct}%)`
-      : season
-        ? `Smash weekly: season benchmark ${season.acc}% over ${season.n.toLocaleString()} matches`
-        : `Smash weekly digest · ${dateLabel}`;
-    // The banner is the thesis card ("every call public, every miss too"),
-    // which is the same promise this edition keeps by naming its misses. The
-    // match-specific cards are deliberately NOT used here: they headline one
-    // fixture ("THE MISS"), which reads as the whole week's story when it is
-    // sitting above a seven-day summary.
-    heroImage = shareImg('banner.png') || shareImg('edge-dollar.png');
-    heroAlt = 'Every call public, every miss too';
+      ? `Your week: ${weekCorrect} of ${week.length} winners called`
+      : `Smash weekly - ${dateLabel}`;
+    preheader = week.length
+      ? `${weekPct}% across every graded match, the bold calls that landed, and the ones that did not.`
+      : 'The week in review.';
     ctaHref = `${SITE}/track-record`;
     ctaText = 'Open the Ledger';
 
-    txtLines.push(`SMASH WEEKLY · ${dateLabel}`, '');
+    txtLines.push(`SMASH WEEKLY - ${prettyDate}`, '');
 
     if (week.length) {
-      blocks.push(sectionRow(`
+      blocks.push(section(`
+        ${p(`Seven days, ${plural(week.length, 'graded match', 'graded matches')}, and a number we cannot edit after the fact. Here is how the week actually went.`)}
         ${kicker('The week')}
-        <div style="font-size:34px;font-weight:800;color:${LIME};line-height:1;">${weekCorrect} of ${week.length}</div>
-        <div style="font-size:13px;color:${DIM};padding:6px 0 10px;">${weekPct}% of winners called across every graded match this week.</div>
-        ${bar(weekPct)}
+        ${h2(`${weekCorrect} of ${week.length} winners called`)}
+        ${p(`${weekPct}% across every match we graded, hits and misses together. No filtering by confidence, no quietly dropping the ones that aged badly.`)}
+        ${bar(weekPct, weekPct >= 50 ? WIN : LOSS, 14)}
       `));
       txtLines.push(`THE WEEK: ${weekCorrect} of ${week.length} (${weekPct}%)`, '');
 
-      // Day by day, oldest first: seven labelled bars.
       const days = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
@@ -408,16 +505,18 @@ async function main() {
         }
       }
       if (days.length > 1) {
+        const best = days.reduce((a, b) => (pct(b.correct, b.n) > pct(a.correct, a.n) ? b : a));
         const rows = days.map((d) => {
-          const p = pct(d.correct, d.n);
+          const dp = pct(d.correct, d.n);
           return `<tr>
-            <td width="42" style="font-size:12px;color:${MUTED};padding:5px 8px 5px 0;white-space:nowrap;">${esc(d.label)}</td>
-            <td style="padding:5px 0;">${bar(p, p >= 50 ? WIN : LOSS, 10)}</td>
-            <td width="58" style="font-size:12px;color:${DIM};padding:5px 0 5px 8px;text-align:right;white-space:nowrap;">${d.correct}/${d.n}</td>
+            <td width="46" style="font-size:13px;color:${MUTED};padding:6px 10px 6px 0;white-space:nowrap;font-weight:700;">${esc(d.label)}</td>
+            <td style="padding:6px 0;">${bar(dp, dp >= 50 ? WIN : LOSS, 12)}</td>
+            <td width="62" style="font-size:13px;color:${BODY};padding:6px 0 6px 10px;text-align:right;white-space:nowrap;">${d.correct}/${d.n}</td>
           </tr>`;
         }).join('');
-        blocks.push(sectionRow(`
+        blocks.push(section(`
           ${kicker('Day by day')}
+          ${p(`Best day was ${esc(best.label)} at ${pct(best.correct, best.n)}%. Volume swings a lot with the draw, so a thin day reads louder than it should.`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
         `));
         txtLines.push('DAY BY DAY');
@@ -425,10 +524,8 @@ async function main() {
         txtLines.push('');
       }
 
-      // Bold calls that landed: we took a different player than the market and
-      // were right. The hardest thing to do, so it leads the highlights.
-      const splits = week.filter((m) => m.oddFav && pickFavorite(m) && pickFavorite(m) !== m.oddFav);
-      const boldHits = splits.filter((m) => pickCorrect(m)).slice(0, 4);
+      const splitRows = week.filter((m) => m.oddFav && pickFavorite(m) && pickFavorite(m) !== m.oddFav);
+      const boldHits = splitRows.filter((m) => pickCorrect(m)).slice(0, 4);
       const misses = week
         .filter((m) => !pickCorrect(m))
         .sort((a, b) => {
@@ -441,10 +538,12 @@ async function main() {
         .slice(0, 3);
 
       if (boldHits.length) {
-        blocks.push(sectionRow(`
+        blocks.push(section(`
           ${kicker('Bold calls that landed')}
-          <div style="font-size:13px;color:${MUTED};padding-bottom:6px;">We named a different winner than the bookmakers, and the match agreed with us.</div>
-          ${boldHits.map(resultLine).join('')}
+          ${h2('We took a different winner, and won')}
+          ${p(`These are the only matches that really test a model: we named a different winner than the bookmakers did, so one of us had to be wrong. ${boldHits.length === 1 ? 'Once this week' : `${boldHits.length === 2 ? 'Twice' : `${boldHits.length} times`} this week`} it was them.`)}
+          ${boldHits.map(resultRow).join('')}
+          <div style="padding-top:16px;">${textLink(`${SITE}/edge`, 'Every split we have graded')}</div>
         `));
         txtLines.push('BOLD CALLS THAT LANDED');
         for (const m of boldHits) txtLines.push(`  + ${lastName(pickFavorite(m) === m.p1 ? m.name1 : m.name2)} (against the market) ${m.score || ''}`.trimEnd());
@@ -452,10 +551,11 @@ async function main() {
       }
 
       if (misses.length) {
-        blocks.push(sectionRow(`
+        blocks.push(section(`
           ${kicker('And the ones we got wrong')}
-          <div style="font-size:13px;color:${MUTED};padding-bottom:6px;">Our most confident misses of the week. They count the same as the hits.</div>
-          ${misses.map(resultLine).join('')}
+          ${h2('Our most confident misses')}
+          ${p('Publishing these is the whole deal. A model that only shows you its winners is a highlight reel, not a record.')}
+          ${misses.map(resultRow).join('')}
         `));
         txtLines.push('THE ONES WE GOT WRONG');
         for (const m of misses) {
@@ -465,118 +565,119 @@ async function main() {
         txtLines.push('');
       }
 
-      // Versus the market, over the same week.
       const priced = week.filter((m) => m.oddCorrect != null);
       if (priced.length >= 5) {
         const us = pct(priced.filter((m) => pickCorrect(m)).length, priced.length);
         const them = pct(priced.filter((m) => m.oddCorrect).length, priced.length);
-        blocks.push(sectionRow(`
+        const verdict = us > them
+          ? `We finished ${us - them} points ahead of the bookmakers this week.`
+          : us === them
+            ? 'We finished level with the bookmakers this week.'
+            : `The bookmakers finished ${them - us} points ahead of us this week. Some weeks go that way, and the number stays up either way.`;
+        blocks.push(section(`
           ${kicker('Us vs the bookmakers')}
+          ${h2(verdict)}
+          ${p(`Measured across the ${priced.length} matches this week that carried a closing price, scoring both sides on the same fixtures.`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
-              <td width="50%" style="padding-right:8px;">
-                <div style="font-size:24px;font-weight:800;color:${LIME};line-height:1.1;">${us}%</div>
-                <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${MUTED};padding-bottom:6px;">us</div>
-                ${bar(us)}
+              <td width="50%" style="padding:0 10px 0 0;vertical-align:top;">
+                <div style="font-size:26px;font-weight:800;color:${INK};line-height:1.1;">${us}%</div>
+                <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 8px;">us</div>
+                ${bar(us, INK)}
               </td>
-              <td width="50%" style="padding-left:8px;">
-                <div style="font-size:24px;font-weight:800;color:${DIM};line-height:1.1;">${them}%</div>
-                <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${MUTED};padding-bottom:6px;">the bookmakers</div>
+              <td width="50%" style="padding:0 0 0 10px;vertical-align:top;">
+                <div style="font-size:26px;font-weight:800;color:${MUTED};line-height:1.1;">${them}%</div>
+                <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 8px;">the bookmakers</div>
                 ${bar(them, MUTED)}
               </td>
             </tr>
           </table>
-          <div style="font-size:12px;color:${MUTED};padding-top:10px;">Across the ${priced.length} matches this week that carried a closing price.</div>
         `));
         txtLines.push(`US VS THE BOOKMAKERS: ${us}% vs ${them}% (${priced.length} priced matches)`, '');
       }
     }
 
-    // Forward test + season, the standing numbers.
-    const decided = preds.filter((p) => p.status === 'won' || p.status === 'lost');
-    const fwdWon = decided.filter((p) => p.status === 'won').length;
-    const pending = preds.filter((p) => p.status === 'pending').length;
+    const decided = preds.filter((pr) => pr.status === 'won' || pr.status === 'lost');
+    const fwdWon = decided.filter((pr) => pr.status === 'won').length;
+    const pending = preds.filter((pr) => pr.status === 'pending').length;
     if (decided.length || (season && season.n)) {
-      blocks.push(sectionRow(`
+      blocks.push(section(`
         ${kicker('The standing record')}
-        ${decided.length ? `<div style="font-size:14px;color:${TEXT};padding-bottom:4px;"><strong style="color:${LIME};">${fwdWon}-${decided.length - fwdWon}</strong> locked before play and graded after${pending ? `, ${pending} more pending` : ''}.</div>` : ''}
-        ${season && season.n ? `<div style="font-size:13px;color:${DIM};">Season benchmark <strong style="color:${TEXT};">${season.acc}%</strong> (${season.correct.toLocaleString()} of ${season.n.toLocaleString()}), today's engines replayed over the season.</div>` : ''}
+        ${decided.length ? p(`<strong style="color:${INK};">${fwdWon}-${decided.length - fwdWon}</strong> on calls locked before play and graded after${pending ? `, with ${pending} still pending` : ''}. That is the honest one: no hindsight, no re-runs.`) : ''}
+        ${season && season.n ? p(`<span style="color:${MUTED};">Season benchmark ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()}), today's engines replayed over the season.</span>`) : ''}
       `));
       if (decided.length) txtLines.push(`FORWARD TEST: ${fwdWon}-${decided.length - fwdWon}${pending ? ` (${pending} pending)` : ''}`);
-      if (season && season.n) txtLines.push(`SEASON BENCHMARK: ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()})`);
+      if (season && season.n) txtLines.push(`SEASON: ${season.acc}%`);
       txtLines.push('');
     }
 
     if (slam && slamDays != null) {
-      blocks.push(sectionRow(`
+      blocks.push(section(`
         ${kicker('Next up')}
-        <div style="font-size:15px;color:${TEXT};">
-          <strong style="color:${LIME};font-size:22px;">${slamDays === 0 ? 'Today' : `${slamDays} day${slamDays === 1 ? '' : 's'}`}</strong>
-          ${slamDays === 0 ? `the ${esc(slam.label)} begins` : `to the ${esc(slam.label)}`}, on ${esc(slam.surface)}.
-        </div>
-        <div style="padding-top:12px;">${button(`${SITE}/draw`, 'See the projected draw', { primary: false })}</div>
+        ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
+        ${p(`On ${esc(slam.surface)}. The projected field re-prices with every refresh until the real draw drops.`)}
+        <div style="padding-top:4px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
       `));
-      txtLines.push(`NEXT UP: ${slamDays === 0 ? `the ${slam.label} begins today` : `${slamDays} days to the ${slam.label}`}`, '');
+      txtLines.push(`NEXT UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`}`, '');
     }
   }
 
   if (!blocks.length) {
-    console.log(`[${MODE}] Nothing worth mailing today (no graded results, no locked calls); wrote no files and skipped send.`);
+    console.log(`[${MODE}] Nothing worth mailing today; wrote no files and skipped send.`);
     return;
   }
 
-  const editionLabel = isWeekly ? 'weekly' : 'daily';
+  const editionLabel = isWeekly ? 'Weekly' : 'Daily';
   const stem = isWeekly ? 'digest' : 'digest-daily';
 
-  // ── digest.txt
   const txt = [
     ...txtLines,
     `${ctaText}: ${ctaHref}`,
     '',
     'Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.',
-    // Swapped per recipient at send time; the on-disk copy gets the fallback.
     '%%UNSUB_TXT%%',
   ].join('\n');
-  // The unsubscribe link is per recipient, so the committed artifact carries
-  // the no-token fallback rather than a placeholder or a stranger's token.
-  const FALLBACK_TXT = `Unsubscribe by replying "stop". ${SITE}`;
-  const FALLBACK_HTML = 'Reply "stop" to unsubscribe.';
-  const fillUnsub = (s, unsubUrl) => s
-    .replace(/%%UNSUB_TXT%%/g, unsubUrl ? `Unsubscribe: ${unsubUrl}` : FALLBACK_TXT)
-    .replace(/%%UNSUB_HTML%%/g, unsubUrl
-      ? `<a href="${unsubUrl}" style="color:#687082;text-decoration:underline;">Unsubscribe</a>`
-      : FALLBACK_HTML);
 
-  fs.writeFileSync(path.join(DATA, `${stem}.txt`), `${fillUnsub(txt, null)}\n`);
-
-  // ── digest.html
   const html = `<!doctype html>
-<html>
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>${esc(subject)}</title></head>
-<body style="margin:0;padding:0;background:${INK};">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(subject)}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${INK};font-family:${FONT};">
-    <tr><td align="center" style="padding:24px 12px;">
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
+<title>${esc(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(preheader)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE};font-family:${FONT};">
+    <tr><td align="center" style="padding:28px 12px 36px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${CARD};border:1px solid ${LINE};border-radius:14px;overflow:hidden;">
         <tr>
-          <td style="padding:20px 20px 16px;border-bottom:2px solid ${LIME};">
-            <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">SMASH &middot; ${esc(editionLabel)}</div>
-            <div style="font-size:12px;color:${MUTED};padding-top:4px;">${esc(dateLabel)} &middot; every call locked before play, graded in public</div>
+          <td style="padding:26px 28px 22px;background:${INK};">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:1px;">
+                  SMASH<span style="color:${LIME};">.</span>
+                </td>
+                <td align="right" style="font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${LIME};">${esc(editionLabel)}</td>
+              </tr>
+            </table>
+            <div style="font-size:13px;color:#aab2bf;padding-top:8px;">${esc(prettyDate)} &nbsp;&middot;&nbsp; every call locked before play, graded in public</div>
           </td>
         </tr>
-        ${heroImage ? `<tr><td style="padding:0;"><a href="${ctaHref}"><img src="${heroImage}" alt="${esc(heroAlt)}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;" /></a></td></tr>` : ''}
         ${blocks.join('')}
         <tr>
-          <td style="padding:20px;" align="center">
+          <td align="center" style="padding:28px;border-top:1px solid ${LINE};">
             ${button(ctaHref, ctaText)}
           </td>
         </tr>
         <tr>
-          <td style="padding:0 20px 18px;font-size:11px;line-height:1.6;color:#687082;">
-            Not betting advice. The season number is a benchmark (today's engines replayed over the
-            season); only the forward test rows were locked before play.
-            <a href="${SITE}" style="color:#687082;">${esc(SITE.replace(/^https?:\/\//, ''))}</a>
-            <br />%%UNSUB_HTML%%
+          <td style="padding:20px 28px 26px;background:#f7f9fb;border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
+            You are getting this because you asked for the Smash digest.
+            Not betting advice: the season number is a benchmark (today's engines replayed
+            over the season), and only the forward test rows were locked before play.
+            <br /><a href="${SITE}" style="color:${MUTED};">${esc(SITE.replace(/^https?:\/\//, ''))}</a>
+            &nbsp;&middot;&nbsp; %%UNSUB_HTML%%
           </td>
         </tr>
       </table>
@@ -585,8 +686,18 @@ async function main() {
 </body>
 </html>
 `;
+
+  const FALLBACK_TXT = `Unsubscribe by replying "stop". ${SITE}`;
+  const FALLBACK_HTML = 'Reply "stop" to unsubscribe.';
+  const fillUnsub = (s, unsubUrl) => s
+    .replace(/%%UNSUB_TXT%%/g, unsubUrl ? `Unsubscribe: ${unsubUrl}` : FALLBACK_TXT)
+    .replace(/%%UNSUB_HTML%%/g, unsubUrl
+      ? `<a href="${unsubUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>`
+      : FALLBACK_HTML);
+
+  fs.writeFileSync(path.join(DATA, `${stem}.txt`), `${fillUnsub(txt, null)}\n`);
   fs.writeFileSync(path.join(DATA, `${stem}.html`), fillUnsub(html, null));
-  console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${blocks.length} sections${heroImage ? ', hero image' : ', no hero image'}). Subject: ${subject}`);
+  console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${blocks.length} sections).`);
 
   // ── Optional send via Resend. Never fatal.
   // Recipients = DIGEST_TO (owner) + the public subscriber list from

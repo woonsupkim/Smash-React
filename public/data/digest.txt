@@ -1,9 +1,8 @@
-SMASH WEEKLY · 2026-08-12
+SMASH WEEKLY - Thursday, August 13
 
-THE WEEK: 82 of 126 (65%)
+THE WEEK: 47 of 64 (73%)
 
 DAY BY DAY
-  Thu: 15/30 (50%)
   Fri: 9/14 (64%)
   Sat: 10/12 (83%)
   Sun: 6/10 (60%)
@@ -18,14 +17,14 @@ BOLD CALLS THAT LANDED
 THE ONES WE GOT WRONG
   - Sabalenka lost to Alexandrova 7-6(3) 4-6 6-4
   - Andreeva lost to Fernandez 6-1 6-4
-  - Zverev lost to Griekspoor 6-7(3) 6-2 6-4
+  - Pegula lost to Shnaider 6-3 6-3
 
-US VS THE BOOKMAKERS: 60% vs 77% (48 priced matches)
+US VS THE BOOKMAKERS: 65% vs 75% (20 priced matches)
 
 FORWARD TEST: 94-41 (42 pending)
-SEASON BENCHMARK: 67% (3,124 of 4,666)
+SEASON: 67%
 
-NEXT UP: 19 days to the US Open
+NEXT UP: 18 days to the US Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
