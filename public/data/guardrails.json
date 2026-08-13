@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T10:09:27.709Z",
+  "generatedAt": "2026-08-13T10:09:55.856Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,16 +9,16 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 392,
+      "n": 396,
       "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 63,
-      "rankRecentAcc": 55,
+      "recentAcc": 65,
+      "rankRecentAcc": 60,
       "recentEngines": {
-        "smash": 63,
+        "smash": 65,
         "sim": 55,
         "elo": 57,
-        "rank": 55,
+        "rank": 60,
         "upset": 75
       },
       "bestRecent": {
@@ -81,21 +81,21 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 359,
+      "n": 362,
       "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 75,
-      "rankRecentAcc": 75,
+      "recentAcc": 73,
+      "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 75,
+        "smash": 73,
         "sim": 63,
-        "elo": 73,
-        "rank": 75,
-        "upset": 73
+        "elo": 70,
+        "rank": 73,
+        "upset": 78
       },
       "bestRecent": {
-        "engine": "smash",
-        "acc": 75
+        "engine": "upset",
+        "acc": 78
       },
       "reasons": []
     },
@@ -149,7 +149,7 @@
     }
   ],
   "forward": {
-    "n": 145,
+    "n": 141,
     "recentN": 40,
     "recentAcc": 78,
     "status": "ok"
