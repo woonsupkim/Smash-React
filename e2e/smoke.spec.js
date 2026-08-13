@@ -13,7 +13,7 @@ function collectErrors(page) {
 test('home renders the board and proof rail', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  await expect(page.getByText('Simulate the Slams', { exact: false })).toBeVisible();
+  await expect(page.getByText('We Beat the', { exact: false })).toBeVisible();
   // The proof rail loads from track_record.json - a number, not a skeleton.
   // Asserted on the rail itself rather than any one caption: the captions
   // change with the season (off-season copy vs a live board), and this test
@@ -25,7 +25,7 @@ test('home renders the board and proof rail', async ({ page }) => {
 test('track record: hero, filters, event dropdown, match log', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/track-record');
-  await expect(page.getByRole('heading', { name: /track record/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /every call, graded/i })).toBeVisible();
   await expect(page.locator('.track-hero-value')).toHaveText(/%/, { timeout: 15000 });
 
   // Surface filter reaches the surface-scoped copy. Which element carries
@@ -112,34 +112,42 @@ test('rivalry page renders h2h, verdict reads, and form curves', async ({ page }
 test('nav pillars open and navigate', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Proof' }).click();
+  await page.getByRole('button', { name: 'The Receipts' }).click();
   await page.locator('.nav-pillar-menu').getByRole('link', { name: /the ledger/i }).click();
-  await expect(page.getByRole('heading', { name: /track record/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('heading', { name: /every call, graded/i })).toBeVisible({ timeout: 15000 });
   expect(errors).toEqual([]);
 });
 
-test('parlay builder: suggestion loads legs and the slip prices them', async ({ page }) => {
+test('parlay builder: the plan prices today\'s card and dropping a leg re-prices it', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/parlay');
   await expect(page.getByRole('heading', { name: /stack today's calls/i })).toBeVisible();
-  // Either there are calls today (builder renders) or the honest empty state.
-  const legs = page.locator('.parlay-leg');
-  if (await legs.count() === 0) {
+
+  // Either there are calls today (the plan renders) or the honest empty state.
+  // There is no separate selection list any more: every call arrives already
+  // in the plan, which is the single table for both picking and pricing.
+  const plan = page.locator('.stake-plan');
+  if (await plan.count() === 0) {
     await expect(page.locator('.parlay-empty')).toBeVisible();
     expect(errors).toEqual([]);
     return;
   }
-  // A suggestion fills the slip, and the slip prices what it filled.
-  await page.locator('.parlay-chip').first().click();
-  await expect(page.locator('.parlay-slip-pct')).toHaveText(/%/);
-  await expect(page.locator('.parlay-legs-out li').first()).toBeVisible();
-  // Adding a leg can only make the combined probability smaller.
-  const before = parseInt((await page.locator('.parlay-slip-pct').textContent()).replace('%', ''), 10);
-  const unchecked = page.locator('.parlay-leg:not(.on)').first();
-  if (await unchecked.count()) {
-    await unchecked.click();
-    const after = parseInt((await page.locator('.parlay-slip-pct').textContent()).replace('%', ''), 10);
-    expect(after).toBeLessThanOrEqual(before);
+
+  // Priced on arrival, with no clicks: budget mode is the default.
+  await expect(page.locator('.stake-value-pct')).toHaveText(/%/, { timeout: 15000 });
+  const rows = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay)');
+  const startCount = await rows.count();
+  expect(startCount).toBeGreaterThan(0);
+
+  // Dropping a leg must make the combined probability LARGER, never smaller:
+  // fewer results have to land for the set to come in. The old test asserted
+  // the mirror of this, back when legs were added one at a time.
+  if (startCount > 1) {
+    const before = parseFloat((await page.locator('.stake-value-pct').textContent()).replace('%', ''));
+    await page.locator('.stake-drop button').first().click();
+    await expect(rows).toHaveCount(startCount - 1);
+    const after = parseFloat((await page.locator('.stake-value-pct').textContent()).replace('%', ''));
+    expect(after).toBeGreaterThanOrEqual(before);
   }
   expect(errors).toEqual([]);
 });

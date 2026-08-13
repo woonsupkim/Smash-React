@@ -89,7 +89,14 @@
 .stake-drop button:hover { color: var(--accent-negative, #ff5c5c); }
 .stake-row-head { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3, #7c8698); border-bottom-color: rgba(255, 255, 255, 0.14); }
 .stake-row-head span:nth-child(n+2) { text-align: center; }
-.stake-row.neg { opacity: 0.72; }
+/* A -EV row used to be dimmed with opacity: 0.72, which dropped its already
+   muted sub-line to 4.0:1 and its red edge to 2.93:1, both under WCAG AA.
+   Budget mode is now the default, so those rows render on arrival and the
+   failure was permanently on screen. The row recedes via a DARKENING tint
+   instead, which de-emphasises it while RAISING contrast on both (edge 5.87,
+   sub-line 4.84). A lightening tint was tried first and failed for the
+   obvious reason in hindsight: it moved the background toward the text. */
+.stake-row.neg { background: rgba(0, 0, 0, 0.18); }
 .stake-pick { display: flex; flex-direction: column; min-width: 0; }
 .stake-pick strong { color: var(--text-1, #fff); font-weight: 700; font-size: 0.9rem; }
 .stake-pick strong a { color: inherit; text-decoration: none; }
@@ -153,7 +160,11 @@
 
 .stake-verdict { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }
 .stake-badge { font-size: 0.76rem; font-weight: 800; padding: 0.28rem 0.6rem; border-radius: 999px; }
-.stake-badge.pos { background: rgba(76, 175, 125, 0.16); color: var(--accent-positive, #4caf7d); }
+/* Lifted off --accent-positive (#4caf7d) on purpose: against this badge's own
+   tinted background that green measures 4.49:1, which fails WCAG AA for small
+   bold text by a hundredth. The variable is fine everywhere else it sits on a
+   darker surface, so the fix is scoped here rather than changing the token. */
+.stake-badge.pos { background: rgba(76, 175, 125, 0.16); color: #5cbf8d; }
 .stake-badge.neg { background: rgba(255, 92, 92, 0.14); color: var(--accent-negative, #ff5c5c); }
 .stake-verdict-txt { font-size: 0.8rem; color: var(--text-3, #7c8698); flex: 1 1 12rem; min-width: 0; }
 .stake-balance { border: 1px solid var(--accent-brand, #c8ff2e); background: none; color: var(--accent-brand, #c8ff2e); font-weight: 800; font-size: 0.8rem; padding: 0.4rem 0.85rem; border-radius: 999px; cursor: pointer; white-space: nowrap; }

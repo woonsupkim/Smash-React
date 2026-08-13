@@ -183,8 +183,16 @@ export default function StakingPlan({ legs, onDrop = null }) {
       )}
 
       <div className={`stake-table${useParlay ? '' : ' no-parlay'}${onDrop ? ' has-drop' : ''}`} role="table">
+        {/* role="row" requires columnheader/cell children, so every span in
+            this grid carries one. Without them the table announces as a bare
+            group and axe flags it critical. */}
         <div className="stake-row stake-row-head" role="row">
-          <span>Pick</span><span>Your odds</span><span>Edge</span><span>{mode === 'budget' ? 'Suggested' : 'Single $'}</span><span>Parlay</span>{onDrop && <span />}
+          <span role="columnheader">Pick</span>
+          <span role="columnheader">Your odds</span>
+          <span role="columnheader">Edge</span>
+          <span role="columnheader">{mode === 'budget' ? 'Suggested' : 'Single $'}</span>
+          <span role="columnheader">Parlay</span>
+          {onDrop && <span role="columnheader"><span className="sr-only">Remove</span></span>}
         </div>
         {legs.map((l) => {
           const o = oddsOf(l);
@@ -192,33 +200,33 @@ export default function StakingPlan({ legs, onDrop = null }) {
           const stake = singleFor(l);
           return (
             <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}`} role="row" key={l.id}>
-              <span className="stake-pick">
+              <span className="stake-pick" role="cell">
                 <strong><Link to={`/match/${matchSlug(l)}`}>{lastName(l.favName)}</Link></strong>
                 <em>
                   over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
                   {l.event ? ` · ${l.event}` : ''}
                 </em>
               </span>
-              <span className="stake-odds">
+              <span className="stake-odds" role="cell">
                 <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
                   onChange={(e2) => setOddsOverride((s) => ({ ...s, [l.id]: parseFloat(e2.target.value) || 0 }))} />
               </span>
-              <span className={`stake-edge ${e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
+              <span role="cell" className={`stake-edge ${e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
                 {e == null ? 'no price' : pctSigned(e)}
               </span>
-              <span className="stake-single">
+              <span className="stake-single" role="cell">
                 {mode === 'budget'
                   ? <span className="stake-suggest">{stake > 0 ? money(stake) : '–'}</span>
                   : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
                       disabled={!(o > 1)}
                       onChange={(e2) => setStakes((s) => ({ ...s, [l.id]: e2.target.value }))} />}
               </span>
-              <span className="stake-inpar">
+              <span className="stake-inpar" role="cell">
                 <input type="checkbox" aria-label="Include in parlay" checked={isIn(l)} disabled={!(o > 1)}
                   onChange={() => setInParlay((s) => ({ ...s, [l.id]: !isIn(l) }))} />
               </span>
               {onDrop && (
-                <span className="stake-drop">
+                <span className="stake-drop" role="cell">
                   <button type="button" title={`Take ${lastName(l.favName)} out of the slip`}
                     aria-label={`Remove ${lastName(l.favName)} from the slip`}
                     onClick={() => onDrop(l)}>&times;</button>
@@ -230,27 +238,28 @@ export default function StakingPlan({ legs, onDrop = null }) {
 
         {combo.priced && (
           <div className={`stake-row stake-row-parlay${useParlay ? '' : ' off'}`} role="row">
-            <span className="stake-pick">
+            <span className="stake-pick" role="cell">
               <strong>Parlay</strong>
               <em>
                 {combo.n} legs · lands {pct(combo.p)} · fair {(1 / combo.p).toFixed(2)}
                 {!useParlay && ' · not staked'}
               </em>
             </span>
-            <span className="stake-odds fixed">{combo.o.toFixed(2)}</span>
-            <span className={`stake-edge ${combo.edge >= 0 ? 'pos' : 'neg'}`}>{pctSigned(combo.edge)}</span>
-            <span className="stake-single">
+            <span className="stake-odds fixed" role="cell">{combo.o.toFixed(2)}</span>
+            <span role="cell" className={`stake-edge ${combo.edge >= 0 ? 'pos' : 'neg'}`}>{pctSigned(combo.edge)}</span>
+            <span className="stake-single" role="cell">
               {mode === 'budget'
                 ? <span className="stake-suggest">{parStake > 0 ? money(parStake) : '–'}</span>
                 : <input type="number" min="0" step="1" value={parlayStake || ''} placeholder="0"
                     disabled={!useParlay}
                     onChange={(e2) => setParlayStake(e2.target.value)} />}
             </span>
-            <span className="stake-inpar">
+            <span className="stake-inpar" role="cell">
               <input type="checkbox" aria-label="Include the parlay in this plan"
                 checked={useParlay} onChange={() => setUseParlay((v) => !v)} />
             </span>
-            {onDrop && <span />}
+            {/* Empty, but still a cell: role="row" tolerates no bare children. */}
+            {onDrop && <span role="cell" />}
           </div>
         )}
       </div>
