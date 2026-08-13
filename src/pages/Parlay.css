@@ -51,48 +51,11 @@
 .parlay-chip-sub { font-size: 0.76rem; color: var(--text-3); }
 .parlay-chip-clear { border-style: dashed; }
 
-/* ── Layout: the calls, full width ────────────────────────────────────────
-   The slip panel that used to sit alongside is gone; pricing and sizing both
-   live in the staking plan below, which owns the editable odds. */
-.parlay-body { display: block; }
+/* The checkbox list of calls that used to sit here is gone: it showed every
+   match a second time, above the staking plan that already names them all.
+   Selecting and pricing now happen in one table (see StakingPlan.css).
 
-.parlay-list { display: flex; flex-direction: column; gap: 0.4rem; }
-.parlay-leg {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-.parlay-leg:hover { background: rgba(255, 255, 255, 0.05); }
-.parlay-leg.on { border-color: var(--accent-brand); background: rgba(198, 255, 28, 0.06); }
-.parlay-leg input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent-brand); cursor: pointer; }
-.parlay-leg-face { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; }
-.parlay-leg-main { display: flex; flex-direction: column; min-width: 0; }
-.parlay-leg-pick { font-weight: 700; color: var(--text-1); }
-.parlay-leg-meta {
-  font-size: 0.76rem;
-  color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.parlay-leg-nums { display: flex; flex-direction: column; align-items: flex-end; }
-.parlay-leg-pct {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--accent-brand);
-  line-height: 1;
-}
-.parlay-leg-odds { font-size: 0.72rem; color: var(--text-3); white-space: nowrap; }
-.parlay-leg-flag { color: var(--accent-brand); font-weight: 700; }
-
-/* The slip panel's styles moved into StakingPlan.css along with its content;
+   The slip panel's styles moved into StakingPlan.css along with its content;
    only the empty-state prompt is still rendered from this page. */
 .parlay-slip-empty {
   color: var(--text-3);
@@ -138,4 +101,3 @@
   text-decoration: none;
 }
 .parlay-footer a:hover { color: var(--accent-brand); }
-.parlay-leg-flag.stretch { color: var(--amber, #ffb74d); }

@@ -19,16 +19,12 @@
 // season, priced per selection instead of per match.
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { lastName } from '../utils/names';
-import { playerPhoto } from '../utils/playerPhotos';
 import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import './Parlay.css';
 
 const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
-// Decimal odds offered on the player WE picked (lockOdd1/2 follow p1/p2).
-const ourOdds = (p) => (p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
 // The market's own view of our pick, with the bookmaker's margin divided
 // out - the like-for-like comparison against our probability (same
 // vig-stripping as the Edge board).
@@ -146,10 +142,10 @@ export default function Parlay() {
       <div className="eyebrow">THE PARLAY BUILDER</div>
       <h1 className="parlay-title">Stack today's calls</h1>
       <p className="parlay-intro">
-        Every call on today's card is already locked, graded in public whatever happens,
-        and stacked below by default. Untick the ones you don't want and the plan re-prices
-        as you go: the honest number is how often that exact set of results actually comes
-        in, and every leg you keep makes it smaller.
+        Every call on today's card is already locked, graded in public whatever happens, and
+        in the plan below by default. Drop the ones you don't want with the × on the right,
+        and it re-prices as you go: the honest number is how often that exact set of results
+        actually comes in, and every leg you keep makes it smaller.
       </p>
 
       {all === null && <div className="skeleton parlay-skel" />}
@@ -185,41 +181,6 @@ export default function Parlay() {
             </div>
           )}
 
-          <div className="parlay-body">
-            <div className="parlay-list" role="group" aria-label="Today's calls">
-              {all.map((p) => {
-                const k = legKey(p);
-                const on = !dropped.has(k);
-                const mkt = marketProb(p);
-                const o = ourOdds(p);
-                return (
-                  <label key={k} className={`parlay-leg${on ? ' on' : ''}`}>
-                    <input type="checkbox" checked={on} onChange={() => toggle(k)} />
-                    <img className="parlay-leg-face" src={playerPhoto(p.tour, p.favorite)} alt="" loading="lazy" />
-                    <span className="parlay-leg-main">
-                      <span className="parlay-leg-pick">{lastName(p.favName)}</span>
-                      <span className="parlay-leg-meta">
-                        over {lastName(p.favorite === p.p1 ? p.name2 : p.name1)} · {p.tour.toUpperCase()} · {p.event}
-                      </span>
-                    </span>
-                    <span className="parlay-leg-nums">
-                      <span className="parlay-leg-pct">{pct(p.favProb)}</span>
-                      <span className="parlay-leg-odds">
-                        {o > 1 ? `market ${o.toFixed(2)}` : 'no market price'}
-                        {mkt != null && p.favProb - mkt >= GAP_CEIL
-                          ? <span className="parlay-leg-flag stretch"> big split</span>
-                          : mkt != null && p.favProb - mkt >= GAP_FLOOR
-                            ? <span className="parlay-leg-flag"> against the market</span>
-                            : null}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-
-          </div>
-
           {/* Everything is in by default, so an empty slip means you took the
               last leg out - offer the way back rather than a generic prompt. */}
           {legs.length === 0 && (
@@ -231,11 +192,13 @@ export default function Parlay() {
             </p>
           )}
 
-          {/* One list, not two: the staking plan's table already names every
-              leg (and links each to its match page), so it doubles as "in
-              your selection" while answering what to actually stake. The slip
-              above stays a verdict on value; this is the verdict on size. */}
-          {legs.length > 0 && <StakingPlan legs={legs} />}
+          {/* ONE table, not two. There used to be a checkbox list of the same
+              calls above this, which meant every match was on screen twice and
+              you picked in one place then priced in another. The staking plan
+              already names every leg, so it took over the dropping too. */}
+          {legs.length > 0 && (
+            <StakingPlan legs={legs} onDrop={(l) => toggle(legKey(l))} />
+          )}
         </>
       )}
 

@@ -25,7 +25,9 @@ const pctSigned = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
 const pct = (v) => `${(v * 100).toFixed(1)}%`;
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
-export default function StakingPlan({ legs }) {
+// onDrop(leg) removes a match from the slip entirely, which is the job the
+// checkbox list above this table used to do before it was folded in here.
+export default function StakingPlan({ legs, onDrop = null }) {
   // Opens on "From budget": it answers the question people actually arrive
   // with (here is what I have, what should I do with it) and needs no input
   // to show a full, break-even-or-better plan. "My stakes" is the grade-my-own
@@ -180,9 +182,9 @@ export default function StakingPlan({ legs }) {
         </label>
       )}
 
-      <div className={`stake-table${useParlay ? '' : ' no-parlay'}`} role="table">
+      <div className={`stake-table${useParlay ? '' : ' no-parlay'}${onDrop ? ' has-drop' : ''}`} role="table">
         <div className="stake-row stake-row-head" role="row">
-          <span>Pick</span><span>Your odds</span><span>Edge</span><span>{mode === 'budget' ? 'Suggested' : 'Single $'}</span><span>Parlay</span>
+          <span>Pick</span><span>Your odds</span><span>Edge</span><span>{mode === 'budget' ? 'Suggested' : 'Single $'}</span><span>Parlay</span>{onDrop && <span />}
         </div>
         {legs.map((l) => {
           const o = oddsOf(l);
@@ -192,7 +194,10 @@ export default function StakingPlan({ legs }) {
             <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}`} role="row" key={l.id}>
               <span className="stake-pick">
                 <strong><Link to={`/match/${matchSlug(l)}`}>{lastName(l.favName)}</Link></strong>
-                <em>over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}</em>
+                <em>
+                  over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
+                  {l.event ? ` · ${l.event}` : ''}
+                </em>
               </span>
               <span className="stake-odds">
                 <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
@@ -212,6 +217,13 @@ export default function StakingPlan({ legs }) {
                 <input type="checkbox" aria-label="Include in parlay" checked={isIn(l)} disabled={!(o > 1)}
                   onChange={() => setInParlay((s) => ({ ...s, [l.id]: !isIn(l) }))} />
               </span>
+              {onDrop && (
+                <span className="stake-drop">
+                  <button type="button" title={`Take ${lastName(l.favName)} out of the slip`}
+                    aria-label={`Remove ${lastName(l.favName)} from the slip`}
+                    onClick={() => onDrop(l)}>&times;</button>
+                </span>
+              )}
             </div>
           );
         })}
@@ -238,6 +250,7 @@ export default function StakingPlan({ legs }) {
               <input type="checkbox" aria-label="Include the parlay in this plan"
                 checked={useParlay} onChange={() => setUseParlay((v) => !v)} />
             </span>
+            {onDrop && <span />}
           </div>
         )}
       </div>
