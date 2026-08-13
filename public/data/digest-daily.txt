@@ -1,6 +1,6 @@
 SMASH DAILY - Thursday, August 13
 
-Yesterday we called 6 of 7 winners, a good day. Today there are 32 matches on the card at Canada and Cincinnati, every pick locked and public before a ball is struck.
+Yesterday we called 6 of 7 winners, a good day. Today there are 19 matches on the card at Cincinnati and Canada, every pick locked and public before a ball is struck.
 
 HOW YESTERDAY LANDED: 6 of 7 (86%)
   The one that stings: Sebastian Ofner (we said 63%) (Marco Trungelliti won)
@@ -8,26 +8,26 @@ HOW YESTERDAY LANDED: 6 of 7 (86%)
   If you had followed the plan: -$6.94 on a $100 bankroll (1/2 landed)
 
 ON COURT TODAY
-  Rybakina over Gauff - 72% - Canada
-    Call: https://smash-react.vercel.app/match/elena-rybakina-vs-cori-gauff-182211
-    Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-cori-gauff
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rybak&b=gauff
-  Machac over Carreno-Busta - 60% - Cincinnati
-    Call: https://smash-react.vercel.app/match/pablo-carreno-busta-vs-tomas-machac-181939
-    Compare: https://smash-react.vercel.app/compare/atp/pablo-carreno-busta-vs-tomas-machac
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=carre&b=macha
-  Griekspoor over Zandschulp - 52% - Cincinnati
-    Call: https://smash-react.vercel.app/match/tallon-griekspoor-vs-botic-van-de-zandschulp-181941
-    Compare: https://smash-react.vercel.app/compare/atp/tallon-griekspoor-vs-botic-van-de-zandschulp
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=griek&b=zands
-  Khachanov over Kovacevic - 69% - Cincinnati
-    Call: https://smash-react.vercel.app/match/karen-khachanov-vs-aleksandar-kovacevic-181945
-    Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-aleksandar-kovacevic
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=kovac
-  Tsitsipas over Royer - 56% - Cincinnati
-    Call: https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-valentin-royer-181953
-    Compare: https://smash-react.vercel.app/compare/atp/stefanos-tsitsipas-vs-valentin-royer
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tsits&b=royer
+  Moutet over Hurkacz - 56% - Cincinnati
+    Call: https://smash-react.vercel.app/match/hubert-hurkacz-vs-corentin-moutet-181962
+    Compare: https://smash-react.vercel.app/compare/atp/hubert-hurkacz-vs-corentin-moutet
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=hurka&b=moute
+  Siniakova over Timofeeva - 73% - Cincinnati
+    Call: https://smash-react.vercel.app/match/katerina-siniakova-vs-maria-timofeeva-182409
+    Compare: https://smash-react.vercel.app/compare/wta/katerina-siniakova-vs-maria-timofeeva
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=sinia&b=timof
+  Vidmanova over Kalinina - 52% - Cincinnati
+    Call: https://smash-react.vercel.app/match/anhelina-kalinina-vs-darja-vidmanova-182349
+    Compare: https://smash-react.vercel.app/compare/wta/anhelina-kalinina-vs-darja-vidmanova
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=kalin1&b=vidma
+  Marcinko over Waltert - 62% - Cincinnati
+    Call: https://smash-react.vercel.app/match/petra-marcinko-vs-simona-waltert-182384
+    Compare: https://smash-react.vercel.app/compare/wta/petra-marcinko-vs-simona-waltert
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=marci&b=walte
+  Kasatkina over Sonmez - 51% - Cincinnati
+    Call: https://smash-react.vercel.app/match/zeynep-sonmez-vs-daria-kasatkina-182392
+    Compare: https://smash-react.vercel.app/compare/wta/zeynep-sonmez-vs-daria-kasatkina
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=sonme&b=kasat
 
 WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
 
