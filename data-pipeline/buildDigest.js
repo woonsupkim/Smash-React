@@ -124,6 +124,67 @@ function marketProb(p) {
   return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
 }
 
+// ── Staking maths, mirrored from src/utils/staking.js ───────────────────────
+// The app's copy is ES module and this pipeline is CommonJS, so it cannot be
+// imported here. These are the same two formulas, and digestStaking.test.js
+// asserts the two copies agree (same pattern as modelParity.test.js).
+const edgePerDollar = (p, o) => (o > 1 && p > 0 ? p * o - 1 : null);
+const kellyFraction = (p, o) => {
+  if (!(o > 1) || !(p > 0)) return 0;
+  const f = (p * o - 1) / (o - 1);
+  return f > 0 ? f : 0;
+};
+
+// What yesterday's suggested plan would actually have returned. Runs the
+// recommender over the calls that carried a price, then settles every stake at
+// the real result. This is a backtest of one day, not a promise: it is stated
+// as such in the copy, and a losing day is printed exactly as loudly.
+const PLAN_BUDGET = 100;
+function planReturn(rows) {
+  const bets = [];
+  for (const m of rows) {
+    const fav = pickFavorite(m);
+    if (!fav || !(m.od1 > 1) || !(m.od2 > 1)) continue;
+    const raw = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
+    if (raw == null) continue;
+    const p = fav === m.p1 ? raw : 1 - raw;
+    const o = fav === m.p1 ? m.od1 : m.od2;
+    // Only calls that beat the price they were offered at get money. This is
+    // the whole rule: a winner priced badly is still a bet we would not place.
+    if (edgePerDollar(p, o) > 0) bets.push({ p, o, won: !!pickCorrect(m) });
+  }
+  if (!bets.length) return null;
+  const total = bets.reduce((s, b) => s + kellyFraction(b.p, b.o), 0);
+  let staked = 0, profit = 0, hits = 0;
+  for (const b of bets) {
+    const stake = (PLAN_BUDGET * kellyFraction(b.p, b.o)) / total;
+    staked += stake;
+    if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+  }
+  return { n: bets.length, hits, staked, profit, budget: PLAN_BUDGET };
+}
+
+// Tournament crests for the countdown. Same on-demand mirror as the headshots.
+const SLAM_LOGOS = {
+  'US Open': 'logo_us.png',
+  Wimbledon: 'logo_wb.png',
+  'French Open': 'logo_rg.png',
+};
+function mirrorLogo(slamLabel) {
+  const file = SLAM_LOGOS[slamLabel];
+  if (!file) return null; // no crest bundled for the Australian Open
+  const src = path.join(ROOT, 'src', 'assets', file);
+  if (!fs.existsSync(src)) return null;
+  const dest = path.join(DATA, 'digest', file);
+  try {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(path.join(DATA, 'digest'), { recursive: true });
+      fs.copyFileSync(src, dest);
+    }
+    return `${SITE}/data/digest/${file}`;
+  } catch { return null; }
+}
+
 // ── Email primitives ────────────────────────────────────────────────────────
 function bar(percent, color = INK, height = 10) {
   const w = Math.max(0, Math.min(100, Math.round(percent)));
@@ -394,19 +455,78 @@ async function main() {
     // Yesterday, graded.
     if (yday && yday.n) {
       const ypct = pct(yday.correct, yday.n);
-      const ydayRows = graded
-        .filter((m) => String(m.date).slice(0, 10) === String(yday.date).slice(0, 10))
-        .slice(0, 6);
+      const ydayAll = graded.filter((m) => String(m.date).slice(0, 10) === String(yday.date).slice(0, 10));
+      const ydayRows = ydayAll.slice(0, 6);
+
+      // How the bookmakers' own favourite did on the same matches. Only the
+      // priced ones can be compared, and the sample is a single day, so the
+      // count is always stated rather than dressed up as a trend.
+      const pricedY = ydayAll.filter((m) => m.oddCorrect != null);
+      let vsMarket = '';
+      let vsMarketTxt = '';
+      if (pricedY.length >= 3) {
+        const usY = pct(pricedY.filter((m) => pickCorrect(m)).length, pricedY.length);
+        const themY = pct(pricedY.filter((m) => m.oddCorrect).length, pricedY.length);
+        const verdict = usY > themY
+          ? 'We were ahead of them.'
+          : usY === themY ? 'We finished level.' : 'They were ahead of us.';
+        vsMarket = `
+          <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};border-radius:12px;">
+            ${kicker('The bookmakers, same matches')}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+              <tr>
+                <td width="50%" style="padding-right:10px;vertical-align:top;">
+                  <div style="font-size:22px;font-weight:800;color:${INK};line-height:1.1;">${usY}%</div>
+                  <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 7px;">our pick</div>
+                  ${bar(usY, INK, 8)}
+                </td>
+                <td width="50%" style="padding-left:10px;vertical-align:top;">
+                  <div style="font-size:22px;font-weight:800;color:${MUTED};line-height:1.1;">${themY}%</div>
+                  <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 7px;">their favourite</div>
+                  ${bar(themY, MUTED, 8)}
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
+              ${esc(verdict)} Across the ${pricedY.length} of yesterday's matches that carried a closing price. One day is a small sample, and we publish it whichever way it falls.
+            </p>
+          </div>`;
+        vsMarketTxt = `Bookmakers on the same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
+      }
+
+      // What the suggested plan would have returned, settled at real results.
+      const plan = planReturn(ydayAll);
+      let planBlock = '';
+      let planTxt = '';
+      if (plan) {
+        const up = plan.profit >= 0;
+        const money = `${up ? '+' : '-'}$${Math.abs(plan.profit).toFixed(2)}`;
+        planBlock = `
+          <div style="margin-top:14px;padding:16px 18px;border:1px solid ${up ? WIN : LOSS};border-radius:12px;background:${up ? '#f2fbf6' : '#fdf4f3'};">
+            ${kicker('If you had followed the plan')}
+            <div style="font-size:28px;font-weight:800;color:${up ? WIN : LOSS};line-height:1.1;">${money}</div>
+            <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
+              On a $${plan.budget} bankroll split across the ${plural(plan.n, 'call', 'calls')} that beat their price yesterday, ${plan.hits} of which landed.
+              Settled at the odds we stamped before play. One day proves nothing either way, which is exactly why the whole record is public.
+            </p>
+          </div>`;
+        planTxt = `If you had followed the plan: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
+      }
+
       blocks.push(section(`
         ${kicker('How yesterday landed')}
         ${h2(`${yday.correct} of ${yday.n} winners called`)}
         ${p(`That is ${ypct}% on the day, and every one of those calls was public before the match started. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} won it` : ''}. It goes in the record at full weight, like everything else.` : ''}`)}
         ${bar(ypct, ypct >= 50 ? WIN : LOSS)}
         ${ydayRows.length ? `<div style="padding-top:16px;">${ydayRows.map(resultRow).join('')}</div>` : ''}
+        ${vsMarket}
+        ${planBlock}
         <div style="padding-top:16px;">${textLink(`${SITE}/track-record`, 'Every call ever made, graded')}</div>
       `));
       txtLines.push(`HOW YESTERDAY LANDED: ${yday.correct} of ${yday.n} (${ypct}%)`);
       if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` (${yday.worstMiss.winner} won)` : ''}`);
+      if (vsMarketTxt) txtLines.push(`  ${vsMarketTxt}`);
+      if (planTxt) txtLines.push(`  ${planTxt}`);
       txtLines.push('');
     }
 
@@ -443,15 +563,61 @@ async function main() {
     `));
     txtLines.push(`WHAT WE WOULD STAKE: ${SITE}/parlay`, '');
 
-    // Countdown.
+    // Countdown, with the crest and who the simulation currently likes. The
+    // favourites are the promo: a number next to a face is an argument you
+    // want to check, where a bare date is just a date.
     if (slam && slamDays != null) {
+      const logo = mirrorLogo(slam.label);
+      const odds = readJson(path.join(DATA, 'title_odds.json'));
+      const contenders = [];
+      for (const t of ['atp', 'wta']) {
+        const ev = odds && odds.events && odds.events[t];
+        if (!ev || !Array.isArray(ev.odds)) continue;
+        const top = ev.odds.filter((x) => x.id).slice(0, 3);
+        if (top.length) contenders.push({ tour: t, top });
+      }
+
+      const contenderTable = contenders.map(({ tour, top }) => `
+        <div style="padding-top:16px;">
+          <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:10px;">${tour.toUpperCase()} favourites</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            ${top.map((x) => {
+    const ph = mirrorPhoto(tour, x.id);
+    const prob = Math.round((x.prob || 0) * 100);
+    return `<tr>
+                <td width="44" style="padding:6px 10px 6px 0;">
+                  ${ph
+    ? `<img src="${ph}" width="38" height="38" alt="${esc(x.name)}" style="display:block;width:38px;height:38px;border-radius:19px;border:2px solid ${LINE};" />`
+    : `<div style="width:38px;height:38px;border-radius:19px;background:${TRACK};"></div>`}
+                </td>
+                <td style="padding:6px 0;font-size:14px;font-weight:700;color:${INK};">${esc(x.name)}</td>
+                <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, INK, 8)}</td>
+                <td width="42" style="padding:6px 0 6px 8px;text-align:right;font-size:14px;font-weight:800;color:${INK};">${prob < 1 ? '<1' : prob}%</td>
+              </tr>`;
+  }).join('')}
+          </table>
+        </div>`).join('');
+
       blocks.push(section(`
         ${kicker('Countdown')}
-        ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
-        ${p(`On ${esc(slam.surface)}. Until the real draw lands we simulate a seeded field from current rankings, two thousand times over, and re-price it with every refresh. It is the closest thing to a look at the tournament before the tournament exists.`)}
-        <div style="padding-top:4px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+          <tr>
+            ${logo ? `<td width="72" style="padding-right:16px;vertical-align:middle;"><img src="${logo}" width="64" alt="${esc(slam.label)}" style="display:block;width:64px;height:auto;" /></td>` : ''}
+            <td style="vertical-align:middle;">
+              ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
+              <div style="font-size:14px;color:${MUTED};margin-top:-6px;">On ${esc(slam.surface)}.</div>
+            </td>
+          </tr>
+        </table>
+        ${p(`Until the real draw lands we simulate a seeded field from current rankings, two thousand times over, and re-price it with every refresh. It is the closest thing to a look at the tournament before the tournament exists.`, 'padding-top:14px;')}
+        ${contenderTable}
+        <div style="padding-top:18px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
       `));
-      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`, `  ${SITE}/draw`, '');
+      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
+      for (const { tour, top } of contenders) {
+        txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%`).join(', ')}`);
+      }
+      txtLines.push(`  ${SITE}/draw`, '');
     }
 
     if (season && season.n) {

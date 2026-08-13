@@ -4,6 +4,8 @@ Yesterday we called 6 of 7 winners, a good day. Today there are 32 matches on th
 
 HOW YESTERDAY LANDED: 6 of 7 (86%)
   The one that stings: Sebastian Ofner (we said 63%) (Marco Trungelliti won)
+  Bookmakers on the same 3 priced matches: us 67%, them 67%
+  If you had followed the plan: -$6.94 on a $100 bankroll (1/2 landed)
 
 ON COURT TODAY
   Rybakina over Gauff - 72% - Canada
@@ -30,6 +32,8 @@ ON COURT TODAY
 WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
 
 COUNTDOWN: 18 days to the US Open (hard)
+  ATP: Jannik Sinner 52%, Carlos Alcaraz 24%, Alexander Zverev 9%
+  WTA: Aryna Sabalenka 41%, Elena Rybakina 21%, Iga Swiatek 13%
   https://smash-react.vercel.app/draw
 
 SEASON: 67% (3,124 of 4,666)
