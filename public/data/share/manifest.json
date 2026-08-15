@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T10:09:04.444Z",
+  "generatedAt": "2026-08-15T09:26:39.772Z",
   "seasonN": 5018,
   "lastStreak": {
     "key": "wta|grass",
@@ -7,15 +7,15 @@
   },
   "thread": [
     "Today at the Cincinnati: 8 calls, every one locked before play. 69% of winners called before play (109 of 159 verified, no take-backs). Picks below.",
-    "1/8 Stefanos Tsitsipas over Valentin Royer at 57% on hard. https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-valentin-royer-181953",
-    "2/8 Anna Bondar over Jessica Bouzas Maneiro at 53% on hard. https://smash-react.vercel.app/match/anna-bondar-vs-jessica-bouzas-maneiro-182401",
-    "3/8 Daria Snigur over Yuliia Starodubtseva at 64% on hard. https://smash-react.vercel.app/match/yuliia-starodubtseva-vs-daria-snigur-182404",
-    "4/8 Sara Bejlek over Karolina Pliskova at 62% on hard. https://smash-react.vercel.app/match/karolina-pliskova-vs-sara-bejlek-182423",
-    "5/8 Hubert Hurkacz over Sho Shimabukuro at 61% on hard. https://smash-react.vercel.app/match/hubert-hurkacz-vs-sho-shimabukuro-181962",
-    "6/8 Daniel Altmaier over Chak Lam Coleman Wong at 53% on hard. https://smash-react.vercel.app/match/daniel-altmaier-vs-chak-lam-coleman-wong-181973",
-    "7/8 Quentin Halys over Vit Kopriva at 53% on hard. https://smash-react.vercel.app/match/quentin-halys-vs-vit-kopriva-181999",
-    "8/8 Nikola Bartunkova over Alina Charaeva at 69% on hard. https://smash-react.vercel.app/match/alina-charaeva-vs-nikola-bartunkova-182376",
-    "If every call hits, $10 at fair odds returns $704. Not betting advice, just the math on our own confidence.",
+    "1/8 Flavio Cobolli over Miomir Kecmanovic at 60% on hard. https://smash-react.vercel.app/match/flavio-cobolli-vs-miomir-kecmanovic-181898",
+    "2/8 Matteo Arnaldi over Martin Landaluce at 60% on hard. https://smash-react.vercel.app/match/matteo-arnaldi-vs-martin-landaluce-181901",
+    "3/8 Mariano Navone over Alexander Blockx at 55% on hard. https://smash-react.vercel.app/match/mariano-navone-vs-alexander-blockx-181905",
+    "4/8 Alexandra Eala over Elena Gabriela Ruse at 78% on hard. High confidence. https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-alexandra-eala-182389",
+    "5/8 Amanda Anisimova over Zeynep Sonmez at 84% on hard. High confidence. https://smash-react.vercel.app/match/amanda-anisimova-vs-zeynep-sonmez-182391",
+    "6/8 Maja Chwalinska over Cristina Bucsa at 68% on hard. https://smash-react.vercel.app/match/maja-chwalinska-vs-cristina-bucsa-182399",
+    "7/8 Novak Djokovic over Thiago Agustin Tirante at 81% on hard. High confidence. https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-novak-djokovic-181895",
+    "8/8 Jakub Mensik over Mattia Bellucci at 71% on hard. High confidence. https://smash-react.vercel.app/match/jakub-mensik-vs-mattia-bellucci-181902",
+    "If every call hits, $10 at fair odds returns $196. Not betting advice, just the math on our own confidence.",
     "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
   ],
   "assets": [
@@ -40,96 +40,104 @@
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Stefanos Tsitsipas over Valentin Royer at 57%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-valentin-royer-181953 #tennis #atp #wta #tennisprediction",
-      "alt": " Stefanos Tsitsipas over Valentin Royer at 57%, Cincinnati (hard)."
+      "caption": " Flavio Cobolli over Miomir Kecmanovic at 60%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/flavio-cobolli-vs-miomir-kecmanovic-181898 #tennis #atp #wta #tennisprediction",
+      "alt": " Flavio Cobolli over Miomir Kecmanovic at 60%, Cincinnati (hard)."
     },
     {
       "file": "match-2.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Anna Bondar over Jessica Bouzas Maneiro at 53%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/anna-bondar-vs-jessica-bouzas-maneiro-182401 #tennis #atp #wta #tennisprediction",
-      "alt": " Anna Bondar over Jessica Bouzas Maneiro at 53%, Cincinnati (hard)."
+      "caption": " Matteo Arnaldi over Martin Landaluce at 60%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/matteo-arnaldi-vs-martin-landaluce-181901 #tennis #atp #wta #tennisprediction",
+      "alt": " Matteo Arnaldi over Martin Landaluce at 60%, Cincinnati (hard)."
     },
     {
       "file": "match-3.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Daria Snigur over Yuliia Starodubtseva at 64%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/yuliia-starodubtseva-vs-daria-snigur-182404 #tennis #atp #wta #tennisprediction",
-      "alt": " Daria Snigur over Yuliia Starodubtseva at 64%, Cincinnati (hard)."
+      "caption": " Mariano Navone over Alexander Blockx at 55%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/mariano-navone-vs-alexander-blockx-181905 #tennis #atp #wta #tennisprediction",
+      "alt": " Mariano Navone over Alexander Blockx at 55%, Cincinnati (hard)."
     },
     {
       "file": "match-4.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Sara Bejlek over Karolina Pliskova at 62%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/karolina-pliskova-vs-sara-bejlek-182423 #tennis #atp #wta #tennisprediction",
-      "alt": " Sara Bejlek over Karolina Pliskova at 62%, Cincinnati (hard)."
+      "caption": " High confidence: Alexandra Eala over Elena Gabriela Ruse at 78%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-alexandra-eala-182389 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Alexandra Eala over Elena Gabriela Ruse at 78%, Cincinnati (hard)."
     },
     {
       "file": "match-5.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Hubert Hurkacz over Sho Shimabukuro at 61%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/hubert-hurkacz-vs-sho-shimabukuro-181962 #tennis #atp #wta #tennisprediction",
-      "alt": " Hubert Hurkacz over Sho Shimabukuro at 61%, Cincinnati (hard)."
+      "caption": " High confidence: Amanda Anisimova over Zeynep Sonmez at 84%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/amanda-anisimova-vs-zeynep-sonmez-182391 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Amanda Anisimova over Zeynep Sonmez at 84%, Cincinnati (hard)."
     },
     {
       "file": "match-6.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Daniel Altmaier over Chak Lam Coleman Wong at 53%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/daniel-altmaier-vs-chak-lam-coleman-wong-181973 #tennis #atp #wta #tennisprediction",
-      "alt": " Daniel Altmaier over Chak Lam Coleman Wong at 53%, Cincinnati (hard)."
+      "caption": " Maja Chwalinska over Cristina Bucsa at 68%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/maja-chwalinska-vs-cristina-bucsa-182399 #tennis #atp #wta #tennisprediction",
+      "alt": " Maja Chwalinska over Cristina Bucsa at 68%, Cincinnati (hard)."
     },
     {
       "file": "match-7.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Quentin Halys over Vit Kopriva at 53%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/quentin-halys-vs-vit-kopriva-181999 #tennis #atp #wta #tennisprediction",
-      "alt": " Quentin Halys over Vit Kopriva at 53%, Cincinnati (hard)."
+      "caption": " High confidence: Novak Djokovic over Thiago Agustin Tirante at 81%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/thiago-agustin-tirante-vs-novak-djokovic-181895 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Novak Djokovic over Thiago Agustin Tirante at 81%, Cincinnati (hard)."
     },
     {
       "file": "match-8.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Nikola Bartunkova over Alina Charaeva at 69%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/alina-charaeva-vs-nikola-bartunkova-182376 #tennis #atp #wta #tennisprediction",
-      "alt": " Nikola Bartunkova over Alina Charaeva at 69%, Cincinnati (hard)."
+      "caption": " High confidence: Jakub Mensik over Mattia Bellucci at 71%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/jakub-mensik-vs-mattia-bellucci-181902 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Jakub Mensik over Mattia Bellucci at 71%, Cincinnati (hard)."
+    },
+    {
+      "file": "rivalry.png",
+      "type": "rivalry",
+      "format": "square",
+      "category": "daily",
+      "caption": "Navone vs Blockx, meeting number 7. Career: 6-0. We've called 0 of 6 of their matches right. https://smash-react.vercel.app/match/mariano-navone-vs-alexander-blockx-181905 #tennis #atp #wta #tennisprediction",
+      "alt": "Navone vs Blockx, meeting number 7."
     },
     {
       "file": "parlay.png",
       "type": "carousel-closer",
       "format": "square",
       "category": "daily",
-      "caption": "If every call today hits, $10 at fair odds returns $704. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "alt": "If every call today hits, $10 at fair odds returns $704."
+      "caption": "If every call today hits, $10 at fair odds returns $196. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "alt": "If every call today hits, $10 at fair odds returns $196."
     },
     {
       "file": "slate-story.png",
       "type": "slate",
       "format": "story",
       "category": "daily",
-      "caption": "The full slate for Aug 14: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "alt": "The full slate for Aug 14: every call with win probability and flags."
+      "caption": "The full slate for Aug 15: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "alt": "The full slate for Aug 15: every call with win probability and flags."
     },
     {
       "file": "poll.png",
       "type": "poll",
       "format": "square",
       "category": "daily",
-      "caption": "Halys or Kopriva at the Cincinnati? Our model already picked a side - drop yours below, answer tomorrow. https://smash-react.vercel.app/match/quentin-halys-vs-vit-kopriva-181999 #tennis #atp #wta #tennisprediction",
-      "alt": "Halys or Kopriva at the Cincinnati? Our model already picked a side - drop yours below, answer tomorrow."
+      "caption": "Navone or Blockx at the Cincinnati? Our model already picked a side - drop yours below, answer tomorrow. https://smash-react.vercel.app/match/mariano-navone-vs-alexander-blockx-181905 #tennis #atp #wta #tennisprediction",
+      "alt": "Navone or Blockx at the Cincinnati? Our model already picked a side - drop yours below, answer tomorrow."
     },
     {
       "file": "tape.png",
       "type": "tale-of-the-tape",
       "format": "square",
       "category": "daily",
-      "caption": "Tale of the tape: Pliskova vs Bejlek at the Cincinnati. Rank, form, career head-to-head, and our call. https://smash-react.vercel.app/match/karolina-pliskova-vs-sara-bejlek-182423 #tennis #atp #wta #tennisprediction",
-      "alt": "Tale of the tape stat comparison for Karolina Pliskova vs Sara Bejlek."
+      "caption": "Tale of the tape: Chwalinska vs Bucsa at the Cincinnati. Rank, form, career head-to-head, and our call. https://smash-react.vercel.app/match/maja-chwalinska-vs-cristina-bucsa-182399 #tennis #atp #wta #tennisprediction",
+      "alt": "Tale of the tape stat comparison for Maja Chwalinska vs Cristina Bucsa."
     },
     {
       "file": "called-1.png",
@@ -160,16 +168,16 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 54%, Alcaraz 23%, Zverev 8%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 54%, Alcaraz 23%, Zverev 8%."
+      "caption": "US Open ATP title odds today: Sinner 50%, Alcaraz 24%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 50%, Alcaraz 24%, Zverev 9%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Sabalenka 41%, Rybakina 22%, Swiatek 13%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Sabalenka 41%, Rybakina 22%, Swiatek 13%."
+      "caption": "US Open WTA title odds today: Sabalenka 37%, Rybakina 25%, Swiatek 12%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Sabalenka 37%, Rybakina 25%, Swiatek 12%."
     },
     {
       "file": "results.png",
@@ -212,14 +220,6 @@
       "alt": "Aryna Sabalenka's path, round by round."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
-      "format": "square",
-      "category": "moments",
-      "caption": "5,000 matches graded in public - season benchmark 67%, zero deletions. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "5,000 matches graded in public - season benchmark 67%, zero deletions."
-    },
-    {
       "file": "edge-dollar.png",
       "type": "edge-dollar-test",
       "format": "square",
@@ -240,8 +240,8 @@
       "type": "edge-forward",
       "format": "square",
       "category": "edge",
-      "caption": "Locked before play: we're backing Mariano Navone at 55% while the market has them at 45%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "Forward edge card: our underdog call on Mariano Navone, locked with the market price attached."
+      "caption": "Locked before play: we're backing Francisco Cerundolo at 65% while the market has them at 41%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "Forward edge card: our underdog call on Francisco Cerundolo, locked with the market price attached."
     },
     {
       "file": "proof.png",
@@ -320,8 +320,8 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "17 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "17 days until the US Open."
+      "caption": "16 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "16 days until the US Open."
     },
     {
       "file": "hype-surface.png",
@@ -352,8 +352,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "17 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "17 days to the US Open."
+      "caption": "16 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "16 days to the US Open."
     }
   ]
 }
