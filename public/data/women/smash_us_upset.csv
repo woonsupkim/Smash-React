@@ -19,7 +19,7 @@ paoli,Jasmine Paolini,Jasmine,Paolini,17,2,0.66,0.93,0.38,0.48,0.38,0.03,ITA,30,
 cirst,Sorana Cirstea,Sorana,Cirstea,18,2,0.59,0.92,0.38,0.48,0.40,0.11,ROU,36,18,7,5,5,0
 alexa,Ekaterina Alexandrova,Ekaterina,Alexandrova,19,2,0.59,0.79,0.37,0.44,0.41,0.10,RUS,31,12,14,7,3,1
 kalin,Anna Kalinskaya,Anna,Kalinskaya,20,2,0.53,0.76,0.36,0.54,0.42,0.12,RUS,27,17,11,6,4,1
-chwal,Maja Chwalinska,Maja,Chwalinska,21,2,0.59,0.71,0.37,0.38,0.30,0.03,POL,24,25,12,4,6,1
+chwal,Maja Chwalinska,Maja,Chwalinska,21,2,0.70,0.89,0.47,0.51,0.41,0.01,POL,24,25,12,4,6,0
 keys,Madison Keys,Madison,Keys,22,2,0.63,0.79,0.29,0.57,0.43,0.12,USA,31,11,9,5,5,1
 bouzk,Marie Bouzkova,Marie,Bouzkova,23,2,0.64,0.82,0.30,0.52,0.42,0.08,CZE,28,19,21,4,6,1
 ferna,Leylah Annie Fernandez,Leylah,Annie Fernandez,24,2,0.60,0.88,0.37,0.48,0.44,0.06,CAN,23,12,13,5,5,1
@@ -115,7 +115,7 @@ sun,Lulu Sun,Lulu,Sun,112,2,0.57,0.87,0.33,0.44,0.43,0.14,NZL,25,8,15,2,8,0
 kuder,Polina Kudermetova,Polina,Kudermetova,113,2,0.54,0.81,0.37,0.44,0.43,0.07,UZB,23,38,18,6,4,1
 blink,Anna Blinkova,Anna,Blinkova,114,2,0.55,0.88,0.48,0.49,0.34,0.08,RUS,27,7,23,4,6,1
 kuder1,Veronika Kudermetova,Veronika,Kudermetova,115,2,0.58,0.91,0.35,0.48,0.40,0.13,RUS,29,0,0,4,6,0
-grabh,Julia Grabher,Julia,Grabher,116,2,0.55,0.83,0.11,0.40,0.52,0.17,AUT,30,2,7,4,6,1
+grabh,Julia Grabher,Julia,Grabher,116,2,0.59,0.84,0.30,0.43,0.38,0.07,AUT,30,2,7,4,6,0
 prest,Taylah Preston,Taylah,Preston,117,2,0.59,0.82,0.36,0.45,0.43,0.05,AUS,20,112,52,9,1,1
 chara,Alina Charaeva,Alina,Charaeva,118,2,0.62,0.85,0.40,0.51,0.40,0.10,ARM,24,40,13,7,3,0
 kawa,Katarzyna Kawa,Katarzyna,Kawa,119,2,0.49,0.85,0.36,0.47,0.38,0.07,POL,33,2,11,2,8,1

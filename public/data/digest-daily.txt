@@ -1,6 +1,6 @@
-SMASH DAILY - Saturday, August 15
+SMASH DAILY - Sunday, August 16
 
-Yesterday we called 2 of 4 winners, and we own the ones that got away. Today there are 30 matches on the card at Cincinnati, every pick locked and public before a ball is struck.
+Yesterday we called 2 of 4 winners, and we own the ones that got away. Today there are 25 matches on the card at Cincinnati, every pick locked and public before a ball is struck.
 
 HOW YESTERDAY LANDED: 2 of 4 (50%)
   The one that stings: Katie Volynets (we said 52%) (Katie Boulter won)
@@ -8,32 +8,32 @@ HOW YESTERDAY LANDED: 2 of 4 (50%)
   If you had followed the plan: +$60.52 on a $100 bankroll (2/2 landed)
 
 ON COURT TODAY
-  Khachanov over Kovacevic - 69% - Cincinnati
-    Call: https://smash-react.vercel.app/match/karen-khachanov-vs-aleksandar-kovacevic-181945
-    Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-aleksandar-kovacevic
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=kovac
-  Lys over Kenin - 66% - Cincinnati
-    Call: https://smash-react.vercel.app/match/eva-lys-vs-sofia-kenin-182432
-    Compare: https://smash-react.vercel.app/compare/wta/eva-lys-vs-sofia-kenin
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=lys&b=kenin
-  Cobolli over Kecmanovic - 60% - Cincinnati
-    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-miomir-kecmanovic-181898
-    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-miomir-kecmanovic
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=kecma
-  Arnaldi over Landaluce - 60% - Cincinnati
-    Call: https://smash-react.vercel.app/match/matteo-arnaldi-vs-martin-landaluce-181901
-    Compare: https://smash-react.vercel.app/compare/atp/matteo-arnaldi-vs-martin-landaluce
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=arnal&b=landa
-  Navone over Blockx - 55% - Cincinnati
-    Call: https://smash-react.vercel.app/match/mariano-navone-vs-alexander-blockx-181905
-    Compare: https://smash-react.vercel.app/compare/atp/mariano-navone-vs-alexander-blockx
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=navon&b=block
+  Zverev over Norrie - 79% - Cincinnati
+    Call: https://smash-react.vercel.app/match/cameron-norrie-vs-alexander-zverev-181917
+    Compare: https://smash-react.vercel.app/compare/atp/cameron-norrie-vs-alexander-zverev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=norri&b=zvere
+  Rybakina over Townsend - 86% - Cincinnati
+    Call: https://smash-react.vercel.app/match/elena-rybakina-vs-taylor-townsend-182365
+    Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-taylor-townsend
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rybak&b=towns
+  Medvedev over Trungelliti - 87% - Cincinnati
+    Call: https://smash-react.vercel.app/match/daniil-medvedev-vs-marco-trungelliti-181894
+    Compare: https://smash-react.vercel.app/compare/atp/daniil-medvedev-vs-marco-trungelliti
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=medve&b=trung
+  Tjen over Golubic - 60% - Cincinnati
+    Call: https://smash-react.vercel.app/match/viktorija-golubic-vs-janice-tjen-182336
+    Compare: https://smash-react.vercel.app/compare/wta/viktorija-golubic-vs-janice-tjen
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=golub&b=tjen
+  Andreeva over Oliynykova - 89% - Cincinnati
+    Call: https://smash-react.vercel.app/match/mirra-andreeva-vs-oleksandra-oliynykova-182341
+    Compare: https://smash-react.vercel.app/compare/wta/mirra-andreeva-vs-oleksandra-oliynykova
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=andre&b=oliyn
 
 WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
 
-COUNTDOWN: 16 days to the US Open (hard)
-  ATP: Jannik Sinner 54%, Carlos Alcaraz 23%, Alexander Zverev 8%
-  WTA: Aryna Sabalenka 41%, Elena Rybakina 22%, Iga Swiatek 13%
+COUNTDOWN: 15 days to the US Open (hard)
+  ATP: Jannik Sinner 50%, Carlos Alcaraz 24%, Alexander Zverev 9%
+  WTA: Aryna Sabalenka 37%, Elena Rybakina 25%, Iga Swiatek 12%
   https://smash-react.vercel.app/draw
 
 SEASON: 67% (3,371 of 5,018)
