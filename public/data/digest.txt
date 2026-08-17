@@ -1,30 +1,27 @@
-SMASH WEEKLY - Thursday, August 13
+SMASH WEEKLY - Monday, August 17
 
-THE WEEK: 47 of 64 (73%)
+THE WEEK: 37 of 54 (69%)
 
 DAY BY DAY
-  Fri: 9/14 (64%)
-  Sat: 10/12 (83%)
-  Sun: 6/10 (60%)
-  Mon: 4/4 (100%)
-  Tue: 4/5 (80%)
-  Wed: 6/7 (86%)
+  Tue: 8/10 (80%)
+  Wed: 10/12 (83%)
+  Thu: 17/28 (61%)
+  Fri: 2/4 (50%)
 
 BOLD CALLS THAT LANDED
-  + Zandschulp (against the market) 3-6 7-6(4) 7-5
-  + Tien (against the market) 6-3 6-2
+  + Navone (against the market) 6-3 7-6(3)
 
 THE ONES WE GOT WRONG
-  - Sabalenka lost to Alexandrova 7-6(3) 4-6 6-4
-  - Andreeva lost to Fernandez 6-1 6-4
-  - Pegula lost to Shnaider 6-3 6-3
+  - Lys lost to Blinkova 3-6 6-2 6-2
+  - Lys lost to Blinkova 3-6 6-2 6-2
+  - Ofner lost to Trungelliti 4-6 6-4 7-6(4)
 
-US VS THE BOOKMAKERS: 65% vs 75% (20 priced matches)
+US VS THE BOOKMAKERS: 63% vs 67% (27 priced matches)
 
-FORWARD TEST: 94-41 (42 pending)
+FORWARD TEST: 109-50 (109 pending)
 SEASON: 67%
 
-NEXT UP: 18 days to the US Open
+NEXT UP: 14 days to the US Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
