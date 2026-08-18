@@ -1,7 +1,7 @@
 id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5,p6,country,age,year_w,year_l,recent_w,recent_l,upset_ok
 sinne,Jannik Sinner,Jannik,Sinner,1,2,0.64,0.94,0.32,0.52,0.45,0.19,ITA,25,19,2,10,0,0
 alcar,Carlos Alcaraz,Carlos,Alcaraz,2,2,0.66,0.92,0.34,0.49,0.43,0.11,ESP,23,17,2,7,3,0
-zvere,Alexander Zverev,Alexander,Zverev,3,2,0.69,0.86,0.18,0.35,0.32,0.15,GER,29,16,7,6,4,1
+zvere,Alexander Zverev,Alexander,Zverev,3,2,0.72,0.92,0.28,0.46,0.41,0.17,GER,29,16,7,6,4,0
 auger,Felix Auger Aliassime,Felix,Auger Aliassime,4,2,0.67,0.88,0.29,0.43,0.42,0.21,CAN,26,16,6,8,2,0
 shelt,Ben Shelton,Ben,Shelton,5,2,0.67,0.92,0.33,0.46,0.46,0.12,USA,23,28,6,10,0,1
 demin,Alex De Minaur,Alex,De Minaur,6,2,0.56,0.88,0.30,0.52,0.38,0.08,AUS,27,21,9,6,4,1
