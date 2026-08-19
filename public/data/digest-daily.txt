@@ -1,6 +1,6 @@
-SMASH DAILY - Tuesday, August 18
+SMASH DAILY - Wednesday, August 19
 
-Yesterday we called 2 of 4 winners, and we own the ones that got away. Today there are 10 matches on the card at Cincinnati, every pick locked and public before a ball is struck.
+Yesterday we called 2 of 4 winners, and we own the ones that got away. Today there are 14 matches on the card at Cincinnati, every pick locked and public before a ball is struck.
 
 HOW YESTERDAY LANDED: 2 of 4 (50%)
   The one that stings: Katie Volynets (we said 52%) (Katie Boulter won)
@@ -8,32 +8,32 @@ HOW YESTERDAY LANDED: 2 of 4 (50%)
   If you had followed the plan: +$60.52 on a $100 bankroll (2/2 landed)
 
 ON COURT TODAY
-  Paul over Vallejo - 79% - Cincinnati
-    Call: https://smash-react.vercel.app/match/adolfo-daniel-vallejo-vs-tommy-paul-181889
-    Compare: https://smash-react.vercel.app/compare/atp/adolfo-daniel-vallejo-vs-tommy-paul
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=valle&b=paul
-  Anisimova over Eala - 65% - Cincinnati
-    Call: https://smash-react.vercel.app/match/amanda-anisimova-vs-alexandra-eala-182350
-    Compare: https://smash-react.vercel.app/compare/wta/amanda-anisimova-vs-alexandra-eala
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=anisi&b=eala
-  Rublev over Borges - 69% - Cincinnati
-    Call: https://smash-react.vercel.app/match/nuno-borges-vs-andrey-rublev-181897
-    Compare: https://smash-react.vercel.app/compare/atp/nuno-borges-vs-andrey-rublev
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=borge&b=ruble
-  Keys over Siniakova - 68% - Cincinnati
-    Call: https://smash-react.vercel.app/match/madison-keys-vs-katerina-siniakova-182358
-    Compare: https://smash-react.vercel.app/compare/wta/madison-keys-vs-katerina-siniakova
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=keys&b=sinia
-  Andreeva over Tjen - 81% - Cincinnati
-    Call: https://smash-react.vercel.app/match/mirra-andreeva-vs-janice-tjen-182325
-    Compare: https://smash-react.vercel.app/compare/wta/mirra-andreeva-vs-janice-tjen
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=andre&b=tjen
+  Tien over Tiafoe - 55% - Cincinnati
+    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-learner-tien-181890
+    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-learner-tien
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=tien
+  Jovic over Bouzkova - 58% - Cincinnati
+    Call: https://smash-react.vercel.app/match/iva-jovic-vs-marie-bouzkova-182340
+    Compare: https://smash-react.vercel.app/compare/wta/iva-jovic-vs-marie-bouzkova
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=jovic&b=bouzk
+  Jodar over Cobolli - 55% - Cincinnati
+    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-rafael-jodar-181896
+    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-rafael-jodar
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=jodar
+  Swiatek over Parry - 94% - Cincinnati
+    Call: https://smash-react.vercel.app/match/diane-parry-vs-iga-swiatek-182387
+    Compare: https://smash-react.vercel.app/compare/wta/diane-parry-vs-iga-swiatek
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=parry&b=swiat
+  Mensik over Tirante - 67% - Cincinnati
+    Call: https://smash-react.vercel.app/match/jakub-mensik-vs-thiago-agustin-tirante-181878
+    Compare: https://smash-react.vercel.app/compare/atp/jakub-mensik-vs-thiago-agustin-tirante
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=mensi&b=tiran
 
 WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
 
-COUNTDOWN: 13 days to the US Open (hard)
-  ATP: Jannik Sinner 52%, Carlos Alcaraz 24%, Alexander Zverev 9%
-  WTA: Aryna Sabalenka 38%, Elena Rybakina 23%, Iga Swiatek 14%
+COUNTDOWN: 12 days to the US Open (hard)
+  ATP: Jannik Sinner 53%, Carlos Alcaraz 24%, Alexander Zverev 9%
+  WTA: Aryna Sabalenka 40%, Elena Rybakina 23%, Iga Swiatek 12%
   https://smash-react.vercel.app/draw
 
 SEASON: 67% (3,371 of 5,018)
