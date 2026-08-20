@@ -1,4 +1,5 @@
-// Tests for the Bayesian player-strength filter. Run: node --test data-pipeline
+// Tests for the Bayesian player-strength filter.
+// Run: node --test data-pipeline/*.test.js data-pipeline/lib/*.test.js
 //
 // The properties pinned here are the ones a silent refactor could break
 // without changing a single log-loss number in the backtest: antisymmetry,

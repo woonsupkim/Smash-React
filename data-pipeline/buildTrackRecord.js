@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
-const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
+const { buildTimeline, predElo, expected, parseSets, setEloParams, eloParamsFor } = require('./eloCore');
 const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
 const { matchProb, matchDetail } = require('./lib/analyticProb');
 const { slamsForYear } = require('./lib/slamCalendar');
@@ -172,6 +172,9 @@ function loadTour(tour) {
   // Replay the full timeline, snapshotting pre-match predicting Elos for the
   // matches we score.
   const preElo = new Map();
+  // Per-tour K-factor schedule; loadTour is called for both tours in one
+  // process, so this must be set per replay (see eloCore.eloParamsFor).
+  setEloParams(eloParamsFor(tour));
   buildTimeline([...allMatches.values()], (mm, rw, rl) => {
     if (!evalMatches.has(mm.id)) return;
     preElo.set(mm.id, { winnerId: mm.winnerId, we: predElo(rw, mm.surface), le: predElo(rl, mm.surface) });

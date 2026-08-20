@@ -7,7 +7,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { buildTimeline, parseSets } = require('./eloCore');
+const { buildTimeline, parseSets, setEloParams, eloParamsFor } = require('./eloCore');
 
 function normSurface(raw) {
   if (!raw) return null;
@@ -61,6 +61,10 @@ function run(tour) {
     if (!shortId || date < HISTORY_FROM) return;
     (history[shortId] = history[shortId] || []).push([String(date).slice(0, 10), Math.round(rating)]);
   };
+  // The K-factor schedule is tuned per tour, and this process replays BOTH,
+  // so the parameters have to be switched here rather than read once at
+  // module load - otherwise whichever tour ran first would set them for both.
+  setEloParams(eloParamsFor(tour));
   const ratings = buildTimeline(collectMatches(RAW, surfaces), (m, rw, rl) => {
     record(m.winnerId, m.date, rw.all);
     record(m.loserId, m.date, rl.all);

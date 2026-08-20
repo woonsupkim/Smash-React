@@ -9,10 +9,20 @@
       "a": 1
     }
   },
-  "_eloComment": "Elo hyperparameters, validated by walk-forward log loss (experiments.js): rho = weight on overall vs surface rating in the predicting blend (0.5 beat 0.65/0.8 on both tours); marginK scales rating updates by set dominance (straight-sets wins move ratings more than deciding-set escapes) and improved log loss on both tours.",
+  "_eloComment": "Elo hyperparameters. rho = weight on overall vs surface rating in the predicting blend (0.5 beat 0.65/0.8 on both tours); marginK scales rating updates by set dominance (straight-sets wins move ratings more than deciding-set escapes) and improved log loss on both tours. kScale/kExp are the K-factor schedule, K = kScale/(n+5)^kExp, and are set PER TOUR (blocks below override the shared root values) - the root 250/0.4 is the long-standing default the retune replaced. Validated on the FULL raw match cache (~30k matches per tour, 2015-2026) by data-pipeline/backtestBayes.js via .github/workflows/verify-ratings.yml, sweeping on the earlier half of the graded season and scoring on the later half: ATP 0.6171 -> 0.5617 log loss and 68.2% -> 73.8% accuracy, WTA 0.5892 -> 0.5491 and 69.5% -> 74.7%. rho is deliberately left at 0.5 for both tours: freeing it was worth only 0.0008 log loss on ATP and nothing on WTA, and it is the one Elo parameter src/engines.js also reads, so pinning it keeps this a pipeline-only change.",
   "elo": {
     "rho": 0.5,
-    "marginK": true
+    "marginK": true,
+    "kScale": 250,
+    "kExp": 0.4,
+    "atp": {
+      "kScale": 600,
+      "kExp": 0.25
+    },
+    "wta": {
+      "kScale": 150,
+      "kExp": 0
+    }
   },
   "rankScale": 2,
   "_scorelineComment": "Set-probability temperature for the exact-score distribution ONLY (win probabilities untouched). Real sets are positively correlated - favorites sweep more often than independent-sets math implies - so best-of-five scorelines sharpen the set prob before the negative binomial. Fitted walk-forward (experiments.js scoreline): bo5 exact-score accuracy 24.4% -> 30.4%; best-of-three is structurally insensitive (modal is 2-0 whenever the favorite clears 0.5) and stays untempered.",
