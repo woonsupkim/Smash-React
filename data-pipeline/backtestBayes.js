@@ -141,17 +141,23 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
   const graded = gradedRows(tour);
   if (graded.size < 200) { console.log(`${tour}: only ${graded.size} graded matches - skipping.`); continue; }
 
-  // Holdout cutoff: the last HOLDOUT_MONTHS of the timeline. On the one-season
-  // fallback that would leave too little training data, so it degrades to a
-  // median split of the graded rows.
-  const end = new Date(uni.to).getTime();
-  let cutoff = end - HOLDOUT_MONTHS * 30.44 * 864e5;
-  let splitNote = `last ${HOLDOUT_MONTHS} months`;
-  if (uni.spanDays < 540) {
-    const gd = [...graded.values()].map((m) => new Date(m.date).getTime()).sort((a, b) => a - b);
-    cutoff = gd[Math.floor(gd.length / 2)];
-    splitNote = 'median split (short universe)';
-  }
+  // Holdout cutoff: the last HOLDOUT_MONTHS of the timeline - but clamped so
+  // the TRAINING side keeps at least half the graded rows.
+  //
+  // The two datasets have very different spans: the raw timeline reaches back
+  // years, while the graded scoring set only covers the current season. A
+  // holdout defined on the timeline therefore says nothing about how the
+  // graded rows split, and a 6-month window on an 11-year cache left ~500
+  // graded matches to sweep on and ~2200 to be judged on - fitting on the
+  // small side and testing on the big one. Ratings still learn from the whole
+  // timeline; only hyperparameter SELECTION needs a fair share of labels.
+  const gd = [...graded.values()].map((m) => new Date(m.date).getTime()).sort((a, b) => a - b);
+  const median = gd[Math.floor(gd.length / 2)];
+  const byMonths = new Date(uni.to).getTime() - HOLDOUT_MONTHS * 30.44 * 864e5;
+  const cutoff = Math.max(byMonths, median);
+  const splitNote = cutoff === median
+    ? `median of graded rows (a ${HOLDOUT_MONTHS}-month window would leave too few labels to sweep on)`
+    : `last ${HOLDOUT_MONTHS} months`;
   const isTrain = (r) => new Date(r.date).getTime() < cutoff;
   const isTest = (r) => new Date(r.date).getTime() >= cutoff;
 
