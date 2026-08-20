@@ -9,7 +9,7 @@
 //
 // The worked example that defines the spread lives in spreadPlan.test.js.
 import { describe, it, expect } from 'vitest';
-import { planFrontier, analyzeSlip, edgePerDollar } from './staking';
+import { planFrontier, edgePerDollar } from './staking';
 
 const bet = (key, p, o) => ({ key, p, o });
 const slate = [
@@ -96,39 +96,5 @@ describe('planFrontier', () => {
       expect(p.label.length).toBeGreaterThan(0);
       expect(p.id).toBeTruthy();
     }
-  });
-});
-
-describe('cumulative P&L curve', () => {
-  const a = analyzeSlip(
-    [{ key: 'a', p: 0.7, o: 1.7, single: 50 }, { key: 'b', p: 0.6, o: 1.9, single: 50 }],
-    { stake: 0, legs: [] }
-  );
-
-  it('starts at certainty and decreases across the range', () => {
-    const c = a.dist.bins.map((b) => b.atLeast);
-    expect(c[0]).toBeCloseTo(1, 6);
-    for (let i = 1; i < c.length; i++) expect(c[i]).toBeLessThanOrEqual(c[i - 1] + 1e-9);
-    expect(c[c.length - 1]).toBeGreaterThan(0);
-  });
-
-  it('never exceeds 1 or drops below 0', () => {
-    for (const b of a.dist.bins) {
-      expect(b.atLeast).toBeLessThanOrEqual(1);
-      expect(b.atLeast).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  it('agrees with the histogram it is derived from', () => {
-    const bins = a.dist.bins;
-    for (let i = 0; i < bins.length; i++) {
-      const tail = bins.slice(i).reduce((s, b) => s + b.prob, 0);
-      expect(bins[i].atLeast).toBeCloseTo(Math.min(1, tail), 6);
-    }
-  });
-
-  it('brackets the chance of finishing ahead', () => {
-    const firstWin = a.dist.bins.findIndex((b) => b.win);
-    expect(a.pProfit).toBeLessThanOrEqual(a.dist.bins[firstWin].atLeast + 1e-9);
   });
 });

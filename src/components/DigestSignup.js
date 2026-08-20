@@ -11,6 +11,14 @@
 //
 // variant: 'footer' (compact, in the footer column) | 'band' (a real CTA with
 // its own heading). Same form, same handler, different frame.
+//
+// On the frequency wording: buildDigest sends a WEEKLY edition on Mondays and
+// a DAILY one whenever the refresh workflow runs, which it does every day
+// inside the slam and combined-1000 windows - to the same subscriber list. So
+// "one email a week", which this said for a long time, is not true during a
+// tournament. And every real subscriber gets a one-click unsubscribe link
+// (their own token); "reply stop" is only the fallback for addresses with no
+// token, so it should not be the promise on the form.
 import React, { useId, useState } from 'react';
 import { supabase, cloudEnabled } from '../lib/supabase';
 import './DigestSignup.css';
@@ -74,7 +82,8 @@ export default function DigestSignup({ variant = 'footer' }) {
         </p>
       )}
       <p className="digest-signup-note" id={noteId}>
-        One email a week. Unsubscribe by replying &quot;stop&quot;.
+        Weekly on Mondays, and daily while a slam or a big combined event is on. One-click
+        unsubscribe in every email.
       </p>
     </form>
   );
@@ -85,11 +94,11 @@ export default function DigestSignup({ variant = 'footer' }) {
     <section className="digest-band" aria-labelledby={`digest-band-h-${uid}`}>
       <div className="digest-band-copy">
         <h2 className="digest-band-title" id={`digest-band-h-${uid}`}>
-          Every call, graded, once a week
+          Get the week&apos;s calls, and the receipts
         </h2>
         <p className="digest-band-sub">
-          The week&apos;s locked picks and how they actually landed - including the ones we got
-          wrong. No tips, no hype, just the record.
+          Every pick we locked before play, how it actually landed, and where we were wrong. The
+          same record this whole site is graded on. Mondays, and every day once a slam starts.
         </p>
       </div>
       {form}

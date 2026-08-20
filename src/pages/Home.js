@@ -143,6 +143,13 @@ export default function Home() {
       .catch(() => setHealth(null));
   }, []);
 
+  // Does the graded split record still support the headline? null while
+  // loading or below the sample floor, in which case the claim stands as
+  // written rather than flip-flopping on thin evidence.
+  const beatsMarket = proof.state === 'ready' && proof.edge
+    ? proof.edge.usAcc > proof.edge.mktAcc
+    : null;
+
   const upsetById = useMemo(
     () => new Map((scorecard?.upsetWatch || []).map((u) => [u.id, u])),
     [scorecard]
@@ -395,13 +402,24 @@ export default function Home() {
         {/* ── Hero: one centered column, everything on the same axis ───── */}
         <header className="home-hero">
           <div className="eyebrow">MODEL VS MARKET · ATP + WTA</div>
-          <h1 className="main-title">We Beat the<br />Bookmakers</h1>
+          {/* The headline is a factual claim about the ledger, so it is only
+              made while the ledger supports it. Everything under it is
+              computed, and it would be a lie the day the split record turns
+              without this - today it renders exactly as before. */}
+          <h1 className="main-title">
+            {beatsMarket === false
+              ? <>Every Call,<br />Graded in Public</>
+              : <>We Beat the<br />Bookmakers</>}
+          </h1>
           <p className="sub-title">
             Every ATP and WTA match gets a call locked before play and graded in
-            public after, wins and misses alike. When we split from the betting
-            favorite, our pick lands more often than theirs
-            {proof.state === 'ready' && proof.edge ? ` (${proof.edge.usAcc}% against their ${proof.edge.mktAcc}%)` : ''}.
-            Today's card is live below, priced and ready to stack.
+            public after, wins and misses alike.
+            {beatsMarket === false
+              ? " We are behind the betting favorite on the matches where we split from it, and we are showing you that too."
+              : ' When we split from the betting favorite, our pick lands more often than theirs'}
+            {beatsMarket !== false && proof.state === 'ready' && proof.edge ? ` (${proof.edge.usAcc}% against their ${proof.edge.mktAcc}%)` : ''}
+            {beatsMarket === false ? '' : '.'}
+            {' '}Today&apos;s card is live below, priced and ready to stack.
           </p>
           <div className="hero-ctas">
             <Button as={Link} to="/today" className="cta-primary">
@@ -683,6 +701,14 @@ export default function Home() {
           )}
         </section>
 
+        {/* A primary CTA, so it sits at the page's high-water mark of
+            interest rather than after it: the reader has just seen the proof
+            (the split record) and today's actual card. Everything below this
+            is supporting material, and the footer copy is a fallback, not the
+            ask. Moved up from 67% page depth, where most visitors never got
+            to it. */}
+        <DigestSignup variant="band" />
+
         {titleOddsSection}
 
         {/* ── Engine health: the guardrail board, summarised ─────────────
@@ -727,12 +753,6 @@ export default function Home() {
             </section>
           );
         })()}
-
-        {/* The digest is a primary CTA but only existed in the footer, below
-            the legal links. It sits here, above "where to go next": the reader
-            has just seen the record, which is the moment the weekly email is
-            worth something, and it is still ahead of the page's exit links. */}
-        <DigestSignup variant="band" />
 
         <section className="home-nav">
           <div className="home-section-head">

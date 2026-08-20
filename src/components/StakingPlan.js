@@ -180,52 +180,6 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
   return (
     <div className="stake-plan">
-      <div className="stake-value">
-        <div className="stake-value-hero">
-          <span className="stake-value-pct">{pct(allProb)}</span>
-          <span className="stake-value-cap">
-            {legs.length === 1 ? 'chance this lands' : `chance all ${legs.length} land`}
-            {oneIn ? ` · about 1 in ${oneIn}` : ''}
-          </span>
-        </div>
-        <dl className="stake-value-rows">
-          <div>
-            <dt>Our fair price</dt>
-            <dd>{fairAll ? fairAll.toFixed(2) : '-'}</dd>
-          </div>
-          <div>
-            <dt>The market's price</dt>
-            <dd>{marketAll ? marketAll.toFixed(2) : <span className="muted">not fully priced</span>}</dd>
-          </div>
-          <div>
-            <dt>$10 would return</dt>
-            <dd>{marketAll ? money(10 * marketAll) : <span className="muted">-</span>}</dd>
-          </div>
-        </dl>
-      </div>
-
-      {marketAll != null && fairAll != null && (
-        <p className={`stake-value-verdict ${marketAll > fairAll ? 'pos' : 'neg'}`}>
-          {marketAll > fairAll
-            ? `The market prices this longer than we do: worth ${fairAll.toFixed(2)} by our numbers, paying ${marketAll.toFixed(2)}.`
-            : `The market prices this shorter than we do: worth ${fairAll.toFixed(2)} by our numbers, paying only ${marketAll.toFixed(2)}.`}
-          {marketAll > fairAll && (
-            <span className="stake-value-caveat">
-              {' '}Expect to see that often, and read it carefully: we always show the player we
-              favour, so our number sits about 2 points above the market's on a typical pick
-              before anyone has been proved right. Only gaps past 10 points have historically
-              meant anything.
-            </span>
-          )}
-        </p>
-      )}
-      {unpriced > 0 && (
-        <p className="stake-note muted">
-          {unpriced} of these had no market price when we locked {unpriced === 1 ? 'it' : 'them'}, so
-          only our own fair price is shown above. Enter the odds you are offered below to size them.
-        </p>
-      )}
-
       {/* No plan clears its price. That IS the recommendation, and saying so
           plainly beats showing a losing plan dressed up as the best one. */}
       {mode === 'budget' && frontier.plans.length === 0 && anyPriced && (
@@ -234,10 +188,10 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
             <span className="stake-cap">No plan worth staking today</span>
           </div>
           <p className="stake-best-why">
-            {frontier.reason} - and that covers every parlay combination of today&apos;s matches, not
-            just the picks on their own. There is no way to size these so the expected return covers
-            the stake, so the honest plan is to sit today out. Enter your own odds below if your book
-            prices any of them longer than we do.
+            {frontier.reason}, and that covers every combination of today&apos;s matches as well as
+            the picks on their own. Spread evenly or concentrated, these prices do not return what
+            it costs to back them, so the honest plan is to sit today out. If your book prices any
+            of them longer than ours, enter it below and the plan reappears.
           </p>
         </div>
       )}
@@ -297,42 +251,69 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
             </button>
           )}
           <p className="stake-best-why">
-            {/* The cover test leads: it is the whole promise of the page, and
-                it reads in the terms the question gets asked in. */}
             <strong>
-              {money(analysis.staked)} spread over {stakedCount} match{stakedCount === 1 ? '' : 'es'};
-              we expect {expWinners.toFixed(1)} of them to land, returning {money(expReturn)} -
-              {expReturn >= analysis.staked - 1e-9 ? ' which covers the stake.' : ' which falls short of the stake.'}
+              {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}. We
+              expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
+              {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
             </strong>{' '}
-            Every plan above is built to pass that test, and it is a <em>whole-plan</em> test: with
-            the stake spread evenly it falls on the average, so a match priced slightly against us
-            can be carried by stronger ones instead of being dropped on its own merits. Breadth is
-            the point - it is how the model&apos;s hit rate shows up, rather than everything riding
-            on one result.
-            {' '}It is an <em>expectation</em>, though, not a floor: read the chance of finishing
-            ahead next to it, because a plan can be worth making and still lose more often than it
-            wins. The worst case above is real and it happens.
-            {' '}
-            {rel.trusted ? (
+            That is the test every plan here passes, and it is a whole-plan test: spread evenly, it
+            falls on the average, so a match priced against us can be carried by stronger ones.
+            {' '}It is an expectation, not a floor. A plan can be worth making and still lose more
+            often than it wins, which is why the chance of finishing ahead sits right beside it.
+            {rel.trusted && (
               <>
-                Sized on the model's <strong>measured</strong> accuracy rather than its stated
-                confidence: {pct(rel.accuracy)} of {rel.n} graded calls landed while claiming{' '}
-                {pct(rel.stated)}, so every probability is re-expressed at that reliability first.
-              </>
-            ) : (
-              <>
-                Only {rel.n} graded calls so far - too few to correct the model's stated confidence,
-                so probabilities are used as they come.
-              </>
-            )}
-            {frontier.plans.length > 1 && (
-              <>
-                {' '}The plans differ only in how that trade is struck - more expected profit costs
-                chance of winning, and back again.
+                {' '}Sized on what the model has actually done: {pct(rel.accuracy)} of {rel.n} graded
+                calls landed while claiming {pct(rel.stated)}.
               </>
             )}
           </p>
         </div>
+      )}
+
+      <div className="stake-value">
+        <div className="stake-value-hero">
+          <span className="stake-value-pct">{pct(allProb)}</span>
+          <span className="stake-value-cap">
+            {legs.length === 1 ? 'chance this lands' : `chance all ${legs.length} land`}
+            {oneIn ? ` · about 1 in ${oneIn}` : ''}
+          </span>
+        </div>
+        <dl className="stake-value-rows">
+          <div>
+            <dt>Our fair price</dt>
+            <dd>{fairAll ? fairAll.toFixed(2) : '-'}</dd>
+          </div>
+          <div>
+            <dt>The market's price</dt>
+            <dd>{marketAll ? marketAll.toFixed(2) : <span className="muted">not fully priced</span>}</dd>
+          </div>
+          <div>
+            <dt>$10 would return</dt>
+            <dd>{marketAll ? money(10 * marketAll) : <span className="muted">-</span>}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {marketAll != null && fairAll != null && (
+        <p className={`stake-value-verdict ${marketAll > fairAll ? 'pos' : 'neg'}`}>
+          {marketAll > fairAll
+            ? `The market prices this longer than we do: worth ${fairAll.toFixed(2)} by our numbers, paying ${marketAll.toFixed(2)}.`
+            : `The market prices this shorter than we do: worth ${fairAll.toFixed(2)} by our numbers, paying only ${marketAll.toFixed(2)}.`}
+          {marketAll > fairAll && (
+            <span className="stake-value-caveat">
+              {' '}Expect to see that often, and read it carefully: we always show the player we
+              favour, so our number sits about 2 points above the market's on a typical pick
+              before anyone has been proved right. Only gaps past 10 points have historically
+              meant anything.
+            </span>
+          )}
+        </p>
+      )}
+      {unpriced > 0 && (
+        <p className="stake-note muted">
+          {unpriced} of these had no market price when we locked {unpriced === 1 ? 'it' : 'them'}, so
+          only our own fair price is shown above. Enter the odds you are offered below to size them.
+        </p>
       )}
 
       <div className="stake-head">
@@ -340,13 +321,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
           <div className="stake-cap">{mode === 'budget' ? 'The plan, bet by bet' : 'Your bets'}</div>
           <p className="stake-sub">
             {mode === 'budget'
-              ? <>Every bet the recommendation funds, and what it puts on each. Edge is <strong>your odds × our win probability − 1</strong>; only bets with a positive edge get money. Switch to Custom to change any of it.</>
+              ? <>Every bet the recommendation funds, and what it puts on each. Edge is <strong>your odds × our win probability − 1</strong>. A match can carry a negative edge and still be worth backing here, so long as the spread as a whole still returns the stake. Switch to Custom to change any of it.</>
               : <>Set your own stakes, tick which matches go in the parlay, and edit any price to your book. Every number above updates as you go.</>}
           </p>
         </div>
         <div className="stake-modes" role="tablist" aria-label="Recommended plan or your own">
-          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={() => setMode('mine')}>Custom</button>
           <button type="button" role="tab" aria-selected={mode === 'budget'} className={mode === 'budget' ? 'on' : ''} onClick={() => setMode('budget')}>Recommended</button>
+          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={() => setMode('mine')}>Custom</button>
         </div>
       </div>
 
@@ -355,7 +336,7 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
           Total to stake
           <span className="stake-budget-in">$<input type="number" min="0" step="5" value={budget} onChange={(e) => setBudget(e.target.value)} /></span>
           <span className="stake-budget-note">
-            The amount each recommendation splits across today&apos;s matches.
+            Split evenly across every match the plan backs.
           </span>
         </label>
       )}
@@ -455,24 +436,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
       {analysis.staked > 0 ? (
         <div className={`stake-out ${evClass}`}>
-          <div className="stake-out-grid">
-            <div className="stake-metric big">
-              <span className="stake-metric-v">{money(analysis.ev)}</span>
-              <span className="stake-metric-l">expected value {analysis.staked > 0 && <em>({pctSigned(analysis.roi)} of stake)</em>}</span>
-            </div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.staked)}</span><span className="stake-metric-l">total staked</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span><span className="stake-metric-l">chance you finish ahead</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.best)}</span><span className="stake-metric-l">best case</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.worst)}</span><span className="stake-metric-l">worst case</span></div>
-          </div>
-
           {analysis.dist && (() => {
             const { lo, hi, bins } = analysis.dist;
             const max = Math.max(...bins.map((b) => b.prob), 1e-9);
             const zeroPct = hi > lo ? ((0 - lo) / (hi - lo)) * 100 : 50;
             return (
               <div className="stake-dist">
-                <div className="stake-dist-cap">Where you land, by our probabilities</div>
+                <div className="stake-dist-cap">Every way this can finish, by our probabilities</div>
                 <div className="stake-dist-plot">
                   <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
                   <div className="stake-dist-bars">
@@ -486,46 +456,6 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                 <div className="stake-dist-axis">
                   <span>{money(lo)}</span>
                   <span className="stake-dist-mid">loss ← break-even → profit</span>
-                  <span>+{money(hi).replace('-', '')}</span>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Cumulative view of the same distribution. The histogram says where
-              outcomes cluster; this says what you are risking to get there -
-              at every P&L, the chance of finishing at or above it. That is the
-              shape a risk tolerance is actually read off. */}
-          {analysis.dist && (() => {
-            const { lo, hi, bins } = analysis.dist;
-            const span = hi - lo || 1;
-            const x = (v) => ((v - lo) / span) * 100;
-            const zeroPct = x(0);
-            // Step path: the survival function is piecewise-constant per bin.
-            const pts = [];
-            bins.forEach((b, i) => {
-              const left = x(b.at);
-              const right = i + 1 < bins.length ? x(bins[i + 1].at) : 100;
-              const y = 100 - b.atLeast * 100;
-              pts.push(`${left},${y}`, `${right},${y}`);
-            });
-            const half = bins.find((b) => b.atLeast <= 0.5);
-            return (
-              <div className="stake-cum">
-                <div className="stake-dist-cap">
-                  Chance of finishing at or above each result
-                  {half ? ` · even money at about ${money(half.at)}` : ''}
-                </div>
-                <div className="stake-cum-plot">
-                  <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
-                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
-                    aria-label={`Cumulative outcome curve: ${pct(analysis.pProfit || 0)} chance of finishing ahead, worst case ${money(lo)}, best case ${money(hi)}`}>
-                    <polyline points={pts.join(' ')} />
-                  </svg>
-                </div>
-                <div className="stake-dist-axis">
-                  <span>{money(lo)}</span>
-                  <span className="stake-dist-mid">{pct(analysis.pProfit || 0)} chance of ending in profit</span>
                   <span>+{money(hi).replace('-', '')}</span>
                 </div>
               </div>

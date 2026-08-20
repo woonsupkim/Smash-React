@@ -92,24 +92,10 @@ export function analyzeSlip(bets, parlay) {
       bins[bi] += prob;
     }
     pProfit = pPos;
-    // Cumulative (survival) curve alongside the histogram: at each bin's lower
-    // edge, the chance of finishing AT OR ABOVE it. Read left to right it
-    // answers "how likely am I to keep at least this much", which is the
-    // question a risk tolerance is actually about - the histogram shows where
-    // outcomes cluster, this shows what you are risking to get there.
-    const atLeast = new Array(BINS);
-    let run = 0;
-    for (let i = BINS - 1; i >= 0; i--) { run += bins[i]; atLeast[i] = run; }
     dist = {
       lo: worst,
       hi: best,
-      bins: bins.map((prob, i) => ({
-        prob,
-        win: worst + (span * (i + 0.5)) / BINS > 1e-9,
-        // Lower edge of the bin, and P(P&L >= that edge).
-        at: worst + (span * i) / BINS,
-        atLeast: Math.min(1, atLeast[i]),
-      })),
+      bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })),
     };
   }
 
