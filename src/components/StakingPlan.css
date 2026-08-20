@@ -48,6 +48,9 @@
   background: color-mix(in srgb, var(--accent-brand, #c8ff2e) 12%, transparent);
 }
 .stake-best-opt-l { font-size: 0.83rem; font-weight: 700; color: var(--text-1, #fff); }
+/* Third line on each card: how many bets, and whether a parlay is in it. The
+   composition is part of the choice, not a detail to discover later. */
+.stake-best-opt-k { font-size: 0.7rem; color: var(--text-2, #ced2d8); }
 /* --text-2, not --text-3. The selected option's accent tint composites over
    the panel's OWN accent tint, so the two compound to #3c461d - much lighter
    than the panel's #292d1d - and --text-3 lands at 3.86:1 there against 5.42:1
@@ -81,6 +84,22 @@
    parenthetical is already secondary by size and wording. Same mistake the
    -EV row comment below records - dimming muted text is how contrast dies. */
 .stake-best-l em { font-style: normal; }
+.stake-best-custom {
+  margin-top: 1rem;
+  background: none;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.2));
+  border-radius: 999px;
+  color: var(--text-1, #fff);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+}
+.stake-best-custom:hover { border-color: var(--accent-brand, #c8ff2e); }
+.stake-best-custom:focus-visible { outline: 2px solid var(--accent-brand, #c8ff2e); outline-offset: 2px; }
+/* Nothing clears its price: the panel says so instead of showing a plan. */
+.stake-best.none { border-color: var(--border-1, rgba(255, 255, 255, 0.2)); background: none; }
+.stake-best.none .stake-best-why { border-top: none; padding-top: 0; margin-top: 0.4rem; }
 .stake-best-why {
   font-size: 0.8rem;
   line-height: 1.6;
@@ -244,6 +263,24 @@
 .stake-dist-bar.win { background: var(--accent-positive, #4caf7d); }
 .stake-dist-bar.loss { background: var(--accent-negative, #ff5c5c); opacity: 0.85; }
 .stake-dist-axis { display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.68rem; color: var(--text-3, #7c8698); font-variant-numeric: tabular-nums; }
+
+/* ── Cumulative curve ───────────────────────────────────────────────────
+   The same distribution read as a survival function: at each result, the
+   chance of finishing at or above it. Falls from 1 on the left to near 0 on
+   the right, and where it crosses the dashed zero line is the chance of
+   ending in profit - which is the number a risk tolerance is read off. */
+.stake-cum { margin-top: 1.1rem; }
+.stake-cum-plot { position: relative; height: 64px; }
+.stake-cum-plot svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.stake-cum-plot polyline {
+  fill: none;
+  stroke: var(--accent-brand, #c8ff2e);
+  stroke-width: 2;
+  /* viewBox is 0-100 in both axes and the box is wider than it is tall, so
+     without this the stroke renders visibly thicker vertically. */
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
 .stake-dist-mid { letter-spacing: 0.02em; }
 
 .stake-verdict { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px solid rgba(255, 255, 255, 0.08); }

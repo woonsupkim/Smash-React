@@ -92,7 +92,25 @@ export function analyzeSlip(bets, parlay) {
       bins[bi] += prob;
     }
     pProfit = pPos;
-    dist = { lo: worst, hi: best, bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })) };
+    // Cumulative (survival) curve alongside the histogram: at each bin's lower
+    // edge, the chance of finishing AT OR ABOVE it. Read left to right it
+    // answers "how likely am I to keep at least this much", which is the
+    // question a risk tolerance is actually about - the histogram shows where
+    // outcomes cluster, this shows what you are risking to get there.
+    const atLeast = new Array(BINS);
+    let run = 0;
+    for (let i = BINS - 1; i >= 0; i--) { run += bins[i]; atLeast[i] = run; }
+    dist = {
+      lo: worst,
+      hi: best,
+      bins: bins.map((prob, i) => ({
+        prob,
+        win: worst + (span * (i + 0.5)) / BINS > 1e-9,
+        // Lower edge of the bin, and P(P&L >= that edge).
+        at: worst + (span * i) / BINS,
+        atLeast: Math.min(1, atLeast[i]),
+      })),
+    };
   }
 
   return {
@@ -151,6 +169,151 @@ export function reliability(graded, { minSample = 60 } = {}) {
 // The model's stated probability, re-expressed at its measured reliability.
 export const adjustProb = (p, lambda = 1) =>
   (lambda === 1 ? p : clamp(0.5 + lambda * (p - 0.5), 0.001, 0.999));
+
+// Every +EV combination of 2..maxLegs legs, best-edge first. The parlay's
+// universe is every combination of the day's matches, not a subset someone
+// ticked, because a combination can clear its price when its legs do not:
+// parlay edge is the PRODUCT of the legs', so 1.10 * 0.95 > 1.
+function parlayCandidates(priced, maxLegs, maxSearch) {
+  const pool = [...priced]
+    .sort((a, b) => (edgePerDollar(b.p, b.o) || 0) - (edgePerDollar(a.p, a.o) || 0))
+    .slice(0, maxSearch);
+  const found = [];
+  const walk = (start, chosen, p, o) => {
+    if (chosen.length >= 2) {
+      const edge = p * o - 1;
+      const f = kellyFraction(p, o);
+      if (edge > 0 && f > 0) found.push({ legs: chosen.slice(), p, o, edge, f, n: chosen.length });
+    }
+    if (chosen.length >= maxLegs) return;
+    for (let i = start; i < pool.length; i++) {
+      chosen.push(pool[i].key);
+      walk(i + 1, chosen, p * pool[i].p, o * pool[i].o);
+      chosen.pop();
+    }
+  };
+  if (maxLegs >= 2) walk(0, [], 1, 1);
+  return found.sort((a, b) => b.edge - a.edge);
+}
+
+/**
+ * A small menu of RECOMMENDED plans for a budget, every one of which stakes so
+ * that expected return >= total staked (plan EV >= 0).
+ *
+ * That constraint does not pick a plan on its own - it admits a whole family,
+ * and the ends of that family are far apart in risk. Rather than choose for
+ * the user, this returns the family's useful corners:
+ *
+ *   safest   - the highest chance of finishing ahead
+ *   balanced - growth-optimal (Kelly) sizing across everything that clears
+ *   profit   - the largest expected profit
+ *
+ * Each may or may not include a parlay; that falls out of the objective rather
+ * than being a switch. Only bets that beat their price are ever funded, so the
+ * break-even property holds by construction for every plan here.
+ *
+ * IMPORTANT: EV >= 0 is an expectation, not a promise. Each plan's own
+ * `metrics.pProfit` is the honest chance of actually finishing ahead, and it is
+ * routinely below 50% - a plan can be sound and still lose most of the time.
+ *
+ * @param {{key:string,p:number,o:number}[]} bets
+ * @param {number} budget
+ */
+export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12 } = {}) {
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+  const priced = adj.filter((b) => b.o > 1 && b.p > 0);
+  const evSingles = priced.filter((b) => kellyFraction(b.p, b.o) > 0);
+  const combos = parlayCandidates(priced, maxParlayLegs, maxSearch);
+  const B = Number(budget) || 0;
+
+  // Score an allocation exactly, by enumerating outcomes (analyzeSlip).
+  const shape = (singles, combo, comboStake) => {
+    const staked = adj.map((b) => ({ ...b, single: singles[b.key] || 0 }));
+    const legs = comboStake > 0 && combo ? combo.legs : [];
+    return {
+      singles,
+      combo: comboStake > 0 ? combo : null,
+      parlayLegs: legs,
+      parlayStake: comboStake > 0 ? comboStake : 0,
+      metrics: analyzeSlip(staked, { stake: comboStake, legs }),
+      funded: Object.values(singles).filter((s) => s > 0).length + (comboStake > 0 ? 1 : 0),
+    };
+  };
+  const weighted = (items, combo, comboWeight) => {
+    // items: [{key, w}] singles; combo funded at comboWeight (same units).
+    const total = items.reduce((s, i) => s + i.w, 0) + (comboWeight || 0);
+    const singles = {};
+    if (!(total > 0) || !(B > 0)) return shape(singles, combo, 0);
+    for (const i of items) singles[i.key] = (B * i.w) / total;
+    return shape(singles, combo, comboWeight ? (B * comboWeight) / total : 0);
+  };
+
+  const candidates = [];
+  const kellySingles = evSingles.map((b) => ({ key: b.key, w: kellyFraction(b.p, b.o) }));
+  const bestByF = combos.length ? combos.reduce((a, c) => (c.f > a.f ? c : a), combos[0]) : null;
+
+  if (kellySingles.length) {
+    candidates.push(weighted(kellySingles, null, 0));                       // Kelly, singles only
+    candidates.push(weighted(kellySingles.map((i) => ({ ...i, w: 1 })), null, 0)); // equal, singles only
+    // Equal weight over the top-k most LIKELY +EV singles. Fewer, safer legs is
+    // often what maximises the chance of finishing ahead.
+    const byProb = [...evSingles].sort((a, b) => b.p - a.p);
+    for (let k = 1; k <= Math.min(byProb.length, 6); k++) {
+      candidates.push(weighted(byProb.slice(0, k).map((b) => ({ key: b.key, w: 1 })), null, 0));
+    }
+    // Everything on the single largest edge - the expected-profit extreme.
+    const maxEdge = evSingles.reduce((a, b) => ((edgePerDollar(b.p, b.o) || 0) > (edgePerDollar(a.p, a.o) || 0) ? b : a));
+    candidates.push(weighted([{ key: maxEdge.key, w: 1 }], null, 0));
+  }
+  if (bestByF) {
+    candidates.push(weighted(kellySingles, bestByF, bestByF.f));            // Kelly incl. parlay
+    candidates.push(weighted([], bestByF, 1));                             // parlay only
+    // Singles carrying the plan with a small parlay alongside it.
+    if (kellySingles.length) {
+      const w = kellySingles.reduce((s, i) => s + i.w, 0);
+      candidates.push(weighted(kellySingles, bestByF, w / 9)); // ~10% on the parlay
+    }
+  }
+  for (const c of combos.slice(0, 3)) candidates.push(weighted([], c, 1));  // top parlays by edge
+
+  const usable = candidates.filter((c) => c.metrics.staked > 0 && c.metrics.ev >= -1e-9);
+  if (!usable.length) {
+    return {
+      plans: [],
+      lambda,
+      reason: priced.length
+        ? 'every price on this slate is at or above our own number, alone and in every combination'
+        : 'none of these carry a market price',
+    };
+  }
+
+  const pick = (fn) => usable.reduce((a, b) => (fn(b) > fn(a) ? b : a));
+  const safest = pick((c) => c.metrics.pProfit || 0);
+  const profit = pick((c) => c.metrics.ev);
+  const balanced = bestByF && kellySingles.length
+    ? weighted(kellySingles, bestByF, bestByF.f)
+    : (kellySingles.length ? weighted(kellySingles, null, 0) : usable[0]);
+
+  // Label, then drop any that duplicate an earlier plan's actual allocation.
+  const key = (c) => JSON.stringify([
+    Object.entries(c.singles).filter(([, v]) => v > 0.005).map(([k, v]) => [k, +v.toFixed(2)]).sort(),
+    c.parlayLegs.slice().sort(), +c.parlayStake.toFixed(2),
+  ]);
+  const labelled = [
+    { id: 'safest', label: 'Best chance of winning', ...safest },
+    { id: 'balanced', label: 'Balanced', ...balanced },
+    { id: 'profit', label: 'Most expected profit', ...profit },
+  ];
+  const seen = new Set();
+  const plans = [];
+  for (const p of labelled) {
+    const k = key(p);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    plans.push(p);
+  }
+  return { plans, lambda, reason: null };
+}
 
 /**
  * The best plan for a budget, decided AT THE PLAN LEVEL.
