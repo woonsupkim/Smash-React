@@ -97,7 +97,12 @@ const ELO_GRID = QUICK
   : {
     rho: [0.35, 0.5, 0.65],
     marginK: [true, false],
-    kScale: [150, 250, 400, 600, 900],
+    // Extended down to 40: the first full-cache run pinned WTA at the old 150
+    // floor WITH kExp=0, i.e. a constant K, and a constant K of 150 is very
+    // large (this repo's default schedule is ~70 at 20 matches played). An
+    // optimum sitting on a grid boundary is not an optimum, so the range has
+    // to contain it before any of it reaches engineConfig.
+    kScale: [40, 60, 100, 150, 250, 400, 600, 900],
     // 0 is a constant K; negative would mean K GROWING with experience, which
     // has no defensible story, so 0 is the floor by design rather than by grid.
     kExp: [0, 0.1, 0.25, 0.4, 0.6],
