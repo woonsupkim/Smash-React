@@ -353,6 +353,127 @@ const stat = (value, label, color = INK) =>
 // and tour on every row; grouping states it once and lets the matches read as
 // an order of play. Events are ordered by their first match, ATP before WTA
 // inside an event, and matches by start time within that.
+// ── The hero match ──────────────────────────────────────────────────────────
+// One match gets the full treatment and the rest go in a list, because a page
+// of five equal cards has no focal point and reads as a fixture list.
+//
+// "Biggest" is three things at once, so it is scored rather than guessed:
+// how often these two have met (a rivalry), how much of the title race they
+// represent (stature), and how close we think it is (a blowout is nobody's
+// most anticipated match). Each is normalised to 0-1 so the weights mean
+// something, and the winner also reports WHY it won, which is the honest way
+// to present a ranked choice.
+const h2hKey = (a, b) => [a, b].sort().join('_');
+
+function h2hFor(h2hDoc, tour, p1, p2) {
+  const book = (h2hDoc && h2hDoc[tour === 'wta' ? 'wta' : 'atp']) || {};
+  const rec = book[h2hKey(p1, p2)];
+  if (!rec) return null;
+  const firstIsP1 = [p1, p2].sort()[0] === p1;
+  return {
+    wins1: firstIsP1 ? rec.winsA : rec.winsB,
+    wins2: firstIsP1 ? rec.winsB : rec.winsA,
+    form1: firstIsP1 ? rec.recentFormA : rec.recentFormB,
+    form2: firstIsP1 ? rec.recentFormB : rec.recentFormA,
+    meetings: (rec.winsA || 0) + (rec.winsB || 0),
+  };
+}
+
+function titleProb(oddsDoc, tour, id) {
+  const ev = oddsDoc && oddsDoc.events && oddsDoc.events[tour];
+  if (!ev || !Array.isArray(ev.odds)) return 0;
+  const hit = ev.odds.find((x) => x.id === id);
+  return hit ? (hit.prob || 0) : 0;
+}
+
+function pickHero(card, h2hDoc, oddsDoc) {
+  let best = null;
+  for (const pr of card) {
+    const h = h2hFor(h2hDoc, pr.tour, pr.p1, pr.p2);
+    const meetings = h ? h.meetings : 0;
+    const stature = titleProb(oddsDoc, pr.tour, pr.p1) + titleProb(oddsDoc, pr.tour, pr.p2);
+    const rivalry = Math.min(meetings, 10) / 10;
+    const star = Math.min(stature, 0.6) / 0.6;
+    const close = 1 - Math.min(1, Math.abs((pr.favProb || 0.5) - 0.5) * 2);
+    const score = 0.40 * rivalry + 0.35 * star + 0.25 * close;
+    // Why it won, in the reader's terms rather than as a score.
+    const why = meetings >= 5 ? `their ${meetings + 1}${[, 'st', 'nd', 'rd'][((meetings + 1) % 100 - (meetings + 1) % 10 !== 10) && (meetings + 1) % 10] || 'th'} meeting`
+      : star > 0.5 ? 'two of the title favourites'
+        : close > 0.8 ? 'the closest call on the card'
+          : 'the pick of the day';
+    if (!best || score > best.score) best = { pr, score, h, why, meetings };
+  }
+  return best;
+}
+
+// Tale of the tape: the two of them, compared row by row. Same vocabulary the
+// share cards use (recent form, career head to head) plus the two numbers this
+// email trades in - our call and the market's.
+function taleOfTheTape(hero, mkt) {
+  const pr = hero.pr;
+  const favIsP1 = pr.favorite === pr.p1;
+  const name1 = pr.name1, name2 = pr.name2;
+  const photo1 = mirrorPhoto(pr.tour, pr.p1);
+  const photo2 = mirrorPhoto(pr.tour, pr.p2);
+  const our1 = Math.round((favIsP1 ? pr.favProb : 1 - pr.favProb) * 100);
+  const mkt1 = mkt == null ? null : Math.round((favIsP1 ? mkt : 1 - mkt) * 100);
+  const h = hero.h;
+
+  const face = (url, alt, isFav) => (url
+    ? `<img src="${url}" width="72" height="72" alt="${esc(alt)}" style="display:block;width:72px;height:72px;border-radius:2px;border:2px solid ${isFav ? LIME : LINE_HI};" />`
+    : `<div style="width:72px;height:72px;border-radius:2px;background:${TRACK};"></div>`);
+
+  const row = (label, a, b, strongSide) => `
+    <tr>
+      <td width="34%" align="left" style="padding:9px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${strongSide === 1 ? INK : MUTED};">${esc(a)}</td>
+      <td width="32%" align="center" style="padding:9px 6px;border-top:1px solid ${LINE};font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(label)}</td>
+      <td width="34%" align="right" style="padding:9px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${strongSide === 2 ? INK : MUTED};">${esc(b)}</td>
+    </tr>`;
+
+  return `
+  <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};padding:18px 20px 16px;margin-bottom:18px;">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;padding-bottom:12px;">Tale of the tape &nbsp;&middot;&nbsp; ${esc(hero.why)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <tr>
+        <td width="34%" align="left" style="vertical-align:bottom;">
+          ${face(photo1, name1, favIsP1)}
+          <div style="font-family:${DISPLAY};font-size:21px;font-weight:700;text-transform:uppercase;color:${INK};padding-top:8px;line-height:1.1;">${esc(lastName(name1))}</div>
+        </td>
+        <td width="32%" align="center" style="vertical-align:bottom;padding-bottom:6px;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;">v</td>
+        <td width="34%" align="right" style="vertical-align:bottom;">
+          ${face(photo2, name2, !favIsP1)}
+          <div style="font-family:${DISPLAY};font-size:21px;font-weight:700;text-transform:uppercase;color:${INK};padding-top:8px;line-height:1.1;">${esc(lastName(name2))}</div>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;">
+      ${row('Our call', `${our1}%`, `${100 - our1}%`, our1 >= 50 ? 1 : 2)}
+      ${mkt1 != null ? row('The market', `${mkt1}%`, `${100 - mkt1}%`, mkt1 >= 50 ? 1 : 2) : ''}
+      ${h ? row('Career h2h', String(h.wins1), String(h.wins2), h.wins1 === h.wins2 ? 0 : (h.wins1 > h.wins2 ? 1 : 2)) : ''}
+      ${h && h.form1 && h.form2 ? row('Recent form', h.form1, h.form2, 0) : ''}
+    </table>
+  </div>`;
+}
+
+// Everything that is not the hero: one line each, no photos.
+function compactRow(pr) {
+  const favIsP1 = pr.favorite === pr.p1;
+  const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
+  const dogName = favIsP1 ? pr.name2 : pr.name1;
+  const when = new Date(pr.date);
+  const time = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
+    ? `${when.toISOString().slice(11, 16)} UTC` : 'TBC';
+  return `
+  <tr>
+    <td style="padding:10px 0;border-top:1px solid ${LINE};font-size:14px;line-height:1.45;color:${BODY};">
+      <a href="${matchUrl(pr)}" style="color:${INK};text-decoration:none;font-weight:700;">${esc(lastName(favName))}</a>
+      <span style="color:${MUTED};"> over ${esc(lastName(dogName))}</span>
+    </td>
+    <td align="right" style="padding:10px 0 10px 10px;border-top:1px solid ${LINE};font-family:${MONO};font-size:13px;color:${MUTED};white-space:nowrap;">${esc(time)}</td>
+    <td align="right" style="padding:10px 0 10px 12px;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${INK};white-space:nowrap;">${Math.round((pr.favProb || 0) * 100)}%</td>
+  </tr>`;
+}
+
 function groupCard(rows) {
   const groups = new Map();
   for (const pr of rows) {
@@ -383,22 +504,13 @@ const groupHead = (g) => `
     </tr>
   </table>`;
 
-function matchCard(pr, upset) {
+// The read: what the market thinks, versus us. This is the line that makes a
+// match worth reading about rather than a fixture to note down. Extracted from
+// the old matchCard, which the hero and the compact list between them replaced.
+function matchRead(pr, upset) {
   const favIsP1 = pr.favorite === pr.p1;
   const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
-  const dogName = favIsP1 ? pr.name2 : pr.name1;
-  const favId = favIsP1 ? pr.p1 : pr.p2;
-  const dogId = favIsP1 ? pr.p2 : pr.p1;
   const prob = Math.round((pr.favProb || 0) * 100);
-  const favPhoto = mirrorPhoto(pr.tour, favId);
-  const dogPhoto = mirrorPhoto(pr.tour, dogId);
-  const when = new Date(pr.date);
-  const timeLabel = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
-    ? `${when.toISOString().slice(11, 16)} UTC`
-    : 'time to be confirmed';
-
-  // The read: what the market thinks, versus us. This is the line that makes
-  // the email worth opening rather than a fixture list.
   const mkt = marketProb(pr);
   let read;
   if (upset) {
@@ -419,40 +531,9 @@ function matchCard(pr, upset) {
       ? `A clear favourite on our numbers, and nobody quoted a price when we locked it. Take it up with the bookmakers.`
       : `Tight on our numbers and unpriced at lock time, so there is no market to argue with. Just the maths.`;
   }
-
-  const face = (url, alt, dim) => (url
-    ? `<img src="${url}" width="54" height="54" alt="${esc(alt)}" style="display:block;width:54px;height:54px;border-radius:2px;border:2px solid ${dim ? LINE : LIME};" />`
-    : `<div style="width:54px;height:54px;border-radius:2px;background:${TRACK};"></div>`);
-
-  return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-left:3px solid ${LIME};background:${PANEL};margin-bottom:14px;">
-    <tr><td style="padding:18px 20px;">
-      <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:12px;">
-        ${esc(timeLabel)}
-      </div>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-        <tr>
-          <td width="54" style="padding-right:12px;">${face(favPhoto, favName, false)}</td>
-          <td style="font-size:17px;font-weight:800;color:${INK};line-height:1.35;">
-            ${esc(lastName(favName))}
-            <span style="font-weight:400;color:${MUTED};font-size:15px;"> to beat ${esc(lastName(dogName))}</span>
-          </td>
-          <td width="54" style="padding-left:12px;">${face(dogPhoto, dogName, true)}</td>
-        </tr>
-      </table>
-      <div style="font-size:14px;color:${BODY};padding:14px 0 6px;">Our number: <strong style="color:${INK};font-size:16px;">${prob}%</strong></div>
-      ${bar(prob)}
-      <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:${BODY};">${read}</p>
-      <div style="padding-top:14px;font-size:14px;line-height:2;">
-        ${textLink(matchUrl(pr), 'Read the full call')}
-        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
-        ${textLink(compareUrl(pr), 'Compare them')}
-        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
-        ${textLink(simUrl(pr), 'Run the simulation')}
-      </div>
-    </td></tr>
-  </table>`;
+  return read;
 }
+
 
 // A graded result, with the face of whoever we backed.
 // Which side the bookmakers made favourite, from the prices we stamped before
@@ -560,6 +641,14 @@ async function main() {
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
+  // Head-to-head is stored per tour, the same split the app reads. Loading
+  // only the ATP file silently gave every WTA match an empty record, which
+  // also skewed the hero pick: no meetings meant no rivalry score.
+  const h2hDoc = {
+    atp: readJson(path.join(DATA, 'h2h.json')) || {},
+    wta: readJson(path.join(DATA, 'women', 'h2h.json')) || {},
+  };
+  const oddsDoc = readJson(path.join(DATA, 'title_odds.json'));
 
   if (!scorecard && !track && !predsDoc) {
     console.log('No digest inputs found; nothing to build.');
@@ -718,6 +807,11 @@ async function main() {
 
     // Today's card.
     if (shown.length) {
+      // One match carries the section; the rest are a list under it.
+      const hero = pickHero(shown, h2hDoc, oddsDoc);
+      const rest = hero ? shown.filter((pr) => pr.id !== hero.pr.id) : shown;
+      const heroRead = hero ? matchRead(hero.pr, upsetById.get(hero.pr.id)) : '';
+
       const intro = splits.length
         ? `We are out of step with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your time. Agreeing with the favourite is not a take.`
         : 'We land more or less where the market does today. No arguments, just conviction.';
@@ -725,7 +819,9 @@ async function main() {
         ${kicker(todays.length ? 'On court today' : 'Next up')}
         ${h2(`${plural(card.length, 'call', 'calls')}, no takebacks`)}
         ${p(intro)}
-        ${groupCard(shown).map((g) => groupHead(g) + g.rows.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')).join('')}
+        ${hero ? taleOfTheTape(hero, marketProb(hero.pr)) : ''}
+        ${hero ? p(heroRead, `color:${BODY};`) : ''}
+        ${rest.length ? `<div style="padding-top:4px;">${groupCard(rest).map((g) => groupHead(g) + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">${g.rows.map(compactRow).join('')}</table>`).join('')}</div>` : ''}
         ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
       `));
       txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
