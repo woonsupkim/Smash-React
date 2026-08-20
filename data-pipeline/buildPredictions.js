@@ -64,6 +64,11 @@ function loadTour(tour) {
   const idMap = JSON.parse(fs.readFileSync(path.join(RAW, 'player-id-map.json'), 'utf8'));
   const apiToShort = new Map(Object.entries(idMap).map(([sid, aid]) => [String(aid), sid]));
   const completed = new Map();
+  // High-water mark of the RESULTS FEED: the newest completed match we can
+  // see. This is what decides whether a missing result means "no result
+  // exists" or merely "our data has not caught up" - see the void pass, which
+  // must never retire a pick on the strength of data we never fetched.
+  let feedLatest = null;
   for (const f of fs.readdirSync(RAW).filter((f) => f.endsWith('.json') && !/surfaces|map|profiles/.test(f))) {
     let j; try { j = JSON.parse(fs.readFileSync(path.join(RAW, f), 'utf8')); } catch { continue; }
     for (const m of (Array.isArray(j) ? j : (j.matches || j.data || []))) {
@@ -71,16 +76,44 @@ function loadTour(tour) {
       const p1 = apiToShort.get(String(m.player1Id)), p2 = apiToShort.get(String(m.player2Id));
       const w = apiToShort.get(String(m.match_winner));
       if (!p1 || !p2 || !w) continue;
+      const t = new Date(m.date).getTime();
+      if (!isNaN(t) && (feedLatest == null || t > feedLatest)) feedLatest = t;
       const key = [p1, p2].sort().join('_');
       if (!completed.has(key)) completed.set(key, []);
       completed.get(key).push({ date: m.date, winner: w, score: m.result || '' });
     }
   }
 
-  return { tour, dir, roster, statsBySurface, upsetBySurface, elo, completed, bestOf: tour === 'wta' ? 3 : 5 };
+  return { tour, dir, roster, statsBySurface, upsetBySurface, elo, completed, feedLatest, bestOf: tour === 'wta' ? 3 : 5 };
 }
 
 const probsFromRow = (r) => [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6].map((v) => Number(v) || 0);
+
+const VOID_AFTER_DAYS = 6; // beyond the 5-day grading window in run()
+
+/**
+ * What to do with a still-pending pick whose match date has passed:
+ *   'wait' - still inside the grading window, nothing to decide yet
+ *   'hold' - past the window, but the RESULTS FEED has not reached this match,
+ *            so a missing result is evidence of nothing. Stay pending.
+ *   'void' - past the window AND the feed has moved on without a result, so
+ *            the match really did not produce one (walkover, withdrawal, a
+ *            name the feed spells differently).
+ *
+ * Extracted and exported purely so this is testable: the failure mode is
+ * silent data loss - a stalled feed retiring real calls as orphans - which no
+ * crash or failing build would ever surface.
+ *
+ * @param {number} predDateMs   scheduled match date
+ * @param {number|null} feedLatestMs newest completed result in the cache
+ * @param {number} nowMs
+ */
+function voidVerdict(predDateMs, feedLatestMs, nowMs, voidAfterDays = VOID_AFTER_DAYS) {
+  const window = voidAfterDays * 864e5;
+  if (!(nowMs - predDateMs > window)) return 'wait';
+  if (feedLatestMs == null) return 'hold';
+  return feedLatestMs - predDateMs > window ? 'void' : 'hold';
+}
 
 // Locked prediction for a matchup on a surface, made with the best-performing
 // engine for this tour x surface. bestOf comes from the event (ATP slams are
@@ -220,9 +253,18 @@ async function run() {
   const ctxByTour = { atp: loadTour('atp'), wta: loadTour('wta') };
 
   // ── 1. Grade pending predictions ────────────────────────────────────────
+  // 'void' rows are reconsidered too. A pick is only ever voided because no
+  // result could be found, and that can be wrong for reasons that later fix
+  // themselves (a throttled feed, a late-arriving result, a name the feed
+  // spelled differently at first). If a result exists NOW, the honest thing
+  // is to grade it - the pick itself was still locked before play, so
+  // recovering it cannot leak. Without this, any gap in the results feed
+  // permanently deletes real calls from the forward record.
   let graded = 0;
+  let recovered = 0;
   for (const p of store.predictions) {
-    if (p.status !== 'pending') continue;
+    if (p.status !== 'pending' && p.status !== 'void') continue;
+    const wasVoid = p.status === 'void';
     const ctx = ctxByTour[p.tour];
     const key = [p.p1, p.p2].sort().join('_');
     const results = ctx.completed.get(key) || [];
@@ -237,8 +279,10 @@ async function run() {
       p.score = hit.score;
       p.correct = hit.winner === p.favorite;
       graded++;
+      if (wasVoid) recovered++;
     }
   }
+  if (recovered) console.log(`  recovered ${recovered} previously-void prediction(s) whose result has now arrived`);
 
   // ── 1a. Void orphan pending predictions ─────────────────────────────────
   // A pick whose match never produced a fetchable result - walkover,
@@ -247,16 +291,34 @@ async function run() {
   // FanDuel, and never counting toward the graded record either way. Once it
   // is past the grading window above with still no result, retire it as
   // 'void' - not a win, not a loss, just closed. Consumers exclude 'void'.
-  const VOID_AFTER_DAYS = 6; // beyond the 5-day grading window above
+  //
+  // The clock that matters is the RESULTS FEED's, not the wall's. Absence of a
+  // result only means "no result exists" if our data actually covers the
+  // period; if the feed has stalled, absence means nothing at all. Voiding on
+  // wall-clock time made an outage indistinguishable from a walkover: when the
+  // RapidAPI monthly quota tripped its reserve floor on 2026-08-14 the results
+  // feed froze, and the 123 picks played since would have been retired as
+  // orphans on a rolling basis - 21 of them the next day, all 123 inside a
+  // week - erasing real calls from the forward record for want of data we
+  // simply never fetched. Now a pick is only voided once the feed has itself
+  // moved VOID_AFTER_DAYS past the match, so a stall holds picks pending (and
+  // the grading pass above recovers them when data returns).
   let voided = 0;
+  let held = 0;
   for (const p of store.predictions) {
     if (p.status !== 'pending') continue;
-    if ((Date.now() - new Date(p.date).getTime()) > VOID_AFTER_DAYS * 864e5) {
-      p.status = 'void';
-      voided++;
-    }
+    const verdict = voidVerdict(new Date(p.date).getTime(), ctxByTour[p.tour]?.feedLatest, Date.now());
+    if (verdict === 'void') { p.status = 'void'; voided++; }
+    else if (verdict === 'hold') held++;
   }
   if (voided) console.log(`  voided ${voided} orphan pending prediction(s) past the grading window`);
+  if (held) {
+    console.warn(
+      `  ! HOLDING ${held} pending prediction(s): their matches are past but the results feed has not caught up ` +
+      `(newest result: ${Object.entries(ctxByTour).map(([t, c]) => `${t} ${c.feedLatest ? new Date(c.feedLatest).toISOString().slice(0, 10) : 'none'}`).join(', ')}). ` +
+      'They stay pending rather than being retired as orphans, and will grade once the feed recovers.'
+    );
+  }
 
   // ── 1b. Refresh still-pending picks with the current best engine ─────────
   // They haven't been played yet, so re-locking them with the best-performing
@@ -402,4 +464,10 @@ async function run() {
   if (fetchFailures) console.warn(`  ! ${fetchFailures} schedule fetch(es) failed after retries - some upcoming matches may be missing this run.`);
 }
 
-run().catch((e) => { console.error(e); process.exit(1); });
+// Guarded so the void/grade helpers above can be required by tests without
+// firing a full pipeline run (which fetches schedules and rewrites the ledger).
+if (require.main === module) {
+  run().catch((e) => { console.error(e); process.exit(1); });
+}
+
+module.exports = { voidVerdict, VOID_AFTER_DAYS };
