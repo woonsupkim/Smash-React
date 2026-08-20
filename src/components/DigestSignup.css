@@ -1,0 +1,91 @@
+/* src/components/DigestSignup.css
+   Moved here from SiteFooter.css when the signup gained a second home on the
+   home page - the styles belong with the component that owns them, matching
+   the StakingPlan.js / StakingPlan.css pairing elsewhere. */
+.digest-signup { margin-top: 0.9rem; max-width: 280px; }
+.digest-signup-label {
+  display: block;
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 0.4rem;
+}
+.digest-signup-row { display: flex; gap: 0.4rem; }
+.digest-signup-row input {
+  flex: 1; min-width: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  color: var(--text-1);
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+.digest-signup-row button {
+  background: var(--accent-brand); color: #0c0f14;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 0.78rem; font-weight: 800;
+  padding: 0.4rem 0.8rem; cursor: pointer;
+}
+.digest-signup-row button:disabled { opacity: 0.6; }
+.digest-signup-note, .digest-signup-err, .digest-signup-done { font-size: 0.68rem; color: var(--text-3); margin-top: 0.35rem; }
+.digest-signup-err { color: var(--accent-negative); }
+.digest-signup-done { color: var(--accent-positive); font-size: 0.78rem; margin-top: 0.9rem; }
+
+/* ── Band variant: the signup as a real CTA, not a footer afterthought ──
+   The digest is one of the app's main calls to action but only existed at the
+   bottom of the page, below the legal links. This is the same form given a
+   heading, breathing room and an accent frame so it reads as an invitation
+   rather than a form field someone forgot to remove. */
+.digest-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem 2.5rem;
+  flex-wrap: wrap;
+  margin: 2.5rem 0;
+  padding: 1.6rem 1.75rem;
+  border: 1px solid var(--accent-brand);
+  border-radius: var(--radius, 16px);
+  background: color-mix(in srgb, var(--accent-brand) 8%, transparent);
+}
+.digest-band-copy { flex: 1 1 20rem; }
+.digest-band-title {
+  font-family: var(--font-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 0.4rem;
+  color: var(--text-1);
+}
+.digest-band-sub { font-size: 0.9rem; line-height: 1.55; color: var(--text-2); margin: 0; max-width: 34rem; }
+
+/* The form itself gets bigger targets here - the footer sizing is deliberately
+   small, which is wrong for a primary CTA and awkward on touch. */
+.digest-signup.band { margin-top: 0; max-width: 24rem; flex: 1 1 18rem; }
+.digest-signup.band .digest-signup-label { font-size: 0.7rem; }
+.digest-signup.band .digest-signup-row input { font-size: 0.95rem; padding: 0.7rem 0.85rem; }
+.digest-signup.band .digest-signup-row button { font-size: 0.9rem; padding: 0.7rem 1.2rem; }
+.digest-signup.band .digest-signup-note { font-size: 0.74rem; }
+.digest-signup-done.band {
+  margin: 2.5rem 0;
+  padding: 1.6rem 1.75rem;
+  border: 1px solid var(--accent-positive);
+  border-radius: var(--radius, 16px);
+  font-size: 1rem;
+}
+
+/* Visible focus on both controls: the footer version inherited none, which is
+   a keyboard trap for the one CTA we most want reachable. */
+.digest-signup-row input:focus-visible,
+.digest-signup-row button:focus-visible {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .digest-band { padding: 1.25rem 1.1rem; margin: 1.75rem 0; }
+  .digest-band-title { font-size: 1.25rem; }
+  .digest-signup.band { max-width: none; }
+  .digest-signup.band .digest-signup-row { flex-wrap: wrap; }
+  .digest-signup.band .digest-signup-row input { flex: 1 1 100%; }
+  .digest-signup.band .digest-signup-row button { flex: 1 1 100%; }
+}
