@@ -11,6 +11,7 @@ import { timeUntil, matchSlug } from '../utils/matchTime';
 import { pickCorrect, pickFavorite } from '../utils/deployedPick';
 import { edgePerDollar, parlayCombo, recommendStakes, analyzeSlip } from '../utils/staking';
 import { nextSlam, prevSlam } from '../utils/slamCalendar';
+import DigestSignup from '../components/DigestSignup';
 import './Home.css';
 
 // Recent-form window for the forward record, matching the guardrail board's
@@ -726,6 +727,12 @@ export default function Home() {
             </section>
           );
         })()}
+
+        {/* The digest is a primary CTA but only existed in the footer, below
+            the legal links. It sits here, above "where to go next": the reader
+            has just seen the record, which is the moment the weekly email is
+            worth something, and it is still ahead of the page's exit links. */}
+        <DigestSignup variant="band" />
 
         <section className="home-nav">
           <div className="home-section-head">
