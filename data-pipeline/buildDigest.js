@@ -54,22 +54,39 @@ const PHOTO_OUT = path.join(DATA, 'digest', 'players');
 
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 
-// Light palette. The brand lime is unreadable as text on white, so it lives
-// on dark buttons and chips instead, and links use a deep green that passes
-// contrast on a white card.
-const PAGE = '#eef1f5';
-const CARD = '#ffffff';
-const INK = '#14171c';
-const BODY = '#39414d';
-const MUTED = '#6b7480';
-const LINE = '#e2e7ee';
-const BTN = '#14171c';
+// The email wears the product's own skin. It used to be a light grey page
+// with a white 14px-rounded card, system UI type and pastel callouts, which
+// is the house style of every SaaS transactional template - and looked
+// nothing like the site it reports on. The app is near-black, sharp-cornered
+// (--radius-card is 4px), condensed-display and lime. So is this now.
+//
+// Sharp corners are also the more faithful choice in email: Outlook's Word
+// engine drops border-radius entirely, so a 14px card was already square for
+// a large slice of readers while looking soft for everyone else.
+const PAGE = '#0b0d10';      // outside the card
+const CARD = '#111418';      // the card itself
+const PANEL = '#181c22';     // raised blocks inside it
+const INK = '#ffffff';       // headline text
+const BODY = '#c3c9d2';      // body copy
+const MUTED = '#8b93a0';     // labels, captions
+const LINE = '#262c34';      // hairlines
+const LINE_HI = '#39414d';   // hairlines that need to read as structure
+const BTN = '#c6ff1c';       // the lime IS the button now, not a dark chip
+const BTN_INK = '#0b0d10';
 const LIME = '#c6ff1c';
-const LINK = '#14652f';
-const WIN = '#157f4c';
-const LOSS = '#c0392b';
-const TRACK = '#e8ecf2';
+const LINK = '#c6ff1c';
+const WIN = '#7ddc4e';       // legible on dark, unlike the old #157f4c
+const LOSS = '#ff6b5e';
+const TRACK = '#22272e';
+
+// Two stacks. Headlines go condensed to echo Barlow Condensed from the app -
+// Arial Narrow ships on Windows and macOS, and the fallbacks degrade to a
+// normal-width bold rather than to something wrong. Body stays a plain UI
+// sans, which is what actually renders reliably at small sizes in mail.
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const DISPLAY = "'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue Condensed', 'Liberation Sans Narrow', Arial, sans-serif";
+// Stat figures. Tabular so columns of numbers line up down the page.
+const MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
 
 const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
 const pickFavorite = (m) => m.pickFavorite || m.smashFavorite;
@@ -186,35 +203,53 @@ function mirrorLogo(slamLabel) {
 }
 
 // ── Email primitives ────────────────────────────────────────────────────────
-function bar(percent, color = INK, height = 10) {
+// Flat bar, square ends. The rounded caps read as a progress widget; a
+// scoreboard wants a plain measure.
+function bar(percent, color = LIME, height = 6) {
   const w = Math.max(0, Math.min(100, Math.round(percent)));
   const cell = `height:${height}px;font-size:0;line-height:0;mso-line-height-rule:exactly;`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed;">
     <tr>
-      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};border-radius:5px 0 0 5px;">&nbsp;</td>` : ''}
-      ${w < 100 ? `<td style="${cell}background:${TRACK};border-radius:${w > 0 ? '0 5px 5px 0' : '5px'};">&nbsp;</td>` : ''}
+      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};">&nbsp;</td>` : ''}
+      ${w < 100 ? `<td style="${cell}background:${TRACK};">&nbsp;</td>` : ''}
     </tr>
   </table>`;
 }
 
+// Lime block, near-square. The brand colour does the work instead of hiding
+// inside a dark chip.
 const button = (href, label) =>
-  `<a href="${href}" style="display:inline-block;background:${BTN};color:${LIME};font-size:15px;font-weight:700;text-decoration:none;padding:13px 24px;border-radius:8px;">${esc(label)}</a>`;
+  `<a href="${href}" style="display:inline-block;background:${BTN};color:${BTN_INK};font-family:${DISPLAY};font-size:16px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;text-decoration:none;padding:13px 26px;border-radius:2px;">${esc(label)}</a>`;
 
 const textLink = (href, label) =>
-  `<a href="${href}" style="color:${LINK};text-decoration:none;font-weight:700;border-bottom:1px solid ${LINE};">${esc(label)}</a>`;
+  `<a href="${href}" style="color:${LINK};text-decoration:none;font-weight:600;border-bottom:1px solid ${LINE_HI};">${esc(label)}</a>`;
 
-// Section wrapper: a white card on the page tint.
+// Section wrapper. The hairline above each one is the only separator, which
+// is what gives the page its column-of-a-sports-desk rhythm.
 const section = (inner) =>
-  `<tr><td style="padding:26px 28px;border-top:1px solid ${LINE};">${inner}</td></tr>`;
+  `<tr><td style="padding:24px 28px 26px;border-top:1px solid ${LINE};">${inner}</td></tr>`;
 
+// Condensed, uppercase, tight. This is the scoreboard headline.
 const h2 = (text) =>
-  `<h2 style="margin:0 0 12px;font-size:19px;line-height:1.3;font-weight:800;color:${INK};">${esc(text)}</h2>`;
+  `<h2 style="margin:0 0 12px;font-family:${DISPLAY};font-size:30px;line-height:1.05;font-weight:700;letter-spacing:0.2px;text-transform:uppercase;color:${INK};">${esc(text)}</h2>`;
 
 const p = (html, extra = '') =>
-  `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:${BODY};${extra}">${html}</p>`;
+  `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:${BODY};${extra}">${html}</p>`;
 
+// Kicker with a rule running off to the right, the standard editorial device
+// for a section marker.
 const kicker = (text) =>
-  `<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:8px;">${esc(text)}</div>`;
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;padding-bottom:8px;">
+    <tr>
+      <td style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${LIME};font-weight:700;white-space:nowrap;padding:0 10px 8px 0;">${esc(text)}</td>
+      <td style="width:100%;padding:0 0 12px;"><div style="height:1px;background:${LINE_HI};font-size:0;line-height:0;">&nbsp;</div></td>
+    </tr>
+  </table>`;
+
+// A number that should read as data: condensed, tabular, oversized.
+const stat = (value, label, color = INK) =>
+  `<div style="font-family:${MONO};font-size:34px;line-height:1;font-weight:700;color:${color};letter-spacing:-1px;">${esc(value)}</div>
+   <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-top:7px;">${esc(label)}</div>`;
 
 // ── Content builders ────────────────────────────────────────────────────────
 
@@ -258,11 +293,11 @@ function matchCard(pr, upset) {
   }
 
   const face = (url, alt, dim) => (url
-    ? `<img src="${url}" width="54" height="54" alt="${esc(alt)}" style="display:block;width:54px;height:54px;border-radius:27px;border:2px solid ${dim ? LINE : INK};" />`
-    : `<div style="width:54px;height:54px;border-radius:27px;background:${TRACK};"></div>`);
+    ? `<img src="${url}" width="54" height="54" alt="${esc(alt)}" style="display:block;width:54px;height:54px;border-radius:2px;border:2px solid ${dim ? LINE : LIME};" />`
+    : `<div style="width:54px;height:54px;border-radius:2px;background:${TRACK};"></div>`);
 
   return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;margin-bottom:16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-left:3px solid ${LIME};background:${PANEL};margin-bottom:14px;">
     <tr><td style="padding:18px 20px;">
       <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:12px;">
         ${esc((pr.tour || '').toUpperCase())} &nbsp;&middot;&nbsp; ${esc(pr.event || '')} &nbsp;&middot;&nbsp; ${esc(pr.surface || '')} &nbsp;&middot;&nbsp; ${esc(timeLabel)}
@@ -307,8 +342,8 @@ function resultRow(m) {
     <tr>
       <td width="40" style="padding:12px 12px 12px 0;">
         ${photo
-    ? `<img src="${photo}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:18px;border:2px solid ${hit ? WIN : LOSS};" />`
-    : `<div style="width:36px;height:36px;border-radius:18px;background:${TRACK};"></div>`}
+    ? `<img src="${photo}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:2px;border:2px solid ${hit ? WIN : LOSS};" />`
+    : `<div style="width:36px;height:36px;border-radius:2px;background:${TRACK};"></div>`}
       </td>
       <td style="padding:12px 0;font-size:14px;line-height:1.5;color:${BODY};">
         <strong style="color:${INK};">${esc(lastName(ourPick))}</strong> over ${esc(lastName(other))} at ${prob}%
@@ -471,14 +506,14 @@ async function main() {
           ? 'We were ahead of them.'
           : usY === themY ? 'We finished level.' : 'They were ahead of us.';
         vsMarket = `
-          <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};border-radius:12px;">
+          <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};background:${PANEL};">
             ${kicker('The bookmakers, same matches')}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
               <tr>
                 <td width="50%" style="padding-right:10px;vertical-align:top;">
                   <div style="font-size:22px;font-weight:800;color:${INK};line-height:1.1;">${usY}%</div>
                   <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 7px;">our pick</div>
-                  ${bar(usY, INK, 8)}
+                  ${bar(usY, LIME, 8)}
                 </td>
                 <td width="50%" style="padding-left:10px;vertical-align:top;">
                   <div style="font-size:22px;font-weight:800;color:${MUTED};line-height:1.1;">${themY}%</div>
@@ -502,7 +537,7 @@ async function main() {
         const up = plan.profit >= 0;
         const money = `${up ? '+' : '-'}$${Math.abs(plan.profit).toFixed(2)}`;
         planBlock = `
-          <div style="margin-top:14px;padding:16px 18px;border:1px solid ${up ? WIN : LOSS};border-radius:12px;background:${up ? '#f2fbf6' : '#fdf4f3'};">
+          <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${up ? WIN : LOSS};">
             ${kicker('If you had followed the plan')}
             <div style="font-size:28px;font-weight:800;color:${up ? WIN : LOSS};line-height:1.1;">${money}</div>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
@@ -587,11 +622,11 @@ async function main() {
     return `<tr>
                 <td width="44" style="padding:6px 10px 6px 0;">
                   ${ph
-    ? `<img src="${ph}" width="38" height="38" alt="${esc(x.name)}" style="display:block;width:38px;height:38px;border-radius:19px;border:2px solid ${LINE};" />`
-    : `<div style="width:38px;height:38px;border-radius:19px;background:${TRACK};"></div>`}
+    ? `<img src="${ph}" width="38" height="38" alt="${esc(x.name)}" style="display:block;width:38px;height:38px;border-radius:2px;border:1px solid ${LINE_HI};" />`
+    : `<div style="width:38px;height:38px;border-radius:2px;background:${TRACK};"></div>`}
                 </td>
                 <td style="padding:6px 0;font-size:14px;font-weight:700;color:${INK};">${esc(x.name)}</td>
-                <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, INK, 8)}</td>
+                <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, LIME, 8)}</td>
                 <td width="42" style="padding:6px 0 6px 8px;text-align:right;font-size:14px;font-weight:800;color:${INK};">${prob < 1 ? '<1' : prob}%</td>
               </tr>`;
   }).join('')}
@@ -749,7 +784,7 @@ async function main() {
               <td width="50%" style="padding:0 10px 0 0;vertical-align:top;">
                 <div style="font-size:26px;font-weight:800;color:${INK};line-height:1.1;">${us}%</div>
                 <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 8px;">us</div>
-                ${bar(us, INK)}
+                ${bar(us, LIME)}
               </td>
               <td width="50%" style="padding:0 0 0 10px;vertical-align:top;">
                 <div style="font-size:26px;font-weight:800;color:${MUTED};line-height:1.1;">${them}%</div>
@@ -809,26 +844,32 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="color-scheme" content="light" />
-<meta name="supported-color-schemes" content="light" />
+<meta name="color-scheme" content="dark" />
+<meta name="supported-color-schemes" content="dark" />
 <title>${esc(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(preheader)}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE};font-family:${FONT};">
     <tr><td align="center" style="padding:28px 12px 36px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${CARD};border:1px solid ${LINE};border-radius:14px;overflow:hidden;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:${CARD};border:1px solid ${LINE};border-radius:2px;overflow:hidden;">
         <tr>
-          <td style="padding:26px 28px 22px;background:${INK};">
+          <td style="padding:22px 28px 0;background:${CARD};">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:1px;">
-                  SMASH<span style="color:${LIME};">.</span>
+                <td style="font-family:${DISPLAY};font-size:40px;line-height:1;font-weight:700;color:${INK};letter-spacing:2px;text-transform:uppercase;">
+                  Smash<span style="color:${LIME};">.</span>
                 </td>
-                <td align="right" style="font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${LIME};">${esc(editionLabel)}</td>
+                <td align="right" style="font-family:${DISPLAY};font-size:15px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${LIME};padding-bottom:4px;">${esc(editionLabel)}</td>
               </tr>
             </table>
-            <div style="font-size:13px;color:#aab2bf;padding-top:8px;">${esc(prettyDate)} &nbsp;&middot;&nbsp; every call locked before play, graded in public</div>
+            <!-- Masthead rule: heavy line under the wordmark, then the
+                 dateline below it. The device that says "publication" rather
+                 than "product notification". -->
+            <div style="height:3px;background:${LIME};font-size:0;line-height:0;margin-top:10px;">&nbsp;</div>
+            <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};padding:10px 0 20px;">
+              ${esc(prettyDate)} &nbsp;&middot;&nbsp; every call locked before play, graded in public
+            </div>
           </td>
         </tr>
         ${blocks.join('')}
@@ -838,7 +879,7 @@ async function main() {
           </td>
         </tr>
         <tr>
-          <td style="padding:20px 28px 26px;background:#f7f9fb;border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
+          <td style="padding:20px 28px 26px;background:${PAGE};border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
             You are getting this because you asked for the Smash digest.
             Not betting advice: the season number is a benchmark (today's engines replayed
             over the season), and only the forward test rows were locked before play.

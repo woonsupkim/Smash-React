@@ -32,8 +32,8 @@ ON COURT TODAY
 WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
 
 COUNTDOWN: 11 days to the US Open (hard)
-  ATP: Jannik Sinner 51%, Carlos Alcaraz 23%, Alexander Zverev 9%
-  WTA: Aryna Sabalenka 42%, Elena Rybakina 22%, Iga Swiatek 12%
+  ATP: Jannik Sinner 54%, Carlos Alcaraz 24%, Alexander Zverev 8%
+  WTA: Aryna Sabalenka 40%, Elena Rybakina 22%, Iga Swiatek 12%
   https://smash-react.vercel.app/draw
 
 SEASON: 67% (3,371 of 5,018)
