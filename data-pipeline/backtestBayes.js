@@ -38,7 +38,7 @@
 const fs = require('fs');
 const path = require('path');
 const { buildBayesTimeline, winProbBayes, DEFAULT_PARAMS } = require('./bayesCore');
-const { buildTimeline, predElo, expected, setEloParams } = require('./eloCore');
+const { buildTimeline, predElo, expected, setEloParams, eloParamsFor } = require('./eloCore');
 const { logLoss, accuracy, fitCalib, applyCalib } = require('./lib/evalCore');
 const { loadUniverse, gradedRows } = require('./lib/matchUniverse');
 const ENGINE = require('../src/engineConfig.json');
@@ -67,8 +67,12 @@ function orient(graded, m, pWinner) {
   return { p: p1IsWinner ? pWinner : 1 - pWinner, won: p1IsWinner ? 1 : 0, surface: m.surface, date: m.date };
 }
 
-function runElo(timeline, graded, params) {
-  setEloParams(params || ENGINE.elo || {});
+function runElo(timeline, graded, params, tour) {
+  // No params = "as shipped", which must resolve the way PRODUCTION resolves:
+  // per tour via eloParamsFor. Spreading engineConfig.elo directly would read
+  // only the shared root values and silently ignore the per-tour blocks, so a
+  // retune would appear to change nothing.
+  setEloParams(params || eloParamsFor(tour));
   const out = new Map();
   buildTimeline(timeline, (m, rw, rl) => {
     if (!graded.has(m.id)) return;
@@ -190,7 +194,7 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
   console.log(`  ${'universe / config'.padEnd(46)} ${'holdout LL'.padStart(10)} ${'acc'.padStart(7)}`);
   let eloBest = null;
   for (const [vname, timeline] of variants) {
-    const shipped = runElo(timeline, graded, ENGINE.elo || {});
+    const shipped = runElo(timeline, graded, null, tour);
     const shipA = fitCalib(pickRows(shipped, isTrain));
     const shipTest = pickRows(shipped, isTest).map((r) => ({ p: applyCalib(r.p, shipA), won: r.won }));
     console.log(`  ${`${vname}: as shipped +Platt(a=${shipA})`.padEnd(46)} ${fmt(logLoss(shipTest)).padStart(10)} ${pct(accuracy(shipTest)).padStart(7)}`);
@@ -198,7 +202,7 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
     let bestHere = null;
     const ranked = [];
     for (const c of configs(ELO_GRID)) {
-      const preds = runElo(timeline, graded, c);
+      const preds = runElo(timeline, graded, c, tour);
       const train = pickRows(preds, isTrain);
       const a = fitCalib(train);
       const fitLL = logLoss(train.map((r) => ({ p: applyCalib(r.p, a), won: r.won })));
