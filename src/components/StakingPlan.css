@@ -69,7 +69,11 @@
 .stake-best-v.pos { color: var(--accent-brand, #c8ff2e); }
 .stake-best-v.neg { color: var(--accent-danger, #ff6b6b); }
 .stake-best-l { font-size: 0.78rem; line-height: 1.4; color: var(--text-3, #7c8698); }
-.stake-best-l em { font-style: normal; opacity: 0.85; }
+/* No opacity here on purpose. Dimming --text-3 to 0.85 over this panel's
+   accent-tinted background lands at 4.37:1, just under WCAG AA's 4.5:1, and
+   the axe gate in e2e/a11y.spec.js rightly fails it. Full strength is 5.42:1;
+   the parenthetical is already secondary by size and wording without help. */
+.stake-best-l em { font-style: normal; }
 .stake-best-why {
   font-size: 0.8rem;
   line-height: 1.6;
