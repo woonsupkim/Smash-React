@@ -48,7 +48,13 @@
   background: color-mix(in srgb, var(--accent-brand, #c8ff2e) 12%, transparent);
 }
 .stake-best-opt-l { font-size: 0.83rem; font-weight: 700; color: var(--text-1, #fff); }
-.stake-best-opt-v { font-size: 0.74rem; color: var(--text-3, #7c8698); font-variant-numeric: tabular-nums; }
+/* --text-2, not --text-3. The selected option's accent tint composites over
+   the panel's OWN accent tint, so the two compound to #3c461d - much lighter
+   than the panel's #292d1d - and --text-3 lands at 3.86:1 there against 5.42:1
+   on the panel itself. Nested tints are the trap: checking a colour against
+   the page background is not the same as checking it against what it actually
+   renders on. --text-2 gives 6.63:1 selected and 9.30:1 unselected. */
+.stake-best-opt-v { font-size: 0.74rem; color: var(--text-2, #ced2d8); font-variant-numeric: tabular-nums; }
 .stake-best-opt:focus-visible { outline: 2px solid var(--accent-brand, #c8ff2e); outline-offset: 2px; }
 .stake-best-grid {
   display: grid;
@@ -69,7 +75,12 @@
 .stake-best-v.pos { color: var(--accent-brand, #c8ff2e); }
 .stake-best-v.neg { color: var(--accent-danger, #ff6b6b); }
 .stake-best-l { font-size: 0.78rem; line-height: 1.4; color: var(--text-3, #7c8698); }
-.stake-best-l em { font-style: normal; opacity: 0.85; }
+/* No opacity here on purpose. Dimming --text-3 to 0.85 over this panel's
+   accent tint lands at 4.37:1, under WCAG AA's 4.5:1, and the axe gate in
+   e2e/a11y.spec.js rightly fails it. Full strength is 5.42:1, and the
+   parenthetical is already secondary by size and wording. Same mistake the
+   -EV row comment below records - dimming muted text is how contrast dies. */
+.stake-best-l em { font-style: normal; }
 .stake-best-why {
   font-size: 0.8rem;
   line-height: 1.6;
