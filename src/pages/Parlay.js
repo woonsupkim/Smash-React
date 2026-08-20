@@ -60,6 +60,9 @@ export default function Parlay() {
     "Stack today's locked picks and see the real combined probability, our fair price, and what the market offers."
   );
   const [all, setAll] = useState(null);
+  // The graded rows from the same file, kept so the staking plan can size
+  // itself on the model's MEASURED accuracy rather than its stated confidence.
+  const [graded, setGraded] = useState([]);
   // Today's whole card is in by default and you take legs OUT. Tracking the
   // REMOVALS rather than the selections is what makes that work: a set that
   // starts empty already means "everything", so the plan below is priced and
@@ -69,10 +72,14 @@ export default function Parlay() {
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
-      .then((d) => setAll((d.predictions || [])
-        .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
-        .sort((a, b) => b.favProb - a.favProb)))
-      .catch(() => setAll([]));
+      .then((d) => {
+        const rows = d.predictions || [];
+        setGraded(rows.filter((p) => p.status === 'won' || p.status === 'lost'));
+        setAll(rows
+          .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
+          .sort((a, b) => b.favProb - a.favProb));
+      })
+      .catch(() => { setAll([]); setGraded([]); });
   }, []);
 
   const legs = useMemo(
@@ -197,7 +204,7 @@ export default function Parlay() {
               you picked in one place then priced in another. The staking plan
               already names every leg, so it took over the dropping too. */}
           {legs.length > 0 && (
-            <StakingPlan legs={legs} onDrop={(l) => toggle(legKey(l))} />
+            <StakingPlan legs={legs} graded={graded} onDrop={(l) => toggle(legKey(l))} />
           )}
         </>
       )}
