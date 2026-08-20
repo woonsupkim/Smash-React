@@ -6,9 +6,22 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '3.7';
+export const MODEL_VERSION = '4.0';
 
 export const CHANGELOG = [
+  {
+    version: '4.0',
+    date: '2026-08-20',
+    type: 'model',
+    title: 'The Form engine learns at the right speed - and the two tours disagree',
+    notes: [
+      'THE FORM ENGINE WAS LEARNING AT THE WRONG SPEED. An Elo rating moves by a step that shrinks as a player plays more matches: big swings early, then stability once we know someone. That step had never actually been tuned - it was a reasonable default carried since the engine shipped. It is now fitted per tour on eleven years of match history (about 30,000 matches each), chosen on the first half of this season and scored on the second half it had never seen. On those held-out matches ATP accuracy went from 68.2% to 73.8% and log loss from 0.6171 to 0.5617; WTA went from 69.5% to 74.7% and 0.5892 to 0.5491.',
+      'THE TWO TOURS WANT DIFFERENT THINGS, which is why this is set per tour now instead of one number for both. The ATP keeps a decaying step: early results move a rating hard, and an established player\'s rating settles down. The WTA prefers a small CONSTANT step - its results carry enough churn that a veteran\'s rating should stay as responsive as a newcomer\'s. The search range was deliberately wide, and widened again when the WTA\'s answer came back sitting on the edge of the first attempt; a setting pinned to the boundary of what you tried is not an answer.',
+      'WHAT DID NOT CHANGE: the overall-versus-surface mix inside each rating, and the dominance weighting from 3.0. Letting the mix move as well was worth 0.0008 log loss on the ATP and nothing on the WTA - under the bar for touching a number the live pages also read. Nothing is computed differently in your browser; this changes how the ratings are BUILT, not how they are used.',
+      'THE FIRST VERSION OF THIS TEST WAS WRONG, and it is worth saying how. Run on a single season of matches between ranked players, it got the size of the gain roughly right but the reason wrong: it concluded both tours wanted a constant step. Given eleven years of history, only the WTA does. A related suspicion - that rating opponents from outside our roster was polluting the ratings - did not survive either, with the two tours flatly contradicting each other on it. Verdicts drawn from a narrow slice of tennis do not transfer, which is why this one was rerun on all of it.',
+      'A BAYESIAN RIVAL WAS BUILT, AND BENCHED. It tracks how confident it is about each player rather than just their rating, so someone back from six months out is treated as a genuine unknown instead of as their old self. Measured against the retuned Form engine it fails to clear our promotion bar on a single surface, so it stays in the lab. Reported here because a rejected engine is a result too.',
+    ],
+  },
   {
     version: '3.9',
     date: '2026-08-06',

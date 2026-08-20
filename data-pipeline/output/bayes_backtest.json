@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-08-20T12:41:32.152Z",
+  "holdoutMonths": 6,
+  "tours": {
+    "atp": {
+      "universe": {
+        "source": "track",
+        "n": 2674,
+        "from": "2026-01-02T00:00:00.000Z",
+        "to": "2026-08-14T05:00:00.000Z",
+        "rosterShare": 1
+      },
+      "graded": 2674,
+      "cutoff": "2026-04-30T00:00:00.000Z",
+      "elo": {
+        "full_fixedRho": {
+          "rho": 0.5,
+          "marginK": true,
+          "kScale": 250,
+          "kExp": 0,
+          "a": 0.56,
+          "logLoss": 0.5315246057460342,
+          "accuracy": 0.7623906705539358
+        },
+        "full": {
+          "shipped": {
+            "a": 0.44,
+            "logLoss": 0.542230568516135,
+            "accuracy": 0.7587463556851312
+          },
+          "tuned": {
+            "rho": 0.5,
+            "marginK": true,
+            "kScale": 250,
+            "kExp": 0,
+            "a": 0.56,
+            "logLoss": 0.5315246057460342,
+            "accuracy": 0.7623906705539358
+          }
+        }
+      },
+      "bayes": {
+        "defaults": {
+          "a": 0.8,
+          "logLoss": 0.5322545249154007,
+          "accuracy": 0.760932944606414
+        },
+        "tuned": {
+          "v0": 62500,
+          "v0Surf": 32400,
+          "drift": 8876.712328767124,
+          "driftSurf": 2739.72602739726,
+          "marginK": true,
+          "rankPrior": 0,
+          "a": 0.8,
+          "logLoss": 0.5322545249154007,
+          "accuracy": 0.760932944606414
+        },
+        "noSurfaceOffsets": {
+          "logLoss": 0.5547274415530707,
+          "accuracy": 0.7463556851311953
+        }
+      },
+      "verdict": {
+        "eloRetuneConfirmed": false,
+        "eloGain": {
+          "logLoss": 0.01070596277010083,
+          "accuracy": 0.0036443148688046767
+        },
+        "surfaces": [
+          {
+            "s": "hard",
+            "n": 268,
+            "bayesLL": 0.5371041317751885,
+            "bayesAcc": 0.7761194029850746,
+            "eloLL": 0.5265689339664337,
+            "eloAcc": 0.7686567164179104,
+            "verdict": "elo/tie"
+          },
+          {
+            "s": "clay",
+            "n": 751,
+            "bayesLL": 0.5001212380270531,
+            "bayesAcc": 0.7816245006657789,
+            "eloLL": 0.5035910214290007,
+            "eloAcc": 0.7922769640479361,
+            "verdict": "elo/tie"
+          },
+          {
+            "s": "grass",
+            "n": 353,
+            "bayesLL": 0.5969355555520172,
+            "bayesAcc": 0.7053824362606232,
+            "eloLL": 0.5947150925987921,
+            "eloAcc": 0.6940509915014165,
+            "verdict": "elo/tie"
+          }
+        ]
+      }
+    }
+  }
+}

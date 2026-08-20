@@ -70,8 +70,10 @@ jobs:
       # The core is dependency-free, so the unit tests run before (and without)
       # an install - if the filter's math is broken there is no point burning
       # minutes on a sweep.
-      - name: Unit-test the Bayesian filter
-        run: node --test data-pipeline/bayesCore.test.js
+      # Explicit globs, not the directory: `node --test data-pipeline/` treats
+      # the pipeline's plain scripts as test files and tries to execute them.
+      - name: Unit-test the rating cores
+        run: node --test data-pipeline/*.test.js data-pipeline/lib/*.test.js
 
       - name: Backtest both rating models
         run: |

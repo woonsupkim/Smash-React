@@ -30,11 +30,32 @@ const kFactor = (n) => PARAMS.kScale / Math.pow(n + 5, PARAMS.kExp);
 // defaults, which are the historical hardcoded values).
 const DEFAULT_PARAMS = (() => {
   const base = { rho: 0.5, marginK: false, kScale: 250, kExp: 0.4 };
-  try { return { ...base, ...require('../src/engineConfig.json').elo }; }
-  catch { return base; }
+  try {
+    // Per-tour blocks are overrides, not shared defaults - keep them out of
+    // the base params so PARAMS never carries an `atp`/`wta` object around.
+    const { atp, wta, ...root } = require('../src/engineConfig.json').elo || {};
+    return { ...base, ...root };
+  } catch { return base; }
 })();
 let PARAMS = { ...DEFAULT_PARAMS };
 function setEloParams(p) { PARAMS = { ...DEFAULT_PARAMS, ...p }; }
+
+/**
+ * Elo hyperparameters for one tour: engineConfig.elo.<tour> layered over the
+ * shared root values. The K-factor schedule is genuinely tour-specific - the
+ * WTA's results carry more upset churn and reward a flatter, smaller K than
+ * the ATP does - while rho and marginK are shared, which matters because rho
+ * is the one Elo parameter the CLIENT also reads (src/engines.js eloProb).
+ *
+ * Callers must apply this before replaying a tour's timeline; a process that
+ * replays both tours has to switch between them (see computeElo.js).
+ */
+function eloParamsFor(tour) {
+  try {
+    const cfg = require('../src/engineConfig.json').elo || {};
+    return { ...DEFAULT_PARAMS, ...(cfg[tour] || {}) };
+  } catch { return { ...DEFAULT_PARAMS }; }
+}
 
 // Dominance multiplier from set counts (null-safe: no sets info -> 1).
 function marginMult(setsW, setsL, bestOf) {
@@ -111,4 +132,4 @@ function parseSets(result, winnerIsP1) {
   return winnerIsP1 ? { setsW: s1, setsL: s2 } : { setsW: s2, setsL: s1 };
 }
 
-module.exports = { BASE, expected, kFactor, newRating, predElo, winProbElo, buildTimeline, setEloParams, parseSets, DEFAULT_PARAMS };
+module.exports = { BASE, expected, kFactor, newRating, predElo, winProbElo, buildTimeline, setEloParams, eloParamsFor, parseSets, DEFAULT_PARAMS };

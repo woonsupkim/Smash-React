@@ -23,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { emptyAgg, accumulateMatch, deriveProbabilities, deriveTourAverages } = require('./lib/probabilities');
-const { buildTimeline, predElo, expected, parseSets } = require('./eloCore');
+const { buildTimeline, predElo, expected, parseSets, setEloParams, eloParamsFor } = require('./eloCore');
 const { matchProb } = require('./lib/analyticProb');
 const ENGINE = require('../src/engineConfig.json');
 
@@ -124,6 +124,10 @@ function buildTour(tour, seasonStart, windowStart) {
   }
   const caseIds = new Set(cases.map((c) => String(c.m.id)));
   const preElo = new Map();
+  // Per-tour K-factor schedule - the prior-window Elo must be replayed with
+  // the same parameters the live ratings use, or the tuner would fit the
+  // blend against an Elo column the production pipeline never produces.
+  setEloParams(eloParamsFor(tour));
   buildTimeline([...timeline.values()], (mm, rw, rl) => {
     if (caseIds.has(mm.id)) preElo.set(mm.id, { winnerId: mm.winnerId, we: predElo(rw, mm.surface), le: predElo(rl, mm.surface) });
   });
