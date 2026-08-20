@@ -181,6 +181,70 @@ const kellyFraction = (p, o) => {
   const f = (p * o - 1) / (o - 1);
   return f > 0 ? f : 0;
 };
+const clampP = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// The model's stated probability re-expressed at its measured reliability.
+const adjustProb = (p, lambda = 1) =>
+  (lambda === 1 ? p : clampP(0.5 + lambda * (p - 0.5), 0.001, 0.999));
+
+// How far the stated confidence is borne out, measured on the graded forward
+// record and shrunk toward 1 by sample size.
+function reliability(graded, minSample = 60) {
+  const rows = (graded || []).filter(
+    (r) => typeof r.favProb === 'number' && (r.status === 'won' || r.status === 'lost')
+  );
+  const n = rows.length;
+  if (!n) return { n: 0, lambda: 1, accuracy: null, stated: null, trusted: false };
+  const accuracy = rows.filter((r) => r.correct).length / n;
+  const stated = rows.reduce((t, r) => t + r.favProb, 0) / n;
+  const raw = stated > 0.5 + 1e-6 ? (accuracy - 0.5) / (stated - 0.5) : 1;
+  const w = n / (n + minSample);
+  return { n, accuracy, stated, lambda: clampP(1 + w * (raw - 1), 0.5, 1.5), trusted: n >= minSample };
+}
+
+// The flat-stake spread the builder recommends: an equal stake on as much of
+// the card as can still cover itself. Taken best-price-first and kept while
+// the portfolio's expected return covers the whole stake, which with equal
+// stakes is a test on the AVERAGE - so a short price rides along when the
+// rest of the card carries it.
+function spreadPlan(bets, budget, lambda = 1) {
+  const adj = (bets || [])
+    .map((b) => ({ ...b, p: adjustProb(b.p, lambda) }))
+    .filter((b) => b.o > 1 && b.p > 0);
+  const ranked = [...adj].sort((a, b) => (b.p * b.o) - (a.p * a.o));
+  let take = 0, sum = 0;
+  for (let i = 0; i < ranked.length; i++) {
+    const next = sum + ranked[i].p * ranked[i].o;
+    if (next < i + 1 - 1e-12) break;
+    sum = next;
+    take = i + 1;
+  }
+  const chosen = ranked.slice(0, take);
+  const perMatch = take > 0 ? (Number(budget) || 0) / take : 0;
+  const staked = perMatch * take;
+  const expWinners = chosen.reduce((t, b) => t + b.p, 0);
+  const expReturn = chosen.reduce((t, b) => t + perMatch * b.p * b.o, 0);
+
+  // Chance of finishing ahead, by enumerating every outcome. The card is
+  // small enough that exact beats approximate.
+  let pAhead = null;
+  if (take > 0 && take <= 16) {
+    let acc = 0;
+    for (let mask = 0; mask < (1 << take); mask++) {
+      let prob = 1, pl = 0;
+      for (let i = 0; i < take; i++) {
+        const win = (mask >> i) & 1;
+        prob *= win ? chosen[i].p : 1 - chosen[i].p;
+        pl += win ? perMatch * (chosen[i].o - 1) : -perMatch;
+      }
+      if (pl > 1e-9) acc += prob;
+    }
+    pAhead = acc;
+  }
+  return {
+    rows: chosen, count: take, perMatch, staked, expWinners, expReturn, pAhead,
+    coversStake: take > 0 && expReturn >= staked - 1e-9,
+  };
+}
 
 // What yesterday's suggested plan would actually have returned. Runs the
 // recommender over the calls that carried a price, then settles every stake at
@@ -678,15 +742,89 @@ async function main() {
       txtLines.push('');
     }
 
-    // Staking plan.
-    blocks.push(section(`
-      ${kicker('The money question')}
-      ${h2('What we would actually stake')}
-      ${p('A probability is half an answer. The builder takes today\'s card, prices every call against the odds you are actually offered, and spreads a budget so the expected return covers what you put in. Not match by match, but across the plan as a whole: a short price can ride along if the rest of the card carries it.')}
-      ${p('Fair warning, it is a killjoy. It will usually tell you to stake less than you hoped, and some days it will tell you to stake nothing at all. That is the feature, not a bug.')}
-      <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size today\'s slip')}</div>
-    `));
-    txtLines.push(`THE MONEY QUESTION - what we would actually stake: ${SITE}/parlay`, '');
+    // Staking plan: the ACTUAL recommendation for today's card, not a
+    // description of the tool that makes it. Same maths the builder runs,
+    // mirrored above and pinned by digestStaking.test.js.
+    const PLAN_BUDGET = 100;
+    const rel = reliability(graded);
+    const planBets = card
+      .map((pr) => {
+        const favIsP1 = pr.favorite === pr.p1;
+        const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+        return { pr, key: pr.id, p: pr.favProb, o: o > 1 ? o : 0 };
+      })
+      .filter((b) => b.o > 1 && b.p > 0);
+    const todayPlan = planBets.length ? spreadPlan(planBets, PLAN_BUDGET, rel.lambda) : null;
+
+    if (todayPlan && todayPlan.count > 0) {
+      // Whole amounts read better without the cents in prose ($100, not
+      // $100.00); anything with a fraction keeps them.
+      const money2 = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
+      const stakeRows = todayPlan.rows.map((b) => {
+        const pr = b.pr;
+        const favIsP1 = pr.favorite === pr.p1;
+        const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
+        const dogName = favIsP1 ? pr.name2 : pr.name1;
+        return `
+        <tr>
+          <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
+            <strong style="color:${INK};">${esc(lastName(favName))}</strong>
+            <span style="color:${MUTED};"> over ${esc(lastName(dogName))}</span>
+            <span style="color:${MUTED};font-size:12px;"> &nbsp;${esc((pr.tour || '').toUpperCase())}</span>
+          </td>
+          <td align="right" style="padding:9px 0 9px 8px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:13px;color:${MUTED};white-space:nowrap;">
+            ${Math.round(pr.favProb * 100)}% @ ${b.o.toFixed(2)}
+          </td>
+          <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:14px;font-weight:700;color:${INK};white-space:nowrap;">
+            ${money2(todayPlan.perMatch)}
+          </td>
+        </tr>`;
+      }).join('');
+
+      const skipped = planBets.length - todayPlan.count;
+      const unpriced = card.length - planBets.length;
+
+      blocks.push(section(`
+        ${kicker('The money question')}
+        ${h2('What we would actually stake')}
+        ${p(`Here is the whole plan for today, on a hypothetical ${money2(PLAN_BUDGET)}. Equal money on ${plural(todayPlan.count, 'match', 'matches')}, because spreading is how a ${rel.accuracy != null ? Math.round(rel.accuracy * 100) : 69}% hit rate actually shows up instead of riding on one result.`)}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 14px;">
+          ${stakeRows}
+          <tr>
+            <td style="padding:11px 0 0;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Total staked</td>
+            <td></td>
+            <td align="right" style="padding:11px 0 0 14px;font-family:${MONO};font-size:15px;font-weight:700;color:${INK};">${money2(todayPlan.staked)}</td>
+          </tr>
+        </table>
+        <div style="padding:14px 16px;background:${PANEL};border-left:3px solid ${LIME};">
+          <p style="margin:0;font-size:14px;line-height:1.6;color:${BODY};">
+            <strong style="color:${INK};">We expect ${todayPlan.expWinners.toFixed(1)} of those ${plural(todayPlan.count, 'call', 'calls')} to land, returning ${money2(todayPlan.expReturn)}.</strong>
+            ${todayPlan.coversStake
+    ? `That covers the ${money2(todayPlan.staked)} going out, which is the whole test a plan has to pass here.`
+    : `That is short of the ${money2(todayPlan.staked)} going out, so today the honest answer is to sit it out.`}
+            ${todayPlan.pAhead != null ? ` Odds of actually finishing ahead: ${Math.round(todayPlan.pAhead * 100)}%.` : ''}
+          </p>
+        </div>
+        ${p(`${skipped > 0 ? `${plural(skipped, 'call', 'calls')} on the card got nothing: the price was too short to carry ${skipped === 1 ? 'it' : 'them'}. ` : ''}${unpriced > 0 ? `${plural(unpriced, 'more had', 'more had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
+        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Build your own slip')}</div>
+      `));
+      txtLines.push(`THE MONEY QUESTION - what we would actually stake (hypothetical $${PLAN_BUDGET}):`);
+      for (const b of todayPlan.rows) {
+        const favIsP1 = b.pr.favorite === b.pr.p1;
+        const favName = b.pr.favName || (favIsP1 ? b.pr.name1 : b.pr.name2);
+        txtLines.push(`  ${money2(todayPlan.perMatch)} on ${lastName(favName)} (${Math.round(b.pr.favProb * 100)}% @ ${b.o.toFixed(2)})`);
+      }
+      txtLines.push(`  Total ${money2(todayPlan.staked)}; we expect ${todayPlan.expWinners.toFixed(1)} to land, returning ${money2(todayPlan.expReturn)}${todayPlan.pAhead != null ? `; ${Math.round(todayPlan.pAhead * 100)}% chance of finishing ahead` : ''}`);
+      txtLines.push(`  ${SITE}/parlay`, '');
+    } else {
+      blocks.push(section(`
+        ${kicker('The money question')}
+        ${h2('What we would actually stake')}
+        ${p(`Nothing, today. ${planBets.length ? 'Every price on the card is short enough that even spread across all of them, the expected return does not cover the stake.' : 'Nothing on the card carried a market price when we locked it, so there is no edge to size against.'} Some days that is the answer, and pretending otherwise is how people lose money.`)}
+        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Check it against your own book')}</div>
+      `));
+      txtLines.push(`THE MONEY QUESTION: nothing worth staking today. ${SITE}/parlay`, '');
+    }
 
     // Countdown, with the crest and who the simulation currently likes. The
     // favourites are the promo: a number next to a face is an argument you
