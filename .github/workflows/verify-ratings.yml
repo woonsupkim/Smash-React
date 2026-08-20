@@ -1,0 +1,109 @@
+name: Verify rating models
+
+# On-demand verification of the two rating models (production Elo in
+# data-pipeline/eloCore.js, Bayesian filter in data-pipeline/bayesCore.js)
+# against the FULL raw match cache.
+#
+# Why this exists as a workflow rather than a local script: data-pipeline/raw
+# is gitignored, so the multi-season timeline the production Elo actually
+# trains on only exists inside the Actions cache written by refresh-data.yml.
+# Run locally and the harness silently falls back to the committed one-season
+# track record - a universe narrow enough that its verdicts do not transfer.
+# The harness prints which universe it got; this job makes it the real one.
+#
+# Reports only. Nothing here edits engineConfig.json or opens a PR: promoting
+# a rating change stays a human decision reviewed against the printed verdict,
+# same rule as the frontier bench in retune-weights.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      holdout_months:
+        description: 'Months of most-recent data held out of every sweep'
+        required: false
+        default: '6'
+      quick:
+        description: 'Tiny grids (smoke test the harness, not the models)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-ratings
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # Same restore pattern as retune-weights.yml: prefix-match the newest
+      # cache written by the refresh workflow. read-only - this job must never
+      # write the cache, or a backtest could poison the production timeline.
+      - name: Restore raw match-history cache
+        id: raw
+        uses: actions/cache/restore@v4
+        with:
+          path: data-pipeline/raw
+          key: raw-matches-${{ github.run_id }}
+          restore-keys: |
+            raw-matches-
+
+      - name: Report which universe we got
+        run: |
+          if [ -f data-pipeline/raw/player-id-map.json ]; then
+            echo "RAW cache restored - full multi-season timeline available."
+            echo "UNIVERSE=raw" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No raw match cache restored. The harness will fall back to the committed one-season track record, whose verdicts do NOT transfer to production. Run refresh-data.yml first to populate the cache."
+            echo "UNIVERSE=track" >> "$GITHUB_ENV"
+          fi
+
+      # The core is dependency-free, so the unit tests run before (and without)
+      # an install - if the filter's math is broken there is no point burning
+      # minutes on a sweep.
+      - name: Unit-test the Bayesian filter
+        run: node --test data-pipeline/bayesCore.test.js
+
+      - name: Backtest both rating models
+        run: |
+          FLAGS="--holdout-months=${{ inputs.holdout_months }}"
+          if [ "${{ inputs.quick }}" = "true" ]; then FLAGS="$FLAGS --quick"; fi
+          node data-pipeline/backtestBayes.js $FLAGS | tee ratings.log
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "## Rating-model verification"
+            echo
+            echo "Training universe: **${UNIVERSE}**"
+            if [ "$UNIVERSE" = "track" ]; then
+              echo
+              echo "> :warning: Fallback universe (one season, roster-vs-roster only). Treat every verdict below as indicative, not decisive."
+            fi
+            echo
+            echo '```'
+            cat ratings.log 2>/dev/null || echo "(no output - the backtest step failed)"
+            echo '```'
+            echo
+            echo "Promotion rule: a challenger earns a production slot only by beating the incumbent on BOTH log loss and accuracy in a cell, with a coherent story. Reviewed by a human; this job only produces the evidence."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the backtest artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ratings-backtest
+          path: |
+            data-pipeline/output/bayes_backtest.json
+            ratings.log
+          if-no-files-found: warn

@@ -42,6 +42,7 @@
     "fetch-profiles": "node data-pipeline/fetchProfiles.js",
     "compute-matchup-facts": "node data-pipeline/computeMatchupFacts.js",
     "backtest": "node data-pipeline/backtest.js",
+    "backtest-bayes": "node data-pipeline/backtestBayes.js",
     "refresh-stats": "npm run fetch-stats && npm run fetch-surfaces && npm run fetch-profiles && npm run compute-stats && npm run compute-matchup-facts && npm run build-stats-csv",
     "build-roster-women": "node data-pipeline/buildRoster.js 50 wta",
     "fetch-images-women": "node data-pipeline/fetchImages.js wta",

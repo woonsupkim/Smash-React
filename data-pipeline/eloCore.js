@@ -13,8 +13,10 @@ const BASE = 1500;
 const expected = (ra, rb) => 1 / (1 + Math.pow(10, (rb - ra) / 400));
 
 // K-factor shrinks as a player accumulates matches - big early swings,
-// stable once established.
-const kFactor = (n) => 250 / Math.pow(n + 5, 0.4);
+// stable once established. The schedule is tunable (kScale/kExp below) so a
+// fair-fight backtest can give Elo the same hyperparameter budget as a rival
+// model; the defaults reproduce the long-standing 250/(n+5)^0.4 exactly.
+const kFactor = (n) => PARAMS.kScale / Math.pow(n + 5, PARAMS.kExp);
 
 // Tunable Elo hyperparameters, validated by walk-forward log-loss in
 // data-pipeline/experiments.js. rho = weight on the OVERALL rating in the
@@ -23,9 +25,13 @@ const kFactor = (n) => 250 / Math.pow(n + 5, 0.4);
 // deciding-set escape (mult runs 0.7 for the narrowest win to 1.3 for a
 // sweep). Values live in src/engineConfig.json (elo section) so the app,
 // the pipeline, and the tuner all read the same ones.
+// kScale/kExp are the K-factor schedule, split out only so backtests can
+// sweep them; production reads whatever engineConfig.elo says (or these
+// defaults, which are the historical hardcoded values).
 const DEFAULT_PARAMS = (() => {
-  try { return { rho: 0.5, marginK: false, ...require('../src/engineConfig.json').elo }; }
-  catch { return { rho: 0.5, marginK: false }; }
+  const base = { rho: 0.5, marginK: false, kScale: 250, kExp: 0.4 };
+  try { return { ...base, ...require('../src/engineConfig.json').elo }; }
+  catch { return base; }
 })();
 let PARAMS = { ...DEFAULT_PARAMS };
 function setEloParams(p) { PARAMS = { ...DEFAULT_PARAMS, ...p }; }
