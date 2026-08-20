@@ -8,10 +8,16 @@ HOW YESTERDAY LANDED: 2 of 4 (50%)
   If you had followed the plan: +$60.52 on a $100 bankroll (2/2 landed)
 
 ON COURT TODAY
+  [ Cincinnati - ATP ]
   Aliassime over Tiafoe - 72% - Cincinnati
     Call: https://smash-react.vercel.app/match/felix-auger-aliassime-vs-frances-tiafoe-181923
     Compare: https://smash-react.vercel.app/compare/atp/felix-auger-aliassime-vs-frances-tiafoe
     Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=auger&b=tiafo
+  Cobolli over Paul - 53% - Cincinnati
+    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-tommy-paul-181911
+    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-tommy-paul
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=paul
+  [ Cincinnati - WTA ]
   Sabalenka over Bejlek - 88% - Cincinnati
     Call: https://smash-react.vercel.app/match/sara-bejlek-vs-aryna-sabalenka-182373
     Compare: https://smash-react.vercel.app/compare/wta/sara-bejlek-vs-aryna-sabalenka
@@ -20,10 +26,6 @@ ON COURT TODAY
     Call: https://smash-react.vercel.app/match/jessica-pegula-vs-amanda-anisimova-182375
     Compare: https://smash-react.vercel.app/compare/wta/jessica-pegula-vs-amanda-anisimova
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=pegul&b=anisi
-  Cobolli over Paul - 53% - Cincinnati
-    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-tommy-paul-181911
-    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-tommy-paul
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=paul
   Rybakina over Swiatek - 60% - Cincinnati
     Call: https://smash-react.vercel.app/match/elena-rybakina-vs-iga-swiatek-182381
     Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-iga-swiatek

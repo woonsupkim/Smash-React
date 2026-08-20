@@ -57,27 +57,57 @@ const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(
 // The email wears the product's own skin. It used to be a light grey page
 // with a white 14px-rounded card, system UI type and pastel callouts, which
 // is the house style of every SaaS transactional template - and looked
-// nothing like the site it reports on. The app is near-black, sharp-cornered
-// (--radius-card is 4px), condensed-display and lime. So is this now.
+// nothing like the site it reports on.
 //
-// Sharp corners are also the more faithful choice in email: Outlook's Word
+// The fix was mostly NOT the background colour: it was the 14px radii, the
+// system font, the pastel fills, the pill buttons and the circular avatars.
+// Those are all palette-independent, so the editorial treatment holds in
+// either theme and DIGEST_THEME picks the surface.
+//
+// Default is LIGHT. Dark reads beautifully in a browser, but mail is the one
+// place you cannot control the surface: clients force light mode, quote the
+// message on a white background when it is replied to or forwarded, and print
+// it white. Light is the safer default; dark is one env var away.
+//
+// Sharp corners are the more faithful choice either way - Outlook's Word
 // engine drops border-radius entirely, so a 14px card was already square for
 // a large slice of readers while looking soft for everyone else.
-const PAGE = '#0b0d10';      // outside the card
-const CARD = '#111418';      // the card itself
-const PANEL = '#181c22';     // raised blocks inside it
-const INK = '#ffffff';       // headline text
-const BODY = '#c3c9d2';      // body copy
-const MUTED = '#8b93a0';     // labels, captions
-const LINE = '#262c34';      // hairlines
-const LINE_HI = '#39414d';   // hairlines that need to read as structure
-const BTN = '#c6ff1c';       // the lime IS the button now, not a dark chip
-const BTN_INK = '#0b0d10';
+const THEME = (process.env.DIGEST_THEME || 'light').toLowerCase() === 'dark' ? 'dark' : 'light';
+
+const THEMES = {
+  dark: {
+    PAGE: '#0b0d10', CARD: '#111418', PANEL: '#181c22',
+    INK: '#ffffff', BODY: '#c3c9d2', MUTED: '#8b93a0',
+    LINE: '#262c34', LINE_HI: '#39414d', TRACK: '#22272e',
+    // The lime is legible as text on near-black, so it can mark sections.
+    ACCENT_TEXT: '#c6ff1c',
+    WIN: '#7ddc4e', LOSS: '#ff6b5e',
+  },
+  light: {
+    PAGE: '#f1f2f4', CARD: '#ffffff', PANEL: '#f7f8fa',
+    // #6d7480 was 4.43:1 on the panel surface, just under AA. Captions sit on
+    // panels as often as on the card, so the darker grey is the one that has
+    // to pass: 4.75 on panel, 5.05 on card.
+    INK: '#0b0d10', BODY: '#3d444f', MUTED: '#696f7b',
+    LINE: '#e4e7ec', LINE_HI: '#c8ced7', TRACK: '#e9edf2',
+    // The lime is ~1.4:1 on white, so it cannot carry text here. It stays a
+    // FILL (rules, bars, buttons) and a deep green does the talking.
+    ACCENT_TEXT: '#1f7a3d',
+    WIN: '#157f4c', LOSS: '#c0392b',
+  },
+};
+const T = THEMES[THEME];
+const PAGE = T.PAGE, CARD = T.CARD, PANEL = T.PANEL;
+const INK = T.INK, BODY = T.BODY, MUTED = T.MUTED;
+const LINE = T.LINE, LINE_HI = T.LINE_HI, TRACK = T.TRACK;
+const WIN = T.WIN, LOSS = T.LOSS;
+// Brand lime. Always safe as a FILL behind dark text; only safe AS text on
+// the dark theme, which is what ACCENT_TEXT exists to keep straight.
 const LIME = '#c6ff1c';
-const LINK = '#c6ff1c';
-const WIN = '#7ddc4e';       // legible on dark, unlike the old #157f4c
-const LOSS = '#ff6b5e';
-const TRACK = '#22272e';
+const ACCENT_TEXT = T.ACCENT_TEXT;
+const BTN = LIME;
+const BTN_INK = '#0b0d10';
+const LINK = ACCENT_TEXT;
 
 // Two stacks. Headlines go condensed to echo Barlow Condensed from the app -
 // Arial Narrow ships on Windows and macOS, and the fallbacks degrade to a
@@ -241,7 +271,7 @@ const p = (html, extra = '') =>
 const kicker = (text) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;padding-bottom:8px;">
     <tr>
-      <td style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${LIME};font-weight:700;white-space:nowrap;padding:0 10px 8px 0;">${esc(text)}</td>
+      <td style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;white-space:nowrap;padding:0 10px 8px 0;">${esc(text)}</td>
       <td style="width:100%;padding:0 0 12px;"><div style="height:1px;background:${LINE_HI};font-size:0;line-height:0;">&nbsp;</div></td>
     </tr>
   </table>`;
@@ -255,6 +285,40 @@ const stat = (value, label, color = INK) =>
 
 // One upcoming match: two headshots, the call, a probability bar, a line of
 // read on the market, and the three ways into the app.
+// Today's card, grouped. A flat list forces the reader to re-read the event
+// and tour on every row; grouping states it once and lets the matches read as
+// an order of play. Events are ordered by their first match, ATP before WTA
+// inside an event, and matches by start time within that.
+function groupCard(rows) {
+  const groups = new Map();
+  for (const pr of rows) {
+    const key = `${pr.event || 'Other'}|${pr.tour || 'atp'}`;
+    if (!groups.has(key)) {
+      groups.set(key, { event: pr.event || 'Other', tour: pr.tour || 'atp', surface: pr.surface, rows: [] });
+    }
+    groups.get(key).rows.push(pr);
+  }
+  const at = (g) => Math.min(...g.rows.map((r) => new Date(r.date).getTime() || Infinity));
+  const out = [...groups.values()];
+  for (const g of out) g.rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return out.sort((a, b) => (at(a) - at(b)) || a.event.localeCompare(b.event) || a.tour.localeCompare(b.tour));
+}
+
+// Tour badge: a filled block, because a coloured word is not enough of a
+// signal when the two tours sit one above the other.
+const tourBadge = (tour) =>
+  `<span style="display:inline-block;background:${tour === 'wta' ? INK : LIME};color:${tour === 'wta' ? CARD : BTN_INK};font-family:${DISPLAY};font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;padding:3px 8px;border-radius:2px;">${tour === 'wta' ? 'WTA' : 'ATP'}</span>`;
+
+const groupHead = (g) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;padding-bottom:6px;">
+    <tr>
+      <td width="52" style="padding:0 10px 10px 0;vertical-align:middle;">${tourBadge(g.tour)}</td>
+      <td style="padding:0 0 10px;vertical-align:middle;font-family:${DISPLAY};font-size:22px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:${INK};">
+        ${esc(g.event)}<span style="color:${MUTED};font-size:15px;letter-spacing:1.4px;"> &nbsp;${esc(g.surface || '')}</span>
+      </td>
+    </tr>
+  </table>`;
+
 function matchCard(pr, upset) {
   const favIsP1 = pr.favorite === pr.p1;
   const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
@@ -278,7 +342,7 @@ function matchCard(pr, upset) {
   } else if (mkt != null) {
     const gap = Math.round((pr.favProb - mkt) * 100);
     if (gap >= 10) {
-      read = `We rate ${esc(lastName(favName))} ${gap} points higher than the bookmakers do, and calls in that band have come in about 69% of the time.`;
+      read = `We rate ${esc(lastName(favName))} ${gap} points higher than the bookmakers do. Calls in that band have landed 55% of the time against a market that gave them 44%.`;
     } else if (gap <= -8) {
       read = `The market is warmer on ${esc(lastName(favName))} than we are, pricing this nearer ${Math.round(mkt * 100)}%. We still take the same side, with less conviction than they have.`;
     } else if (prob <= 56) {
@@ -300,7 +364,7 @@ function matchCard(pr, upset) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-left:3px solid ${LIME};background:${PANEL};margin-bottom:14px;">
     <tr><td style="padding:18px 20px;">
       <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:12px;">
-        ${esc((pr.tour || '').toUpperCase())} &nbsp;&middot;&nbsp; ${esc(pr.event || '')} &nbsp;&middot;&nbsp; ${esc(pr.surface || '')} &nbsp;&middot;&nbsp; ${esc(timeLabel)}
+        ${esc(timeLabel)}
       </div>
       <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr>
@@ -327,6 +391,16 @@ function matchCard(pr, upset) {
 }
 
 // A graded result, with the face of whoever we backed.
+// Which side the bookmakers made favourite, from the prices we stamped before
+// play, and whether it won. Null when the match carried no price.
+function marketVerdict(m) {
+  const o1 = Number(m.lockOdd1 ?? m.od1), o2 = Number(m.lockOdd2 ?? m.od2);
+  if (!(o1 > 1) || !(o2 > 1) || o1 === o2) return null;
+  const favId = o1 < o2 ? m.p1 : m.p2;           // shorter price = their favourite
+  const favName = o1 < o2 ? m.name1 : m.name2;
+  return { favId, favName, right: favId === m.winner, agreed: favId === pickFavorite(m) };
+}
+
 function resultRow(m) {
   const hit = !!pickCorrect(m);
   const fav = pickFavorite(m);
@@ -337,6 +411,15 @@ function resultRow(m) {
   const raw = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
   const prob = Math.round((favIsP1 ? raw : 1 - raw) * 100);
   const photo = mirrorPhoto(m.tour, fav);
+  const mv = marketVerdict(m);
+  // The interesting column. Agreeing with the market and both being right
+  // proves nothing; the rows worth reading are the ones where we split.
+  const marketCell = mv
+    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">${mv.agreed ? 'Market agreed' : 'Market split'}</div>
+       <div style="font-size:13px;line-height:1.5;color:${mv.right ? WIN : LOSS};font-weight:700;padding-top:3px;white-space:nowrap;">
+         ${esc(lastName(mv.favName))} ${mv.right ? 'won' : 'lost'}
+       </div>`
+    : `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">No price</div>`;
   return `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid ${LINE};">
     <tr>
@@ -351,6 +434,7 @@ function resultRow(m) {
           ${hit ? 'Landed' : `Missed, ${esc(lastName(winner))} won`}${m.score ? `<span style="color:${MUTED};font-weight:400;"> &nbsp;${esc(m.score)}</span>` : ''}
         </div>
       </td>
+      <td align="right" valign="top" style="padding:12px 0 12px 14px;">${marketCell}</td>
     </tr>
   </table>`;
 }
@@ -574,11 +658,14 @@ async function main() {
         ${kicker(todays.length ? 'On court today' : 'Next up')}
         ${h2(`${plural(card.length, 'match', 'matches')}, already locked`)}
         ${p(intro)}
-        ${shown.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')}
+        ${groupCard(shown).map((g) => groupHead(g) + g.rows.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')).join('')}
         ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
       `));
       txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
-      for (const pr of shown) {
+      const txtRows = groupCard(shown).flatMap((g) => [{ head: `${g.event} - ${g.tour.toUpperCase()}` }, ...g.rows]);
+      for (const item of txtRows) {
+        if (item.head) { txtLines.push(`  [ ${item.head} ]`); continue; }
+        const pr = item;
         const favIsP1 = pr.favorite === pr.p1;
         txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}% - ${pr.event}`);
         txtLines.push(`    Call: ${matchUrl(pr)}`);
@@ -844,8 +931,8 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="color-scheme" content="dark" />
-<meta name="supported-color-schemes" content="dark" />
+<meta name="color-scheme" content="${THEME}" />
+<meta name="supported-color-schemes" content="${THEME}" />
 <title>${esc(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%;">
