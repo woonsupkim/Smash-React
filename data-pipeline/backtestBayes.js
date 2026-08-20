@@ -196,12 +196,28 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
     console.log(`  ${`${vname}: as shipped +Platt(a=${shipA})`.padEnd(46)} ${fmt(logLoss(shipTest)).padStart(10)} ${pct(accuracy(shipTest)).padStart(7)}`);
 
     let bestHere = null;
+    const ranked = [];
     for (const c of configs(ELO_GRID)) {
       const preds = runElo(timeline, graded, c);
       const train = pickRows(preds, isTrain);
       const a = fitCalib(train);
       const fitLL = logLoss(train.map((r) => ({ p: applyCalib(r.p, a), won: r.won })));
-      if (!bestHere || fitLL < bestHere.fitLL) bestHere = { c, a, fitLL, preds, variant: vname, timeline };
+      const cand = { c, a, fitLL, preds, variant: vname, timeline };
+      ranked.push(cand);
+      if (!bestHere || fitLL < bestHere.fitLL) bestHere = cand;
+    }
+    // Also report the best config that leaves rho at whatever engineConfig
+    // ships. rho is the only Elo parameter the CLIENT also reads
+    // (src/engines.js eloProb), and it is currently a single global value, so
+    // a tuned rho that differs per tour would turn a pipeline-only retune
+    // into a client change. Knowing what rho is worth decides whether that
+    // is a cost worth paying.
+    const shippedRho = (ENGINE.elo || {}).rho ?? 0.5;
+    const bestFixedRho = ranked.filter((r) => r.c.rho === shippedRho).sort((a, b) => a.fitLL - b.fitLL)[0];
+    if (bestFixedRho) {
+      const t = pickRows(bestFixedRho.preds, isTest).map((r) => ({ p: applyCalib(r.p, bestFixedRho.a), won: r.won }));
+      console.log(`  ${`${vname}: TUNED, rho pinned ${shippedRho} ${eloLabel(bestFixedRho.c)}`.padEnd(46)} ${fmt(logLoss(t)).padStart(10)} ${pct(accuracy(t)).padStart(7)}`);
+      tourOut.elo[`${vname}_fixedRho`] = { ...bestFixedRho.c, a: bestFixedRho.a, logLoss: logLoss(t), accuracy: accuracy(t) };
     }
     const test = pickRows(bestHere.preds, isTest).map((r) => ({ p: applyCalib(r.p, bestHere.a), won: r.won }));
     bestHere.testLL = logLoss(test); bestHere.testAcc = accuracy(test);
