@@ -305,3 +305,6 @@
   .stake-pick em { font-size: 0.68rem; }
   .stake-out-grid { gap: 1rem 1.4rem; }
 }
+
+/* "7.0 of 10" - the count is the number, the denominator is context. */
+.stake-best-of { font-size: 0.62em; font-weight: 700; color: var(--text-2, #ced2d8); }

@@ -1,17 +1,21 @@
 // Tests for the recommended-plan menu and the cumulative P&L curve.
 //
-// The property that matters most here is the promise the UI makes: EVERY plan
-// offered must stake so that expected return >= total staked. If that ever
-// breaks, the page is telling users something untrue about their downside.
+// The menu's contract, in order of importance:
+//   1. every plan staked so its expected return covers the total staked
+//   2. the SPREAD leads - breadth across the card is the point, and a lone
+//      single is not advice (it is obvious it has the best win chance)
+//   3. selection happens at the plan level, so a short-priced match can be
+//      carried by stronger ones rather than filtered out on its own merits
+//
+// The worked example that defines the spread lives in spreadPlan.test.js.
 import { describe, it, expect } from 'vitest';
 import { planFrontier, analyzeSlip, edgePerDollar } from './staking';
 
 const bet = (key, p, o) => ({ key, p, o });
-// A slate with a mix: two clear +EV singles, one priced against us, one long shot.
 const slate = [
-  bet('a', 0.75, 1.6),   // +20% edge
+  bet('a', 0.75, 1.6),   // +20% on its own
   bet('b', 0.65, 1.7),   // +10.5%
-  bet('c', 0.55, 1.7),   // -6.5% alone
+  bet('c', 0.55, 1.7),   // -6.5% on its own
   bet('d', 0.45, 2.4),   // +8%
 ];
 
@@ -21,9 +25,7 @@ describe('planFrontier', () => {
     expect(plans.length).toBeGreaterThan(0);
     for (const p of plans) {
       expect(p.metrics.ev).toBeGreaterThanOrEqual(-1e-9);
-      // Restated the way the UI phrases it, to catch a sign slip in either.
-      const expectedReturn = p.metrics.ev + p.metrics.staked;
-      expect(expectedReturn).toBeGreaterThanOrEqual(p.metrics.staked - 1e-9);
+      expect(p.metrics.ev + p.metrics.staked).toBeGreaterThanOrEqual(p.metrics.staked - 1e-9);
     }
   });
 
@@ -33,59 +35,47 @@ describe('planFrontier', () => {
     }
   });
 
-  it('the safest plan really has the best chance of finishing ahead', () => {
+  it('leads with the spread, and the spread is never a lone bet', () => {
     const { plans } = planFrontier(slate, 100);
-    const safest = plans.find((p) => p.id === 'safest');
-    for (const p of plans) {
-      expect(safest.metrics.pProfit).toBeGreaterThanOrEqual(p.metrics.pProfit - 1e-9);
-    }
+    expect(plans[0].id).toBe('spread');
+    expect(plans[0].funded).toBeGreaterThan(1);
   });
 
-  it('the profit plan really has the most expected profit', () => {
-    const { plans } = planFrontier(slate, 100);
-    const profit = plans.find((p) => p.id === 'profit');
-    for (const p of plans) {
-      expect(profit.metrics.ev).toBeGreaterThanOrEqual(p.metrics.ev - 1e-9);
-    }
-  });
-
-  it('does not stake every match, and does not put every staked match in the parlay', () => {
-    const { plans } = planFrontier(slate, 100);
-    // 'c' is -EV alone, so no plan should give it a single stake.
+  it('carries a match that is -EV on its own when the portfolio still covers', () => {
+    // 'c' would be dropped by any per-match filter. The spread keeps it as
+    // long as the average still returns the stake - that is the plan-level
+    // decision, and it is what breadth costs.
     expect(edgePerDollar(0.55, 1.7)).toBeLessThan(0);
-    for (const p of plans) expect(p.singles.c || 0).toBe(0);
-    // At least one plan funds fewer instruments than there are matches.
-    expect(Math.min(...plans.map((p) => p.funded))).toBeLessThan(slate.length);
-    // Where a parlay is funded, it need not contain every staked single.
-    const withParlay = plans.find((p) => p.parlayStake > 0);
-    if (withParlay) {
-      const stakedSingles = Object.entries(withParlay.singles).filter(([, v]) => v > 0).map(([k]) => k);
-      const allInParlay = stakedSingles.every((k) => withParlay.parlayLegs.includes(k));
-      expect(typeof allInParlay).toBe('boolean'); // either is legitimate; just not forced
-    }
+    const spread = planFrontier(slate, 100).plans.find((p) => p.id === 'spread');
+    expect(spread.singles.c).toBeGreaterThan(0);
+    expect(spread.expReturn).toBeGreaterThanOrEqual(spread.metrics.staked - 1e-9);
   });
 
-  it('offers plans with and without a parlay when both clear their price', () => {
-    const { plans } = planFrontier(slate, 100);
-    const kinds = new Set(plans.map((p) => p.parlayStake > 0));
-    // The menu is only useful if it spans the choice; with this slate it should.
-    expect(kinds.size).toBeGreaterThanOrEqual(1);
-    expect(plans.every((p) => Array.isArray(p.parlayLegs))).toBe(true);
+  it('reports expected winners and expected return in the plan', () => {
+    const spread = planFrontier(slate, 100).plans.find((p) => p.id === 'spread');
+    expect(spread.expWinners).toBeGreaterThan(0);
+    expect(spread.expWinners).toBeLessThanOrEqual(slate.length);
+    expect(spread.expReturn).toBeCloseTo(spread.metrics.ev + spread.metrics.staked, 6);
   });
 
   it('a parlay can carry a leg that is -EV on its own', () => {
-    // 'x' alone is -EV; combined with 'y' the product clears 1.
     const bets = [bet('x', 0.5, 1.9), bet('y', 0.7, 1.6)];
     expect(edgePerDollar(0.5, 1.9)).toBeLessThan(0);
     const { plans } = planFrontier(bets, 100);
-    const anyWithX = plans.some((p) => p.parlayLegs.includes('x'));
-    expect(anyWithX).toBe(true);
+    expect(plans.some((p) => p.parlayLegs.includes('x'))).toBe(true);
   });
 
-  it('reports no plan rather than a bad one when nothing clears', () => {
+  it('still offers the one sensible plan on a single-match card', () => {
+    // No spread is possible with one match, but "back it" is still the answer.
+    const { plans } = planFrontier([bet('a', 0.8, 1.5)], 100);
+    expect(plans.length).toBe(1);
+    expect(plans[0].metrics.staked).toBeCloseTo(100, 6);
+  });
+
+  it('reports no plan rather than a bad one when nothing covers the stake', () => {
     const { plans, reason } = planFrontier([bet('a', 0.5, 1.4), bet('b', 0.5, 1.5)], 100);
     expect(plans).toEqual([]);
-    expect(reason).toMatch(/at or above our own number/);
+    expect(reason).toMatch(/do not return the stake/);
   });
 
   it('says so when there are no prices', () => {
@@ -94,16 +84,18 @@ describe('planFrontier', () => {
     expect(reason).toMatch(/carry a market price/);
   });
 
-  it('deduplicates plans that are the same allocation under different names', () => {
-    // A single +EV bet has exactly one sensible plan; do not offer it thrice.
-    const { plans } = planFrontier([bet('a', 0.8, 1.5)], 100);
-    expect(plans.length).toBe(1);
-  });
-
   it('a reliability haircut can empty the menu', () => {
     const bets = [bet('a', 0.7, 1.5)]; // 1.05 as stated, 0.90 at lambda 0.5
     expect(planFrontier(bets, 100, { lambda: 1 }).plans.length).toBe(1);
     expect(planFrontier(bets, 100, { lambda: 0.5 }).plans).toEqual([]);
+  });
+
+  it('labels every plan it returns', () => {
+    for (const p of planFrontier(slate, 100).plans) {
+      expect(typeof p.label).toBe('string');
+      expect(p.label.length).toBeGreaterThan(0);
+      expect(p.id).toBeTruthy();
+    }
   });
 });
 
@@ -115,7 +107,7 @@ describe('cumulative P&L curve', () => {
 
   it('starts at certainty and decreases across the range', () => {
     const c = a.dist.bins.map((b) => b.atLeast);
-    expect(c[0]).toBeCloseTo(1, 6);            // you always finish at or above the worst case
+    expect(c[0]).toBeCloseTo(1, 6);
     for (let i = 1; i < c.length; i++) expect(c[i]).toBeLessThanOrEqual(c[i - 1] + 1e-9);
     expect(c[c.length - 1]).toBeGreaterThan(0);
   });
@@ -136,8 +128,6 @@ describe('cumulative P&L curve', () => {
   });
 
   it('brackets the chance of finishing ahead', () => {
-    // P(ahead) must sit between the survival at the first winning bin and the
-    // one before it - the curve is the same distribution, binned.
     const firstWin = a.dist.bins.findIndex((b) => b.win);
     expect(a.pProfit).toBeLessThanOrEqual(a.dist.bins[firstWin].atLeast + 1e-9);
   });

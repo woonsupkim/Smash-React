@@ -153,6 +153,15 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     setParlayStake(+(r.parlay || 0).toFixed(2));
   };
 
+  // The plan stated the way the question is actually asked: this many of the
+  // matches we back are expected to land, and their return is what has to
+  // cover the whole stake. Derived from whatever is on the table, so it holds
+  // for a custom plan too.
+  const backedSingles = bets.filter((b) => (b.single || 0) > 0);
+  const expWinners = backedSingles.reduce((s, b) => s + b.p, 0);
+  const stakedCount = backedSingles.length;
+  const expReturn = analysis.ev + analysis.staked;
+
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
 
@@ -269,6 +278,10 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
             </div>
             <div className="stake-best-metric">
+              <span className="stake-best-v">{expWinners.toFixed(1)}<span className="stake-best-of"> of {stakedCount}</span></span>
+              <span className="stake-best-l">matches we expect to land</span>
+            </div>
+            <div className="stake-best-metric">
               <span className="stake-best-v">{money(analysis.best)}</span>
               <span className="stake-best-l">if everything lands</span>
             </div>
@@ -284,26 +297,34 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
             </button>
           )}
           <p className="stake-best-why">
+            {/* The cover test leads: it is the whole promise of the page, and
+                it reads in the terms the question gets asked in. */}
+            <strong>
+              {money(analysis.staked)} spread over {stakedCount} match{stakedCount === 1 ? '' : 'es'};
+              we expect {expWinners.toFixed(1)} of them to land, returning {money(expReturn)} -
+              {expReturn >= analysis.staked - 1e-9 ? ' which covers the stake.' : ' which falls short of the stake.'}
+            </strong>{' '}
+            Every plan above is built to pass that test, and it is a <em>whole-plan</em> test: with
+            the stake spread evenly it falls on the average, so a match priced slightly against us
+            can be carried by stronger ones instead of being dropped on its own merits. Breadth is
+            the point - it is how the model&apos;s hit rate shows up, rather than everything riding
+            on one result.
+            {' '}It is an <em>expectation</em>, though, not a floor: read the chance of finishing
+            ahead next to it, because a plan can be worth making and still lose more often than it
+            wins. The worst case above is real and it happens.
+            {' '}
             {rel.trusted ? (
               <>
-                Sized on the model's <strong>measured</strong> accuracy, not its stated confidence:{' '}
-                {pct(rel.accuracy)} of {rel.n} graded calls landed while claiming {pct(rel.stated)},
-                so every probability below is re-expressed at that reliability before any money is
-                allocated.
+                Sized on the model's <strong>measured</strong> accuracy rather than its stated
+                confidence: {pct(rel.accuracy)} of {rel.n} graded calls landed while claiming{' '}
+                {pct(rel.stated)}, so every probability is re-expressed at that reliability first.
               </>
             ) : (
               <>
                 Only {rel.n} graded calls so far - too few to correct the model's stated confidence,
                 so probabilities are used as they come.
               </>
-            )}{' '}
-            Every plan above stakes so its <strong>expected return covers the total staked</strong> -
-            singles are only funded when they beat their price, and the parlay is searched across
-            every combination of today&apos;s matches, so a pick that cannot pay its way alone can
-            still earn a place inside one that does.
-            {' '}That is an <em>expectation</em>, though, not a floor: read the chance of finishing
-            ahead next to it, because a plan can be worth making and still lose more often than it
-            wins. The worst case above is real and it happens.
+            )}
             {frontier.plans.length > 1 && (
               <>
                 {' '}The plans differ only in how that trade is struck - more expected profit costs
