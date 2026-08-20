@@ -109,6 +109,142 @@ export function analyzeSlip(bets, parlay) {
   };
 }
 
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * How far to trust the model's stated confidence, MEASURED on its own graded
+ * forward record instead of assumed.
+ *
+ * The engine states a probability per pick; the record says how often picks
+ * like that actually land. `lambda` maps one onto the other through the same
+ * shrink-toward-50% form the engine's own Platt layer uses:
+ * p' = 0.5 + lambda*(p - 0.5). lambda = 1 means stated confidence is exactly
+ * borne out, below 1 means the model is overconfident, above 1 underconfident.
+ *
+ * lambda is then shrunk toward 1 by sample size. A season's forward record is
+ * ~160 graded picks, which is not remotely enough to justify a large
+ * correction, and over-correcting on noise is worse than not correcting at
+ * all. `trusted` says whether the sample cleared minSample at all.
+ *
+ * @param {{favProb:number,status:string,correct:boolean}[]} graded
+ */
+export function reliability(graded, { minSample = 60 } = {}) {
+  const rows = (graded || []).filter(
+    (r) => typeof r.favProb === 'number' && (r.status === 'won' || r.status === 'lost')
+  );
+  const n = rows.length;
+  if (!n) return { n: 0, lambda: 1, accuracy: null, stated: null, trusted: false };
+  const accuracy = rows.filter((r) => r.correct).length / n;
+  const stated = rows.reduce((s, r) => s + r.favProb, 0) / n;
+  const raw = stated > 0.5 + 1e-6 ? (accuracy - 0.5) / (stated - 0.5) : 1;
+  const w = n / (n + minSample); // 0 with no data, -> 1 as the record grows
+  return {
+    n,
+    accuracy,
+    stated,
+    lambdaRaw: raw,
+    lambda: clamp(1 + w * (raw - 1), 0.5, 1.5),
+    trusted: n >= minSample,
+  };
+}
+
+// The model's stated probability, re-expressed at its measured reliability.
+export const adjustProb = (p, lambda = 1) =>
+  (lambda === 1 ? p : clamp(0.5 + lambda * (p - 0.5), 0.001, 0.999));
+
+/**
+ * The best plan for a budget, decided AT THE PLAN LEVEL.
+ *
+ * Why this is not just "stake the +EV picks": expected value is additive, so
+ * no reshuffling of stakes can rescue a slip whose every instrument is -EV.
+ * But which INSTRUMENTS exist is a plan-level choice, and a parlay's edge is
+ * the product of its legs' - so a parlay can be +EV while individual legs are
+ * not. A leg priced at 0.95 of our number drags a single below break-even yet
+ * still pays its way inside a combination that clears it (1.10 * 0.95 > 1).
+ * Filtering legs on their own edge first, as a per-matchup pass does, throws
+ * those away and reports "nothing is worth staking" on a slate that has a
+ * perfectly good plan in it.
+ *
+ * So: adjust every probability to the model's measured reliability, search
+ * leg combinations for the best +EV parlay, then fund every +EV instrument by
+ * Kelly fraction. Kelly is the objective because the break-even constraint
+ * alone does not pick a plan - maximising EV would put the whole budget on the
+ * single largest edge - and growth-optimal sizing is what balances that edge
+ * against the chance of losing the lot. Funding only +EV instruments makes
+ * plan EV >= 0 automatic, so the constraint is satisfied by construction
+ * rather than by assertion.
+ *
+ * @param {{key:string,p:number,o:number}[]} bets
+ * @param {number} budget
+ */
+export function bestPlan(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12, allowParlay = true } = {}) {
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+  const priced = adj.filter((b) => b.o > 1 && b.p > 0);
+
+  // Singles worth funding on their own.
+  const instruments = [];
+  for (const b of priced) {
+    const f = kellyFraction(b.p, b.o);
+    if (f > 0) instruments.push({ type: 'single', key: b.key, f });
+  }
+
+  // Best +EV parlay over any combination - including legs that are -EV alone.
+  // Ranked by Kelly fraction, since that is what decides the money it gets.
+  const pool = [...priced]
+    .sort((a, b) => (edgePerDollar(b.p, b.o) || 0) - (edgePerDollar(a.p, a.o) || 0))
+    .slice(0, maxSearch);
+  let bestCombo = null;
+  const walk = (start, chosen, p, o) => {
+    if (chosen.length >= 2) {
+      const edge = p * o - 1;
+      const f = kellyFraction(p, o);
+      if (edge > 0 && f > 0 && (!bestCombo || f > bestCombo.f)) {
+        bestCombo = { legs: chosen.slice(), p, o, edge, f, n: chosen.length };
+      }
+    }
+    if (chosen.length >= maxParlayLegs) return;
+    for (let i = start; i < pool.length; i++) {
+      chosen.push(pool[i].key);
+      walk(i + 1, chosen, p * pool[i].p, o * pool[i].o);
+      chosen.pop();
+    }
+  };
+  if (allowParlay && maxParlayLegs >= 2) walk(0, [], 1, 1);
+  if (bestCombo) instruments.push({ type: 'parlay', f: bestCombo.f });
+
+  const totalF = instruments.reduce((s, c) => s + c.f, 0);
+  const singles = {};
+  let parlayStake = 0;
+  if (totalF > 0 && budget > 0) {
+    for (const c of instruments) {
+      const stake = (budget * c.f) / totalF;
+      if (c.type === 'single') singles[c.key] = stake;
+      else parlayStake = stake;
+    }
+  }
+
+  const parlayLegs = parlayStake > 0 && bestCombo ? bestCombo.legs : [];
+  const staked = adj.map((b) => ({ ...b, single: singles[b.key] || 0 }));
+  const metrics = analyzeSlip(staked, { stake: parlayStake, legs: parlayLegs });
+
+  return {
+    feasible: totalF > 0,
+    lambda,
+    singles,
+    parlayLegs,
+    parlayStake,
+    combo: bestCombo,
+    metrics,
+    // How many legs carry money at all - the honest size of the plan, which is
+    // usually smaller than the slip the user selected.
+    funded: Object.values(singles).filter((s) => s > 0).length + (parlayStake > 0 ? 1 : 0),
+    reason: totalF > 0 ? null
+      : (priced.length
+        ? 'every price on this slate is at or above our own number, alone and in every combination'
+        : 'none of these carry a market price'),
+  };
+}
+
 // Recommend a break-even-or-better split of a budget. Only +EV bets get money
 // (any allocation among +EV bets is EV >= 0), split in proportion to each
 // bet's Kelly fraction so stake follows edge strength. The parlay is included

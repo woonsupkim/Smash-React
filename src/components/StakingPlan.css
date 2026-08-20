@@ -6,6 +6,83 @@
   background: var(--surface-1, rgba(255, 255, 255, 0.02));
   padding: 1.25rem 1.35rem 1.1rem;
 }
+/* ── The best plan ──────────────────────────────────────────────────────
+   Leads the panel because it is the answer people arrive for: what to do,
+   how likely it is to work, what it is worth, and how it can go wrong. The
+   accent border is the only one in the panel, so the plan reads as the
+   conclusion and everything below it as the working. */
+.stake-best {
+  border: 1px solid var(--accent-brand, #c8ff2e);
+  border-radius: var(--radius, 16px);
+  background: color-mix(in srgb, var(--accent-brand, #c8ff2e) 7%, transparent);
+  padding: 1.05rem 1.15rem;
+  margin-bottom: 1.35rem;
+}
+.stake-best-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+.stake-best-sub { font-size: 0.82rem; color: var(--text-3, #7c8698); }
+/* The two ends of the break-even family. Presented as a choice because it is
+   a risk decision, not a maths one. */
+.stake-best-pick { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.stake-best-opt {
+  flex: 1 1 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.16));
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.stake-best-opt:hover { border-color: var(--text-3, #7c8698); }
+.stake-best-opt.on {
+  border-color: var(--accent-brand, #c8ff2e);
+  background: color-mix(in srgb, var(--accent-brand, #c8ff2e) 12%, transparent);
+}
+.stake-best-opt-l { font-size: 0.83rem; font-weight: 700; color: var(--text-1, #fff); }
+.stake-best-opt-v { font-size: 0.74rem; color: var(--text-3, #7c8698); font-variant-numeric: tabular-nums; }
+.stake-best-opt:focus-visible { outline: 2px solid var(--accent-brand, #c8ff2e); outline-offset: 2px; }
+.stake-best-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 1rem 1.4rem;
+}
+.stake-best-metric { display: flex; flex-direction: column; gap: 0.25rem; }
+.stake-best-v {
+  font-family: var(--font-display, inherit);
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-1, #fff);
+  font-variant-numeric: tabular-nums;
+}
+/* The first metric is the headline: your chance of finishing ahead. */
+.stake-best-metric:first-child .stake-best-v { color: var(--accent-brand, #c8ff2e); font-size: 2.3rem; }
+.stake-best-v.pos { color: var(--accent-brand, #c8ff2e); }
+.stake-best-v.neg { color: var(--accent-danger, #ff6b6b); }
+.stake-best-l { font-size: 0.78rem; line-height: 1.4; color: var(--text-3, #7c8698); }
+.stake-best-l em { font-style: normal; opacity: 0.85; }
+.stake-best-why {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-2, #aab3c2);
+  margin: 0.95rem 0 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+}
+@media (max-width: 480px) {
+  .stake-best-metric:first-child .stake-best-v { font-size: 2rem; }
+  .stake-best-v { font-size: 1.6rem; }
+}
+
 /* ── Selection value: what the combination is worth, before staking ─────
    Merged in from the Parlay page's old side panel so one block answers both
    "is this worth backing" and "how much". */
