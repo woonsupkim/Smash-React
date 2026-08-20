@@ -1,39 +1,39 @@
 SMASH DAILY - Thursday, August 20
 
-Yesterday we called 2 of 4 winners, and we own the ones that got away. Today there are 5 matches on the card at Cincinnati, every pick locked and public before a ball is struck.
+2 from 4 yesterday. Half right, which means half wrong, and both halves are below. 5 more are locked for today at Cincinnati, every one of them public before a ball is struck.
 
-HOW YESTERDAY LANDED: 2 of 4 (50%)
-  The one that stings: Katie Volynets (we said 52%) (Katie Boulter won)
-  Bookmakers on the same 3 priced matches: us 67%, them 67%
-  If you had followed the plan: +$60.52 on a $100 bankroll (2/2 landed)
+YESTERDAY, GRADED: 2 from 4 (50%)
+  The one that stings: Katie Volynets (we said 52%) - Katie Boulter had other ideas
+  Meanwhile, at the bookmakers - same 3 priced matches: us 67%, them 67%
+  If you had actually followed along: +$60.52 on a $100 bankroll (2/2 landed)
 
 ON COURT TODAY
   [ Cincinnati - ATP ]
-  Aliassime over Tiafoe - 72% - Cincinnati
+  Aliassime over Tiafoe - 72%
     Call: https://smash-react.vercel.app/match/felix-auger-aliassime-vs-frances-tiafoe-181923
     Compare: https://smash-react.vercel.app/compare/atp/felix-auger-aliassime-vs-frances-tiafoe
     Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=auger&b=tiafo
-  Cobolli over Paul - 53% - Cincinnati
+  Cobolli over Paul - 53%
     Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-tommy-paul-181911
     Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-tommy-paul
     Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=paul
   [ Cincinnati - WTA ]
-  Sabalenka over Bejlek - 88% - Cincinnati
+  Sabalenka over Bejlek - 88%
     Call: https://smash-react.vercel.app/match/sara-bejlek-vs-aryna-sabalenka-182373
     Compare: https://smash-react.vercel.app/compare/wta/sara-bejlek-vs-aryna-sabalenka
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bejle&b=sabal
-  Pegula over Anisimova - 66% - Cincinnati
+  Pegula over Anisimova - 66%
     Call: https://smash-react.vercel.app/match/jessica-pegula-vs-amanda-anisimova-182375
     Compare: https://smash-react.vercel.app/compare/wta/jessica-pegula-vs-amanda-anisimova
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=pegul&b=anisi
-  Rybakina over Swiatek - 60% - Cincinnati
+  Rybakina over Swiatek - 60%
     Call: https://smash-react.vercel.app/match/elena-rybakina-vs-iga-swiatek-182381
     Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-iga-swiatek
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rybak&b=swiat
 
-WHAT WE WOULD STAKE: https://smash-react.vercel.app/parlay
+THE MONEY QUESTION - what we would actually stake: https://smash-react.vercel.app/parlay
 
-COUNTDOWN: 11 days to the US Open (hard)
+COMING UP: 11 days to the US Open (hard)
   ATP: Jannik Sinner 54%, Carlos Alcaraz 24%, Alexander Zverev 8%
   WTA: Aryna Sabalenka 40%, Elena Rybakina 22%, Iga Swiatek 12%
   https://smash-react.vercel.app/draw

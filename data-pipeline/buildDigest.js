@@ -342,18 +342,18 @@ function matchCard(pr, upset) {
   } else if (mkt != null) {
     const gap = Math.round((pr.favProb - mkt) * 100);
     if (gap >= 10) {
-      read = `We rate ${esc(lastName(favName))} ${gap} points higher than the bookmakers do. Calls in that band have landed 55% of the time against a market that gave them 44%.`;
+      read = `We have ${esc(lastName(favName))} ${gap} points clear of where the bookmakers do. That gap has been our best zone: 55% winners against a market that gave those calls 44%.`;
     } else if (gap <= -8) {
-      read = `The market is warmer on ${esc(lastName(favName))} than we are, pricing this nearer ${Math.round(mkt * 100)}%. We still take the same side, with less conviction than they have.`;
+      read = `The market likes ${esc(lastName(favName))} rather more than we do, at ${Math.round(mkt * 100)}%. Same side, less swagger.`;
     } else if (prob <= 56) {
-      read = `Close to a coin toss, and we say so: ${prob}% is the honest number, not a headline.`;
+      read = `About as close to a coin toss as tennis gets. ${prob}% is the honest number, not a headline.`;
     } else {
-      read = `The bookmakers land in much the same place at ${Math.round(mkt * 100)}%, so there is no argument here, just a favourite.`;
+      read = `The book lands within a couple of points at ${Math.round(mkt * 100)}%. No argument here, just a favourite.`;
     }
   } else {
     read = prob >= 70
-      ? `A clear favourite on our numbers. No closing price was quoted when we locked it.`
-      : `Tight on our numbers, and unpriced at lock time, so there is no market to argue with.`;
+      ? `A clear favourite on our numbers, and nobody quoted a price when we locked it. Take it up with the bookmakers.`
+      : `Tight on our numbers and unpriced at lock time, so there is no market to argue with. Just the maths.`;
   }
 
   const face = (url, alt, dim) => (url
@@ -558,13 +558,16 @@ async function main() {
     // Lede: set the scene in prose before any numbers.
     const ledeBits = [];
     if (yday && yday.n) {
-      ledeBits.push(`Yesterday we called ${yday.correct} of ${yday.n} winners`);
+      const yPct = pct(yday.correct, yday.n);
+      ledeBits.push(`${yday.correct} from ${yday.n} yesterday.`);
       ledeBits.push(yday.correct === yday.n
-        ? ', a clean sweep.'
-        : pct(yday.correct, yday.n) >= 70 ? ', a good day.' : ', and we own the ones that got away.');
+        ? ' A clean sweep, and no, that is not the usual.'
+        : yPct >= 70 ? ' We will take that.'
+          : yPct >= 50 ? ' Half right, which means half wrong, and both halves are below.'
+            : ' Not our finest hour. It is all in the record anyway.');
     }
     if (card.length) {
-      ledeBits.push(` Today there ${card.length === 1 ? 'is' : 'are'} ${plural(card.length, 'match', 'matches')} on the card${events.length ? ` at ${events.join(' and ')}` : ''}, every pick locked and public before a ball is struck.`);
+      ledeBits.push(` ${plural(card.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck.`);
     }
     if (ledeBits.length) {
       blocks.push(section(p(ledeBits.join('').trim())));
@@ -587,11 +590,11 @@ async function main() {
         const usY = pct(pricedY.filter((m) => pickCorrect(m)).length, pricedY.length);
         const themY = pct(pricedY.filter((m) => m.oddCorrect).length, pricedY.length);
         const verdict = usY > themY
-          ? 'We were ahead of them.'
-          : usY === themY ? 'We finished level.' : 'They were ahead of us.';
+          ? 'We edged them.'
+          : usY === themY ? 'Honours even.' : 'They had our number.';
         vsMarket = `
           <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};background:${PANEL};">
-            ${kicker('The bookmakers, same matches')}
+            ${kicker('Meanwhile, at the bookmakers')}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
               <tr>
                 <td width="50%" style="padding-right:10px;vertical-align:top;">
@@ -607,10 +610,10 @@ async function main() {
               </tr>
             </table>
             <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
-              ${esc(verdict)} Across the ${pricedY.length} of yesterday's matches that carried a closing price. One day is a small sample, and we publish it whichever way it falls.
+              ${esc(verdict)} That is across the ${pricedY.length} of yesterday's matches that carried a price. One day is a tiny sample, and we print it whichever way it falls.
             </p>
           </div>`;
-        vsMarketTxt = `Bookmakers on the same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
+        vsMarketTxt = `Meanwhile, at the bookmakers - same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
       }
 
       // What the suggested plan would have returned, settled at real results.
@@ -622,28 +625,28 @@ async function main() {
         const money = `${up ? '+' : '-'}$${Math.abs(plan.profit).toFixed(2)}`;
         planBlock = `
           <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${up ? WIN : LOSS};">
-            ${kicker('If you had followed the plan')}
+            ${kicker('If you had actually followed along')}
             <div style="font-size:28px;font-weight:800;color:${up ? WIN : LOSS};line-height:1.1;">${money}</div>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
-              On a $${plan.budget} bankroll split across the ${plural(plan.n, 'call', 'calls')} that beat their price yesterday, ${plan.hits} of which landed.
-              Settled at the odds we stamped before play. One day proves nothing either way, which is exactly why the whole record is public.
+              A $${plan.budget} bankroll spread over the ${plural(plan.n, 'call', 'calls')} worth backing, ${plan.hits} of which landed, settled at the odds we stamped before play.
+              One good day proves nothing. Neither does one bad one, which is why you get all of them.
             </p>
           </div>`;
-        planTxt = `If you had followed the plan: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
+        planTxt = `If you had actually followed along: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
       }
 
       blocks.push(section(`
-        ${kicker('How yesterday landed')}
-        ${h2(`${yday.correct} of ${yday.n} winners called`)}
-        ${p(`That is ${ypct}% on the day, and every one of those calls was public before the match started. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} won it` : ''}. It goes in the record at full weight, like everything else.` : ''}`)}
+        ${kicker('Yesterday, graded')}
+        ${h2(`${yday.correct} from ${yday.n}`)}
+        ${p(`${ypct}% on the day, all of it public before anyone served. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: we had <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} had other ideas` : ''}. It counts exactly as much as the ones we got right.` : ''}`)}
         ${bar(ypct, ypct >= 50 ? WIN : LOSS)}
         ${ydayRows.length ? `<div style="padding-top:16px;">${ydayRows.map(resultRow).join('')}</div>` : ''}
         ${vsMarket}
         ${planBlock}
         <div style="padding-top:16px;">${textLink(`${SITE}/track-record`, 'Every call ever made, graded')}</div>
       `));
-      txtLines.push(`HOW YESTERDAY LANDED: ${yday.correct} of ${yday.n} (${ypct}%)`);
-      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` (${yday.worstMiss.winner} won)` : ''}`);
+      txtLines.push(`YESTERDAY, GRADED: ${yday.correct} from ${yday.n} (${ypct}%)`);
+      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` - ${yday.worstMiss.winner} had other ideas` : ''}`);
       if (vsMarketTxt) txtLines.push(`  ${vsMarketTxt}`);
       if (planTxt) txtLines.push(`  ${planTxt}`);
       txtLines.push('');
@@ -652,11 +655,11 @@ async function main() {
     // Today's card.
     if (shown.length) {
       const intro = splits.length
-        ? `We disagree with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your attention: agreeing with the favourite proves nothing.`
-        : 'We land close to the market on today\'s card, so these are about conviction rather than argument.';
+        ? `We are out of step with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your time. Agreeing with the favourite is not a take.`
+        : 'We land more or less where the market does today. No arguments, just conviction.';
       blocks.push(section(`
         ${kicker(todays.length ? 'On court today' : 'Next up')}
-        ${h2(`${plural(card.length, 'match', 'matches')}, already locked`)}
+        ${h2(`${plural(card.length, 'call', 'calls')}, no takebacks`)}
         ${p(intro)}
         ${groupCard(shown).map((g) => groupHead(g) + g.rows.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')).join('')}
         ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
@@ -667,7 +670,7 @@ async function main() {
         if (item.head) { txtLines.push(`  [ ${item.head} ]`); continue; }
         const pr = item;
         const favIsP1 = pr.favorite === pr.p1;
-        txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}% - ${pr.event}`);
+        txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}%`);
         txtLines.push(`    Call: ${matchUrl(pr)}`);
         txtLines.push(`    Compare: ${compareUrl(pr)}`);
         txtLines.push(`    Simulate: ${simUrl(pr)}`);
@@ -677,13 +680,13 @@ async function main() {
 
     // Staking plan.
     blocks.push(section(`
-      ${kicker('What we would stake')}
-      ${h2('The slip, sized honestly')}
-      ${p('A probability is only half an answer. The parlay builder takes today\'s calls, prices each one against the odds you are actually offered, and splits a budget across only the bets that beat their price. Anything the market has already sharpened past our number gets nothing.')}
-      ${p('It will tell you to stake less than you expected, and some days it will tell you to stake nothing at all. That is the point.')}
+      ${kicker('The money question')}
+      ${h2('What we would actually stake')}
+      ${p('A probability is half an answer. The builder takes today\'s card, prices every call against the odds you are actually offered, and spreads a budget so the expected return covers what you put in. Not match by match, but across the plan as a whole: a short price can ride along if the rest of the card carries it.')}
+      ${p('Fair warning, it is a killjoy. It will usually tell you to stake less than you hoped, and some days it will tell you to stake nothing at all. That is the feature, not a bug.')}
       <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size today\'s slip')}</div>
     `));
-    txtLines.push(`WHAT WE WOULD STAKE: ${SITE}/parlay`, '');
+    txtLines.push(`THE MONEY QUESTION - what we would actually stake: ${SITE}/parlay`, '');
 
     // Countdown, with the crest and who the simulation currently likes. The
     // favourites are the promo: a number next to a face is an argument you
@@ -721,7 +724,7 @@ async function main() {
         </div>`).join('');
 
       blocks.push(section(`
-        ${kicker('Countdown')}
+        ${kicker('Coming up')}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
             ${logo ? `<td width="72" style="padding-right:16px;vertical-align:middle;"><img src="${logo}" width="64" alt="${esc(slam.label)}" style="display:block;width:64px;height:auto;" /></td>` : ''}
@@ -735,7 +738,7 @@ async function main() {
         ${contenderTable}
         <div style="padding-top:18px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
       `));
-      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
+      txtLines.push(`COMING UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
       for (const { tour, top } of contenders) {
         txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%`).join(', ')}`);
       }
@@ -744,7 +747,7 @@ async function main() {
 
     if (season && season.n) {
       blocks.push(section(p(
-        `<span style="color:${MUTED};">For the record: ${season.acc}% of winners called across ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} matches this season, today's engines replayed over every one of them.</span>`
+        `<span style="color:${MUTED};">For the record: ${season.acc}% of winners called this season, ${season.correct.toLocaleString()} from ${season.n.toLocaleString()}, with today's engines replayed over every last one of them.</span>`
       )));
       txtLines.push(`SEASON: ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()})`, '');
     }
@@ -967,9 +970,9 @@ async function main() {
         </tr>
         <tr>
           <td style="padding:20px 28px 26px;background:${PAGE};border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
-            You are getting this because you asked for the Smash digest.
-            Not betting advice: the season number is a benchmark (today's engines replayed
-            over the season), and only the forward test rows were locked before play.
+            You are getting this because you asked for the Smash digest. Not betting advice, and
+            not a tip sheet: the season number is a benchmark (today's engines replayed over the
+            whole season) and only the forward-test rows were locked before play.
             <br /><a href="${SITE}" style="color:${MUTED};">${esc(SITE.replace(/^https?:\/\//, ''))}</a>
             &nbsp;&middot;&nbsp; %%UNSUB_HTML%%
           </td>
