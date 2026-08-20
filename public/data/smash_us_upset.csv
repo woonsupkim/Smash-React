@@ -8,7 +8,7 @@ demin,Alex De Minaur,Alex,De Minaur,6,2,0.56,0.88,0.30,0.52,0.38,0.08,AUS,27,21,
 fritz,Taylor Fritz,Taylor,Fritz,7,2,0.58,0.93,0.23,0.40,0.42,0.21,USA,28,24,11,7,3,1
 djoko,Novak Djokovic,Novak,Djokovic,8,2,0.66,0.91,0.31,0.49,0.43,0.15,SRB,39,7,2,8,2,0
 medve,Daniil Medvedev,Daniil,Medvedev,9,2,0.63,0.84,0.34,0.50,0.40,0.17,RUS,30,20,7,5,5,0
-cobol,Flavio Cobolli,Flavio,Cobolli,10,2,0.64,0.88,0.34,0.50,0.31,0.13,ITA,24,11,10,2,8,1
+cobol,Flavio Cobolli,Flavio,Cobolli,10,2,0.56,0.91,0.27,0.43,0.38,0.14,ITA,24,11,10,2,8,0
 bubli,Alexander Bublik,Alexander,Bublik,11,2,0.62,0.84,0.28,0.41,0.40,0.24,KAZ,29,20,11,6,4,0
 ruud,Casper Ruud,Casper,Ruud,12,2,0.59,0.73,0.31,0.51,0.51,0.08,NOR,27,10,9,5,5,1
 ruble,Andrey Rublev,Andrey,Rublev,13,2,0.54,0.84,0.43,0.23,0.36,0.20,RUS,28,10,9,5,5,1
@@ -18,7 +18,7 @@ darde,Luciano Darderi,Luciano,Darderi,16,2,0.61,0.89,0.24,0.45,0.38,0.09,ITA,24,
 tien,Learner Tien,Learner,Tien,17,2,0.67,0.87,0.32,0.51,0.36,0.04,USA,20,18,11,8,2,1
 mensi,Jakub Mensik,Jakub,Mensik,18,2,0.60,0.89,0.26,0.47,0.38,0.17,CZE,20,25,10,7,3,1
 tiafo,Frances Tiafoe,Frances,Tiafoe,19,2,0.55,0.93,0.21,0.56,0.38,0.13,USA,28,17,11,4,6,1
-vache,Valentin Vacherot,Valentin,Vacherot,20,2,0.63,0.87,0.36,0.35,0.33,0.14,MON,27,21,10,2,8,1
+vache,Valentin Vacherot,Valentin,Vacherot,20,2,0.66,0.89,0.29,0.42,0.40,0.19,MON,27,21,10,2,8,0
 cerun,Francisco Cerundolo,Francisco,Cerundolo,21,2,0.62,0.96,0.29,0.33,0.31,0.14,ARG,28,11,9,3,7,1
 khach,Karen Khachanov,Karen,Khachanov,22,2,0.47,0.93,0.21,0.45,0.38,0.15,RUS,30,9,13,2,8,1
 fokin,Alejandro Davidovich Fokina,Alejandro,Davidovich Fokina,23,2,0.67,0.92,0.28,0.47,0.39,0.09,ESP,27,9,7,6,4,0
