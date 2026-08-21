@@ -661,8 +661,13 @@ function resultRow(m) {
   const mv = marketVerdict(m);
   // The interesting column. Agreeing with the market and both being right
   // proves nothing; the rows worth reading are the ones where we split.
+  // "Market agreed" / "Market split" read two wrong ways at once: agreed with
+  // WHAT, and split between whom? The column only ever answers one question -
+  // who the bookmakers made favourite, and whether that player won - so it
+  // now just says that. Whether they were with us or against us is visible
+  // from the name itself, without a word of jargon.
   const marketCell = mv
-    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">${mv.agreed ? 'Market agreed' : 'Market split'}</div>
+    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Bookies' pick</div>
        <div style="font-size:13px;line-height:1.5;color:${mv.right ? WIN : LOSS};font-weight:700;padding-top:3px;white-space:nowrap;">
          ${esc(lastName(mv.favName))} ${mv.right ? 'won' : 'lost'}
        </div>`
