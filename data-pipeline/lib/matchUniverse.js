@@ -22,6 +22,12 @@ const { parseSets } = require('../eloCore');
 const { normSurface } = require('./espnParse');
 
 const SURFACES = new Set(['hard', 'clay', 'grass']);
+
+// Match identity: the pair plus the calendar day. The feed emits the same
+// fixture under several ids, so keying on the id lets one match into the
+// timeline up to six times - inflating the training data and, in the scoring
+// set, counting one result as several. Same rule buildTrackRecord uses.
+const identity = (a, b, date) => `${[String(a), String(b)].sort().join('_')}@${String(date).slice(0, 10)}`;
 const RAW_SKIP = /surfaces|map|profiles|names|budget|alert/;
 
 /**
@@ -48,7 +54,6 @@ function fromRaw(tour) {
     for (const m of (Array.isArray(j) ? j : (j.matches || j.data || []))) {
       if (m.result_type !== 'completed') continue;
       const id = String(m.id);
-      if (byId.has(id)) continue;
       const p1 = String(m.player1Id || ''), p2 = String(m.player2Id || '');
       const win = String(m.match_winner || '');
       if (!p1 || !p2 || p1 === p2) continue;
@@ -57,11 +62,14 @@ function fromRaw(tour) {
       if (!SURFACES.has(surface)) continue;
       if (!m.date || isNaN(new Date(m.date))) continue;
 
+      const ident = identity(p1, p2, m.date);
+      if (byId.has(ident)) continue;
       const winnerIsP1 = win === p1;
       const { setsW, setsL } = parseSets(m.result, winnerIsP1);
       const loser = winnerIsP1 ? p2 : p1;
-      byId.set(id, {
+      byId.set(ident, {
         id,
+        ident,
         date: m.date,
         winnerId: win,
         loserId: loser,
@@ -96,6 +104,7 @@ function fromTrackRecord(tour) {
     const { setsW, setsL } = parseSets(m.score, winnerIsP1);
     out.push({
       id: String(m.id),
+      ident: identity(m.p1, m.p2, m.date),
       date: m.date,
       winnerId: m.winner,
       loserId: winnerIsP1 ? m.p2 : m.p1,
@@ -109,7 +118,10 @@ function fromTrackRecord(tour) {
       row: m,
     });
   }
-  return out.sort((a, b) => new Date(a.date) - new Date(b.date));
+  const seen = new Set();
+  return out
+    .filter((r) => (seen.has(r.ident) ? false : seen.add(r.ident)))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
 /**
@@ -143,7 +155,16 @@ function gradedRows(tour) {
   const p = path.join(__dirname, '..', '..', 'public', 'data', 'track_record.json');
   if (!fs.existsSync(p)) return new Map();
   const rows = JSON.parse(fs.readFileSync(p, 'utf8')).matches || [];
-  return new Map(rows.filter((m) => m.tour === tour && m.winner).map((m) => [String(m.id), m]));
+  // Keyed by identity, not id: track_record can still carry duplicate rows
+  // for one match (see buildTrackRecord), and scoring the same result several
+  // times would quietly weight it several times. First row per match wins.
+  const out = new Map();
+  for (const m of rows) {
+    if (m.tour !== tour || !m.winner) continue;
+    const k = identity(m.p1, m.p2, m.date);
+    if (!out.has(k)) out.set(k, m);
+  }
+  return out;
 }
 
 module.exports = { loadUniverse, fromRaw, fromTrackRecord, gradedRows };

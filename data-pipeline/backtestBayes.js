@@ -61,7 +61,7 @@ const pct = (n) => (n == null ? 'n/a' : `${(n * 100).toFixed(1)}%`);
 // comes from the graded row, never from the timeline's winner/loser order -
 // otherwise `p` would encode the answer.
 function orient(graded, m, pWinner) {
-  const row = graded.get(m.id);
+  const row = graded.get(m.ident);
   if (!row) return null;
   const p1IsWinner = row.winner === row.p1;
   return { p: p1IsWinner ? pWinner : 1 - pWinner, won: p1IsWinner ? 1 : 0, surface: m.surface, date: m.date };
@@ -75,9 +75,9 @@ function runElo(timeline, graded, params, tour) {
   setEloParams(params || eloParamsFor(tour));
   const out = new Map();
   buildTimeline(timeline, (m, rw, rl) => {
-    if (!graded.has(m.id)) return;
+    if (!graded.has(m.ident)) return;
     const rec = orient(graded, m, expected(predElo(rw, m.surface), predElo(rl, m.surface)));
-    if (rec) out.set(m.id, rec);
+    if (rec) out.set(m.ident, rec);
   });
   return out;
 }
@@ -85,9 +85,9 @@ function runElo(timeline, graded, params, tour) {
 function runBayes(timeline, graded, params) {
   const out = new Map();
   buildBayesTimeline(timeline, (m, sw, sl) => {
-    if (!graded.has(m.id)) return;
+    if (!graded.has(m.ident)) return;
     const rec = orient(graded, m, winProbBayes(sw, sl, m.surface));
-    if (rec) return void out.set(m.id, { ...rec, minSeen: Math.min(sw.seen, sl.seen) });
+    if (rec) return void out.set(m.ident, { ...rec, minSeen: Math.min(sw.seen, sl.seen) });
   }, { params });
   return out;
 }
