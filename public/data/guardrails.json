@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T09:26:27.728Z",
+  "generatedAt": "2026-08-21T09:28:52.850Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,21 +9,21 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 447,
-      "seasonAcc": 69,
+      "n": 356,
+      "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 75,
-      "rankRecentAcc": 70,
+      "recentAcc": 65,
+      "rankRecentAcc": 63,
       "recentEngines": {
-        "smash": 75,
-        "sim": 55,
-        "elo": 78,
-        "rank": 70,
-        "upset": 78
+        "smash": 65,
+        "sim": 63,
+        "elo": 73,
+        "rank": 63,
+        "upset": 73
       },
       "bestRecent": {
         "engine": "elo",
-        "acc": 78
+        "acc": 73
       },
       "reasons": []
     },
@@ -33,21 +33,21 @@
       "label": "ATP clay",
       "engine": "smash",
       "status": "ok",
-      "n": 302,
-      "seasonAcc": 69,
+      "n": 261,
+      "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 70,
-      "rankRecentAcc": 70,
+      "recentAcc": 65,
+      "rankRecentAcc": 63,
       "recentEngines": {
-        "smash": 70,
-        "sim": 68,
-        "elo": 68,
-        "rank": 70,
-        "upset": 57
+        "smash": 65,
+        "sim": 63,
+        "elo": 60,
+        "rank": 63,
+        "upset": 60
       },
       "bestRecent": {
         "engine": "smash",
-        "acc": 70
+        "acc": 65
       },
       "reasons": []
     },
@@ -57,21 +57,21 @@
       "label": "ATP grass",
       "engine": "smash",
       "status": "ok",
-      "n": 135,
-      "seasonAcc": 73,
+      "n": 87,
+      "seasonAcc": 72,
       "recentN": 40,
-      "recentAcc": 75,
-      "rankRecentAcc": 75,
+      "recentAcc": 78,
+      "rankRecentAcc": 78,
       "recentEngines": {
-        "smash": 75,
-        "sim": 75,
-        "elo": 73,
-        "rank": 75,
-        "upset": 63
+        "smash": 78,
+        "sim": 78,
+        "elo": 78,
+        "rank": 78,
+        "upset": 78
       },
       "bestRecent": {
         "engine": "smash",
-        "acc": 75
+        "acc": 78
       },
       "reasons": []
     },
@@ -81,21 +81,21 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 413,
-      "seasonAcc": 68,
+      "n": 337,
+      "seasonAcc": 70,
       "recentN": 40,
-      "recentAcc": 68,
+      "recentAcc": 70,
       "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 68,
-        "sim": 63,
-        "elo": 65,
+        "smash": 70,
+        "sim": 65,
+        "elo": 60,
         "rank": 73,
-        "upset": 78
+        "upset": 68
       },
       "bestRecent": {
-        "engine": "upset",
-        "acc": 78
+        "engine": "rank",
+        "acc": 73
       },
       "reasons": []
     },
@@ -105,20 +105,20 @@
       "label": "WTA clay",
       "engine": "smash",
       "status": "ok",
-      "n": 264,
-      "seasonAcc": 70,
+      "n": 261,
+      "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 75,
+      "recentAcc": 70,
       "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 75,
-        "sim": 57,
-        "elo": 63,
+        "smash": 70,
+        "sim": 55,
+        "elo": 70,
         "rank": 75,
-        "upset": 57
+        "upset": 55
       },
       "bestRecent": {
-        "engine": "smash",
+        "engine": "rank",
         "acc": 75
       },
       "reasons": []
@@ -129,21 +129,21 @@
       "label": "WTA grass",
       "engine": "smash",
       "status": "ok",
-      "n": 135,
+      "n": 90,
       "seasonAcc": 73,
       "recentN": 40,
-      "recentAcc": 73,
-      "rankRecentAcc": 65,
+      "recentAcc": 78,
+      "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 73,
-        "sim": 65,
-        "elo": 68,
-        "rank": 65,
-        "upset": 80
+        "smash": 78,
+        "sim": 73,
+        "elo": 78,
+        "rank": 75,
+        "upset": 73
       },
       "bestRecent": {
-        "engine": "upset",
-        "acc": 80
+        "engine": "smash",
+        "acc": 78
       },
       "reasons": []
     }
