@@ -133,21 +133,32 @@ test('parlay builder: the plan prices today\'s card and dropping a leg re-prices
     return;
   }
 
-  // Priced on arrival, with no clicks: budget mode is the default.
-  await expect(page.locator('.stake-value-pct')).toHaveText(/%/, { timeout: 15000 });
+  // Priced on arrival, with no clicks: budget mode is the default. The
+  // headline is the plan's chance of finishing ahead. This used to assert on
+  // .stake-value-pct, the combined "chance all N land" accumulator, which is
+  // gone: across a full card it priced a bet nobody could place.
+  const headline = page.locator('.stake-best-v').first();
+  await expect(headline).toHaveText(/%/, { timeout: 15000 });
+
   const rows = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay)');
   const startCount = await rows.count();
   expect(startCount).toBeGreaterThan(0);
 
-  // Dropping a leg must make the combined probability LARGER, never smaller:
-  // fewer results have to land for the set to come in. The old test asserted
-  // the mirror of this, back when legs were added one at a time.
+  // Dropping a leg re-prices the plan. The direction of the chance of
+  // finishing ahead is deliberately NOT asserted: unlike the old accumulator,
+  // removing a match can move it either way depending on that match's price,
+  // so pinning a direction would be pinning a coincidence. What must hold is
+  // that the card shrinks and the plan re-states itself over what is left.
   if (startCount > 1) {
-    const before = parseFloat((await page.locator('.stake-value-pct').textContent()).replace('%', ''));
+    // The subhead names the size of the card ("from today's N matches"), which
+    // moves whatever is dropped. The BACKED count is not safe to assert on:
+    // unpriced matches are never staked, so dropping one changes the card
+    // without changing the plan.
+    const subBefore = await page.locator('.stake-best-sub').first().textContent();
     await page.locator('.stake-drop button').first().click();
     await expect(rows).toHaveCount(startCount - 1);
-    const after = parseFloat((await page.locator('.stake-value-pct').textContent()).replace('%', ''));
-    expect(after).toBeGreaterThanOrEqual(before);
+    await expect(headline).toHaveText(/%/);
+    await expect(page.locator('.stake-best-sub').first()).not.toHaveText(subBefore);
   }
   expect(errors).toEqual([]);
 });

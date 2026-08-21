@@ -59,13 +59,23 @@ export function bandStats(rows, lo = GAP_FLOOR, hi = GAP_CEIL) {
 
 // Published figures for the band the builder actually suggests from, measured
 // on the graded record. Pinned by marketGap.test.js.
+//
+// Re-measured after the match-identity dedupe (#11) reached the data: the
+// graded record carried the same fixture under several feed ids, so every
+// figure below was counting a share of its matches more than once. The priced
+// sample falls by a third and the band with it. The edge over the market
+// survives the correction and is slightly larger, but on a smaller sample, so
+// the honest reading is that it is less well established than it looked, not
+// better.
 export const BAND = {
-  measuredAt: '2026-08-20',
-  pricedGraded: 2419,   // graded matches carrying a market price
-  n: 385,               // of those, how many fall in the 10-20pt band
-  hitRate: 0.55,        // how often those calls actually landed
-  marketImplied: 0.44,  // what the market gave them
+  measuredAt: '2026-08-21',
+  pricedGraded: 1570,   // graded matches carrying a market price (was 2419)
+  n: 263,               // of those, how many fall in the 10-20pt band (was 385)
+  hitRate: 0.56,        // how often those calls actually landed (was 0.55)
+  marketImplied: 0.45,  // what the market gave them (was 0.44)
 };
 
 // Beyond the ceiling, for the record: the model's boldest disagreements.
-export const BEYOND_CEIL = { n: 275, hitRate: 0.46, stated: 0.62 };
+// Also re-measured; these got materially worse, from 0.46 to 0.42, which
+// strengthens rather than weakens the reason for having a ceiling at all.
+export const BEYOND_CEIL = { n: 222, hitRate: 0.42, stated: 0.62 };
