@@ -92,7 +92,11 @@ export function analyzeSlip(bets, parlay) {
       bins[bi] += prob;
     }
     pProfit = pPos;
-    dist = { lo: worst, hi: best, bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })) };
+    dist = {
+      lo: worst,
+      hi: best,
+      bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })),
+    };
   }
 
   return {
@@ -152,97 +156,212 @@ export function reliability(graded, { minSample = 60 } = {}) {
 export const adjustProb = (p, lambda = 1) =>
   (lambda === 1 ? p : clamp(0.5 + lambda * (p - 0.5), 0.001, 0.999));
 
-/**
- * The best plan for a budget, decided AT THE PLAN LEVEL.
- *
- * Why this is not just "stake the +EV picks": expected value is additive, so
- * no reshuffling of stakes can rescue a slip whose every instrument is -EV.
- * But which INSTRUMENTS exist is a plan-level choice, and a parlay's edge is
- * the product of its legs' - so a parlay can be +EV while individual legs are
- * not. A leg priced at 0.95 of our number drags a single below break-even yet
- * still pays its way inside a combination that clears it (1.10 * 0.95 > 1).
- * Filtering legs on their own edge first, as a per-matchup pass does, throws
- * those away and reports "nothing is worth staking" on a slate that has a
- * perfectly good plan in it.
- *
- * So: adjust every probability to the model's measured reliability, search
- * leg combinations for the best +EV parlay, then fund every +EV instrument by
- * Kelly fraction. Kelly is the objective because the break-even constraint
- * alone does not pick a plan - maximising EV would put the whole budget on the
- * single largest edge - and growth-optimal sizing is what balances that edge
- * against the chance of losing the lot. Funding only +EV instruments makes
- * plan EV >= 0 automatic, so the constraint is satisfied by construction
- * rather than by assertion.
- *
- * @param {{key:string,p:number,o:number}[]} bets
- * @param {number} budget
- */
-export function bestPlan(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12, allowParlay = true } = {}) {
-  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
-  const priced = adj.filter((b) => b.o > 1 && b.p > 0);
-
-  // Singles worth funding on their own.
-  const instruments = [];
-  for (const b of priced) {
-    const f = kellyFraction(b.p, b.o);
-    if (f > 0) instruments.push({ type: 'single', key: b.key, f });
-  }
-
-  // Best +EV parlay over any combination - including legs that are -EV alone.
-  // Ranked by Kelly fraction, since that is what decides the money it gets.
+// Every +EV combination of 2..maxLegs legs, best-edge first. The parlay's
+// universe is every combination of the day's matches, not a subset someone
+// ticked, because a combination can clear its price when its legs do not:
+// parlay edge is the PRODUCT of the legs', so 1.10 * 0.95 > 1.
+function parlayCandidates(priced, maxLegs, maxSearch) {
   const pool = [...priced]
     .sort((a, b) => (edgePerDollar(b.p, b.o) || 0) - (edgePerDollar(a.p, a.o) || 0))
     .slice(0, maxSearch);
-  let bestCombo = null;
+  const found = [];
   const walk = (start, chosen, p, o) => {
     if (chosen.length >= 2) {
       const edge = p * o - 1;
       const f = kellyFraction(p, o);
-      if (edge > 0 && f > 0 && (!bestCombo || f > bestCombo.f)) {
-        bestCombo = { legs: chosen.slice(), p, o, edge, f, n: chosen.length };
-      }
+      if (edge > 0 && f > 0) found.push({ legs: chosen.slice(), p, o, edge, f, n: chosen.length });
     }
-    if (chosen.length >= maxParlayLegs) return;
+    if (chosen.length >= maxLegs) return;
     for (let i = start; i < pool.length; i++) {
       chosen.push(pool[i].key);
       walk(i + 1, chosen, p * pool[i].p, o * pool[i].o);
       chosen.pop();
     }
   };
-  if (allowParlay && maxParlayLegs >= 2) walk(0, [], 1, 1);
-  if (bestCombo) instruments.push({ type: 'parlay', f: bestCombo.f });
+  if (maxLegs >= 2) walk(0, [], 1, 1);
+  return found.sort((a, b) => b.edge - a.edge);
+}
 
-  const totalF = instruments.reduce((s, c) => s + c.f, 0);
+/**
+ * A FLAT-STAKE SPREAD across the day's card - the plan this page is for.
+ *
+ * The shape of it, in the terms the question is usually asked in: ten matches,
+ * a model right about 70% of the time, a dollar on each. Ten dollars is the
+ * most that can be lost, seven winners is what to expect, and the thing worth
+ * checking is whether the return from those seven covers the ten staked.
+ *
+ * With equal stakes that check falls on the AVERAGE - sum(p*o) >= n - which is
+ * what makes it a plan-level question rather than a per-match one. A match
+ * whose own price is slightly short can be carried by stronger ones, and
+ * excluding it on its own merits (which is what a per-match +EV filter does)
+ * gives up breadth for nothing. Breadth is the point: it is how a 70% model
+ * actually shows up, instead of riding on one result.
+ *
+ * Matches are taken best-edge-first and kept while the portfolio still covers
+ * its stake, which yields the WIDEST spread that clears - greedy on a running
+ * mean is exact here, since adding in descending order keeps that mean as high
+ * as it can be at every size.
+ *
+ * @param {{key:string,p:number,o:number}[]} bets  p should already be adjusted
+ * @param {number} budget  split equally across whatever is taken
+ */
+export function spreadPlan(bets, budget, { lambda = 1 } = {}) {
+  const adj = (bets || [])
+    .map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }))
+    .filter((b) => b.o > 1 && b.p > 0);
+  const ranked = [...adj].sort((a, b) => (b.p * b.o) - (a.p * a.o));
+
+  // Widest prefix whose mean p*o still covers 1 per dollar staked.
+  let take = 0, sum = 0;
+  for (let i = 0; i < ranked.length; i++) {
+    const next = sum + ranked[i].p * ranked[i].o;
+    if (next < i + 1 - 1e-12) break;   // this match would break the cover
+    sum = next;
+    take = i + 1;
+  }
+
+  const chosen = ranked.slice(0, take);
+  const B = Number(budget) || 0;
+  const perMatch = take > 0 ? B / take : 0;
   const singles = {};
-  let parlayStake = 0;
-  if (totalF > 0 && budget > 0) {
-    for (const c of instruments) {
-      const stake = (budget * c.f) / totalF;
-      if (c.type === 'single') singles[c.key] = stake;
-      else parlayStake = stake;
+  for (const b of chosen) singles[b.key] = perMatch;
+
+  const staked = perMatch * take;
+  const expWinners = chosen.reduce((s, b) => s + b.p, 0);
+  const expReturn = chosen.reduce((s, b) => s + perMatch * b.p * b.o, 0);
+  // How many of them have to land before the stake is back. Uses the mean
+  // payout, so it is the honest "about N of them" rather than an exact count
+  // when the prices differ.
+  const meanO = take > 0 ? chosen.reduce((s, b) => s + b.o, 0) / take : 0;
+  const breakEvenWins = meanO > 0 ? Math.ceil(staked / (perMatch * meanO) - 1e-9) : 0;
+
+  return {
+    legs: chosen.map((b) => b.key),
+    count: take,
+    singles,
+    parlayLegs: [],
+    parlayStake: 0,
+    combo: null,
+    perMatch,
+    staked,
+    expWinners,
+    expReturn,
+    breakEvenWins,
+    coversStake: take > 0 && expReturn >= staked - 1e-9,
+    funded: take,
+    metrics: analyzeSlip(adj.map((b) => ({ ...b, single: singles[b.key] || 0 })), { stake: 0, legs: [] }),
+  };
+}
+
+/**
+ * A small menu of RECOMMENDED plans for a budget, every one of which stakes so
+ * that expected return >= total staked (plan EV >= 0).
+ *
+ * That constraint does not pick a plan on its own - it admits a whole family,
+ * and the ends of that family are far apart in risk. Rather than choose for
+ * the user, this returns the family's useful corners:
+ *
+ *   safest   - the highest chance of finishing ahead
+ *   balanced - growth-optimal (Kelly) sizing across everything that clears
+ *   profit   - the largest expected profit
+ *
+ * Each may or may not include a parlay; that falls out of the objective rather
+ * than being a switch. Only bets that beat their price are ever funded, so the
+ * break-even property holds by construction for every plan here.
+ *
+ * IMPORTANT: EV >= 0 is an expectation, not a promise. Each plan's own
+ * `metrics.pProfit` is the honest chance of actually finishing ahead, and it is
+ * routinely below 50% - a plan can be sound and still lose most of the time.
+ *
+ * @param {{key:string,p:number,o:number}[]} bets
+ * @param {number} budget
+ */
+export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12 } = {}) {
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+  const priced = adj.filter((b) => b.o > 1 && b.p > 0);
+  const B = Number(budget) || 0;
+
+  const shape = (singles, combo, comboStake) => {
+    const staked = adj.map((b) => ({ ...b, single: singles[b.key] || 0 }));
+    const legs = comboStake > 0 && combo ? combo.legs : [];
+    const metrics = analyzeSlip(staked, { stake: comboStake, legs });
+    const singleKeys = Object.keys(singles).filter((k) => singles[k] > 0);
+    return {
+      singles,
+      combo: comboStake > 0 ? combo : null,
+      parlayLegs: legs,
+      parlayStake: comboStake > 0 ? comboStake : 0,
+      metrics,
+      funded: singleKeys.length + (comboStake > 0 ? 1 : 0),
+      // Stated the way the question is asked: how many of the matches we
+      // expect to land, and what the whole plan is expected to return.
+      expWinners: singleKeys.reduce((t, k) => t + (priced.find((b) => b.key === k)?.p || 0), 0),
+      expReturn: metrics.ev + metrics.staked,
+    };
+  };
+
+  // The spread is the headline: a flat stake on as much of the card as can
+  // still cover itself. Everything else is measured against it.
+  const spread = spreadPlan(bets, B, { lambda });
+  const combos = parlayCandidates(priced, maxParlayLegs, maxSearch);
+  const bestCombo = combos.length ? combos.reduce((a, c) => (c.f > a.f ? c : a), combos[0]) : null;
+
+  const plans = [];
+  if (spread.count >= 2 && spread.coversStake) {
+    plans.push({ id: 'spread', label: 'Spread across the card', ...spread, expReturn: spread.expReturn });
+  }
+
+  // Same spread with a slice moved onto the best combination, sized by Kelly
+  // against the singles so the split follows edge rather than a round number.
+  if (bestCombo && spread.count >= 2 && spread.coversStake && B > 0) {
+    const chosen = priced.filter((b) => spread.legs.includes(b.key));
+    const fSingles = chosen.reduce((t, b) => t + kellyFraction(b.p, b.o), 0);
+    const total = fSingles + bestCombo.f;
+    if (total > 0) {
+      const perMatch = (B * (fSingles / total)) / chosen.length;
+      const singles = {};
+      for (const b of chosen) singles[b.key] = perMatch;
+      plans.push({
+        id: 'spreadPlus',
+        label: 'Spread plus a parlay',
+        ...shape(singles, bestCombo, B * (bestCombo.f / total)),
+      });
     }
   }
 
-  const parlayLegs = parlayStake > 0 && bestCombo ? bestCombo.legs : [];
-  const staked = adj.map((b) => ({ ...b, single: singles[b.key] || 0 }));
-  const metrics = analyzeSlip(staked, { stake: parlayStake, legs: parlayLegs });
+  // The concentrated alternative: only matches whose own price beats them,
+  // sized by edge. Fewer bets, more expected profit, more variance.
+  const evSingles = priced.filter((b) => kellyFraction(b.p, b.o) > 0);
+  if (evSingles.length >= 1 && B > 0) {
+    const fs = evSingles.map((b) => ({ key: b.key, f: kellyFraction(b.p, b.o) }));
+    const total = fs.reduce((t, i) => t + i.f, 0) + (bestCombo ? bestCombo.f : 0);
+    if (total > 0) {
+      const singles = {};
+      for (const i of fs) singles[i.key] = (B * i.f) / total;
+      const sharp = shape(singles, bestCombo, bestCombo ? (B * bestCombo.f) / total : 0);
+      // Only worth a slot if it differs from a spread that is ACTUALLY on the
+      // menu. Comparing against a spread that was never offered (a one- or
+      // two-match card) suppressed the only plan there was and left the page
+      // with nothing to show.
+      const offeredSpread = plans.find((p) => p.id === 'spread');
+      const sameAsSpread = !!offeredSpread
+        && sharp.funded === offeredSpread.funded
+        && offeredSpread.legs.every((k) => (singles[k] || 0) > 0)
+        && !sharp.parlayStake;
+      if (!sameAsSpread) plans.push({ id: 'sharp', label: 'Best prices only', ...sharp });
+    }
+  }
 
-  return {
-    feasible: totalF > 0,
-    lambda,
-    singles,
-    parlayLegs,
-    parlayStake,
-    combo: bestCombo,
-    metrics,
-    // How many legs carry money at all - the honest size of the plan, which is
-    // usually smaller than the slip the user selected.
-    funded: Object.values(singles).filter((s) => s > 0).length + (parlayStake > 0 ? 1 : 0),
-    reason: totalF > 0 ? null
-      : (priced.length
-        ? 'every price on this slate is at or above our own number, alone and in every combination'
-        : 'none of these carry a market price'),
-  };
+  if (!plans.length) {
+    return {
+      plans: [],
+      lambda,
+      reason: priced.length
+        ? "even spread across the whole card, these prices do not return the stake - the expected winners' payout falls short of what it costs to back them"
+        : 'none of these carry a market price',
+    };
+  }
+  return { plans, lambda, reason: null };
 }
 
 // Recommend a break-even-or-better split of a budget. Only +EV bets get money

@@ -1,13 +1,17 @@
 // src/components/StakingPlan.js
 //
-// The Parlay builder's Staking Plan: honest EV + risk for a slip of singles
-// and a parlay, in two modes - "My stakes" (grade what you'd bet, then balance
-// it to break-even) and "From budget" (recommend a break-even-or-better split).
+// The Parlay builder's Staking Plan.
 //
-// The parlay is optional. Untick it and every number below is re-derived for
-// singles only, which is the common case: you want per-match stakes and the
-// parlay is a separate decision. It stays on screen while switched off so you
-// can see what you are leaving on the table.
+// Lands on a RECOMMENDATION, because that is what the page is for: arrive and
+// be told what to do with a budget. planFrontier returns a short menu of plans
+// - safest, balanced, most profit - every one of which stakes so its expected
+// return covers the total staked. Some include a parlay and some do not; that
+// falls out of the objective rather than being a switch the user has to reason
+// about. Picking a card re-derives every headline number.
+//
+// "Customise" then seeds the table FROM the chosen plan, so adjusting is
+// editing a good answer rather than building one from nothing, and the same
+// headline numbers keep following the edits.
 //
 // This table is also the page's only list of your selection - the picks link
 // out to their match pages - so the slip above can stay a verdict on value
@@ -17,7 +21,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { matchSlug } from '../utils/matchTime';
-import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, bestPlan, reliability, adjustProb } from '../utils/staking';
+import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb } from '../utils/staking';
 import './StakingPlan.css';
 
 const money = (v) => `${v < 0 ? '-' : ''}$${Math.abs(v || 0).toFixed(2)}`;
@@ -25,13 +29,21 @@ const pctSigned = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
 const pct = (v) => `${(v * 100).toFixed(1)}%`;
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
+// What a plan is actually made of, in words. "1 bet · incl. a 2-leg parlay"
+// was self-contradictory on a parlay-only plan: the one bet WAS the parlay.
+function composition(p) {
+  const singles = Object.values(p.singles).filter((s) => s > 0).length;
+  const legs = p.parlayLegs.length;
+  if (!p.parlayStake) return singles === 1 ? '1 single, no parlay' : `${singles} singles, no parlay`;
+  if (!singles) return `just a ${legs}-leg parlay`;
+  return `${singles} single${singles === 1 ? '' : 's'} + a ${legs}-leg parlay`;
+}
+
 // onDrop(leg) removes a match from the slip entirely, which is the job the
 // checkbox list above this table used to do before it was folded in here.
 export default function StakingPlan({ legs, graded = [], onDrop = null }) {
-  // Opens on "From budget": it answers the question people actually arrive
-  // with (here is what I have, what should I do with it) and needs no input
-  // to show a full, break-even-or-better plan. "My stakes" is the grade-my-own
-  // -slip mode, which is the rarer, more deliberate one.
+  // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
+  // the recommendation: it needs no input to be useful.
   const [mode, setMode] = useState('budget');
   const [stakes, setStakes] = useState({});        // { id: singleStake }
   const [oddsOverride, setOddsOverride] = useState({}); // { id: decimalOdds }
@@ -56,8 +68,8 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     [useParlay, pickedLegIds]
   );
 
-  // Bets carry the odds you'll actually get; singles come from your inputs
-  // (My stakes) or from the recommender (From budget).
+  // Bets carry the odds you'll actually get; singles come from your own inputs
+  // in Custom, or from the chosen recommendation.
   const priceBets = (singleFor) => legs.map((l) => ({
     key: l.id, p: l.favProb, o: oddsOf(l), single: singleFor(l),
   }));
@@ -68,64 +80,68 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
   // so the plan is built on what the model has been worth, not what it claims.
   const rel = useMemo(() => reliability(graded), [graded]);
 
-  // "From budget" is now a genuine plan-level search, not a per-leg filter:
-  // bestPlan re-prices every leg at the measured reliability, hunts for the
-  // best +EV combination (which can include a leg that is -EV on its own), and
-  // funds only instruments that clear their price - so plan EV >= 0 holds by
-  // construction rather than by assertion.
-  // Break-even at the plan level does not single out ONE plan - it leaves a
-  // family of them, and the two ends of that family are far apart. Adding the
-  // parlay raises expected profit and slashes the chance of finishing ahead;
-  // singles only does the reverse. Choosing between them is a risk decision,
-  // so both are computed and shown rather than one being picked silently.
-  const plans = useMemo(() => {
-    if (mode !== 'budget') return null;
-    const bets = priceBets(() => 0);
-    const b = Number(budget) || 0;
-    return {
-      withParlay: bestPlan(bets, b, { lambda: rel.lambda, allowParlay: true }),
-      singlesOnly: bestPlan(bets, b, { lambda: rel.lambda, allowParlay: false }),
-    };
+  // The recommended plans, computed over the WHOLE day's card: the singles'
+  // universe is every match on it, the parlay's universe is every combination
+  // of those matches. Each plan stakes so that expected return >= total staked.
+  // Not every match gets money, and a funded single need not be in the parlay -
+  // both fall out of what clears its price. See utils/staking planFrontier.
+  const frontier = useMemo(
+    () => planFrontier(priceBets(() => 0), Number(budget) || 0, { lambda: rel.lambda }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, budget, legs, oddsOverride, rel.lambda]);
-
-  const plan = plans ? (useParlay ? plans.withParlay : plans.singlesOnly) : null;
-  // Only worth offering the choice when the parlay actually changes the answer.
-  const altPlan = plans ? (useParlay ? plans.singlesOnly : plans.withParlay) : null;
-  const choiceWorthMaking = !!(plans
-    && plans.withParlay.feasible && plans.singlesOnly.feasible
-    && plans.withParlay.parlayStake > 0);
-
-  const singleFor = (l) => (mode === 'budget' ? (plan?.singles[l.id] || 0) : (Number(stakes[l.id]) || 0));
-  const bets = priceBets(singleFor);
-  const parStake = useParlay
-    ? (mode === 'budget' ? (plan?.parlayStake || 0) : (Number(parlayStake) || 0))
-    : 0;
-  // In budget mode the optimiser chooses the parlay's legs - that is the whole
-  // point of asking it for the best plan - so the plan's legs win over the
-  // manual ticks, which stay in charge in "My stakes".
-  const activeParlayLegs = useMemo(
-    () => (mode === 'budget' ? (plan?.parlayLegs || []) : parlayLegIds),
-    [mode, plan, parlayLegIds]
+    [legs, oddsOverride, budget, rel.lambda]
   );
+  // Which recommendation is on screen. Defaults to the safest, because the
+  // chance of finishing ahead is the number people misjudge most.
+  const [planId, setPlanId] = useState('safest');
+  const rec = frontier.plans.find((p) => p.id === planId) || frontier.plans[0] || null;
+
+  const singleFor = (l) => (mode === 'budget' ? (rec?.singles[l.id] || 0) : (Number(stakes[l.id]) || 0));
+  // The reliability adjustment belongs to the MODEL, not to a mode. Custom
+  // stakes used to be scored on raw stated probabilities while the
+  // recommendations were scored on adjusted ones, so "Customise this plan" then
+  // reported different numbers for the very same allocation. planFrontier
+  // adjusts internally off raw input, so the adjustment is applied here only
+  // for the paths that score a slip directly.
+  const bets = priceBets(singleFor).map((b) => ({ ...b, p: adjustProb(b.p, rel.lambda) }));
+  const parStake = mode === 'budget'
+    ? (rec?.parlayStake || 0)
+    : (useParlay ? (Number(parlayStake) || 0) : 0);
+  // A recommendation owns its own parlay legs (searching combinations is the
+  // point of asking for one); in custom mode the manual ticks are in charge.
+  const activeParlayLegs = useMemo(
+    () => (mode === 'budget' ? (rec?.parlayLegs || []) : parlayLegIds),
+    [mode, rec, parlayLegIds]
+  );
+  // The headline numbers are derived from whatever is currently on the table,
+  // recommendation or custom, so editing anything moves them immediately.
   const analysis = useMemo(
-    () => (mode === 'budget' && plan
-      ? plan.metrics
+    () => (mode === 'budget' && rec
+      ? rec.metrics
       : analyzeSlip(bets, { stake: parStake, legs: activeParlayLegs })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, plan, bets, parStake, activeParlayLegs]
+    [mode, rec, bets, parStake, activeParlayLegs]
   );
+
+  // Start a custom plan FROM the recommendation on screen rather than from
+  // zero: the point is to adjust a good answer, not to rebuild one.
+  const customise = () => {
+    setStakes(Object.fromEntries(legs.map((l) => [l.id, +(rec?.singles[l.id] || 0).toFixed(2)])));
+    setParlayStake(+(rec?.parlayStake || 0).toFixed(2));
+    setInParlay(Object.fromEntries(legs.map((l) => [l.id, (rec?.parlayLegs || []).includes(l.id)])));
+    setUseParlay((rec?.parlayStake || 0) > 0);
+    setMode('mine');
+  };
   // Priced off the legs you ticked, not off what is switched on, so the row
   // can still show what the parlay is worth while it sits idle.
   const combo = parlayCombo(bets, pickedLegIds);
   // In budget mode the parlay row must show the combination the optimiser
   // actually chose and funded, not the one the (now advisory) ticks describe.
-  const showCombo = mode === 'budget' && plan?.combo
-    ? { ...plan.combo, priced: true }
+  const showCombo = mode === 'budget' && rec?.combo
+    ? { ...rec.combo, priced: true }
     : combo;
-  // Probabilities the plan is built on. In budget mode that is the
-  // reliability-adjusted number, so the Edge column agrees with the money.
-  const probOf = (l) => (mode === 'budget' ? adjustProb(l.favProb, rel.lambda) : l.favProb);
+  // Probabilities everything below is sized on: always the reliability-adjusted
+  // number, so the Edge column agrees with the money in both modes.
+  const probOf = (l) => adjustProb(l.favProb, rel.lambda);
   const inActiveParlay = (l) => activeParlayLegs.includes(l.id);
 
   // "Balance to break-even": keep the same total on the table, but move it onto
@@ -136,6 +152,15 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     setStakes(Object.fromEntries(legs.map((l) => [l.id, +(r.singles[l.id] || 0).toFixed(2)])));
     setParlayStake(+(r.parlay || 0).toFixed(2));
   };
+
+  // The plan stated the way the question is actually asked: this many of the
+  // matches we back are expected to land, and their return is what has to
+  // cover the whole stake. Derived from whatever is on the table, so it holds
+  // for a custom plan too.
+  const backedSingles = bets.filter((b) => (b.single || 0) > 0);
+  const expWinners = backedSingles.reduce((s, b) => s + b.p, 0);
+  const stakedCount = backedSingles.length;
+  const expReturn = analysis.ev + analysis.staked;
 
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
@@ -155,6 +180,96 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
   return (
     <div className="stake-plan">
+      {/* No plan clears its price. That IS the recommendation, and saying so
+          plainly beats showing a losing plan dressed up as the best one. */}
+      {mode === 'budget' && frontier.plans.length === 0 && anyPriced && (
+        <div className="stake-best none">
+          <div className="stake-best-head">
+            <span className="stake-cap">No plan worth staking today</span>
+          </div>
+          <p className="stake-best-why">
+            {frontier.reason}, and that covers every combination of today&apos;s matches as well as
+            the picks on their own. Spread evenly or concentrated, these prices do not return what
+            it costs to back them, so the honest plan is to sit today out. If your book prices any
+            of them longer than ours, enter it below and the plan reappears.
+          </p>
+        </div>
+      )}
+
+      {analysis.staked > 0 && (
+        <div className="stake-best">
+          <div className="stake-best-head">
+            <span className="stake-cap">{mode === 'budget' ? 'Recommended plan' : 'Your plan'}</span>
+            <span className="stake-best-sub">
+              {mode === 'budget'
+                ? <>{composition(rec)}, from today&apos;s {legs.length} match{legs.length === 1 ? '' : 'es'} · {money(analysis.staked)} staked</>
+                : <>{money(analysis.staked)} staked · edit anything below and these numbers follow</>}
+            </span>
+          </div>
+
+          {mode === 'budget' && frontier.plans.length > 1 && (
+            <div className="stake-best-pick" role="radiogroup" aria-label="Which recommended plan">
+              {frontier.plans.map((p) => (
+                <button key={p.id} type="button" role="radio" aria-checked={p.id === rec.id}
+                  className={`stake-best-opt${p.id === rec.id ? ' on' : ''}`}
+                  onClick={() => setPlanId(p.id)}>
+                  <span className="stake-best-opt-l">{p.label}</span>
+                  <span className="stake-best-opt-v">
+                    {pct(p.metrics.pProfit || 0)} to win · {money(p.metrics.ev)} expected
+                  </span>
+                  <span className="stake-best-opt-k">{composition(p)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="stake-best-grid">
+            <div className="stake-best-metric">
+              <span className="stake-best-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span>
+              <span className="stake-best-l">your chance of finishing ahead</span>
+            </div>
+            <div className="stake-best-metric">
+              <span className="stake-best-v pos">{money(analysis.ev)}</span>
+              <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
+            </div>
+            <div className="stake-best-metric">
+              <span className="stake-best-v">{expWinners.toFixed(1)}<span className="stake-best-of"> of {stakedCount}</span></span>
+              <span className="stake-best-l">matches we expect to land</span>
+            </div>
+            <div className="stake-best-metric">
+              <span className="stake-best-v">{money(analysis.best)}</span>
+              <span className="stake-best-l">if everything lands</span>
+            </div>
+            <div className="stake-best-metric">
+              <span className="stake-best-v neg">{money(analysis.worst)}</span>
+              <span className="stake-best-l">if nothing does</span>
+            </div>
+          </div>
+
+          {mode === 'budget' && (
+            <button type="button" className="stake-best-custom" onClick={customise}>
+              Customise this plan →
+            </button>
+          )}
+          <p className="stake-best-why">
+            <strong>
+              {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}. We
+              expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
+              {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
+            </strong>{' '}
+            That is the test every plan here passes, and it is a whole-plan test: spread evenly, it
+            falls on the average, so a match priced against us can be carried by stronger ones.
+            {' '}It is an expectation, not a floor. A plan can be worth making and still lose more
+            often than it wins, which is why the chance of finishing ahead sits right beside it.
+            {rel.trusted && (
+              <>
+                {' '}Sized on what the model has actually done: {pct(rel.accuracy)} of {rel.n} graded
+                calls landed while claiming {pct(rel.stated)}.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="stake-value">
         <div className="stake-value-hero">
           <span className="stake-value-pct">{pct(allProb)}</span>
@@ -201,94 +316,18 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
         </p>
       )}
 
-      {mode === 'budget' && plan && plan.feasible && analysis.staked > 0 && (
-        <div className="stake-best">
-          <div className="stake-best-head">
-            <span className="stake-cap">The best plan</span>
-            <span className="stake-best-sub">
-              {plan.funded === 1 ? '1 bet' : `${plan.funded} bets`} from your {legs.length} pick
-              {legs.length === 1 ? '' : 's'} on {money(analysis.staked)}
-            </span>
-          </div>
-
-          {choiceWorthMaking && (
-            <div className="stake-best-pick" role="radiogroup" aria-label="Which plan">
-              {[
-                { on: !useParlay, p: plans.singlesOnly, label: 'Best chance of winning', set: false },
-                { on: useParlay, p: plans.withParlay, label: 'Most expected profit', set: true },
-              ].map((opt) => (
-                <button key={opt.label} type="button" role="radio" aria-checked={opt.on}
-                  className={`stake-best-opt${opt.on ? ' on' : ''}`}
-                  onClick={() => setUseParlay(opt.set)}>
-                  <span className="stake-best-opt-l">{opt.label}</span>
-                  <span className="stake-best-opt-v">
-                    {pct(opt.p.metrics.pProfit || 0)} to finish ahead · {money(opt.p.metrics.ev)} expected
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="stake-best-grid">
-            <div className="stake-best-metric">
-              <span className="stake-best-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span>
-              <span className="stake-best-l">your chance of finishing ahead</span>
-            </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v pos">{money(analysis.ev)}</span>
-              <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
-            </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v">{money(analysis.best)}</span>
-              <span className="stake-best-l">if everything lands</span>
-            </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v neg">{money(analysis.worst)}</span>
-              <span className="stake-best-l">if nothing does</span>
-            </div>
-          </div>
-          <p className="stake-best-why">
-            {rel.trusted ? (
-              <>
-                Sized on the model's <strong>measured</strong> accuracy, not its stated confidence:{' '}
-                {pct(rel.accuracy)} of {rel.n} graded calls landed while claiming {pct(rel.stated)},
-                so every probability below is re-expressed at that reliability before any money is
-                allocated.
-              </>
-            ) : (
-              <>
-                Only {rel.n} graded calls so far - too few to correct the model's stated confidence,
-                so probabilities are used as they come.
-              </>
-            )}{' '}
-            The plan is chosen at the whole-plan level: a pick that cannot pay its way alone can
-            still earn a place inside a combination that does, so combinations are searched rather
-            than legs filtered. Expected profit covers expected losses by construction, because
-            only bets that beat their price are funded.
-            {choiceWorthMaking && altPlan && (
-              <>
-                {' '}Break-even at the plan level does not pick just one plan, so both ends are
-                above: the parlay buys {money(plans.withParlay.metrics.ev - plans.singlesOnly.metrics.ev)}{' '}
-                more expected profit and costs{' '}
-                {pct((plans.singlesOnly.metrics.pProfit || 0) - (plans.withParlay.metrics.pProfit || 0))}{' '}
-                of your chance of finishing ahead. That trade is yours, not ours.
-              </>
-            )}
-          </p>
-        </div>
-      )}
-
       <div className="stake-head">
         <div>
-          <div className="stake-cap">{mode === 'budget' ? 'The plan, bet by bet' : 'Staking plan'}</div>
+          <div className="stake-cap">{mode === 'budget' ? 'The plan, bet by bet' : 'Your bets'}</div>
           <p className="stake-sub">
-            Size your singles and parlay so the slip's expected value is break-even or better.
-            Edge is <strong>your odds × our win probability − 1</strong>; a bet is only worth
-            staking when that's positive. Untick the parlay to size the singles on their own.
+            {mode === 'budget'
+              ? <>Every bet the recommendation funds, and what it puts on each. Edge is <strong>your odds × our win probability − 1</strong>. A match can carry a negative edge and still be worth backing here, so long as the spread as a whole still returns the stake. Switch to Custom to change any of it.</>
+              : <>Set your own stakes, tick which matches go in the parlay, and edit any price to your book. Every number above updates as you go.</>}
           </p>
         </div>
-        <div className="stake-modes" role="tablist" aria-label="Staking mode">
-          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={() => setMode('mine')}>My stakes</button>
-          <button type="button" role="tab" aria-selected={mode === 'budget'} className={mode === 'budget' ? 'on' : ''} onClick={() => setMode('budget')}>From budget</button>
+        <div className="stake-modes" role="tablist" aria-label="Recommended plan or your own">
+          <button type="button" role="tab" aria-selected={mode === 'budget'} className={mode === 'budget' ? 'on' : ''} onClick={() => setMode('budget')}>Recommended</button>
+          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={() => setMode('mine')}>Custom</button>
         </div>
       </div>
 
@@ -297,8 +336,7 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
           Total to stake
           <span className="stake-budget-in">$<input type="number" min="0" step="5" value={budget} onChange={(e) => setBudget(e.target.value)} /></span>
           <span className="stake-budget-note">
-            Split across only the +EV {useParlay ? 'bets' : 'singles'}, by edge strength (Kelly).
-            Guaranteed break-even or better.
+            Split evenly across every match the plan backs.
           </span>
         </label>
       )}
@@ -398,24 +436,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
       {analysis.staked > 0 ? (
         <div className={`stake-out ${evClass}`}>
-          <div className="stake-out-grid">
-            <div className="stake-metric big">
-              <span className="stake-metric-v">{money(analysis.ev)}</span>
-              <span className="stake-metric-l">expected value {analysis.staked > 0 && <em>({pctSigned(analysis.roi)} of stake)</em>}</span>
-            </div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.staked)}</span><span className="stake-metric-l">total staked</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span><span className="stake-metric-l">chance you finish ahead</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.best)}</span><span className="stake-metric-l">best case</span></div>
-            <div className="stake-metric"><span className="stake-metric-v">{money(analysis.worst)}</span><span className="stake-metric-l">worst case</span></div>
-          </div>
-
           {analysis.dist && (() => {
             const { lo, hi, bins } = analysis.dist;
             const max = Math.max(...bins.map((b) => b.prob), 1e-9);
             const zeroPct = hi > lo ? ((0 - lo) / (hi - lo)) * 100 : 50;
             return (
               <div className="stake-dist">
-                <div className="stake-dist-cap">Where you land, by our probabilities</div>
+                <div className="stake-dist-cap">Every way this can finish, by our probabilities</div>
                 <div className="stake-dist-plot">
                   <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
                   <div className="stake-dist-bars">
@@ -444,13 +471,6 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                 <span className="stake-verdict-txt">The slip is −EV. No stake fixes a −EV leg, so balancing moves your total onto the +EV bets only.</span>
                 <button type="button" className="stake-balance" onClick={balance}>Balance to break-even</button>
               </>
-            )}
-            {mode === 'budget' && plan && !plan.feasible && (
-              <span className="stake-verdict-txt">
-                Nothing here is worth staking: {plan.reason}. That includes every parlay
-                combination, not just the picks on their own - so this is the plan, and it is
-                to sit today out.
-              </span>
             )}
           </div>
         </div>

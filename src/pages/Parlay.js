@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
+import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import './Parlay.css';
 
 const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
@@ -36,23 +37,10 @@ function marketProb(p) {
 }
 const pct = (v) => `${Math.round(v * 100)}%`;
 
-// How far our number has to sit above the market's before it is worth
-// pointing at, and where that stops being a good sign.
-//
-// Both numbers come from the graded record (2,051 priced matches), not from
-// taste. We show OUR favourite on every row, so our probability naturally
-// runs a couple of points above the market's for that side - a flag at "any
-// gap at all" fired on 61% of matches and meant nothing. From 10 points up
-// it means a lot: those calls came in 69% of the time while the market
-// implied 49%.
-//
-// Past 20 points it inverts. Our most extreme disagreements won just 47% of
-// the time against a stated 62% - the zone where the model is not brave,
-// it is wrong. So the flag has a ceiling as well as a floor, and the
-// suggestion below is built from the band that has actually paid rather
-// than from the biggest numbers on the page.
-const GAP_FLOOR = 0.10;
-const GAP_CEIL = 0.20;
+// The gap window and the record behind it now live in utils/marketGap, where
+// a test recomputes every published figure from the graded ledger. They were
+// inline here and had all drifted - the page claimed those calls came in 69%
+// of the time when the record said 55%.
 
 export default function Parlay() {
   useDocMeta(
@@ -130,7 +118,7 @@ export default function Parlay() {
       out.push({
         id: 'value',
         title: `Against the market (${set.length})`,
-        sub: `lands ${pct(prob)}; calls like these came in 69% of the time`,
+        sub: `lands ${pct(prob)}; calls like these have landed ${pct(BAND.hitRate)} of the time against a market that gave them ${pct(BAND.marketImplied)}`,
         keys: set.map(legKey),
       });
     }
@@ -149,10 +137,11 @@ export default function Parlay() {
       <div className="eyebrow">THE PARLAY BUILDER</div>
       <h1 className="parlay-title">Stack today's calls</h1>
       <p className="parlay-intro">
-        Every call on today's card is already locked, graded in public whatever happens, and
-        in the plan below by default. Drop the ones you don't want with the × on the right,
-        and it re-prices as you go: the honest number is how often that exact set of results
-        actually comes in, and every leg you keep makes it smaller.
+        Every call on today's card is locked before play and graded in public afterwards,
+        wins and misses alike. Below is what we would actually do with a hundred dollars
+        across them: how much on which matches, how often that comes off, and what it
+        returns when it does. Drop any match with the × and the whole plan re-prices as
+        you go.
       </p>
 
       {all === null && <div className="skeleton parlay-skel" />}

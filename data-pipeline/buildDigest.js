@@ -46,6 +46,7 @@ try { require('dotenv').config(); } catch { /* dotenv optional */ }
 
 const fs = require('fs');
 const path = require('path');
+const Papa = require('papaparse');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
@@ -54,22 +55,69 @@ const PHOTO_OUT = path.join(DATA, 'digest', 'players');
 
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 
-// Light palette. The brand lime is unreadable as text on white, so it lives
-// on dark buttons and chips instead, and links use a deep green that passes
-// contrast on a white card.
-const PAGE = '#eef1f5';
-const CARD = '#ffffff';
-const INK = '#14171c';
-const BODY = '#39414d';
-const MUTED = '#6b7480';
-const LINE = '#e2e7ee';
-const BTN = '#14171c';
+// The email wears the product's own skin. It used to be a light grey page
+// with a white 14px-rounded card, system UI type and pastel callouts, which
+// is the house style of every SaaS transactional template - and looked
+// nothing like the site it reports on.
+//
+// The fix was mostly NOT the background colour: it was the 14px radii, the
+// system font, the pastel fills, the pill buttons and the circular avatars.
+// Those are all palette-independent, so the editorial treatment holds in
+// either theme and DIGEST_THEME picks the surface.
+//
+// Default is LIGHT. Dark reads beautifully in a browser, but mail is the one
+// place you cannot control the surface: clients force light mode, quote the
+// message on a white background when it is replied to or forwarded, and print
+// it white. Light is the safer default; dark is one env var away.
+//
+// Sharp corners are the more faithful choice either way - Outlook's Word
+// engine drops border-radius entirely, so a 14px card was already square for
+// a large slice of readers while looking soft for everyone else.
+const THEME = (process.env.DIGEST_THEME || 'light').toLowerCase() === 'dark' ? 'dark' : 'light';
+
+const THEMES = {
+  dark: {
+    PAGE: '#0b0d10', CARD: '#111418', PANEL: '#181c22',
+    INK: '#ffffff', BODY: '#c3c9d2', MUTED: '#8b93a0',
+    LINE: '#262c34', LINE_HI: '#39414d', TRACK: '#22272e',
+    // The lime is legible as text on near-black, so it can mark sections.
+    ACCENT_TEXT: '#c6ff1c',
+    WIN: '#7ddc4e', LOSS: '#ff6b5e',
+  },
+  light: {
+    PAGE: '#f1f2f4', CARD: '#ffffff', PANEL: '#f7f8fa',
+    // #6d7480 was 4.43:1 on the panel surface, just under AA. Captions sit on
+    // panels as often as on the card, so the darker grey is the one that has
+    // to pass: 4.75 on panel, 5.05 on card.
+    INK: '#0b0d10', BODY: '#3d444f', MUTED: '#696f7b',
+    LINE: '#e4e7ec', LINE_HI: '#c8ced7', TRACK: '#e9edf2',
+    // The lime is ~1.4:1 on white, so it cannot carry text here. It stays a
+    // FILL (rules, bars, buttons) and a deep green does the talking.
+    ACCENT_TEXT: '#1f7a3d',
+    WIN: '#157f4c', LOSS: '#c0392b',
+  },
+};
+const T = THEMES[THEME];
+const PAGE = T.PAGE, CARD = T.CARD, PANEL = T.PANEL;
+const INK = T.INK, BODY = T.BODY, MUTED = T.MUTED;
+const LINE = T.LINE, LINE_HI = T.LINE_HI, TRACK = T.TRACK;
+const WIN = T.WIN, LOSS = T.LOSS;
+// Brand lime. Always safe as a FILL behind dark text; only safe AS text on
+// the dark theme, which is what ACCENT_TEXT exists to keep straight.
 const LIME = '#c6ff1c';
-const LINK = '#14652f';
-const WIN = '#157f4c';
-const LOSS = '#c0392b';
-const TRACK = '#e8ecf2';
+const ACCENT_TEXT = T.ACCENT_TEXT;
+const BTN = LIME;
+const BTN_INK = '#0b0d10';
+const LINK = ACCENT_TEXT;
+
+// Two stacks. Headlines go condensed to echo Barlow Condensed from the app -
+// Arial Narrow ships on Windows and macOS, and the fallbacks degrade to a
+// normal-width bold rather than to something wrong. Body stays a plain UI
+// sans, which is what actually renders reliably at small sizes in mail.
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const DISPLAY = "'Barlow Condensed', 'Arial Narrow', 'Helvetica Neue Condensed', 'Liberation Sans Narrow', Arial, sans-serif";
+// Stat figures. Tabular so columns of numbers line up down the page.
+const MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace";
 
 const pickCorrect = (m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect);
 const pickFavorite = (m) => m.pickFavorite || m.smashFavorite;
@@ -134,6 +182,70 @@ const kellyFraction = (p, o) => {
   const f = (p * o - 1) / (o - 1);
   return f > 0 ? f : 0;
 };
+const clampP = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+// The model's stated probability re-expressed at its measured reliability.
+const adjustProb = (p, lambda = 1) =>
+  (lambda === 1 ? p : clampP(0.5 + lambda * (p - 0.5), 0.001, 0.999));
+
+// How far the stated confidence is borne out, measured on the graded forward
+// record and shrunk toward 1 by sample size.
+function reliability(graded, minSample = 60) {
+  const rows = (graded || []).filter(
+    (r) => typeof r.favProb === 'number' && (r.status === 'won' || r.status === 'lost')
+  );
+  const n = rows.length;
+  if (!n) return { n: 0, lambda: 1, accuracy: null, stated: null, trusted: false };
+  const accuracy = rows.filter((r) => r.correct).length / n;
+  const stated = rows.reduce((t, r) => t + r.favProb, 0) / n;
+  const raw = stated > 0.5 + 1e-6 ? (accuracy - 0.5) / (stated - 0.5) : 1;
+  const w = n / (n + minSample);
+  return { n, accuracy, stated, lambda: clampP(1 + w * (raw - 1), 0.5, 1.5), trusted: n >= minSample };
+}
+
+// The flat-stake spread the builder recommends: an equal stake on as much of
+// the card as can still cover itself. Taken best-price-first and kept while
+// the portfolio's expected return covers the whole stake, which with equal
+// stakes is a test on the AVERAGE - so a short price rides along when the
+// rest of the card carries it.
+function spreadPlan(bets, budget, lambda = 1) {
+  const adj = (bets || [])
+    .map((b) => ({ ...b, p: adjustProb(b.p, lambda) }))
+    .filter((b) => b.o > 1 && b.p > 0);
+  const ranked = [...adj].sort((a, b) => (b.p * b.o) - (a.p * a.o));
+  let take = 0, sum = 0;
+  for (let i = 0; i < ranked.length; i++) {
+    const next = sum + ranked[i].p * ranked[i].o;
+    if (next < i + 1 - 1e-12) break;
+    sum = next;
+    take = i + 1;
+  }
+  const chosen = ranked.slice(0, take);
+  const perMatch = take > 0 ? (Number(budget) || 0) / take : 0;
+  const staked = perMatch * take;
+  const expWinners = chosen.reduce((t, b) => t + b.p, 0);
+  const expReturn = chosen.reduce((t, b) => t + perMatch * b.p * b.o, 0);
+
+  // Chance of finishing ahead, by enumerating every outcome. The card is
+  // small enough that exact beats approximate.
+  let pAhead = null;
+  if (take > 0 && take <= 16) {
+    let acc = 0;
+    for (let mask = 0; mask < (1 << take); mask++) {
+      let prob = 1, pl = 0;
+      for (let i = 0; i < take; i++) {
+        const win = (mask >> i) & 1;
+        prob *= win ? chosen[i].p : 1 - chosen[i].p;
+        pl += win ? perMatch * (chosen[i].o - 1) : -perMatch;
+      }
+      if (pl > 1e-9) acc += prob;
+    }
+    pAhead = acc;
+  }
+  return {
+    rows: chosen, count: take, perMatch, staked, expWinners, expReturn, pAhead,
+    coversStake: take > 0 && expReturn >= staked - 1e-9,
+  };
+}
 
 // What yesterday's suggested plan would actually have returned. Runs the
 // recommender over the calls that carried a price, then settles every stake at
@@ -141,6 +253,12 @@ const kellyFraction = (p, o) => {
 // as such in the copy, and a losing day is printed exactly as loudly.
 const PLAN_BUDGET = 100;
 function planReturn(rows) {
+  // Settle the plan we would ACTUALLY have given, which is the spread: equal
+  // money across as much of the card as covers itself. This used to filter
+  // match by match on +EV and size by Kelly, which is the plan the builder
+  // stopped recommending - so the email was reporting returns from a strategy
+  // it no longer suggests. Same selection as spreadPlan, then settled against
+  // what really happened.
   const bets = [];
   for (const m of rows) {
     const fav = pickFavorite(m);
@@ -149,19 +267,21 @@ function planReturn(rows) {
     if (raw == null) continue;
     const p = fav === m.p1 ? raw : 1 - raw;
     const o = fav === m.p1 ? m.od1 : m.od2;
-    // Only calls that beat the price they were offered at get money. This is
-    // the whole rule: a winner priced badly is still a bet we would not place.
-    if (edgePerDollar(p, o) > 0) bets.push({ p, o, won: !!pickCorrect(m) });
+    bets.push({ key: String(m.id), p, o, won: !!pickCorrect(m) });
   }
   if (!bets.length) return null;
-  const total = bets.reduce((s, b) => s + kellyFraction(b.p, b.o), 0);
+
+  const plan = spreadPlan(bets, PLAN_BUDGET);
+  if (!plan.count) return null;
+
+  const backed = new Map(plan.rows.map((r) => [r.key, r]));
   let staked = 0, profit = 0, hits = 0;
   for (const b of bets) {
-    const stake = (PLAN_BUDGET * kellyFraction(b.p, b.o)) / total;
-    staked += stake;
-    if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+    if (!backed.has(b.key)) continue;   // the spread left this one alone
+    staked += plan.perMatch;
+    if (b.won) { profit += plan.perMatch * (b.o - 1); hits++; } else { profit -= plan.perMatch; }
   }
-  return { n: bets.length, hits, staked, profit, budget: PLAN_BUDGET };
+  return { n: plan.count, hits, staked, profit, budget: PLAN_BUDGET, skipped: bets.length - plan.count };
 }
 
 // Tournament crests for the countdown. Same on-demand mirror as the headshots.
@@ -186,56 +306,313 @@ function mirrorLogo(slamLabel) {
 }
 
 // ── Email primitives ────────────────────────────────────────────────────────
-function bar(percent, color = INK, height = 10) {
+// Flat bar, square ends. The rounded caps read as a progress widget; a
+// scoreboard wants a plain measure.
+function bar(percent, color = LIME, height = 6) {
   const w = Math.max(0, Math.min(100, Math.round(percent)));
   const cell = `height:${height}px;font-size:0;line-height:0;mso-line-height-rule:exactly;`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed;">
     <tr>
-      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};border-radius:5px 0 0 5px;">&nbsp;</td>` : ''}
-      ${w < 100 ? `<td style="${cell}background:${TRACK};border-radius:${w > 0 ? '0 5px 5px 0' : '5px'};">&nbsp;</td>` : ''}
+      ${w > 0 ? `<td width="${w}%" style="${cell}background:${color};">&nbsp;</td>` : ''}
+      ${w < 100 ? `<td style="${cell}background:${TRACK};">&nbsp;</td>` : ''}
     </tr>
   </table>`;
 }
 
+// Lime block, near-square. The brand colour does the work instead of hiding
+// inside a dark chip.
 const button = (href, label) =>
-  `<a href="${href}" style="display:inline-block;background:${BTN};color:${LIME};font-size:15px;font-weight:700;text-decoration:none;padding:13px 24px;border-radius:8px;">${esc(label)}</a>`;
+  `<a href="${href}" style="display:inline-block;background:${BTN};color:${BTN_INK};font-family:${DISPLAY};font-size:16px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;text-decoration:none;padding:13px 26px;border-radius:2px;">${esc(label)}</a>`;
 
 const textLink = (href, label) =>
-  `<a href="${href}" style="color:${LINK};text-decoration:none;font-weight:700;border-bottom:1px solid ${LINE};">${esc(label)}</a>`;
+  `<a href="${href}" style="color:${LINK};text-decoration:none;font-weight:600;border-bottom:1px solid ${LINE_HI};">${esc(label)}</a>`;
 
-// Section wrapper: a white card on the page tint.
+// Section wrapper. The hairline above each one is the only separator, which
+// is what gives the page its column-of-a-sports-desk rhythm.
 const section = (inner) =>
-  `<tr><td style="padding:26px 28px;border-top:1px solid ${LINE};">${inner}</td></tr>`;
+  `<tr><td style="padding:24px 28px 26px;border-top:1px solid ${LINE};">${inner}</td></tr>`;
 
+// Condensed, uppercase, tight. This is the scoreboard headline.
 const h2 = (text) =>
-  `<h2 style="margin:0 0 12px;font-size:19px;line-height:1.3;font-weight:800;color:${INK};">${esc(text)}</h2>`;
+  `<h2 style="margin:0 0 12px;font-family:${DISPLAY};font-size:30px;line-height:1.05;font-weight:700;letter-spacing:0.2px;text-transform:uppercase;color:${INK};">${esc(text)}</h2>`;
 
 const p = (html, extra = '') =>
-  `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:${BODY};${extra}">${html}</p>`;
+  `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:${BODY};${extra}">${html}</p>`;
 
+// Kicker with a rule running off to the right, the standard editorial device
+// for a section marker.
 const kicker = (text) =>
-  `<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:8px;">${esc(text)}</div>`;
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;padding-bottom:8px;">
+    <tr>
+      <td style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;white-space:nowrap;padding:0 10px 8px 0;">${esc(text)}</td>
+      <td style="width:100%;padding:0 0 12px;"><div style="height:1px;background:${LINE_HI};font-size:0;line-height:0;">&nbsp;</div></td>
+    </tr>
+  </table>`;
+
+// A number that should read as data: condensed, tabular, oversized.
+const stat = (value, label, color = INK) =>
+  `<div style="font-family:${MONO};font-size:34px;line-height:1;font-weight:700;color:${color};letter-spacing:-1px;">${esc(value)}</div>
+   <div style="font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-top:7px;">${esc(label)}</div>`;
 
 // ── Content builders ────────────────────────────────────────────────────────
 
 // One upcoming match: two headshots, the call, a probability bar, a line of
 // read on the market, and the three ways into the app.
-function matchCard(pr, upset) {
+// Today's card, grouped. A flat list forces the reader to re-read the event
+// and tour on every row; grouping states it once and lets the matches read as
+// an order of play. Events are ordered by their first match, ATP before WTA
+// inside an event, and matches by start time within that.
+// ── The hero match ──────────────────────────────────────────────────────────
+// One match gets the full treatment and the rest go in a list, because a page
+// of five equal cards has no focal point and reads as a fixture list.
+//
+// "Biggest" is three things at once, so it is scored rather than guessed:
+// how often these two have met (a rivalry), how much of the title race they
+// represent (stature), and how close we think it is (a blowout is nobody's
+// most anticipated match). Each is normalised to 0-1 so the weights mean
+// something, and the winner also reports WHY it won, which is the honest way
+// to present a ranked choice.
+const h2hKey = (a, b) => [a, b].sort().join('_');
+
+function h2hFor(h2hDoc, tour, p1, p2) {
+  const book = (h2hDoc && h2hDoc[tour === 'wta' ? 'wta' : 'atp']) || {};
+  const rec = book[h2hKey(p1, p2)];
+  if (!rec) return null;
+  const firstIsP1 = [p1, p2].sort()[0] === p1;
+  return {
+    wins1: firstIsP1 ? rec.winsA : rec.winsB,
+    wins2: firstIsP1 ? rec.winsB : rec.winsA,
+    form1: firstIsP1 ? rec.recentFormA : rec.recentFormB,
+    form2: firstIsP1 ? rec.recentFormB : rec.recentFormA,
+    meetings: (rec.winsA || 0) + (rec.winsB || 0),
+  };
+}
+
+// How WE have done calling this exact pairing, from the graded record. Thin
+// by nature (two players meet a handful of times a season), so it is only
+// shown when it exists and is never dressed up as a trend.
+function pairRecord(track, p1, p2) {
+  const rows = ((track && track.matches) || []).filter((m) => {
+    const c = m.pickCorrect != null ? m.pickCorrect : m.smashCorrect;
+    return c != null && h2hKey(m.p1, m.p2) === h2hKey(p1, p2);
+  });
+  if (!rows.length) return null;
+  const w = rows.filter((m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect)).length;
+  return { w, l: rows.length - w, n: rows.length };
+}
+
+function titleProb(oddsDoc, tour, id) {
+  const ev = oddsDoc && oddsDoc.events && oddsDoc.events[tour];
+  if (!ev || !Array.isArray(ev.odds)) return 0;
+  const hit = ev.odds.find((x) => x.id === id);
+  return hit ? (hit.prob || 0) : 0;
+}
+
+function pickHero(card, h2hDoc, oddsDoc) {
+  let best = null;
+  for (const pr of card) {
+    const h = h2hFor(h2hDoc, pr.tour, pr.p1, pr.p2);
+    const meetings = h ? h.meetings : 0;
+    const stature = titleProb(oddsDoc, pr.tour, pr.p1) + titleProb(oddsDoc, pr.tour, pr.p2);
+    const rivalry = Math.min(meetings, 10) / 10;
+    const star = Math.min(stature, 0.6) / 0.6;
+    const close = 1 - Math.min(1, Math.abs((pr.favProb || 0.5) - 0.5) * 2);
+    const score = 0.40 * rivalry + 0.35 * star + 0.25 * close;
+    // Why it won, in the reader's terms rather than as a score.
+    const why = meetings >= 5 ? `their ${meetings + 1}${[, 'st', 'nd', 'rd'][((meetings + 1) % 100 - (meetings + 1) % 10 !== 10) && (meetings + 1) % 10] || 'th'} meeting`
+      : star > 0.5 ? 'two of the title favourites'
+        : close > 0.8 ? 'the closest call on the card'
+          : 'the pick of the day';
+    if (!best || score > best.score) {
+      best = { pr, score, h, why, meetings, photo1: mirrorPhoto(pr.tour, pr.p1), photo2: mirrorPhoto(pr.tour, pr.p2) };
+    }
+  }
+  return best;
+}
+
+// Tale of the tape: the two of them, compared row by row. Same vocabulary the
+// share cards use (recent form, career head to head) plus the two numbers this
+// email trades in - our call and the market's.
+function taleOfTheTape(hero, mkt, ranks, pairRec) {
+  const pr = hero.pr;
+  const favIsP1 = pr.favorite === pr.p1;
+  const our1 = Math.round((favIsP1 ? pr.favProb : 1 - pr.favProb) * 100);
+  const mkt1 = mkt == null ? null : Math.round((favIsP1 ? mkt : 1 - mkt) * 100);
+  const h = hero.h;
+  const rank1 = ranks.get(pr.p1);
+  const rank2 = ranks.get(pr.p2);
+
+  // Name block: given name small above the surname, which is how a tale of
+  // the tape has always been set and stops long names wrapping badly.
+  const nameBlock = (full, rank, align) => {
+    const parts = String(full || '').trim().split(/\s+/);
+    const last = parts.length > 1 ? parts.slice(-1)[0] : full;
+    const first = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    return `
+      <div style="font-size:12px;letter-spacing:0.6px;color:${MUTED};text-align:${align};padding-top:10px;">${esc(first)}</div>
+      <div style="font-family:${DISPLAY};font-size:26px;font-weight:700;line-height:1.05;text-transform:uppercase;color:${INK};text-align:${align};">${esc(last)}</div>
+      <div style="font-family:${MONO};font-size:11px;letter-spacing:1px;color:${MUTED};text-align:${align};padding-top:5px;">${rank ? `WORLD #${rank}` : 'UNRANKED'}</div>`;
+  };
+
+  const face = (url, alt, isFav) => (url
+    ? `<img src="${url}" width="84" height="84" alt="${esc(alt)}" style="display:block;width:84px;height:84px;border-radius:2px;border:2px solid ${isFav ? LIME : LINE_HI};" />`
+    : `<div style="width:84px;height:84px;border-radius:2px;background:${TRACK};"></div>`);
+
+  // Each row is a duel: the stronger side is inked, the other muted, so the
+  // card can be read down the middle without reading the numbers.
+  const row = (label, a, b, strongSide) => `
+    <tr>
+      <td width="34%" align="left" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:16px;font-weight:700;color:${strongSide === 1 ? INK : MUTED};">${esc(a)}</td>
+      <td width="32%" align="center" style="padding:10px 6px;border-top:1px solid ${LINE};font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(label)}</td>
+      <td width="34%" align="right" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:16px;font-weight:700;color:${strongSide === 2 ? INK : MUTED};">${esc(b)}</td>
+    </tr>`;
+
+  return `
+  <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};margin-bottom:18px;">
+    <div style="padding:12px 20px;border-bottom:1px solid ${LINE};">
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;">Tale of the tape</span>
+      <span style="font-size:11px;color:${MUTED};"> &nbsp;&middot;&nbsp; ${esc(hero.why)}</span>
+    </div>
+    <div style="padding:18px 20px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td width="40%" align="left" style="vertical-align:top;">
+            ${face(hero.photo1, pr.name1, favIsP1)}
+            ${nameBlock(pr.name1, rank1, 'left')}
+          </td>
+          <td width="20%" align="center" style="vertical-align:middle;font-family:${DISPLAY};font-size:20px;letter-spacing:2px;text-transform:uppercase;color:${MUTED};font-weight:700;">v</td>
+          <td width="40%" align="right" style="vertical-align:top;">
+            ${face(hero.photo2, pr.name2, !favIsP1)}
+            ${nameBlock(pr.name2, rank2, 'right')}
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:16px;">
+        ${row('Our call', `${our1}%`, `${100 - our1}%`, our1 >= 50 ? 1 : 2)}
+        ${mkt1 != null ? row('The market', `${mkt1}%`, `${100 - mkt1}%`, mkt1 >= 50 ? 1 : 2) : ''}
+        ${h ? row('Career h2h', String(h.wins1), String(h.wins2), h.wins1 === h.wins2 ? 0 : (h.wins1 > h.wins2 ? 1 : 2)) : ''}
+        ${h && h.form1 && h.form2 ? row('Last 10', h.form1, h.form2, 0) : ''}
+      </table>
+      ${pairRec ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid ${LINE};font-size:12px;line-height:1.6;color:${MUTED};">
+        Our record calling this pairing: <strong style="color:${INK};">${pairRec.w}-${pairRec.l}</strong> from ${plural(pairRec.n, 'meeting', 'meetings')} we have graded${pairRec.n < 3 ? ', which is far too few to mean anything yet' : ''}.
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+// A label for the shape of a call, so the list can be scanned. Only one is
+// shown, in priority order, because two tags on a row is noise.
+//
+// "Upset call" is the one that earns its place: it fires when we back the side
+// the MARKET prices as the outsider, which is the only situation where our
+// number is doing something a fixture list could not.
+function matchLabel(pr, ranks) {
+  const favIsP1 = pr.favorite === pr.p1;
+  const ourOdds = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+  const theirOdds = Number(favIsP1 ? pr.lockOdd2 : pr.lockOdd1);
+  const mkt = marketProb(pr);
+  const ourRank = ranks && ranks.get(favIsP1 ? pr.p1 : pr.p2);
+  const theirRank = ranks && ranks.get(favIsP1 ? pr.p2 : pr.p1);
+
+  // Backing the underdog, by either measure. The price is the better signal
+  // when we have one; ranking still catches it when we do not, which matters
+  // because a good share of the card goes unpriced at lock time.
+  const priceUpset = ourOdds > 1 && theirOdds > 1 && ourOdds > theirOdds;
+  const rankUpset = ourRank && theirRank && ourRank > theirRank + 10;
+  if (priceUpset || rankUpset) return { text: 'Upset call', tone: 'up' };
+
+  if (mkt != null && (pr.favProb - mkt) >= 0.10) return { text: 'Value', tone: 'good' };
+  // The mirror image, and worth saying out loud: they are keener than we are.
+  if (mkt != null && (mkt - pr.favProb) >= 0.10) return { text: 'Market disagrees', tone: 'mute' };
+  if ((pr.favProb || 0) <= 0.56) return { text: 'Coin toss', tone: 'mute' };
+  if ((pr.favProb || 0) >= 0.85) return { text: 'Heavy favourite', tone: 'mute' };
+  if (mkt == null) return { text: 'No price', tone: 'mute' };
+  return null;
+}
+
+const labelChip = (l) => {
+  if (!l) return '';
+  const bg = l.tone === 'up' ? LIME : l.tone === 'good' ? WIN : TRACK;
+  const fg = l.tone === 'up' ? BTN_INK : l.tone === 'good' ? CARD : MUTED;
+  return `<span style="display:inline-block;background:${bg};color:${fg};font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:3px 7px;border-radius:2px;white-space:nowrap;">${esc(l.text)}</span>`;
+};
+
+// Everything that is not the hero: a small card with both faces, full names
+// and the price you would actually be offered.
+function compactRow(pr, ranks) {
   const favIsP1 = pr.favorite === pr.p1;
   const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
   const dogName = favIsP1 ? pr.name2 : pr.name1;
-  const favId = favIsP1 ? pr.p1 : pr.p2;
-  const dogId = favIsP1 ? pr.p2 : pr.p1;
-  const prob = Math.round((pr.favProb || 0) * 100);
-  const favPhoto = mirrorPhoto(pr.tour, favId);
-  const dogPhoto = mirrorPhoto(pr.tour, dogId);
+  const favPhoto = mirrorPhoto(pr.tour, favIsP1 ? pr.p1 : pr.p2);
+  const ourOdds = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
   const when = new Date(pr.date);
-  const timeLabel = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
-    ? `${when.toISOString().slice(11, 16)} UTC`
-    : 'time to be confirmed';
+  const time = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
+    ? `${when.toISOString().slice(11, 16)} UTC` : 'Time TBC';
+  const label = matchLabel(pr, ranks);
+  return `
+  <tr>
+    <td style="padding:0 0 10px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};background:${CARD};">
+        <tr>
+          <td width="52" style="padding:11px 0 11px 12px;vertical-align:middle;">
+            ${favPhoto
+    ? `<img src="${favPhoto}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border-radius:2px;border:2px solid ${LIME};" />`
+    : `<div style="width:40px;height:40px;border-radius:2px;background:${TRACK};"></div>`}
+          </td>
+          <td style="padding:11px 10px;vertical-align:middle;font-size:14px;line-height:1.45;color:${BODY};">
+            <a href="${matchUrl(pr)}" style="color:${INK};text-decoration:none;font-weight:700;">${esc(favName)}</a>
+            <span style="color:${MUTED};"> over ${esc(dogName)}</span>
+            <div style="padding-top:3px;font-size:11px;color:${MUTED};">
+              ${esc(time)}${label ? ' &nbsp;' : ''}${labelChip(label)}
+            </div>
+          </td>
+          <td align="right" style="padding:11px 12px 11px 8px;vertical-align:middle;white-space:nowrap;">
+            <div style="font-family:${MONO};font-size:17px;font-weight:700;color:${INK};">${Math.round((pr.favProb || 0) * 100)}%</div>
+            <div style="font-family:${MONO};font-size:11px;color:${MUTED};padding-top:2px;">${ourOdds > 1 ? `@ ${ourOdds.toFixed(2)}` : 'no price'}</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
 
-  // The read: what the market thinks, versus us. This is the line that makes
-  // the email worth opening rather than a fixture list.
+function groupCard(rows) {
+  const groups = new Map();
+  for (const pr of rows) {
+    const key = `${pr.event || 'Other'}|${pr.tour || 'atp'}`;
+    if (!groups.has(key)) {
+      groups.set(key, { event: pr.event || 'Other', tour: pr.tour || 'atp', surface: pr.surface, rows: [] });
+    }
+    groups.get(key).rows.push(pr);
+  }
+  const at = (g) => Math.min(...g.rows.map((r) => new Date(r.date).getTime() || Infinity));
+  const out = [...groups.values()];
+  for (const g of out) g.rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return out.sort((a, b) => (at(a) - at(b)) || a.event.localeCompare(b.event) || a.tour.localeCompare(b.tour));
+}
+
+// Tour badge: a filled block, because a coloured word is not enough of a
+// signal when the two tours sit one above the other.
+const tourBadge = (tour) =>
+  `<span style="display:inline-block;background:${tour === 'wta' ? INK : LIME};color:${tour === 'wta' ? CARD : BTN_INK};font-family:${DISPLAY};font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;padding:3px 8px;border-radius:2px;">${tour === 'wta' ? 'WTA' : 'ATP'}</span>`;
+
+const groupHead = (g) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;padding-bottom:6px;">
+    <tr>
+      <td width="52" style="padding:0 10px 10px 0;vertical-align:middle;">${tourBadge(g.tour)}</td>
+      <td style="padding:0 0 10px;vertical-align:middle;font-family:${DISPLAY};font-size:22px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:${INK};">
+        ${esc(g.event)}<span style="color:${MUTED};font-size:15px;letter-spacing:1.4px;"> &nbsp;${esc(g.surface || '')}</span>
+      </td>
+    </tr>
+  </table>`;
+
+// The read: what the market thinks, versus us. This is the line that makes a
+// match worth reading about rather than a fixture to note down. Extracted from
+// the old matchCard, which the hero and the compact list between them replaced.
+function matchRead(pr, upset) {
+  const favIsP1 = pr.favorite === pr.p1;
+  const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
+  const prob = Math.round((pr.favProb || 0) * 100);
   const mkt = marketProb(pr);
   let read;
   if (upset) {
@@ -243,55 +620,34 @@ function matchCard(pr, upset) {
   } else if (mkt != null) {
     const gap = Math.round((pr.favProb - mkt) * 100);
     if (gap >= 10) {
-      read = `We rate ${esc(lastName(favName))} ${gap} points higher than the bookmakers do, and calls in that band have come in about 69% of the time.`;
+      read = `We have ${esc(lastName(favName))} ${gap} points clear of where the bookmakers do. That gap has been our best zone: 55% winners against a market that gave those calls 44%.`;
     } else if (gap <= -8) {
-      read = `The market is warmer on ${esc(lastName(favName))} than we are, pricing this nearer ${Math.round(mkt * 100)}%. We still take the same side, with less conviction than they have.`;
+      read = `The market likes ${esc(lastName(favName))} rather more than we do, at ${Math.round(mkt * 100)}%. Same side, less swagger.`;
     } else if (prob <= 56) {
-      read = `Close to a coin toss, and we say so: ${prob}% is the honest number, not a headline.`;
+      read = `About as close to a coin toss as tennis gets. ${prob}% is the honest number, not a headline.`;
     } else {
-      read = `The bookmakers land in much the same place at ${Math.round(mkt * 100)}%, so there is no argument here, just a favourite.`;
+      read = `The book lands within a couple of points at ${Math.round(mkt * 100)}%. No argument here, just a favourite.`;
     }
   } else {
     read = prob >= 70
-      ? `A clear favourite on our numbers. No closing price was quoted when we locked it.`
-      : `Tight on our numbers, and unpriced at lock time, so there is no market to argue with.`;
+      ? `A clear favourite on our numbers, and nobody quoted a price when we locked it. Take it up with the bookmakers.`
+      : `Tight on our numbers and unpriced at lock time, so there is no market to argue with. Just the maths.`;
   }
-
-  const face = (url, alt, dim) => (url
-    ? `<img src="${url}" width="54" height="54" alt="${esc(alt)}" style="display:block;width:54px;height:54px;border-radius:27px;border:2px solid ${dim ? LINE : INK};" />`
-    : `<div style="width:54px;height:54px;border-radius:27px;background:${TRACK};"></div>`);
-
-  return `
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;margin-bottom:16px;">
-    <tr><td style="padding:18px 20px;">
-      <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:12px;">
-        ${esc((pr.tour || '').toUpperCase())} &nbsp;&middot;&nbsp; ${esc(pr.event || '')} &nbsp;&middot;&nbsp; ${esc(pr.surface || '')} &nbsp;&middot;&nbsp; ${esc(timeLabel)}
-      </div>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-        <tr>
-          <td width="54" style="padding-right:12px;">${face(favPhoto, favName, false)}</td>
-          <td style="font-size:17px;font-weight:800;color:${INK};line-height:1.35;">
-            ${esc(lastName(favName))}
-            <span style="font-weight:400;color:${MUTED};font-size:15px;"> to beat ${esc(lastName(dogName))}</span>
-          </td>
-          <td width="54" style="padding-left:12px;">${face(dogPhoto, dogName, true)}</td>
-        </tr>
-      </table>
-      <div style="font-size:14px;color:${BODY};padding:14px 0 6px;">Our number: <strong style="color:${INK};font-size:16px;">${prob}%</strong></div>
-      ${bar(prob)}
-      <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:${BODY};">${read}</p>
-      <div style="padding-top:14px;font-size:14px;line-height:2;">
-        ${textLink(matchUrl(pr), 'Read the full call')}
-        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
-        ${textLink(compareUrl(pr), 'Compare them')}
-        <span style="color:${LINE};padding:0 6px;">&nbsp;</span>
-        ${textLink(simUrl(pr), 'Run the simulation')}
-      </div>
-    </td></tr>
-  </table>`;
+  return read;
 }
 
+
 // A graded result, with the face of whoever we backed.
+// Which side the bookmakers made favourite, from the prices we stamped before
+// play, and whether it won. Null when the match carried no price.
+function marketVerdict(m) {
+  const o1 = Number(m.lockOdd1 ?? m.od1), o2 = Number(m.lockOdd2 ?? m.od2);
+  if (!(o1 > 1) || !(o2 > 1) || o1 === o2) return null;
+  const favId = o1 < o2 ? m.p1 : m.p2;           // shorter price = their favourite
+  const favName = o1 < o2 ? m.name1 : m.name2;
+  return { favId, favName, right: favId === m.winner, agreed: favId === pickFavorite(m) };
+}
+
 function resultRow(m) {
   const hit = !!pickCorrect(m);
   const fav = pickFavorite(m);
@@ -302,13 +658,27 @@ function resultRow(m) {
   const raw = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
   const prob = Math.round((favIsP1 ? raw : 1 - raw) * 100);
   const photo = mirrorPhoto(m.tour, fav);
+  const mv = marketVerdict(m);
+  // The interesting column. Agreeing with the market and both being right
+  // proves nothing; the rows worth reading are the ones where we split.
+  // "Market agreed" / "Market split" read two wrong ways at once: agreed with
+  // WHAT, and split between whom? The column only ever answers one question -
+  // who the bookmakers made favourite, and whether that player won - so it
+  // now just says that. Whether they were with us or against us is visible
+  // from the name itself, without a word of jargon.
+  const marketCell = mv
+    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Bookies' pick</div>
+       <div style="font-size:13px;line-height:1.5;color:${mv.right ? WIN : LOSS};font-weight:700;padding-top:3px;white-space:nowrap;">
+         ${esc(lastName(mv.favName))} ${mv.right ? 'won' : 'lost'}
+       </div>`
+    : `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">No price</div>`;
   return `
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid ${LINE};">
     <tr>
       <td width="40" style="padding:12px 12px 12px 0;">
         ${photo
-    ? `<img src="${photo}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:18px;border:2px solid ${hit ? WIN : LOSS};" />`
-    : `<div style="width:36px;height:36px;border-radius:18px;background:${TRACK};"></div>`}
+    ? `<img src="${photo}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:2px;border:2px solid ${hit ? WIN : LOSS};" />`
+    : `<div style="width:36px;height:36px;border-radius:2px;background:${TRACK};"></div>`}
       </td>
       <td style="padding:12px 0;font-size:14px;line-height:1.5;color:${BODY};">
         <strong style="color:${INK};">${esc(lastName(ourPick))}</strong> over ${esc(lastName(other))} at ${prob}%
@@ -316,6 +686,7 @@ function resultRow(m) {
           ${hit ? 'Landed' : `Missed, ${esc(lastName(winner))} won`}${m.score ? `<span style="color:${MUTED};font-weight:400;"> &nbsp;${esc(m.score)}</span>` : ''}
         </div>
       </td>
+      <td align="right" valign="top" style="padding:12px 0 12px 14px;">${marketCell}</td>
     </tr>
   </table>`;
 }
@@ -377,13 +748,37 @@ async function main() {
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
+  // Head-to-head is stored per tour, the same split the app reads. Loading
+  // only the ATP file silently gave every WTA match an empty record, which
+  // also skewed the hero pick: no meetings meant no rivalry score.
+  // World ranking per player, from the roster the pipeline already maintains.
+  // Per tour, like everything else here.
+  const rankBook = { atp: new Map(), wta: new Map() };
+  for (const [tour, file] of [['atp', path.join(DATA, 'smash_us.csv')], ['wta', path.join(DATA, 'women', 'smash_us.csv')]]) {
+    try {
+      const rows = Papa.parse(fs.readFileSync(file, 'utf8'), { header: true }).data;
+      for (const r of rows) if (r.id && Number(r.us_seed) > 0) rankBook[tour].set(r.id, Number(r.us_seed));
+    } catch { /* ranks are a nice-to-have, never a blocker */ }
+  }
+
+  const h2hDoc = {
+    atp: readJson(path.join(DATA, 'h2h.json')) || {},
+    wta: readJson(path.join(DATA, 'women', 'h2h.json')) || {},
+  };
+  const oddsDoc = readJson(path.join(DATA, 'title_odds.json'));
 
   if (!scorecard && !track && !predsDoc) {
     console.log('No digest inputs found; nothing to build.');
     return;
   }
 
-  const now = new Date();
+  // DIGEST_AS_OF pins "today" to a past date, which is how you rehearse an
+  // edition or look at one from a busier week. Everything downstream - the
+  // seven-day window, the slam countdown, yesterday - keys off this one value.
+  const asOf = process.env.DIGEST_AS_OF;
+  const now = asOf ? new Date(`${asOf}T12:00:00Z`) : new Date();
+  if (asOf && !Number.isFinite(now.getTime())) throw new Error(`DIGEST_AS_OF is not a date: ${asOf}`);
+  if (asOf) console.log(`  (building as of ${now.toISOString().slice(0, 10)})`);
   const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
   const isWeekly = MODE === 'weekly';
   const dateLabel = now.toISOString().slice(0, 10);
@@ -425,9 +820,34 @@ async function main() {
       return mk != null && pr.favProb - mk >= 0.10;
     });
 
-    subject = yday && yday.n
-      ? `${yday.correct} of ${yday.n} yesterday, ${plural(card.length, 'call', 'calls')} locked for today`
-      : `${plural(card.length, 'call', 'calls')} locked for today`;
+    // Subject line. An inbox gives you about forty characters before it
+    // truncates, so this leads with the single most interesting thing on the
+    // card rather than summarising all of it, and the preheader carries the
+    // rest. Priority: a real rivalry beats a bold call, a bold call beats
+    // yesterday's score, and yesterday's score beats a bare count.
+    subject = (() => {
+      const heroPick = pickHero(card.slice(0, 5), h2hDoc, oddsDoc);
+      const n1 = heroPick && lastName(heroPick.pr.name1);
+      const n2 = heroPick && lastName(heroPick.pr.name2);
+      if (heroPick && heroPick.meetings >= 5) return `${n1} v ${n2}, take ${heroPick.meetings + 1}`;
+
+      const upset = card.find((pr) => {
+        const favIsP1 = pr.favorite === pr.p1;
+        const a = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+        const b = Number(favIsP1 ? pr.lockOdd2 : pr.lockOdd1);
+        return a > 1 && b > 1 && a > b;
+      });
+      if (upset) return `We are taking ${lastName(upset.favName || upset.name1)} and we know how that looks`;
+
+      if (yday && yday.n) {
+        const yp = pct(yday.correct, yday.n);
+        if (yday.correct === yday.n) return `${yday.n} from ${yday.n}. Let us enjoy this one`;
+        if (yp < 34) return `${yday.correct} from ${yday.n} yesterday. Moving on`;
+        if (yp >= 70) return `${yday.correct} from ${yday.n}, and ${card.length} more locked`;
+        return `${yday.correct} from ${yday.n} yesterday, ${card.length} locked today`;
+      }
+      return `${plural(card.length, 'call', 'calls')} locked before play`;
+    })();
     preheader = card.length
       ? `Every pick below was locked before play. ${events.length ? events.join(' and ') + '. ' : ''}Plus what we would stake, and ${slamDays != null ? `${slamDays} days to the ${slam.label}` : 'the road ahead'}.`
       : 'Yesterday graded, and what comes next.';
@@ -439,13 +859,16 @@ async function main() {
     // Lede: set the scene in prose before any numbers.
     const ledeBits = [];
     if (yday && yday.n) {
-      ledeBits.push(`Yesterday we called ${yday.correct} of ${yday.n} winners`);
+      const yPct = pct(yday.correct, yday.n);
+      ledeBits.push(`${yday.correct} from ${yday.n} yesterday.`);
       ledeBits.push(yday.correct === yday.n
-        ? ', a clean sweep.'
-        : pct(yday.correct, yday.n) >= 70 ? ', a good day.' : ', and we own the ones that got away.');
+        ? ' A clean sweep, and no, that is not the usual.'
+        : yPct >= 70 ? ' We will take that.'
+          : yPct >= 50 ? ' Half right, which means half wrong, and both halves are below.'
+            : ' Not our finest hour. It is all in the record anyway.');
     }
     if (card.length) {
-      ledeBits.push(` Today there ${card.length === 1 ? 'is' : 'are'} ${plural(card.length, 'match', 'matches')} on the card${events.length ? ` at ${events.join(' and ')}` : ''}, every pick locked and public before a ball is struck.`);
+      ledeBits.push(` ${plural(card.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck.`);
     }
     if (ledeBits.length) {
       blocks.push(section(p(ledeBits.join('').trim())));
@@ -468,17 +891,17 @@ async function main() {
         const usY = pct(pricedY.filter((m) => pickCorrect(m)).length, pricedY.length);
         const themY = pct(pricedY.filter((m) => m.oddCorrect).length, pricedY.length);
         const verdict = usY > themY
-          ? 'We were ahead of them.'
-          : usY === themY ? 'We finished level.' : 'They were ahead of us.';
+          ? 'We edged them.'
+          : usY === themY ? 'Honours even.' : 'They had our number.';
         vsMarket = `
-          <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};border-radius:12px;">
-            ${kicker('The bookmakers, same matches')}
+          <div style="margin-top:18px;padding:16px 18px;border:1px solid ${LINE};background:${PANEL};">
+            ${kicker('Meanwhile, at the bookmakers')}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
               <tr>
                 <td width="50%" style="padding-right:10px;vertical-align:top;">
                   <div style="font-size:22px;font-weight:800;color:${INK};line-height:1.1;">${usY}%</div>
                   <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 7px;">our pick</div>
-                  ${bar(usY, INK, 8)}
+                  ${bar(usY, LIME, 8)}
                 </td>
                 <td width="50%" style="padding-left:10px;vertical-align:top;">
                   <div style="font-size:22px;font-weight:800;color:${MUTED};line-height:1.1;">${themY}%</div>
@@ -488,10 +911,10 @@ async function main() {
               </tr>
             </table>
             <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
-              ${esc(verdict)} Across the ${pricedY.length} of yesterday's matches that carried a closing price. One day is a small sample, and we publish it whichever way it falls.
+              ${esc(verdict)} That is across the ${pricedY.length} of yesterday's matches that carried a price. One day is a tiny sample, and we print it whichever way it falls.
             </p>
           </div>`;
-        vsMarketTxt = `Bookmakers on the same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
+        vsMarketTxt = `Meanwhile, at the bookmakers - same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
       }
 
       // What the suggested plan would have returned, settled at real results.
@@ -502,29 +925,29 @@ async function main() {
         const up = plan.profit >= 0;
         const money = `${up ? '+' : '-'}$${Math.abs(plan.profit).toFixed(2)}`;
         planBlock = `
-          <div style="margin-top:14px;padding:16px 18px;border:1px solid ${up ? WIN : LOSS};border-radius:12px;background:${up ? '#f2fbf6' : '#fdf4f3'};">
-            ${kicker('If you had followed the plan')}
+          <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${up ? WIN : LOSS};">
+            ${kicker('If you had actually followed along')}
             <div style="font-size:28px;font-weight:800;color:${up ? WIN : LOSS};line-height:1.1;">${money}</div>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
-              On a $${plan.budget} bankroll split across the ${plural(plan.n, 'call', 'calls')} that beat their price yesterday, ${plan.hits} of which landed.
-              Settled at the odds we stamped before play. One day proves nothing either way, which is exactly why the whole record is public.
+              A $${plan.budget} bankroll spread over the ${plural(plan.n, 'call', 'calls')} worth backing, ${plan.hits} of which landed, settled at the odds we stamped before play.
+              One good day proves nothing. Neither does one bad one, which is why you get all of them.
             </p>
           </div>`;
-        planTxt = `If you had followed the plan: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
+        planTxt = `If you had actually followed along: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
       }
 
       blocks.push(section(`
-        ${kicker('How yesterday landed')}
-        ${h2(`${yday.correct} of ${yday.n} winners called`)}
-        ${p(`That is ${ypct}% on the day, and every one of those calls was public before the match started. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} won it` : ''}. It goes in the record at full weight, like everything else.` : ''}`)}
+        ${kicker('Yesterday, graded')}
+        ${h2(`${yday.correct} from ${yday.n}`)}
+        ${p(`${ypct}% on the day, all of it public before anyone served. ${yday.worstMiss && yday.worstMiss.call ? `The one that stings: we had <strong style="color:${INK};">${esc(yday.worstMiss.call)}</strong>${yday.worstMiss.winner ? `, and ${esc(yday.worstMiss.winner)} had other ideas` : ''}. It counts exactly as much as the ones we got right.` : ''}`)}
         ${bar(ypct, ypct >= 50 ? WIN : LOSS)}
         ${ydayRows.length ? `<div style="padding-top:16px;">${ydayRows.map(resultRow).join('')}</div>` : ''}
         ${vsMarket}
         ${planBlock}
         <div style="padding-top:16px;">${textLink(`${SITE}/track-record`, 'Every call ever made, graded')}</div>
       `));
-      txtLines.push(`HOW YESTERDAY LANDED: ${yday.correct} of ${yday.n} (${ypct}%)`);
-      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` (${yday.worstMiss.winner} won)` : ''}`);
+      txtLines.push(`YESTERDAY, GRADED: ${yday.correct} from ${yday.n} (${ypct}%)`);
+      if (yday.worstMiss && yday.worstMiss.call) txtLines.push(`  The one that stings: ${yday.worstMiss.call}${yday.worstMiss.winner ? ` - ${yday.worstMiss.winner} had other ideas` : ''}`);
       if (vsMarketTxt) txtLines.push(`  ${vsMarketTxt}`);
       if (planTxt) txtLines.push(`  ${planTxt}`);
       txtLines.push('');
@@ -532,20 +955,30 @@ async function main() {
 
     // Today's card.
     if (shown.length) {
+      // One match carries the section; the rest are a list under it.
+      const hero = pickHero(shown, h2hDoc, oddsDoc);
+      const rest = hero ? shown.filter((pr) => pr.id !== hero.pr.id) : shown;
+      const heroRead = hero ? matchRead(hero.pr, upsetById.get(hero.pr.id)) : '';
+
       const intro = splits.length
-        ? `We disagree with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your attention: agreeing with the favourite proves nothing.`
-        : 'We land close to the market on today\'s card, so these are about conviction rather than argument.';
+        ? `We are out of step with the bookmakers on ${plural(splits.length, 'of these', 'of these')} by ten points or more. Those are the ones worth your time. Agreeing with the favourite is not a take.`
+        : 'We land more or less where the market does today. No arguments, just conviction.';
       blocks.push(section(`
         ${kicker(todays.length ? 'On court today' : 'Next up')}
-        ${h2(`${plural(card.length, 'match', 'matches')}, already locked`)}
+        ${h2(`${plural(card.length, 'call', 'calls')}, no takebacks`)}
         ${p(intro)}
-        ${shown.map((pr) => matchCard(pr, upsetById.get(pr.id))).join('')}
+        ${hero ? taleOfTheTape(hero, marketProb(hero.pr), rankBook[hero.pr.tour === 'wta' ? 'wta' : 'atp'], pairRecord(track, hero.pr.p1, hero.pr.p2)) : ''}
+        ${hero ? p(heroRead, `color:${BODY};`) : ''}
+        ${rest.length ? `<div style="padding-top:4px;">${groupCard(rest).map((g) => groupHead(g) + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">${g.rows.map((pr) => compactRow(pr, rankBook[pr.tour === 'wta' ? 'wta' : 'atp'])).join('')}</table>`).join('')}</div>` : ''}
         ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
       `));
       txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
-      for (const pr of shown) {
+      const txtRows = groupCard(shown).flatMap((g) => [{ head: `${g.event} - ${g.tour.toUpperCase()}` }, ...g.rows]);
+      for (const item of txtRows) {
+        if (item.head) { txtLines.push(`  [ ${item.head} ]`); continue; }
+        const pr = item;
         const favIsP1 = pr.favorite === pr.p1;
-        txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}% - ${pr.event}`);
+        txtLines.push(`  ${lastName(pr.favName || (favIsP1 ? pr.name1 : pr.name2))} over ${lastName(favIsP1 ? pr.name2 : pr.name1)} - ${Math.round(pr.favProb * 100)}%`);
         txtLines.push(`    Call: ${matchUrl(pr)}`);
         txtLines.push(`    Compare: ${compareUrl(pr)}`);
         txtLines.push(`    Simulate: ${simUrl(pr)}`);
@@ -553,15 +986,88 @@ async function main() {
       txtLines.push('');
     }
 
-    // Staking plan.
-    blocks.push(section(`
-      ${kicker('What we would stake')}
-      ${h2('The slip, sized honestly')}
-      ${p('A probability is only half an answer. The parlay builder takes today\'s calls, prices each one against the odds you are actually offered, and splits a budget across only the bets that beat their price. Anything the market has already sharpened past our number gets nothing.')}
-      ${p('It will tell you to stake less than you expected, and some days it will tell you to stake nothing at all. That is the point.')}
-      <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size today\'s slip')}</div>
-    `));
-    txtLines.push(`WHAT WE WOULD STAKE: ${SITE}/parlay`, '');
+    // Staking plan: the ACTUAL recommendation for today's card, not a
+    // description of the tool that makes it. Same maths the builder runs,
+    // mirrored above and pinned by digestStaking.test.js.
+    const rel = reliability(graded);
+    const planBets = card
+      .map((pr) => {
+        const favIsP1 = pr.favorite === pr.p1;
+        const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+        return { pr, key: pr.id, p: pr.favProb, o: o > 1 ? o : 0 };
+      })
+      .filter((b) => b.o > 1 && b.p > 0);
+    const todayPlan = planBets.length ? spreadPlan(planBets, PLAN_BUDGET, rel.lambda) : null;
+
+    if (todayPlan && todayPlan.count > 0) {
+      // Whole amounts read better without the cents in prose ($100, not
+      // $100.00); anything with a fraction keeps them.
+      const money2 = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
+      const stakeRows = todayPlan.rows.map((b) => {
+        const pr = b.pr;
+        const favIsP1 = pr.favorite === pr.p1;
+        const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
+        const dogName = favIsP1 ? pr.name2 : pr.name1;
+        return `
+        <tr>
+          <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
+            <strong style="color:${INK};">${esc(lastName(favName))}</strong>
+            <span style="color:${MUTED};"> over ${esc(lastName(dogName))}</span>
+            <span style="color:${MUTED};font-size:12px;"> &nbsp;${esc((pr.tour || '').toUpperCase())}</span>
+          </td>
+          <td align="right" style="padding:9px 0 9px 8px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:13px;color:${MUTED};white-space:nowrap;">
+            ${Math.round(pr.favProb * 100)}% @ ${b.o.toFixed(2)}
+          </td>
+          <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:14px;font-weight:700;color:${INK};white-space:nowrap;">
+            ${money2(todayPlan.perMatch)}
+          </td>
+        </tr>`;
+      }).join('');
+
+      const skipped = planBets.length - todayPlan.count;
+      const unpriced = card.length - planBets.length;
+
+      blocks.push(section(`
+        ${kicker('The money question')}
+        ${h2('What we would actually stake')}
+        ${p(`Here is the whole plan for today, on a hypothetical ${money2(PLAN_BUDGET)}. Equal money on ${plural(todayPlan.count, 'match', 'matches')}, because spreading is how a ${rel.accuracy != null ? Math.round(rel.accuracy * 100) : 69}% hit rate actually shows up instead of riding on one result.`)}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 14px;">
+          ${stakeRows}
+          <tr>
+            <td style="padding:11px 0 0;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Total staked</td>
+            <td></td>
+            <td align="right" style="padding:11px 0 0 14px;font-family:${MONO};font-size:15px;font-weight:700;color:${INK};">${money2(todayPlan.staked)}</td>
+          </tr>
+        </table>
+        <div style="padding:14px 16px;background:${PANEL};border-left:3px solid ${LIME};">
+          <p style="margin:0;font-size:14px;line-height:1.6;color:${BODY};">
+            <strong style="color:${INK};">We expect ${todayPlan.expWinners.toFixed(1)} of those ${plural(todayPlan.count, 'call', 'calls')} to land, returning ${money2(todayPlan.expReturn)}.</strong>
+            ${todayPlan.coversStake
+    ? `That covers the ${money2(todayPlan.staked)} going out, which is the whole test a plan has to pass here.`
+    : `That is short of the ${money2(todayPlan.staked)} going out, so today the honest answer is to sit it out.`}
+            ${todayPlan.pAhead != null ? ` Odds of actually finishing ahead: ${Math.round(todayPlan.pAhead * 100)}%.` : ''}
+          </p>
+        </div>
+        ${p(`${skipped > 0 ? `${plural(skipped, 'call', 'calls')} on the card got nothing: the price was too short to carry ${skipped === 1 ? 'it' : 'them'}. ` : ''}${unpriced > 0 ? `${plural(unpriced, 'more had', 'more had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
+        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Build your own slip')}</div>
+      `));
+      txtLines.push(`THE MONEY QUESTION - what we would actually stake (hypothetical $${PLAN_BUDGET}):`);
+      for (const b of todayPlan.rows) {
+        const favIsP1 = b.pr.favorite === b.pr.p1;
+        const favName = b.pr.favName || (favIsP1 ? b.pr.name1 : b.pr.name2);
+        txtLines.push(`  ${money2(todayPlan.perMatch)} on ${lastName(favName)} (${Math.round(b.pr.favProb * 100)}% @ ${b.o.toFixed(2)})`);
+      }
+      txtLines.push(`  Total ${money2(todayPlan.staked)}; we expect ${todayPlan.expWinners.toFixed(1)} to land, returning ${money2(todayPlan.expReturn)}${todayPlan.pAhead != null ? `; ${Math.round(todayPlan.pAhead * 100)}% chance of finishing ahead` : ''}`);
+      txtLines.push(`  ${SITE}/parlay`, '');
+    } else {
+      blocks.push(section(`
+        ${kicker('The money question')}
+        ${h2('What we would actually stake')}
+        ${p(`Nothing, today. ${planBets.length ? 'Every price on the card is short enough that even spread across all of them, the expected return does not cover the stake.' : 'Nothing on the card carried a market price when we locked it, so there is no edge to size against.'} Some days that is the answer, and pretending otherwise is how people lose money.`)}
+        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Check it against your own book')}</div>
+      `));
+      txtLines.push(`THE MONEY QUESTION: nothing worth staking today. ${SITE}/parlay`, '');
+    }
 
     // Countdown, with the crest and who the simulation currently likes. The
     // favourites are the promo: a number next to a face is an argument you
@@ -587,11 +1093,11 @@ async function main() {
     return `<tr>
                 <td width="44" style="padding:6px 10px 6px 0;">
                   ${ph
-    ? `<img src="${ph}" width="38" height="38" alt="${esc(x.name)}" style="display:block;width:38px;height:38px;border-radius:19px;border:2px solid ${LINE};" />`
-    : `<div style="width:38px;height:38px;border-radius:19px;background:${TRACK};"></div>`}
+    ? `<img src="${ph}" width="38" height="38" alt="${esc(x.name)}" style="display:block;width:38px;height:38px;border-radius:2px;border:1px solid ${LINE_HI};" />`
+    : `<div style="width:38px;height:38px;border-radius:2px;background:${TRACK};"></div>`}
                 </td>
                 <td style="padding:6px 0;font-size:14px;font-weight:700;color:${INK};">${esc(x.name)}</td>
-                <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, INK, 8)}</td>
+                <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, LIME, 8)}</td>
                 <td width="42" style="padding:6px 0 6px 8px;text-align:right;font-size:14px;font-weight:800;color:${INK};">${prob < 1 ? '<1' : prob}%</td>
               </tr>`;
   }).join('')}
@@ -599,7 +1105,7 @@ async function main() {
         </div>`).join('');
 
       blocks.push(section(`
-        ${kicker('Countdown')}
+        ${kicker('Coming up')}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
             ${logo ? `<td width="72" style="padding-right:16px;vertical-align:middle;"><img src="${logo}" width="64" alt="${esc(slam.label)}" style="display:block;width:64px;height:auto;" /></td>` : ''}
@@ -613,7 +1119,7 @@ async function main() {
         ${contenderTable}
         <div style="padding-top:18px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
       `));
-      txtLines.push(`COUNTDOWN: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
+      txtLines.push(`COMING UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
       for (const { tour, top } of contenders) {
         txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%`).join(', ')}`);
       }
@@ -622,7 +1128,7 @@ async function main() {
 
     if (season && season.n) {
       blocks.push(section(p(
-        `<span style="color:${MUTED};">For the record: ${season.acc}% of winners called across ${season.correct.toLocaleString()} of ${season.n.toLocaleString()} matches this season, today's engines replayed over every one of them.</span>`
+        `<span style="color:${MUTED};">For the record: ${season.acc}% of winners called this season, ${season.correct.toLocaleString()} from ${season.n.toLocaleString()}, with today's engines replayed over every last one of them.</span>`
       )));
       txtLines.push(`SEASON: ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()})`, '');
     }
@@ -636,11 +1142,17 @@ async function main() {
     const weekCorrect = week.filter((m) => pickCorrect(m)).length;
     const weekPct = pct(weekCorrect, week.length);
 
-    subject = week.length
-      ? `Your week: ${weekCorrect} of ${week.length} winners called`
-      : `Smash weekly - ${dateLabel}`;
+    // Same rule as the daily: lead with the one interesting thing, let the
+    // preheader carry the rest. An inbox truncates around forty characters.
+    subject = (() => {
+      if (!week.length) return `A quiet week, and we will say so`;
+      if (weekPct >= 75) return `${weekCorrect} from ${week.length}. A good week, briefly`;
+      if (weekPct < 40) return `${weekCorrect} from ${week.length}. A week to file away`;
+      if (weekPct >= 60) return `${weekCorrect} from ${week.length} this week`;
+      return `${weekCorrect} from ${week.length}, warts and all`;
+    })();
     preheader = week.length
-      ? `${weekPct}% across every graded match, the bold calls that landed, and the ones that did not.`
+      ? `${weekPct}% across every graded match, what following the plan returned, and the ones we got wrong.`
       : 'The week in review.';
     ctaHref = `${SITE}/track-record`;
     ctaText = 'Open the Ledger';
@@ -648,14 +1160,19 @@ async function main() {
     txtLines.push(`SMASH WEEKLY - ${prettyDate}`, '');
 
     if (week.length) {
+      // Lede stands on its own, as it does in the daily. It used to sit
+      // inside the section below, above that section's own kicker and
+      // headline, which read as though the page had started twice.
+      blocks.push(section(p(
+        `Seven days, ${plural(week.length, 'graded match', 'graded matches')}, and a number we cannot go back and edit. Here is the week, warts and all.`
+      )));
       blocks.push(section(`
-        ${p(`Seven days, ${plural(week.length, 'graded match', 'graded matches')}, and a number we cannot edit after the fact. Here is how the week actually went.`)}
         ${kicker('The week')}
-        ${h2(`${weekCorrect} of ${week.length} winners called`)}
-        ${p(`${weekPct}% across every match we graded, hits and misses together. No filtering by confidence, no quietly dropping the ones that aged badly.`)}
+        ${h2(`${weekCorrect} from ${week.length}`)}
+        ${p(`${weekPct}% across everything we graded, hits and misses in the same pile. No filtering by confidence, no quietly losing the ones that aged badly.`)}
         ${bar(weekPct, weekPct >= 50 ? WIN : LOSS, 14)}
       `));
-      txtLines.push(`THE WEEK: ${weekCorrect} of ${week.length} (${weekPct}%)`, '');
+      txtLines.push(`THE WEEK: ${weekCorrect} from ${week.length} (${weekPct}%)`, '');
 
       const days = [];
       for (let i = 6; i >= 0; i--) {
@@ -682,7 +1199,7 @@ async function main() {
         }).join('');
         blocks.push(section(`
           ${kicker('Day by day')}
-          ${p(`Best day was ${esc(best.label)} at ${pct(best.correct, best.n)}%. Volume swings a lot with the draw, so a thin day reads louder than it should.`)}
+          ${p(`${esc(best.label)} was the pick of the week at ${pct(best.correct, best.n)}%. Volume swings hard with the draw, so a thin day shouts louder than it has earned.`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
         `));
         txtLines.push('DAY BY DAY');
@@ -706,7 +1223,7 @@ async function main() {
       if (boldHits.length) {
         blocks.push(section(`
           ${kicker('Bold calls that landed')}
-          ${h2('We took a different winner, and won')}
+          ${h2('We split from the book, and won')}
           ${p(`These are the only matches that really test a model: we named a different winner than the bookmakers did, so one of us had to be wrong. ${boldHits.length === 1 ? 'Once this week' : `${boldHits.length === 2 ? 'Twice' : `${boldHits.length} times`} this week`} it was them.`)}
           ${boldHits.map(resultRow).join('')}
           <div style="padding-top:16px;">${textLink(`${SITE}/edge`, 'Every split we have graded')}</div>
@@ -719,8 +1236,8 @@ async function main() {
       if (misses.length) {
         blocks.push(section(`
           ${kicker('And the ones we got wrong')}
-          ${h2('Our most confident misses')}
-          ${p('Publishing these is the whole deal. A model that only shows you its winners is a highlight reel, not a record.')}
+          ${h2('Where we were most sure, and most wrong')}
+          ${p('Printing these is the whole deal. A model that only shows you its winners is a highlight reel, not a record.')}
           ${misses.map(resultRow).join('')}
         `));
         txtLines.push('THE ONES WE GOT WRONG');
@@ -729,6 +1246,24 @@ async function main() {
           txtLines.push(`  - ${lastName(favIsP1 ? m.name1 : m.name2)} lost to ${lastName(favIsP1 ? m.name2 : m.name1)} ${m.score || ''}`.trimEnd());
         }
         txtLines.push('');
+      }
+
+      // What following the plan would have returned across the whole week. The
+      // daily prints this for one day, where it proves nothing; over seven it
+      // starts to mean something, which is the whole reason a weekly exists.
+      const weekPlan = planReturn(week);
+      if (weekPlan) {
+        const up = weekPlan.profit >= 0;
+        const amount = `${up ? '+' : '-'}$${Math.abs(weekPlan.profit).toFixed(2)}`;
+        const roi = weekPlan.staked > 0 ? (weekPlan.profit / weekPlan.staked) * 100 : 0;
+        blocks.push(section(`
+          ${kicker('If you had followed along all week')}
+          ${h2(`${amount} on $${weekPlan.budget}`)}
+          ${p(`Equal money across the ${plural(weekPlan.n, 'call', 'calls')} the plan actually backed, ${weekPlan.hits} of which landed, every one settled at the price we stamped before play. That is ${roi >= 0 ? 'a return of' : 'a loss of'} ${Math.abs(roi).toFixed(1)}% on the week.`)}
+          ${p(`${up ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and seven days is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
+          <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
+        `));
+        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK: ${amount} on $${weekPlan.budget} (${weekPlan.hits}/${weekPlan.n} landed, ${roi.toFixed(1)}%)`, '');
       }
 
       const priced = week.filter((m) => m.oddCorrect != null);
@@ -749,7 +1284,7 @@ async function main() {
               <td width="50%" style="padding:0 10px 0 0;vertical-align:top;">
                 <div style="font-size:26px;font-weight:800;color:${INK};line-height:1.1;">${us}%</div>
                 <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;padding:2px 0 8px;">us</div>
-                ${bar(us, INK)}
+                ${bar(us, LIME)}
               </td>
               <td width="50%" style="padding:0 0 0 10px;vertical-align:top;">
                 <div style="font-size:26px;font-weight:800;color:${MUTED};line-height:1.1;">${them}%</div>
@@ -769,6 +1304,7 @@ async function main() {
     if (decided.length || (season && season.n)) {
       blocks.push(section(`
         ${kicker('The standing record')}
+        ${h2('The number that cannot be edited')}
         ${decided.length ? p(`<strong style="color:${INK};">${fwdWon}-${decided.length - fwdWon}</strong> on calls locked before play and graded after${pending ? `, with ${pending} still pending` : ''}. That is the honest one: no hindsight, no re-runs.`) : ''}
         ${season && season.n ? p(`<span style="color:${MUTED};">Season benchmark ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()}), today's engines replayed over the season.</span>`) : ''}
       `));
@@ -809,26 +1345,32 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="color-scheme" content="light" />
-<meta name="supported-color-schemes" content="light" />
+<meta name="color-scheme" content="${THEME}" />
+<meta name="supported-color-schemes" content="${THEME}" />
 <title>${esc(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(preheader)}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE};font-family:${FONT};">
     <tr><td align="center" style="padding:28px 12px 36px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${CARD};border:1px solid ${LINE};border-radius:14px;overflow:hidden;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:${CARD};border:1px solid ${LINE};border-radius:2px;overflow:hidden;">
         <tr>
-          <td style="padding:26px 28px 22px;background:${INK};">
+          <td style="padding:22px 28px 0;background:${CARD};">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:1px;">
-                  SMASH<span style="color:${LIME};">.</span>
+                <td style="font-family:${DISPLAY};font-size:40px;line-height:1;font-weight:700;color:${INK};letter-spacing:2px;text-transform:uppercase;">
+                  Smash<span style="color:${LIME};">.</span>
                 </td>
-                <td align="right" style="font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${LIME};">${esc(editionLabel)}</td>
+                <td align="right" style="font-family:${DISPLAY};font-size:15px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${LIME};padding-bottom:4px;">${esc(editionLabel)}</td>
               </tr>
             </table>
-            <div style="font-size:13px;color:#aab2bf;padding-top:8px;">${esc(prettyDate)} &nbsp;&middot;&nbsp; every call locked before play, graded in public</div>
+            <!-- Masthead rule: heavy line under the wordmark, then the
+                 dateline below it. The device that says "publication" rather
+                 than "product notification". -->
+            <div style="height:3px;background:${LIME};font-size:0;line-height:0;margin-top:10px;">&nbsp;</div>
+            <div style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};padding:10px 0 20px;">
+              ${esc(prettyDate)} &nbsp;&middot;&nbsp; every call locked before play, graded in public
+            </div>
           </td>
         </tr>
         ${blocks.join('')}
@@ -838,10 +1380,10 @@ async function main() {
           </td>
         </tr>
         <tr>
-          <td style="padding:20px 28px 26px;background:#f7f9fb;border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
-            You are getting this because you asked for the Smash digest.
-            Not betting advice: the season number is a benchmark (today's engines replayed
-            over the season), and only the forward test rows were locked before play.
+          <td style="padding:20px 28px 26px;background:${PAGE};border-top:1px solid ${LINE};font-size:12px;line-height:1.7;color:${MUTED};">
+            You are getting this because you asked for the Smash digest. Not betting advice, and
+            not a tip sheet: the season number is a benchmark (today's engines replayed over the
+            whole season) and only the forward-test rows were locked before play.
             <br /><a href="${SITE}" style="color:${MUTED};">${esc(SITE.replace(/^https?:\/\//, ''))}</a>
             &nbsp;&middot;&nbsp; %%UNSUB_HTML%%
           </td>
@@ -864,6 +1406,57 @@ async function main() {
   fs.writeFileSync(path.join(DATA, `${stem}.txt`), `${fillUnsub(txt, null)}\n`);
   fs.writeFileSync(path.join(DATA, `${stem}.html`), fillUnsub(html, null));
   console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${blocks.length} sections).`);
+
+  // ── Freshness gate ────────────────────────────────────────────────────────
+  // The cadence is "whenever the refresh actually refreshed something". The
+  // workflow runs on a clock, but the data behind it does not: when the
+  // RapidAPI budget guard trips, every fetcher serves the cache and the
+  // pipeline still completes, cheerfully, with last week's card. Without this
+  // check the digest mails the same "2 from 4 yesterday" every morning for as
+  // long as the outage lasts, which is worse than sending nothing - it is
+  // sending something wrong to people who trusted us to be current.
+  //
+  // Two independent signals, either of which stops the send:
+  //   1. the results feed has not moved (mostRecentMatchDate is stale)
+  //   2. a fetcher tripped the spend guard on this run (alert marker present)
+  //
+  // Files are still written either way, so the site and any preview stay
+  // current with whatever we do have. DIGEST_FORCE=1 overrides, for testing.
+  const FRESH_DAYS = MODE === 'weekly' ? 4 : 2;
+  const staleReasons = [];
+  const meta = readJson(path.join(DATA, 'refresh-meta.json'));
+  if (meta && meta.mostRecentMatchDate) {
+    const ageDays = (Date.now() - new Date(meta.mostRecentMatchDate).getTime()) / 864e5;
+    if (ageDays > FRESH_DAYS) {
+      staleReasons.push(
+        `the newest result we hold is ${ageDays.toFixed(1)} days old `
+        + `(${String(meta.mostRecentMatchDate).slice(0, 10)}), past the ${FRESH_DAYS}-day limit for a ${MODE} edition`
+      );
+    }
+  } else {
+    staleReasons.push('refresh-meta.json is missing or has no mostRecentMatchDate, so freshness cannot be established');
+  }
+  try {
+    const alertPath = path.join(__dirname, 'raw', 'api-budget-alert.json');
+    if (fs.existsSync(alertPath)) {
+      const alert = JSON.parse(fs.readFileSync(alertPath, 'utf8'));
+      staleReasons.push(`a fetcher hit the API spend guard (${alert.reason || 'no reason recorded'}), so this run served cached data`);
+    }
+  } catch { /* an unreadable marker is not itself a reason to send */ }
+
+  if (staleReasons.length && process.env.DIGEST_FORCE !== '1') {
+    console.warn(
+      `  ! NO EMAIL WAS SENT - the data behind this digest is not fresh:\n`
+      + staleReasons.map((r) => `      - ${r}`).join('\n')
+      + `\n    The files were still written, so the site is current with what we have.`
+      + `\n    This is deliberate: mailing a stale card every morning during an API`
+      + `\n    outage is worse than skipping a day. Set DIGEST_FORCE=1 to override.`
+    );
+    return;
+  }
+  if (staleReasons.length) {
+    console.warn(`  ! DIGEST_FORCE=1 set, sending despite: ${staleReasons.join('; ')}`);
+  }
 
   // ── Optional send via Resend. Never fatal.
   // Recipients = DIGEST_TO (owner) + the public subscriber list from

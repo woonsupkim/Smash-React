@@ -208,6 +208,16 @@ jobs:
       # recipients) the step writes the files and logs a loud warning saying
       # no mail went out. That combination is why the digest appeared to work
       # for months while never actually mailing anyone.
+      # Cadence: this step runs on every refresh, but the digest only MAILS
+      # when the refresh actually refreshed something. buildDigest checks two
+      # things before sending - whether the results feed has moved, and
+      # whether a fetcher tripped the API spend guard on this run - and skips
+      # the send if either says the data is stale, writing the files anyway.
+      #
+      # That matters because the workflow completing is not the same as the
+      # data being current: when the budget guard trips, every fetcher serves
+      # the cache and this job still succeeds. Without the check, subscribers
+      # got the same card every morning for the length of the outage.
       - name: Build and send the email digest
         continue-on-error: true
         env:

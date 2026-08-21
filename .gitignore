@@ -16,3 +16,6 @@ playwright-report/
 build/
 
 .env.bak
+
+# macOS folder metadata - was committed under src/assets
+.DS_Store
