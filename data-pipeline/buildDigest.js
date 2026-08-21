@@ -767,7 +767,13 @@ async function main() {
     return;
   }
 
-  const now = new Date();
+  // DIGEST_AS_OF pins "today" to a past date, which is how you rehearse an
+  // edition or look at one from a busier week. Everything downstream - the
+  // seven-day window, the slam countdown, yesterday - keys off this one value.
+  const asOf = process.env.DIGEST_AS_OF;
+  const now = asOf ? new Date(`${asOf}T12:00:00Z`) : new Date();
+  if (asOf && !Number.isFinite(now.getTime())) throw new Error(`DIGEST_AS_OF is not a date: ${asOf}`);
+  if (asOf) console.log(`  (building as of ${now.toISOString().slice(0, 10)})`);
   const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
   const isWeekly = MODE === 'weekly';
   const dateLabel = now.toISOString().slice(0, 10);
