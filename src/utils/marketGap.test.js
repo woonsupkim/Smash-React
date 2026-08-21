@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { BAND, BEYOND_CEIL, GAP_FLOOR, GAP_CEIL, bandStats, marketProbOf } from './marketGap';
+import FIGURES from '../data/marketGap.json';
 
 const track = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), 'public/data/track_record.json'), 'utf8')
@@ -36,6 +37,15 @@ describe('the published market-gap figures match the record', () => {
     expect(BEYOND_CEIL.n).toBe(beyond.n);
     near(BEYOND_CEIL.hitRate, beyond.hitRate);
     near(BEYOND_CEIL.stated, beyond.stated);
+  });
+
+  it('was generated with the same gap window the module applies', () => {
+    // The generator is CommonJS in data-pipeline and cannot import this ESM
+    // module, so the window is duplicated. If the two ever drift, the figures
+    // would describe a different band from the one the page selects matches
+    // with - and both halves would look internally consistent.
+    expect(FIGURES.gapFloor).toBe(GAP_FLOOR);
+    expect(FIGURES.gapCeil).toBe(GAP_CEIL);
   });
 
   it('describes a sample big enough to quote', () => {
