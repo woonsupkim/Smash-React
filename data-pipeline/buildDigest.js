@@ -253,6 +253,12 @@ function spreadPlan(bets, budget, lambda = 1) {
 // as such in the copy, and a losing day is printed exactly as loudly.
 const PLAN_BUDGET = 100;
 function planReturn(rows) {
+  // Settle the plan we would ACTUALLY have given, which is the spread: equal
+  // money across as much of the card as covers itself. This used to filter
+  // match by match on +EV and size by Kelly, which is the plan the builder
+  // stopped recommending - so the email was reporting returns from a strategy
+  // it no longer suggests. Same selection as spreadPlan, then settled against
+  // what really happened.
   const bets = [];
   for (const m of rows) {
     const fav = pickFavorite(m);
@@ -261,19 +267,21 @@ function planReturn(rows) {
     if (raw == null) continue;
     const p = fav === m.p1 ? raw : 1 - raw;
     const o = fav === m.p1 ? m.od1 : m.od2;
-    // Only calls that beat the price they were offered at get money. This is
-    // the whole rule: a winner priced badly is still a bet we would not place.
-    if (edgePerDollar(p, o) > 0) bets.push({ p, o, won: !!pickCorrect(m) });
+    bets.push({ key: String(m.id), p, o, won: !!pickCorrect(m) });
   }
   if (!bets.length) return null;
-  const total = bets.reduce((s, b) => s + kellyFraction(b.p, b.o), 0);
+
+  const plan = spreadPlan(bets, PLAN_BUDGET);
+  if (!plan.count) return null;
+
+  const backed = new Map(plan.rows.map((r) => [r.key, r]));
   let staked = 0, profit = 0, hits = 0;
   for (const b of bets) {
-    const stake = (PLAN_BUDGET * kellyFraction(b.p, b.o)) / total;
-    staked += stake;
-    if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+    if (!backed.has(b.key)) continue;   // the spread left this one alone
+    staked += plan.perMatch;
+    if (b.won) { profit += plan.perMatch * (b.o - 1); hits++; } else { profit -= plan.perMatch; }
   }
-  return { n: bets.length, hits, staked, profit, budget: PLAN_BUDGET };
+  return { n: plan.count, hits, staked, profit, budget: PLAN_BUDGET, skipped: bets.length - plan.count };
 }
 
 // Tournament crests for the countdown. Same on-demand mirror as the headshots.
@@ -970,7 +978,6 @@ async function main() {
     // Staking plan: the ACTUAL recommendation for today's card, not a
     // description of the tool that makes it. Same maths the builder runs,
     // mirrored above and pinned by digestStaking.test.js.
-    const PLAN_BUDGET = 100;
     const rel = reliability(graded);
     const planBets = card
       .map((pr) => {
@@ -1124,11 +1131,17 @@ async function main() {
     const weekCorrect = week.filter((m) => pickCorrect(m)).length;
     const weekPct = pct(weekCorrect, week.length);
 
-    subject = week.length
-      ? `Your week: ${weekCorrect} of ${week.length} winners called`
-      : `Smash weekly - ${dateLabel}`;
+    // Same rule as the daily: lead with the one interesting thing, let the
+    // preheader carry the rest. An inbox truncates around forty characters.
+    subject = (() => {
+      if (!week.length) return `A quiet week, and we will say so`;
+      if (weekPct >= 75) return `${weekCorrect} from ${week.length}. A good week, briefly`;
+      if (weekPct < 40) return `${weekCorrect} from ${week.length}. A week to file away`;
+      if (weekPct >= 60) return `${weekCorrect} from ${week.length} this week`;
+      return `${weekCorrect} from ${week.length}, warts and all`;
+    })();
     preheader = week.length
-      ? `${weekPct}% across every graded match, the bold calls that landed, and the ones that did not.`
+      ? `${weekPct}% across every graded match, what following the plan returned, and the ones we got wrong.`
       : 'The week in review.';
     ctaHref = `${SITE}/track-record`;
     ctaText = 'Open the Ledger';
@@ -1136,14 +1149,19 @@ async function main() {
     txtLines.push(`SMASH WEEKLY - ${prettyDate}`, '');
 
     if (week.length) {
+      // Lede stands on its own, as it does in the daily. It used to sit
+      // inside the section below, above that section's own kicker and
+      // headline, which read as though the page had started twice.
+      blocks.push(section(p(
+        `Seven days, ${plural(week.length, 'graded match', 'graded matches')}, and a number we cannot go back and edit. Here is the week, warts and all.`
+      )));
       blocks.push(section(`
-        ${p(`Seven days, ${plural(week.length, 'graded match', 'graded matches')}, and a number we cannot edit after the fact. Here is how the week actually went.`)}
         ${kicker('The week')}
-        ${h2(`${weekCorrect} of ${week.length} winners called`)}
-        ${p(`${weekPct}% across every match we graded, hits and misses together. No filtering by confidence, no quietly dropping the ones that aged badly.`)}
+        ${h2(`${weekCorrect} from ${week.length}`)}
+        ${p(`${weekPct}% across everything we graded, hits and misses in the same pile. No filtering by confidence, no quietly losing the ones that aged badly.`)}
         ${bar(weekPct, weekPct >= 50 ? WIN : LOSS, 14)}
       `));
-      txtLines.push(`THE WEEK: ${weekCorrect} of ${week.length} (${weekPct}%)`, '');
+      txtLines.push(`THE WEEK: ${weekCorrect} from ${week.length} (${weekPct}%)`, '');
 
       const days = [];
       for (let i = 6; i >= 0; i--) {
@@ -1170,7 +1188,7 @@ async function main() {
         }).join('');
         blocks.push(section(`
           ${kicker('Day by day')}
-          ${p(`Best day was ${esc(best.label)} at ${pct(best.correct, best.n)}%. Volume swings a lot with the draw, so a thin day reads louder than it should.`)}
+          ${p(`${esc(best.label)} was the pick of the week at ${pct(best.correct, best.n)}%. Volume swings hard with the draw, so a thin day shouts louder than it has earned.`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
         `));
         txtLines.push('DAY BY DAY');
@@ -1194,7 +1212,7 @@ async function main() {
       if (boldHits.length) {
         blocks.push(section(`
           ${kicker('Bold calls that landed')}
-          ${h2('We took a different winner, and won')}
+          ${h2('We split from the book, and won')}
           ${p(`These are the only matches that really test a model: we named a different winner than the bookmakers did, so one of us had to be wrong. ${boldHits.length === 1 ? 'Once this week' : `${boldHits.length === 2 ? 'Twice' : `${boldHits.length} times`} this week`} it was them.`)}
           ${boldHits.map(resultRow).join('')}
           <div style="padding-top:16px;">${textLink(`${SITE}/edge`, 'Every split we have graded')}</div>
@@ -1207,8 +1225,8 @@ async function main() {
       if (misses.length) {
         blocks.push(section(`
           ${kicker('And the ones we got wrong')}
-          ${h2('Our most confident misses')}
-          ${p('Publishing these is the whole deal. A model that only shows you its winners is a highlight reel, not a record.')}
+          ${h2('Where we were most sure, and most wrong')}
+          ${p('Printing these is the whole deal. A model that only shows you its winners is a highlight reel, not a record.')}
           ${misses.map(resultRow).join('')}
         `));
         txtLines.push('THE ONES WE GOT WRONG');
@@ -1217,6 +1235,24 @@ async function main() {
           txtLines.push(`  - ${lastName(favIsP1 ? m.name1 : m.name2)} lost to ${lastName(favIsP1 ? m.name2 : m.name1)} ${m.score || ''}`.trimEnd());
         }
         txtLines.push('');
+      }
+
+      // What following the plan would have returned across the whole week. The
+      // daily prints this for one day, where it proves nothing; over seven it
+      // starts to mean something, which is the whole reason a weekly exists.
+      const weekPlan = planReturn(week);
+      if (weekPlan) {
+        const up = weekPlan.profit >= 0;
+        const amount = `${up ? '+' : '-'}$${Math.abs(weekPlan.profit).toFixed(2)}`;
+        const roi = weekPlan.staked > 0 ? (weekPlan.profit / weekPlan.staked) * 100 : 0;
+        blocks.push(section(`
+          ${kicker('If you had followed along all week')}
+          ${h2(`${amount} on $${weekPlan.budget}`)}
+          ${p(`Equal money across the ${plural(weekPlan.n, 'call', 'calls')} the plan actually backed, ${weekPlan.hits} of which landed, every one settled at the price we stamped before play. That is ${roi >= 0 ? 'a return of' : 'a loss of'} ${Math.abs(roi).toFixed(1)}% on the week.`)}
+          ${p(`${up ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and seven days is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
+          <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
+        `));
+        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK: ${amount} on $${weekPlan.budget} (${weekPlan.hits}/${weekPlan.n} landed, ${roi.toFixed(1)}%)`, '');
       }
 
       const priced = week.filter((m) => m.oddCorrect != null);
@@ -1257,6 +1293,7 @@ async function main() {
     if (decided.length || (season && season.n)) {
       blocks.push(section(`
         ${kicker('The standing record')}
+        ${h2('The number that cannot be edited')}
         ${decided.length ? p(`<strong style="color:${INK};">${fwdWon}-${decided.length - fwdWon}</strong> on calls locked before play and graded after${pending ? `, with ${pending} still pending` : ''}. That is the honest one: no hindsight, no re-runs.`) : ''}
         ${season && season.n ? p(`<span style="color:${MUTED};">Season benchmark ${season.acc}% (${season.correct.toLocaleString()} of ${season.n.toLocaleString()}), today's engines replayed over the season.</span>`) : ''}
       `));

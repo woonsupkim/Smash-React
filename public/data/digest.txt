@@ -1,27 +1,17 @@
-SMASH WEEKLY - Monday, August 17
+SMASH WEEKLY - Friday, August 21
 
-THE WEEK: 37 of 54 (69%)
-
-DAY BY DAY
-  Tue: 8/10 (80%)
-  Wed: 10/12 (83%)
-  Thu: 17/28 (61%)
-  Fri: 2/4 (50%)
-
-BOLD CALLS THAT LANDED
-  + Navone (against the market) 6-3 7-6(3)
+THE WEEK: 2 from 4 (50%)
 
 THE ONES WE GOT WRONG
-  - Lys lost to Blinkova 3-6 6-2 6-2
-  - Lys lost to Blinkova 3-6 6-2 6-2
-  - Ofner lost to Trungelliti 4-6 6-4 7-6(4)
+  - Volynets lost to Boulter 7-5 0-6 6-4
+  - Svajda lost to Bellucci 7-6(0) 7-6(4)
 
-US VS THE BOOKMAKERS: 63% vs 67% (27 priced matches)
+IF YOU HAD FOLLOWED ALONG ALL WEEK: +$8.20 on $100 (2/3 landed, 8.2%)
 
-FORWARD TEST: 109-50 (109 pending)
+FORWARD TEST: 109-50 (123 pending)
 SEASON: 67%
 
-NEXT UP: 14 days to the US Open
+NEXT UP: 10 days to the US Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
