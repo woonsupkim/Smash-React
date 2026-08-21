@@ -114,8 +114,24 @@ function loadTour(tour) {
   const season = loadStats(tour, false);
   const upset = loadStats(tour, true);
 
-  const allMatches = new Map();  // id -> {date,winnerId,loserId,surface} for the Elo timeline
-  const evalMatches = new Map(); // id -> rec for scoring (roster-vs-roster with stats, this season)
+  // Keyed by match IDENTITY, not by the feed's id. The feed emits the same
+  // match under several ids - sometimes under different tournament names for
+  // the same fixture - and keying on the id let all of them through. 38% of
+  // this file was duplicate rows (5,018 where 3,112 matches were played), one
+  // fixture appearing up to six times.
+  //
+  // Two things were wrong because of it. The published record was inflated,
+  // and the season accuracy with it (67.2% against a true 65.8%, because the
+  // duplicates skew toward matches we called correctly). And allMatches feeds
+  // the ELO TIMELINE, so the same result was moving ratings up to six times.
+  //
+  // Identity is the pair plus the calendar day: two given players do not meet
+  // twice in one day in singles. Same rule the prediction ledger already uses
+  // (see buildPredictions, which was deduplicated for this in v3.7); the
+  // retrospective record never was.
+  const identity = (aId, bId, date) => `${[aId, bId].sort().join('_')}@${String(date).slice(0, 10)}`;
+  const allMatches = new Map();  // identity -> {date,winnerId,loserId,surface} for the Elo timeline
+  const evalMatches = new Map(); // identity -> rec for scoring (roster-vs-roster with stats, this season)
   const tSpan = new Map();       // tournamentId -> {min,max} date span (for the label pass)
   for (const f of fs.readdirSync(RAW).filter((f) => f.endsWith('.json') && !/surfaces|map|profiles|names/.test(f))) {
     let j;
@@ -136,9 +152,10 @@ function loadTour(tour) {
         else { if (m.date < sp.min) sp.min = m.date; if (m.date > sp.max) sp.max = m.date; }
       }
 
-      if (!allMatches.has(id)) {
+      const ident = identity(p1Id, p2Id, m.date);
+      if (!allMatches.has(ident)) {
         const { setsW, setsL } = parseSets(m.result, winId === p1Id);
-        allMatches.set(id, { id, date: m.date, winnerId: winId, loserId: winId === p1Id ? p2Id : p1Id, surface, setsW, setsL, bestOf: Number(m.best_of) || null });
+        allMatches.set(ident, { id, date: m.date, winnerId: winId, loserId: winId === p1Id ? p2Id : p1Id, surface, setsW, setsL, bestOf: Number(m.best_of) || null });
       }
 
       const d = new Date(m.date);
@@ -148,10 +165,10 @@ function loadTour(tour) {
       const p1 = apiToShort.get(p1Id), p2 = apiToShort.get(p2Id);
       if (!p1 || !p2) continue;
       const winner = apiToShort.get(winId);
-      if (!winner || evalMatches.has(id)) continue;
+      if (!winner || evalMatches.has(ident)) continue;
       const rowA = season[surface].get(p1), rowB = season[surface].get(p2);
       if (!rowA || !rowB) continue;
-      evalMatches.set(id, { m, id, tid, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB });
+      evalMatches.set(ident, { m, id, ident, tid, p1, p2, p1Id, p2Id, surface, winner, rowA, rowB });
     }
   }
 
@@ -176,8 +193,13 @@ function loadTour(tour) {
   // process, so this must be set per replay (see eloCore.eloParamsFor).
   setEloParams(eloParamsFor(tour));
   buildTimeline([...allMatches.values()], (mm, rw, rl) => {
-    if (!evalMatches.has(mm.id)) return;
-    preElo.set(mm.id, { winnerId: mm.winnerId, we: predElo(rw, mm.surface), le: predElo(rl, mm.surface) });
+    // evalMatches is keyed by identity now, so this has to look up the same
+    // way. Checking mm.id here would miss every time and quietly leave every
+    // row without a pre-match Elo, which falls back to 0.5 rather than
+    // failing - exactly the kind of silence this file has been bitten by.
+    const ident = identity(mm.winnerId, mm.loserId, mm.date);
+    if (!evalMatches.has(ident)) return;
+    preElo.set(ident, { winnerId: mm.winnerId, we: predElo(rw, mm.surface), le: predElo(rl, mm.surface) });
   });
 
   return { tour, season, upset, evalMatches, preElo, bestOf: tour === 'wta' ? 3 : 5 };
@@ -216,7 +238,7 @@ function evaluate(ctx, rec) {
   const rankPick = rankA <= rankB ? p1 : p2;
 
   // 4. Elo model (leak-free pre-match ratings)
-  const pe = preElo.get(id);
+  const pe = preElo.get(rec.ident);
   let eloProbP1 = 0.5;
   if (pe) {
     const p1Elo = pe.winnerId === p1Id ? pe.we : pe.le;
