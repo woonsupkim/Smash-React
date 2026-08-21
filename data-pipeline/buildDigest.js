@@ -1359,6 +1359,57 @@ async function main() {
   fs.writeFileSync(path.join(DATA, `${stem}.html`), fillUnsub(html, null));
   console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${blocks.length} sections).`);
 
+  // ── Freshness gate ────────────────────────────────────────────────────────
+  // The cadence is "whenever the refresh actually refreshed something". The
+  // workflow runs on a clock, but the data behind it does not: when the
+  // RapidAPI budget guard trips, every fetcher serves the cache and the
+  // pipeline still completes, cheerfully, with last week's card. Without this
+  // check the digest mails the same "2 from 4 yesterday" every morning for as
+  // long as the outage lasts, which is worse than sending nothing - it is
+  // sending something wrong to people who trusted us to be current.
+  //
+  // Two independent signals, either of which stops the send:
+  //   1. the results feed has not moved (mostRecentMatchDate is stale)
+  //   2. a fetcher tripped the spend guard on this run (alert marker present)
+  //
+  // Files are still written either way, so the site and any preview stay
+  // current with whatever we do have. DIGEST_FORCE=1 overrides, for testing.
+  const FRESH_DAYS = MODE === 'weekly' ? 4 : 2;
+  const staleReasons = [];
+  const meta = readJson(path.join(DATA, 'refresh-meta.json'));
+  if (meta && meta.mostRecentMatchDate) {
+    const ageDays = (Date.now() - new Date(meta.mostRecentMatchDate).getTime()) / 864e5;
+    if (ageDays > FRESH_DAYS) {
+      staleReasons.push(
+        `the newest result we hold is ${ageDays.toFixed(1)} days old `
+        + `(${String(meta.mostRecentMatchDate).slice(0, 10)}), past the ${FRESH_DAYS}-day limit for a ${MODE} edition`
+      );
+    }
+  } else {
+    staleReasons.push('refresh-meta.json is missing or has no mostRecentMatchDate, so freshness cannot be established');
+  }
+  try {
+    const alertPath = path.join(__dirname, 'raw', 'api-budget-alert.json');
+    if (fs.existsSync(alertPath)) {
+      const alert = JSON.parse(fs.readFileSync(alertPath, 'utf8'));
+      staleReasons.push(`a fetcher hit the API spend guard (${alert.reason || 'no reason recorded'}), so this run served cached data`);
+    }
+  } catch { /* an unreadable marker is not itself a reason to send */ }
+
+  if (staleReasons.length && process.env.DIGEST_FORCE !== '1') {
+    console.warn(
+      `  ! NO EMAIL WAS SENT - the data behind this digest is not fresh:\n`
+      + staleReasons.map((r) => `      - ${r}`).join('\n')
+      + `\n    The files were still written, so the site is current with what we have.`
+      + `\n    This is deliberate: mailing a stale card every morning during an API`
+      + `\n    outage is worse than skipping a day. Set DIGEST_FORCE=1 to override.`
+    );
+    return;
+  }
+  if (staleReasons.length) {
+    console.warn(`  ! DIGEST_FORCE=1 set, sending despite: ${staleReasons.join('; ')}`);
+  }
+
   // ── Optional send via Resend. Never fatal.
   // Recipients = DIGEST_TO (owner) + the public subscriber list from
   // Supabase (digest_subscribers, readable only with the service key).
