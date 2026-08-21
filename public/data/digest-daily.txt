@@ -1,4 +1,4 @@
-SMASH DAILY - Thursday, August 20
+SMASH DAILY - Friday, August 21
 
 2 from 4 yesterday. Half right, which means half wrong, and both halves are below. 5 more are locked for today at Cincinnati, every one of them public before a ball is struck.
 
@@ -9,35 +9,35 @@ YESTERDAY, GRADED: 2 from 4 (50%)
 
 ON COURT TODAY
   [ Cincinnati - ATP ]
-  Aliassime over Tiafoe - 72%
-    Call: https://smash-react.vercel.app/match/felix-auger-aliassime-vs-frances-tiafoe-181923
-    Compare: https://smash-react.vercel.app/compare/atp/felix-auger-aliassime-vs-frances-tiafoe
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=auger&b=tiafo
-  Cobolli over Paul - 53%
-    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-tommy-paul-181911
-    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-tommy-paul
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=paul
+  Fils over Tirante - 67%
+    Call: https://smash-react.vercel.app/match/arthur-fils-vs-thiago-agustin-tirante-181910
+    Compare: https://smash-react.vercel.app/compare/atp/arthur-fils-vs-thiago-agustin-tirante
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=fils&b=tiran
+  Musetti over Tiafoe - 59%
+    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-lorenzo-musetti-181915
+    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-lorenzo-musetti
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=muset
+  Fritz over Nakashima - 64%
+    Call: https://smash-react.vercel.app/match/brandon-nakashima-vs-taylor-fritz-181916
+    Compare: https://smash-react.vercel.app/compare/atp/brandon-nakashima-vs-taylor-fritz
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=nakas&b=fritz
   [ Cincinnati - WTA ]
-  Sabalenka over Bejlek - 88%
-    Call: https://smash-react.vercel.app/match/sara-bejlek-vs-aryna-sabalenka-182373
-    Compare: https://smash-react.vercel.app/compare/wta/sara-bejlek-vs-aryna-sabalenka
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bejle&b=sabal
-  Pegula over Anisimova - 66%
-    Call: https://smash-react.vercel.app/match/jessica-pegula-vs-amanda-anisimova-182375
-    Compare: https://smash-react.vercel.app/compare/wta/jessica-pegula-vs-amanda-anisimova
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=pegul&b=anisi
-  Rybakina over Swiatek - 60%
-    Call: https://smash-react.vercel.app/match/elena-rybakina-vs-iga-swiatek-182381
-    Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-iga-swiatek
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rybak&b=swiat
+  Keys over Bejlek - 70%
+    Call: https://smash-react.vercel.app/match/madison-keys-vs-sara-bejlek-182367
+    Compare: https://smash-react.vercel.app/compare/wta/madison-keys-vs-sara-bejlek
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=keys&b=bejle
+  Gauff over Kostyuk - 66%
+    Call: https://smash-react.vercel.app/match/marta-kostyuk-vs-cori-gauff-182368
+    Compare: https://smash-react.vercel.app/compare/wta/marta-kostyuk-vs-cori-gauff
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=kosty&b=gauff
 
 THE MONEY QUESTION - what we would actually stake (hypothetical $100):
-  $50 on Cobolli (53% @ 2.39)
-  $50 on Aliassime (72% @ 1.49)
-  Total $100; we expect 1.3 to land, returning $116.91; 53% chance of finishing ahead
+  $50 on Musetti (59% @ 1.89)
+  $50 on Fritz (64% @ 1.45)
+  Total $100; we expect 1.2 to land, returning $102.21; 38% chance of finishing ahead
   https://smash-react.vercel.app/parlay
 
-COMING UP: 11 days to the US Open (hard)
+COMING UP: 10 days to the US Open (hard)
   ATP: Jannik Sinner 54%, Carlos Alcaraz 24%, Alexander Zverev 8%
   WTA: Aryna Sabalenka 40%, Elena Rybakina 22%, Iga Swiatek 12%
   https://smash-react.vercel.app/draw

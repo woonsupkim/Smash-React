@@ -46,6 +46,7 @@ try { require('dotenv').config(); } catch { /* dotenv optional */ }
 
 const fs = require('fs');
 const path = require('path');
+const Papa = require('papaparse');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
@@ -379,6 +380,19 @@ function h2hFor(h2hDoc, tour, p1, p2) {
   };
 }
 
+// How WE have done calling this exact pairing, from the graded record. Thin
+// by nature (two players meet a handful of times a season), so it is only
+// shown when it exists and is never dressed up as a trend.
+function pairRecord(track, p1, p2) {
+  const rows = ((track && track.matches) || []).filter((m) => {
+    const c = m.pickCorrect != null ? m.pickCorrect : m.smashCorrect;
+    return c != null && h2hKey(m.p1, m.p2) === h2hKey(p1, p2);
+  });
+  if (!rows.length) return null;
+  const w = rows.filter((m) => (m.pickCorrect != null ? m.pickCorrect : m.smashCorrect)).length;
+  return { w, l: rows.length - w, n: rows.length };
+}
+
 function titleProb(oddsDoc, tour, id) {
   const ev = oddsDoc && oddsDoc.events && oddsDoc.events[tour];
   if (!ev || !Array.isArray(ev.odds)) return 0;
@@ -401,7 +415,9 @@ function pickHero(card, h2hDoc, oddsDoc) {
       : star > 0.5 ? 'two of the title favourites'
         : close > 0.8 ? 'the closest call on the card'
           : 'the pick of the day';
-    if (!best || score > best.score) best = { pr, score, h, why, meetings };
+    if (!best || score > best.score) {
+      best = { pr, score, h, why, meetings, photo1: mirrorPhoto(pr.tour, pr.p1), photo2: mirrorPhoto(pr.tour, pr.p2) };
+    }
   }
   return best;
 }
@@ -409,68 +425,146 @@ function pickHero(card, h2hDoc, oddsDoc) {
 // Tale of the tape: the two of them, compared row by row. Same vocabulary the
 // share cards use (recent form, career head to head) plus the two numbers this
 // email trades in - our call and the market's.
-function taleOfTheTape(hero, mkt) {
+function taleOfTheTape(hero, mkt, ranks, pairRec) {
   const pr = hero.pr;
   const favIsP1 = pr.favorite === pr.p1;
-  const name1 = pr.name1, name2 = pr.name2;
-  const photo1 = mirrorPhoto(pr.tour, pr.p1);
-  const photo2 = mirrorPhoto(pr.tour, pr.p2);
   const our1 = Math.round((favIsP1 ? pr.favProb : 1 - pr.favProb) * 100);
   const mkt1 = mkt == null ? null : Math.round((favIsP1 ? mkt : 1 - mkt) * 100);
   const h = hero.h;
+  const rank1 = ranks.get(pr.p1);
+  const rank2 = ranks.get(pr.p2);
+
+  // Name block: given name small above the surname, which is how a tale of
+  // the tape has always been set and stops long names wrapping badly.
+  const nameBlock = (full, rank, align) => {
+    const parts = String(full || '').trim().split(/\s+/);
+    const last = parts.length > 1 ? parts.slice(-1)[0] : full;
+    const first = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    return `
+      <div style="font-size:12px;letter-spacing:0.6px;color:${MUTED};text-align:${align};padding-top:10px;">${esc(first)}</div>
+      <div style="font-family:${DISPLAY};font-size:26px;font-weight:700;line-height:1.05;text-transform:uppercase;color:${INK};text-align:${align};">${esc(last)}</div>
+      <div style="font-family:${MONO};font-size:11px;letter-spacing:1px;color:${MUTED};text-align:${align};padding-top:5px;">${rank ? `WORLD #${rank}` : 'UNRANKED'}</div>`;
+  };
 
   const face = (url, alt, isFav) => (url
-    ? `<img src="${url}" width="72" height="72" alt="${esc(alt)}" style="display:block;width:72px;height:72px;border-radius:2px;border:2px solid ${isFav ? LIME : LINE_HI};" />`
-    : `<div style="width:72px;height:72px;border-radius:2px;background:${TRACK};"></div>`);
+    ? `<img src="${url}" width="84" height="84" alt="${esc(alt)}" style="display:block;width:84px;height:84px;border-radius:2px;border:2px solid ${isFav ? LIME : LINE_HI};" />`
+    : `<div style="width:84px;height:84px;border-radius:2px;background:${TRACK};"></div>`);
 
+  // Each row is a duel: the stronger side is inked, the other muted, so the
+  // card can be read down the middle without reading the numbers.
   const row = (label, a, b, strongSide) => `
     <tr>
-      <td width="34%" align="left" style="padding:9px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${strongSide === 1 ? INK : MUTED};">${esc(a)}</td>
-      <td width="32%" align="center" style="padding:9px 6px;border-top:1px solid ${LINE};font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(label)}</td>
-      <td width="34%" align="right" style="padding:9px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${strongSide === 2 ? INK : MUTED};">${esc(b)}</td>
+      <td width="34%" align="left" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:16px;font-weight:700;color:${strongSide === 1 ? INK : MUTED};">${esc(a)}</td>
+      <td width="32%" align="center" style="padding:10px 6px;border-top:1px solid ${LINE};font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(label)}</td>
+      <td width="34%" align="right" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:16px;font-weight:700;color:${strongSide === 2 ? INK : MUTED};">${esc(b)}</td>
     </tr>`;
 
   return `
-  <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};padding:18px 20px 16px;margin-bottom:18px;">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;padding-bottom:12px;">Tale of the tape &nbsp;&middot;&nbsp; ${esc(hero.why)}</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr>
-        <td width="34%" align="left" style="vertical-align:bottom;">
-          ${face(photo1, name1, favIsP1)}
-          <div style="font-family:${DISPLAY};font-size:21px;font-weight:700;text-transform:uppercase;color:${INK};padding-top:8px;line-height:1.1;">${esc(lastName(name1))}</div>
-        </td>
-        <td width="32%" align="center" style="vertical-align:bottom;padding-bottom:6px;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:${MUTED};font-weight:700;">v</td>
-        <td width="34%" align="right" style="vertical-align:bottom;">
-          ${face(photo2, name2, !favIsP1)}
-          <div style="font-family:${DISPLAY};font-size:21px;font-weight:700;text-transform:uppercase;color:${INK};padding-top:8px;line-height:1.1;">${esc(lastName(name2))}</div>
-        </td>
-      </tr>
-    </table>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;">
-      ${row('Our call', `${our1}%`, `${100 - our1}%`, our1 >= 50 ? 1 : 2)}
-      ${mkt1 != null ? row('The market', `${mkt1}%`, `${100 - mkt1}%`, mkt1 >= 50 ? 1 : 2) : ''}
-      ${h ? row('Career h2h', String(h.wins1), String(h.wins2), h.wins1 === h.wins2 ? 0 : (h.wins1 > h.wins2 ? 1 : 2)) : ''}
-      ${h && h.form1 && h.form2 ? row('Recent form', h.form1, h.form2, 0) : ''}
-    </table>
+  <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};margin-bottom:18px;">
+    <div style="padding:12px 20px;border-bottom:1px solid ${LINE};">
+      <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;">Tale of the tape</span>
+      <span style="font-size:11px;color:${MUTED};"> &nbsp;&middot;&nbsp; ${esc(hero.why)}</span>
+    </div>
+    <div style="padding:18px 20px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td width="40%" align="left" style="vertical-align:top;">
+            ${face(hero.photo1, pr.name1, favIsP1)}
+            ${nameBlock(pr.name1, rank1, 'left')}
+          </td>
+          <td width="20%" align="center" style="vertical-align:middle;font-family:${DISPLAY};font-size:20px;letter-spacing:2px;text-transform:uppercase;color:${MUTED};font-weight:700;">v</td>
+          <td width="40%" align="right" style="vertical-align:top;">
+            ${face(hero.photo2, pr.name2, !favIsP1)}
+            ${nameBlock(pr.name2, rank2, 'right')}
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:16px;">
+        ${row('Our call', `${our1}%`, `${100 - our1}%`, our1 >= 50 ? 1 : 2)}
+        ${mkt1 != null ? row('The market', `${mkt1}%`, `${100 - mkt1}%`, mkt1 >= 50 ? 1 : 2) : ''}
+        ${h ? row('Career h2h', String(h.wins1), String(h.wins2), h.wins1 === h.wins2 ? 0 : (h.wins1 > h.wins2 ? 1 : 2)) : ''}
+        ${h && h.form1 && h.form2 ? row('Last 10', h.form1, h.form2, 0) : ''}
+      </table>
+      ${pairRec ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid ${LINE};font-size:12px;line-height:1.6;color:${MUTED};">
+        Our record calling this pairing: <strong style="color:${INK};">${pairRec.w}-${pairRec.l}</strong> from ${plural(pairRec.n, 'meeting', 'meetings')} we have graded${pairRec.n < 3 ? ', which is far too few to mean anything yet' : ''}.
+      </div>` : ''}
+    </div>
   </div>`;
 }
 
-// Everything that is not the hero: one line each, no photos.
-function compactRow(pr) {
+// A label for the shape of a call, so the list can be scanned. Only one is
+// shown, in priority order, because two tags on a row is noise.
+//
+// "Upset call" is the one that earns its place: it fires when we back the side
+// the MARKET prices as the outsider, which is the only situation where our
+// number is doing something a fixture list could not.
+function matchLabel(pr, ranks) {
+  const favIsP1 = pr.favorite === pr.p1;
+  const ourOdds = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+  const theirOdds = Number(favIsP1 ? pr.lockOdd2 : pr.lockOdd1);
+  const mkt = marketProb(pr);
+  const ourRank = ranks && ranks.get(favIsP1 ? pr.p1 : pr.p2);
+  const theirRank = ranks && ranks.get(favIsP1 ? pr.p2 : pr.p1);
+
+  // Backing the underdog, by either measure. The price is the better signal
+  // when we have one; ranking still catches it when we do not, which matters
+  // because a good share of the card goes unpriced at lock time.
+  const priceUpset = ourOdds > 1 && theirOdds > 1 && ourOdds > theirOdds;
+  const rankUpset = ourRank && theirRank && ourRank > theirRank + 10;
+  if (priceUpset || rankUpset) return { text: 'Upset call', tone: 'up' };
+
+  if (mkt != null && (pr.favProb - mkt) >= 0.10) return { text: 'Value', tone: 'good' };
+  // The mirror image, and worth saying out loud: they are keener than we are.
+  if (mkt != null && (mkt - pr.favProb) >= 0.10) return { text: 'Market disagrees', tone: 'mute' };
+  if ((pr.favProb || 0) <= 0.56) return { text: 'Coin toss', tone: 'mute' };
+  if ((pr.favProb || 0) >= 0.85) return { text: 'Heavy favourite', tone: 'mute' };
+  if (mkt == null) return { text: 'No price', tone: 'mute' };
+  return null;
+}
+
+const labelChip = (l) => {
+  if (!l) return '';
+  const bg = l.tone === 'up' ? LIME : l.tone === 'good' ? WIN : TRACK;
+  const fg = l.tone === 'up' ? BTN_INK : l.tone === 'good' ? CARD : MUTED;
+  return `<span style="display:inline-block;background:${bg};color:${fg};font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:3px 7px;border-radius:2px;white-space:nowrap;">${esc(l.text)}</span>`;
+};
+
+// Everything that is not the hero: a small card with both faces, full names
+// and the price you would actually be offered.
+function compactRow(pr, ranks) {
   const favIsP1 = pr.favorite === pr.p1;
   const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
   const dogName = favIsP1 ? pr.name2 : pr.name1;
+  const favPhoto = mirrorPhoto(pr.tour, favIsP1 ? pr.p1 : pr.p2);
+  const ourOdds = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
   const when = new Date(pr.date);
   const time = Number.isFinite(when.getTime()) && when.getUTCHours() >= 5
-    ? `${when.toISOString().slice(11, 16)} UTC` : 'TBC';
+    ? `${when.toISOString().slice(11, 16)} UTC` : 'Time TBC';
+  const label = matchLabel(pr, ranks);
   return `
   <tr>
-    <td style="padding:10px 0;border-top:1px solid ${LINE};font-size:14px;line-height:1.45;color:${BODY};">
-      <a href="${matchUrl(pr)}" style="color:${INK};text-decoration:none;font-weight:700;">${esc(lastName(favName))}</a>
-      <span style="color:${MUTED};"> over ${esc(lastName(dogName))}</span>
+    <td style="padding:0 0 10px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};background:${CARD};">
+        <tr>
+          <td width="52" style="padding:11px 0 11px 12px;vertical-align:middle;">
+            ${favPhoto
+    ? `<img src="${favPhoto}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border-radius:2px;border:2px solid ${LIME};" />`
+    : `<div style="width:40px;height:40px;border-radius:2px;background:${TRACK};"></div>`}
+          </td>
+          <td style="padding:11px 10px;vertical-align:middle;font-size:14px;line-height:1.45;color:${BODY};">
+            <a href="${matchUrl(pr)}" style="color:${INK};text-decoration:none;font-weight:700;">${esc(favName)}</a>
+            <span style="color:${MUTED};"> over ${esc(dogName)}</span>
+            <div style="padding-top:3px;font-size:11px;color:${MUTED};">
+              ${esc(time)}${label ? ' &nbsp;' : ''}${labelChip(label)}
+            </div>
+          </td>
+          <td align="right" style="padding:11px 12px 11px 8px;vertical-align:middle;white-space:nowrap;">
+            <div style="font-family:${MONO};font-size:17px;font-weight:700;color:${INK};">${Math.round((pr.favProb || 0) * 100)}%</div>
+            <div style="font-family:${MONO};font-size:11px;color:${MUTED};padding-top:2px;">${ourOdds > 1 ? `@ ${ourOdds.toFixed(2)}` : 'no price'}</div>
+          </td>
+        </tr>
+      </table>
     </td>
-    <td align="right" style="padding:10px 0 10px 10px;border-top:1px solid ${LINE};font-family:${MONO};font-size:13px;color:${MUTED};white-space:nowrap;">${esc(time)}</td>
-    <td align="right" style="padding:10px 0 10px 12px;border-top:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${INK};white-space:nowrap;">${Math.round((pr.favProb || 0) * 100)}%</td>
   </tr>`;
 }
 
@@ -644,6 +738,16 @@ async function main() {
   // Head-to-head is stored per tour, the same split the app reads. Loading
   // only the ATP file silently gave every WTA match an empty record, which
   // also skewed the hero pick: no meetings meant no rivalry score.
+  // World ranking per player, from the roster the pipeline already maintains.
+  // Per tour, like everything else here.
+  const rankBook = { atp: new Map(), wta: new Map() };
+  for (const [tour, file] of [['atp', path.join(DATA, 'smash_us.csv')], ['wta', path.join(DATA, 'women', 'smash_us.csv')]]) {
+    try {
+      const rows = Papa.parse(fs.readFileSync(file, 'utf8'), { header: true }).data;
+      for (const r of rows) if (r.id && Number(r.us_seed) > 0) rankBook[tour].set(r.id, Number(r.us_seed));
+    } catch { /* ranks are a nice-to-have, never a blocker */ }
+  }
+
   const h2hDoc = {
     atp: readJson(path.join(DATA, 'h2h.json')) || {},
     wta: readJson(path.join(DATA, 'women', 'h2h.json')) || {},
@@ -697,9 +801,34 @@ async function main() {
       return mk != null && pr.favProb - mk >= 0.10;
     });
 
-    subject = yday && yday.n
-      ? `${yday.correct} of ${yday.n} yesterday, ${plural(card.length, 'call', 'calls')} locked for today`
-      : `${plural(card.length, 'call', 'calls')} locked for today`;
+    // Subject line. An inbox gives you about forty characters before it
+    // truncates, so this leads with the single most interesting thing on the
+    // card rather than summarising all of it, and the preheader carries the
+    // rest. Priority: a real rivalry beats a bold call, a bold call beats
+    // yesterday's score, and yesterday's score beats a bare count.
+    subject = (() => {
+      const heroPick = pickHero(card.slice(0, 5), h2hDoc, oddsDoc);
+      const n1 = heroPick && lastName(heroPick.pr.name1);
+      const n2 = heroPick && lastName(heroPick.pr.name2);
+      if (heroPick && heroPick.meetings >= 5) return `${n1} v ${n2}, take ${heroPick.meetings + 1}`;
+
+      const upset = card.find((pr) => {
+        const favIsP1 = pr.favorite === pr.p1;
+        const a = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+        const b = Number(favIsP1 ? pr.lockOdd2 : pr.lockOdd1);
+        return a > 1 && b > 1 && a > b;
+      });
+      if (upset) return `We are taking ${lastName(upset.favName || upset.name1)} and we know how that looks`;
+
+      if (yday && yday.n) {
+        const yp = pct(yday.correct, yday.n);
+        if (yday.correct === yday.n) return `${yday.n} from ${yday.n}. Let us enjoy this one`;
+        if (yp < 34) return `${yday.correct} from ${yday.n} yesterday. Moving on`;
+        if (yp >= 70) return `${yday.correct} from ${yday.n}, and ${card.length} more locked`;
+        return `${yday.correct} from ${yday.n} yesterday, ${card.length} locked today`;
+      }
+      return `${plural(card.length, 'call', 'calls')} locked before play`;
+    })();
     preheader = card.length
       ? `Every pick below was locked before play. ${events.length ? events.join(' and ') + '. ' : ''}Plus what we would stake, and ${slamDays != null ? `${slamDays} days to the ${slam.label}` : 'the road ahead'}.`
       : 'Yesterday graded, and what comes next.';
@@ -819,9 +948,9 @@ async function main() {
         ${kicker(todays.length ? 'On court today' : 'Next up')}
         ${h2(`${plural(card.length, 'call', 'calls')}, no takebacks`)}
         ${p(intro)}
-        ${hero ? taleOfTheTape(hero, marketProb(hero.pr)) : ''}
+        ${hero ? taleOfTheTape(hero, marketProb(hero.pr), rankBook[hero.pr.tour === 'wta' ? 'wta' : 'atp'], pairRecord(track, hero.pr.p1, hero.pr.p2)) : ''}
         ${hero ? p(heroRead, `color:${BODY};`) : ''}
-        ${rest.length ? `<div style="padding-top:4px;">${groupCard(rest).map((g) => groupHead(g) + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">${g.rows.map(compactRow).join('')}</table>`).join('')}</div>` : ''}
+        ${rest.length ? `<div style="padding-top:4px;">${groupCard(rest).map((g) => groupHead(g) + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">${g.rows.map((pr) => compactRow(pr, rankBook[pr.tour === 'wta' ? 'wta' : 'atp'])).join('')}</table>`).join('')}</div>` : ''}
         ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
       `));
       txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
