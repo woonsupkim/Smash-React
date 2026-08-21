@@ -80,13 +80,21 @@ describe('parlay maths, verified against simulation', () => {
 
   it('the histogram is a real probability distribution over the P&L range', () => {
     const { dist, worst, best } = analyzeSlip(correlated, parlay);
+    // Still all of the probability: clipping the AXIS must not discard mass,
+    // it folds the tails into the end bins.
     expect(dist.bins.reduce((s, b) => s + b.prob, 0)).toBeCloseTo(1, 10);
-    expect(dist.lo).toBeCloseTo(worst, 10);
-    expect(dist.hi).toBeCloseTo(best, 10);
-    // Every bin's win flag must agree with the sign of its own midpoint.
-    const span = best - worst;
+    // The plot is drawn across where outcomes actually fall, so it sits
+    // inside the extremes rather than on them - but never outside, and never
+    // so tight that break-even falls off the chart.
+    expect(dist.lo).toBeGreaterThanOrEqual(worst - 1e-9);
+    expect(dist.hi).toBeLessThanOrEqual(best + 1e-9);
+    expect(dist.lo).toBeLessThanOrEqual(0);
+    expect(dist.hi).toBeGreaterThanOrEqual(0);
+    // Every bin's win flag must agree with the sign of its own midpoint, in
+    // the coordinates the chart is actually drawn in.
+    const span = dist.hi - dist.lo;
     dist.bins.forEach((b, i) => {
-      const mid = worst + (span * (i + 0.5)) / 15;
+      const mid = dist.lo + (span * (i + 0.5)) / 15;
       expect(b.win).toBe(mid > 1e-9);
     });
   });

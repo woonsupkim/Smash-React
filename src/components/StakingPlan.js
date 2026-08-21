@@ -90,10 +90,20 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [legs, oddsOverride, budget, rel.lambda]
   );
-  // Which recommendation is on screen. Defaults to the safest, because the
-  // chance of finishing ahead is the number people misjudge most.
-  const [planId, setPlanId] = useState('safest');
-  const rec = frontier.plans.find((p) => p.id === planId) || frontier.plans[0] || null;
+  // Which recommendation is on screen. `null` means "whatever the frontier
+  // recommends", so the default tracks the card instead of being frozen at
+  // mount; an explicit click pins a choice until the card changes under it.
+  //
+  // This was `useState('safest')`, and no plan has ever had that id. The
+  // lookup missed every time and fell through to plans[0], so the plan
+  // labelled RECOMMENDED was just the first one pushed - on a full card, the
+  // spread at 75.6%/$7.24 while "Best prices only" sat next to it at
+  // 90.1%/$17.71, better on both axes and not recommended.
+  const [planId, setPlanId] = useState(null);
+  const rec = frontier.plans.find((p) => p.id === planId)
+    || frontier.plans.find((p) => p.id === frontier.recommendedId)
+    || frontier.plans[0]
+    || null;
 
   const singleFor = (l) => (mode === 'budget' ? (rec?.singles[l.id] || 0) : (Number(stakes[l.id]) || 0));
   // The reliability adjustment belongs to the MODEL, not to a mode. Custom
@@ -165,18 +175,14 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
 
-  // What the whole selection is worth, before any staking question. Computed
-  // over EVERY selected leg (not just the ones ticked into the parlay) and off
-  // the odds in the table, so editing a price moves this too. This used to be
-  // a separate "Your selection" panel above the plan; same numbers, one place.
-  const allProb = legs.reduce((m, l) => m * l.favProb, 1);
-  const fairAll = allProb > 0 ? 1 / allProb : null;
-  const allPriced = legs.length > 0 && legs.every((l) => oddsOf(l) > 1);
-  const marketAll = allPriced ? legs.reduce((m, l) => m * oddsOf(l), 1) : null;
+  // The everything-lands accumulator - combined probability, our fair price,
+  // the market's price, what $10 would return - used to sit here. It is gone
+  // on purpose. Across a whole card it priced a bet nobody could place ("1 in
+  // 594,237", "$10 would return $17,424,168.83") in the most prominent slot on
+  // the page, and even on a short card it answered a question the plan above
+  // already answers better. The per-leg parlay row still prices a real
+  // accumulator over the legs actually ticked.
   const unpriced = legs.filter((l) => !(oddsOf(l) > 1)).length;
-  // "About one in N" only earns its place once the number gets small; next to
-  // 59% it says nothing.
-  const oneIn = allProb > 0 && allProb < 0.4 ? Math.round(1 / allProb) : null;
 
   return (
     <div className="stake-plan">
@@ -215,7 +221,11 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                   onClick={() => setPlanId(p.id)}>
                   <span className="stake-best-opt-l">{p.label}</span>
                   <span className="stake-best-opt-v">
-                    {pct(p.metrics.pProfit || 0)} to win · {money(p.metrics.ev)} expected
+                    {/* Never `pProfit || 0`: a missing probability is not a zero
+                        one, and printing "0.0% to win" for it stated the most
+                        discouraging possible number with total confidence. */}
+                    {p.metrics.pProfit != null ? `${pct(p.metrics.pProfit)} to win` : 'chance not available'}
+                    {' · '}{money(p.metrics.ev)} expected
                   </span>
                   <span className="stake-best-opt-k">{composition(p)}</span>
                 </button>
@@ -235,14 +245,36 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               <span className="stake-best-v">{expWinners.toFixed(1)}<span className="stake-best-of"> of {stakedCount}</span></span>
               <span className="stake-best-l">matches we expect to land</span>
             </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v">{money(analysis.best)}</span>
-              <span className="stake-best-l">if everything lands</span>
-            </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v neg">{money(analysis.worst)}</span>
-              <span className="stake-best-l">if nothing does</span>
-            </div>
+            {/* The extremes are not the forecast. On a 40-match spread
+                "everything lands" and "nothing does" both have probabilities
+                with twenty zeros after the point, and leading with -$100 as
+                the downside invited readers to plan around an outcome that
+                will never happen. A 19-in-20 range is the honest answer to
+                "how bad is a bad day". The true extremes stay in the note
+                under the table for anyone who wants them. */}
+            {analysis.pcts ? (
+              <>
+                <div className="stake-best-metric">
+                  <span className="stake-best-v">{money(analysis.pcts.p95)}</span>
+                  <span className="stake-best-l">a good day <em>(1 in 20 beats this)</em></span>
+                </div>
+                <div className="stake-best-metric">
+                  <span className={`stake-best-v${analysis.pcts.p05 < 0 ? ' neg' : ''}`}>{money(analysis.pcts.p05)}</span>
+                  <span className="stake-best-l">a bad day <em>(1 in 20 is worse)</em></span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="stake-best-metric">
+                  <span className="stake-best-v">{money(analysis.best)}</span>
+                  <span className="stake-best-l">if everything lands</span>
+                </div>
+                <div className="stake-best-metric">
+                  <span className="stake-best-v neg">{money(analysis.worst)}</span>
+                  <span className="stake-best-l">if nothing does</span>
+                </div>
+              </>
+            )}
           </div>
 
           {mode === 'budget' && (
@@ -270,49 +302,11 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
         </div>
       )}
 
-      <div className="stake-value">
-        <div className="stake-value-hero">
-          <span className="stake-value-pct">{pct(allProb)}</span>
-          <span className="stake-value-cap">
-            {legs.length === 1 ? 'chance this lands' : `chance all ${legs.length} land`}
-            {oneIn ? ` · about 1 in ${oneIn}` : ''}
-          </span>
-        </div>
-        <dl className="stake-value-rows">
-          <div>
-            <dt>Our fair price</dt>
-            <dd>{fairAll ? fairAll.toFixed(2) : '-'}</dd>
-          </div>
-          <div>
-            <dt>The market's price</dt>
-            <dd>{marketAll ? marketAll.toFixed(2) : <span className="muted">not fully priced</span>}</dd>
-          </div>
-          <div>
-            <dt>$10 would return</dt>
-            <dd>{marketAll ? money(10 * marketAll) : <span className="muted">-</span>}</dd>
-          </div>
-        </dl>
-      </div>
-
-      {marketAll != null && fairAll != null && (
-        <p className={`stake-value-verdict ${marketAll > fairAll ? 'pos' : 'neg'}`}>
-          {marketAll > fairAll
-            ? `The market prices this longer than we do: worth ${fairAll.toFixed(2)} by our numbers, paying ${marketAll.toFixed(2)}.`
-            : `The market prices this shorter than we do: worth ${fairAll.toFixed(2)} by our numbers, paying only ${marketAll.toFixed(2)}.`}
-          {marketAll > fairAll && (
-            <span className="stake-value-caveat">
-              {' '}Expect to see that often, and read it carefully: we always show the player we
-              favour, so our number sits about 2 points above the market's on a typical pick
-              before anyone has been proved right. Only gaps past 10 points have historically
-              meant anything.
-            </span>
-          )}
-        </p>
-      )}
       {unpriced > 0 && (
         <p className="stake-note muted">
           {unpriced} of these had no market price when we locked {unpriced === 1 ? 'it' : 'them'}, so
-          only our own fair price is shown above. Enter the odds you are offered below to size them.
+          the plan cannot stake {unpriced === 1 ? 'it' : 'them'}. Enter the odds you are offered
+          below and {unpriced === 1 ? 'it joins' : 'they join'} the plan.
         </p>
       )}
 
@@ -327,7 +321,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
         </div>
         <div className="stake-modes" role="tablist" aria-label="Recommended plan or your own">
           <button type="button" role="tab" aria-selected={mode === 'budget'} className={mode === 'budget' ? 'on' : ''} onClick={() => setMode('budget')}>Recommended</button>
-          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={() => setMode('mine')}>Custom</button>
+          {/* Seed from the recommendation, exactly as "Customise this plan"
+              does. This tab used to only flip the mode, so it landed on an
+              empty table: every stake blank, staked = 0, and the whole
+              headline block unmounts because it is gated on staked > 0. The
+              numbers did not go stale, they disappeared - directly under copy
+              promising "edit anything below and these numbers follow". */}
+          <button type="button" role="tab" aria-selected={mode === 'mine'} className={mode === 'mine' ? 'on' : ''} onClick={customise}>Custom</button>
         </div>
       </div>
 

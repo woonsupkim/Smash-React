@@ -61,41 +61,124 @@ export function analyzeSlip(bets, parlay) {
   const best = bets.reduce((s, b) => s + ((b.single || 0) > 0 ? b.single * (b.o - 1) : 0), 0)
     + (parlayActive ? parlay.stake * (combo.o - 1) : 0);
 
-  // Enumerate every outcome once: probability of finishing ahead + a P&L
-  // histogram (BINS buckets from worst to best) for the distribution bar.
+  // Probability of finishing ahead, plus a P&L histogram (BINS buckets from
+  // worst to best) for the distribution bar.
+  //
+  // This used to enumerate all 2^n win/lose combinations, which capped out at
+  // 16 matches - and a real tour day is 30 to 60. Past the cap it returned
+  // null, which the plan cards rendered as "0.0% to win": the headline number
+  // read zero on exactly the cards it matters most on.
+  //
+  // Instead, convolve one match at a time over a quantised P&L grid. Each
+  // match is an independent two-outcome shift, so the running distribution is
+  // O(matches x buckets) rather than exponential, and a 40-match card costs
+  // about the same as a 4-match one.
+  //
+  // The parlay is the one thing that does not decompose, since it pays only
+  // if every leg wins. So the grid is carried in two tracks - every leg has
+  // won so far, or one has already gone - and the parlay's payoff is applied
+  // at the end according to which track the mass ended up in. Exact, not an
+  // approximation of the coupling.
   const BINS = 15;
-  let pProfit = null, dist = null;
-  if (n > 0 && n <= 16) {
+  let pProfit = null, dist = null, pcts = null;
+  if (n > 0) {
     const span = best - worst || 1;
+    // Work in index space so rounding happens once per match rather than
+    // accumulating through repeated value->index round trips. Never coarser
+    // than ~32k buckets, never finer than half a cent - beyond that the
+    // precision is imaginary and the arrays get big for nothing.
+    const quantum = Math.max(span / 32768, 0.005);
+    const G = Math.round(span / quantum) + 1;
+    const clamp = (i) => (i < 0 ? 0 : i >= G ? G - 1 : i);
+
+    const ALIVE = 0, DEAD = 1;            // "every parlay leg so far has won"
+    const tracks = parlayActive ? 2 : 1;
+    let cur = [new Float64Array(G), parlayActive ? new Float64Array(G) : null];
+    cur[ALIVE][clamp(Math.round(-worst / quantum))] = 1;   // P&L 0, vacuously alive
+
+    for (const b of involved) {
+      const hasSingle = (b.single || 0) > 0;
+      const winShift = hasSingle ? Math.round((b.single * (b.o - 1)) / quantum) : 0;
+      const loseShift = hasSingle ? Math.round(-b.single / quantum) : 0;
+      const isLeg = parlayActive && parlay.legs.includes(b.key);
+      const next = [new Float64Array(G), parlayActive ? new Float64Array(G) : null];
+      for (let t = 0; t < tracks; t++) {
+        const from = cur[t];
+        for (let i = 0; i < G; i++) {
+          const m = from[i];
+          if (m === 0) continue;
+          // Winning never kills the parlay; losing a leg does, for good.
+          next[t][clamp(i + winShift)] += m * b.p;
+          next[isLeg ? DEAD : t][clamp(i + loseShift)] += m * (1 - b.p);
+        }
+      }
+      cur = next;
+    }
+
+    // Settle the parlay and fold the tracks back together.
+    const final = new Float64Array(G);
+    if (parlayActive) {
+      const hit = Math.round((parlay.stake * (combo.o - 1)) / quantum);
+      const miss = Math.round(-parlay.stake / quantum);
+      for (let i = 0; i < G; i++) {
+        if (cur[ALIVE][i]) final[clamp(i + hit)] += cur[ALIVE][i];
+        if (cur[DEAD][i]) final[clamp(i + miss)] += cur[DEAD][i];
+      }
+    } else {
+      final.set(cur[ALIVE]);
+    }
+
+    // Percentiles of the actual P&L, which is a different question from the
+    // extremes. On a 40-match spread the extremes are -100% and +47% of stake
+    // and BOTH are essentially impossible: every match losing has a
+    // probability with twenty zeros after the point. Plotting between them
+    // left over half the chart empty and made "if nothing does" read as the
+    // downside a reader should plan around, when the honest bad day is an
+    // order of magnitude smaller.
+    let cum = 0;
+    const q = (target) => {
+      let c = 0;
+      for (let i = 0; i < G; i++) {
+        c += final[i];
+        // Clamped to the true extremes: the top grid point can sit up to one
+        // quantum above `best`, and a chart that claims an outcome better
+        // than any that can actually happen is worse than a coarse one.
+        if (c >= target) return Math.min(Math.max(worst + i * quantum, worst), best);
+      }
+      return best;
+    };
+    for (let i = 0; i < G; i++) cum += final[i];
+    const pctl = { p05: q(0.05 * cum), p50: q(0.5 * cum), p95: q(0.95 * cum) };
+
+    // Plot across where the outcomes actually are, not across what is merely
+    // conceivable. Clipped at the 1st/99th percentile, widened to always
+    // include break-even so the zero line stays on the chart.
+    let lo = Math.min(q(0.01 * cum), 0);
+    let hi = Math.max(q(0.99 * cum), 0);
+    if (!(hi > lo)) { lo = worst; hi = best; }
+    const plotSpan = hi - lo;
+
     const bins = new Array(BINS).fill(0);
     let pPos = 0;
-    for (let mask = 0; mask < (1 << n); mask++) {
-      let prob = 1, pl = 0;
-      const win = {};
-      for (let i = 0; i < n; i++) {
-        const b = involved[i];
-        const w = (mask >> i) & 1;
-        win[b.key] = !!w;
-        prob *= w ? b.p : 1 - b.p;
-      }
-      for (const b of bets) {
-        if (!(b.single > 0)) continue;
-        pl += win[b.key] ? b.single * (b.o - 1) : -b.single;
-      }
-      if (parlayActive) {
-        pl += parlay.legs.every((k) => win[k]) ? parlay.stake * (combo.o - 1) : -parlay.stake;
-      }
-      if (pl > 1e-9) pPos += prob;
-      let bi = Math.floor(((pl - worst) / span) * BINS);
+    for (let i = 0; i < G; i++) {
+      const m = final[i];
+      if (m === 0) continue;
+      const pl = worst + i * quantum;
+      if (pl > 1e-9) pPos += m;
+      // Mass outside the clip is real, so it is folded into the end bins
+      // rather than dropped: the bars still sum to 1.
+      let bi = Math.floor(((pl - lo) / plotSpan) * BINS);
       if (bi >= BINS) bi = BINS - 1;
       if (bi < 0) bi = 0;
-      bins[bi] += prob;
+      bins[bi] += m;
     }
     pProfit = pPos;
+    pcts = pctl;
     dist = {
-      lo: worst,
-      hi: best,
-      bins: bins.map((prob, i) => ({ prob, win: worst + (span * (i + 0.5)) / BINS > 1e-9 })),
+      lo,
+      hi,
+      clipped: lo > worst + 1e-9 || hi < best - 1e-9,
+      bins: bins.map((prob, i) => ({ prob, win: lo + (plotSpan * (i + 0.5)) / BINS > 1e-9 })),
     };
   }
 
@@ -108,6 +191,9 @@ export function analyzeSlip(bets, parlay) {
     expProfit: ev,
     worst,
     best,
+    // The realistic spread of outcomes. `worst`/`best` stay available for the
+    // fine print, but they are the extremes, not the forecast.
+    pcts,
     dist,
     parlay: parlayActive ? combo : null,
   };
@@ -276,6 +362,41 @@ export function spreadPlan(bets, budget, { lambda = 1 } = {}) {
  * @param {{key:string,p:number,o:number}[]} bets
  * @param {number} budget
  */
+/**
+ * Which plan to put on screen by default.
+ *
+ * This used to be decided by `useState('safest')` in the component, and no
+ * plan has ever had the id 'safest' - the ids are spread/spreadPlus/sharp. The
+ * lookup missed every time and fell through to plans[0], so the headline
+ * "RECOMMENDED PLAN" was really just whichever plan got pushed first. On a
+ * full card that meant recommending the spread at 75.6% and $7.24 while
+ * "Best prices only" sat beside it at 90.1% and $17.71: better on BOTH axes
+ * and not recommended.
+ *
+ * A plan that is beaten on chance-of-finishing-ahead AND on expected profit is
+ * beaten outright, so it is never the answer. Among what survives, lead with
+ * the highest chance of finishing ahead: the page's own framing is that this
+ * is the number people misjudge most, and the alternatives stay one click away
+ * for anyone who would rather have the expectation.
+ */
+export function recommendedPlanId(plans) {
+  if (!plans || !plans.length) return null;
+  const val = (p) => ({ w: p.metrics?.pProfit ?? -1, e: p.metrics?.ev ?? -Infinity });
+  const dominated = (p) => plans.some((q) => {
+    if (q === p) return false;
+    const a = val(p), b = val(q);
+    return b.w >= a.w && b.e >= a.e && (b.w > a.w + 1e-9 || b.e > a.e + 1e-9);
+  });
+  const live = plans.filter((p) => !dominated(p));
+  const pool = live.length ? live : plans;
+  return pool.reduce((best, p) => {
+    const a = val(best), b = val(p);
+    if (b.w > a.w + 1e-9) return p;
+    if (b.w < a.w - 1e-9) return best;
+    return b.e > a.e ? p : best;
+  }, pool[0]).id;
+}
+
 export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12 } = {}) {
   const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
   const priced = adj.filter((b) => b.o > 1 && b.p > 0);
@@ -352,6 +473,9 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
     }
   }
 
+  if (plans.length) {
+    return { plans, lambda, reason: null, recommendedId: recommendedPlanId(plans) };
+  }
   if (!plans.length) {
     return {
       plans: [],
