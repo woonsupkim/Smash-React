@@ -27,8 +27,14 @@ jobs:
       - name: Unit tests (simulator math, engines, credible intervals)
         run: npm test
 
-      - name: Pipeline parser tests (ESPN schedule -> roster matching)
-        run: node --test data-pipeline/lib/
+      # Every data-pipeline test, not just lib/. These are node:test files, so
+      # `npm test` (vitest) does not pick them up, and for a long time this step
+      # only globbed lib/ - which meant the rating-core tests and the
+      # prediction-voiding tests gated nothing. They ran only on a manual
+      # dispatch of verify-ratings.yml, where a missing dependency in a test's
+      # require chain sat undetected until someone happened to run it.
+      - name: Pipeline tests (rating cores, voiding, ESPN schedule matching)
+        run: node --test data-pipeline/*.test.js data-pipeline/lib/*.test.js
 
       - name: Production build (vite)
         run: npm run build
