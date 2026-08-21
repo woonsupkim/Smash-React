@@ -9,7 +9,13 @@ name: Refresh player stats
 # function execution time limits - a full refresh across ~50 players can
 # take several minutes.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      send_digest:
+        description: 'Mail the digest to subscribers (uncheck to build the files without sending)'
+        type: boolean
+        required: false
+        default: true
   # Daily at 09:00 UTC, but only inside generous windows around each slam
   # (cron can't span month boundaries, so slams that straddle one get two
   # entries). Exact tournament dates shift a little year to year; the
@@ -222,6 +228,13 @@ jobs:
         continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
+          # Manual dispatch can build without mailing. Gated on the event name
+          # as well as the input because `inputs` is empty on a scheduled run,
+          # and an empty value compares equal to false - so testing the input
+          # alone would silently dry-run every cron and quietly stop the
+          # digest forever, which is the exact failure this file already
+          # carries a comment about further down.
+          DIGEST_DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.send_digest == false) && '1' || '' }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           # Transport A: Gmail SMTP. Needs no domain, so this is the one that
           # works before you own one. GMAIL_APP_PASSWORD is a Google App

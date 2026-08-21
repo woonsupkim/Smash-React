@@ -1458,6 +1458,24 @@ async function main() {
     console.warn(`  ! DIGEST_FORCE=1 set, sending despite: ${staleReasons.join('; ')}`);
   }
 
+  // Build everything, mail nothing. DIGEST_FORCE's opposite, and a different
+  // thing from the staleness gate above: that one decides whether the data
+  // DESERVES to be sent, this one is a human saying "not this run".
+  //
+  // For runs where the data is about to change shape and someone wants to
+  // read the result before subscribers do - the numbers behind a digest can
+  // move for reasons the freshness gate cannot see, and the build and the
+  // send live in the same workflow step, so without this there is no moment
+  // between "files written" and "mail delivered" to look at anything.
+  if (process.env.DIGEST_DRY_RUN === '1') {
+    console.warn(
+      '  ! DRY RUN - files written, NO EMAIL SENT.\n'
+      + '    Everything above was built and saved; the send was skipped on purpose.\n'
+      + '    Unset DIGEST_DRY_RUN to mail normally.'
+    );
+    return;
+  }
+
   // ── Optional send via Resend. Never fatal.
   // Recipients = DIGEST_TO (owner) + the public subscriber list from
   // Supabase (digest_subscribers, readable only with the service key).
