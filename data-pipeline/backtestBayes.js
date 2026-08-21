@@ -61,7 +61,7 @@ const pct = (n) => (n == null ? 'n/a' : `${(n * 100).toFixed(1)}%`);
 // comes from the graded row, never from the timeline's winner/loser order -
 // otherwise `p` would encode the answer.
 function orient(graded, m, pWinner) {
-  const row = graded.get(m.ident);
+  const row = graded.get(m.scoreKey);
   if (!row) return null;
   const p1IsWinner = row.winner === row.p1;
   return { p: p1IsWinner ? pWinner : 1 - pWinner, won: p1IsWinner ? 1 : 0, surface: m.surface, date: m.date };
@@ -75,9 +75,9 @@ function runElo(timeline, graded, params, tour) {
   setEloParams(params || eloParamsFor(tour));
   const out = new Map();
   buildTimeline(timeline, (m, rw, rl) => {
-    if (!graded.has(m.ident)) return;
+    if (!m.scoreKey || !graded.has(m.scoreKey)) return;
     const rec = orient(graded, m, expected(predElo(rw, m.surface), predElo(rl, m.surface)));
-    if (rec) out.set(m.ident, rec);
+    if (rec) out.set(m.scoreKey, rec);
   });
   return out;
 }
@@ -85,9 +85,9 @@ function runElo(timeline, graded, params, tour) {
 function runBayes(timeline, graded, params) {
   const out = new Map();
   buildBayesTimeline(timeline, (m, sw, sl) => {
-    if (!graded.has(m.ident)) return;
+    if (!m.scoreKey || !graded.has(m.scoreKey)) return;
     const rec = orient(graded, m, winProbBayes(sw, sl, m.surface));
-    if (rec) return void out.set(m.ident, { ...rec, minSeen: Math.min(sw.seen, sl.seen) });
+    if (rec) return void out.set(m.scoreKey, { ...rec, minSeen: Math.min(sw.seen, sl.seen) });
   }, { params });
   return out;
 }
@@ -150,6 +150,22 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
   const graded = gradedRows(tour);
   if (graded.size < 200) { console.log(`${tour}: only ${graded.size} graded matches - skipping.`); continue; }
 
+  // Check the JOIN, not just the two sides of it. Both can be healthy - tens
+  // of thousands of timeline rows, 1600 graded rows - while nothing matches,
+  // because the timeline and the scoring set name players in different id
+  // namespaces. Every metric then comes back n/a and the sweeps below happily
+  // "compare" empty sets, printing verdicts like "NOT confirmed" and "-> SHIP"
+  // that read as findings and are statements about nothing. A run that cannot
+  // score anything must be a loud failure, not a clean-looking report.
+  const joined = uni.matches.filter((m) => m.scoreKey && graded.has(m.scoreKey)).length;
+  if (joined < 200) {
+    console.log(`\n${tour}: ABORT - only ${joined} of ${graded.size} graded matches join the ` +
+      `${uni.source} timeline (${uni.matches.length} rows). Too few to score, and a join this ` +
+      'empty is a key bug rather than a data shortage. No verdict printed.');
+    process.exitCode = 1;
+    continue;
+  }
+
   // Holdout cutoff: the last HOLDOUT_MONTHS of the timeline - but clamped so
   // the TRAINING side keeps at least half the graded rows.
   //
@@ -173,7 +189,7 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
   console.log(`\n${'='.repeat(78)}`);
   console.log(`${tour.toUpperCase()}  universe=${uni.source.toUpperCase()}  ${uni.matches.length} matches  ` +
     `${uni.from.slice(0, 10)} -> ${uni.to.slice(0, 10)} (${uni.spanDays}d)  roster-vs-roster ${pct(uni.rosterShare)}`);
-  console.log(`graded scoring set: ${graded.size}  |  split: ${splitNote} @ ${new Date(cutoff).toISOString().slice(0, 10)}`);
+  console.log(`graded scoring set: ${graded.size} (${joined} join the timeline)  |  split: ${splitNote} @ ${new Date(cutoff).toISOString().slice(0, 10)}`);
   if (uni.source === 'track') {
     console.log('! FALLBACK UNIVERSE: one season, roster-vs-roster only. Findings here do NOT transfer to production.');
   }
