@@ -22,6 +22,26 @@ const { parseSets } = require('../eloCore');
 const { normSurface } = require('./espnParse');
 
 const SURFACES = new Set(['hard', 'clay', 'grass']);
+
+// Match identity: the pair plus the calendar day. The feed emits the same
+// fixture under several ids, so keying on the id lets one match into the
+// timeline up to six times - inflating the training data and, in the scoring
+// set, counting one result as several. Same rule buildTrackRecord uses.
+//
+// Identity is only meaningful WITHIN one id namespace, and this file handles
+// two. The raw cache names players by API id; track_record names them by short
+// roster id. So every row carries both keys and they are not interchangeable:
+//
+//   ident    - dedupe key, in whatever namespace the row came from. Never
+//              compare it across sources.
+//   scoreKey - join key to the graded scoring set, always short roster ids.
+//              null for a raw match with a non-roster player, which is exactly
+//              the set of matches track_record cannot grade anyway.
+//
+// Collapsing these two into one key silently empties the join: the raw
+// timeline keys on API ids, the graded set on short ids, nothing matches, and
+// every metric comes back n/a.
+const identity = (a, b, date) => `${[String(a), String(b)].sort().join('_')}@${String(date).slice(0, 10)}`;
 const RAW_SKIP = /surfaces|map|profiles|names|budget|alert/;
 
 /**
@@ -48,7 +68,6 @@ function fromRaw(tour) {
     for (const m of (Array.isArray(j) ? j : (j.matches || j.data || []))) {
       if (m.result_type !== 'completed') continue;
       const id = String(m.id);
-      if (byId.has(id)) continue;
       const p1 = String(m.player1Id || ''), p2 = String(m.player2Id || '');
       const win = String(m.match_winner || '');
       if (!p1 || !p2 || p1 === p2) continue;
@@ -57,11 +76,18 @@ function fromRaw(tour) {
       if (!SURFACES.has(surface)) continue;
       if (!m.date || isNaN(new Date(m.date))) continue;
 
+      const ident = identity(p1, p2, m.date);
+      if (byId.has(ident)) continue;
       const winnerIsP1 = win === p1;
       const { setsW, setsL } = parseSets(m.result, winnerIsP1);
       const loser = winnerIsP1 ? p2 : p1;
-      byId.set(id, {
+      const shortW = apiToShort.get(win) || null;
+      const shortL = apiToShort.get(loser) || null;
+      byId.set(ident, {
         id,
+        ident,
+        // Short-id namespace, so this can be looked up in gradedRows.
+        scoreKey: shortW && shortL ? identity(shortW, shortL, m.date) : null,
         date: m.date,
         winnerId: win,
         loserId: loser,
@@ -71,9 +97,9 @@ function fromRaw(tour) {
         // The API's best_of is always null in this feed, so derive it the way
         // buildTrackRecord does: a winner with three sets played best-of-five.
         bestOf: Number(m.best_of) || (setsW >= 3 ? 5 : setsW === 2 ? 3 : null),
-        rostered: apiToShort.has(win) && apiToShort.has(loser),
-        shortWinner: apiToShort.get(win) || null,
-        shortLoser: apiToShort.get(loser) || null,
+        rostered: Boolean(shortW && shortL),
+        shortWinner: shortW,
+        shortLoser: shortL,
       });
     }
   }
@@ -94,8 +120,12 @@ function fromTrackRecord(tour) {
     if (!SURFACES.has(m.surface) || !m.date || isNaN(new Date(m.date))) continue;
     const winnerIsP1 = m.winner === m.p1;
     const { setsW, setsL } = parseSets(m.score, winnerIsP1);
+    const key = identity(m.p1, m.p2, m.date);
     out.push({
       id: String(m.id),
+      ident: key,
+      // Already short ids here, so dedupe key and join key coincide.
+      scoreKey: key,
       date: m.date,
       winnerId: m.winner,
       loserId: winnerIsP1 ? m.p2 : m.p1,
@@ -109,7 +139,10 @@ function fromTrackRecord(tour) {
       row: m,
     });
   }
-  return out.sort((a, b) => new Date(a.date) - new Date(b.date));
+  const seen = new Set();
+  return out
+    .filter((r) => (seen.has(r.ident) ? false : seen.add(r.ident)))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
 /**
@@ -143,7 +176,16 @@ function gradedRows(tour) {
   const p = path.join(__dirname, '..', '..', 'public', 'data', 'track_record.json');
   if (!fs.existsSync(p)) return new Map();
   const rows = JSON.parse(fs.readFileSync(p, 'utf8')).matches || [];
-  return new Map(rows.filter((m) => m.tour === tour && m.winner).map((m) => [String(m.id), m]));
+  // Keyed by identity, not id: track_record can still carry duplicate rows
+  // for one match (see buildTrackRecord), and scoring the same result several
+  // times would quietly weight it several times. First row per match wins.
+  const out = new Map();
+  for (const m of rows) {
+    if (m.tour !== tour || !m.winner) continue;
+    const k = identity(m.p1, m.p2, m.date);
+    if (!out.has(k)) out.set(k, m);
+  }
+  return out;
 }
 
 module.exports = { loadUniverse, fromRaw, fromTrackRecord, gradedRows };

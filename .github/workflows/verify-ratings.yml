@@ -67,13 +67,19 @@ jobs:
             echo "UNIVERSE=track" >> "$GITHUB_ENV"
           fi
 
-      # The core is dependency-free, so the unit tests run before (and without)
-      # an install - if the filter's math is broken there is no point burning
-      # minutes on a sweep.
-      # Explicit globs, not the directory: `node --test data-pipeline/` treats
-      # the pipeline's plain scripts as test files and tries to execute them.
+      # The rating cores and the backtest harness are dependency-free, so this
+      # job never installs - if the filter's math is broken there is no point
+      # burning minutes on a sweep.
+      #
+      # Named files, not a glob. `data-pipeline/*.test.js` also matches tests
+      # whose require chain reaches the pipeline's real scripts and so pulls in
+      # npm dependencies (buildPredictions.test.js -> buildPredictions.js ->
+      # papaparse), which fails here for want of an install and says nothing
+      # about the rating models. Those tests belong to ci.yml, which installs
+      # and runs every data-pipeline test on every PR; this list stays limited
+      # to what can run without node_modules.
       - name: Unit-test the rating cores
-        run: node --test data-pipeline/*.test.js data-pipeline/lib/*.test.js
+        run: node --test data-pipeline/eloCore.test.js data-pipeline/bayesCore.test.js data-pipeline/lib/*.test.js
 
       - name: Backtest both rating models
         run: |
