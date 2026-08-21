@@ -22,9 +22,10 @@ test('eloParamsFor layers the tour block over the root values', () => {
     const block = CONFIG.elo[tour] || {};
     // Tour-specific keys win...
     for (const [k, v] of Object.entries(block)) assert.strictEqual(p[k], v, `${tour}.${k}`);
-    // ...and shared keys are inherited, not dropped.
-    assert.strictEqual(p.rho, CONFIG.elo.rho);
-    assert.strictEqual(p.marginK, CONFIG.elo.marginK);
+    // ...and root keys the block does NOT override are inherited, not dropped.
+    for (const k of ['rho', 'marginK']) {
+      if (!(k in block)) assert.strictEqual(p[k], CONFIG.elo[k], `${tour}.${k} should inherit the root value`);
+    }
     assert.ok(Number.isFinite(p.kScale) && Number.isFinite(p.kExp));
   }
 });
@@ -33,6 +34,21 @@ test('rho stays shared across tours - the client reads it as one global', () => 
   // src/engines.js eloProb has no `tour` argument, so a per-tour rho would
   // silently desync the live prediction from the graded record.
   assert.strictEqual(eloParamsFor('atp').rho, eloParamsFor('wta').rho);
+});
+
+test('marginK MAY differ per tour - unlike rho, nothing in the client reads it', () => {
+  // The constraint on rho is not "shared parameters are tidier", it is that
+  // src/engines.js recomputes predictions from it in the browser. marginK only
+  // scales rating UPDATES while the pipeline replays a timeline, so it never
+  // leaves the build and each tour is free to disagree. The ATP holdout wants
+  // it off; the WTA wants it on. A test that pinned them together would block
+  // that for no reason, so this pins the real rule instead: whatever the block
+  // says is what the tour gets.
+  for (const tour of ['atp', 'wta']) {
+    const block = CONFIG.elo[tour] || {};
+    const expected = 'marginK' in block ? block.marginK : CONFIG.elo.marginK;
+    assert.strictEqual(eloParamsFor(tour).marginK, expected, tour);
+  }
 });
 
 test('an unknown tour falls back to the root schedule', () => {

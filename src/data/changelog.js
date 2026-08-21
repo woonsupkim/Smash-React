@@ -6,15 +6,29 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '4.0';
+export const MODEL_VERSION = '4.1';
 
 export const CHANGELOG = [
+  {
+    version: '4.1',
+    date: '2026-08-21',
+    type: 'model',
+    title: 'We were counting some matches twice, and it changed an answer',
+    notes: [
+      'THE NUMBERS IN 4.0 WERE MEASURED ON DATA THAT COUNTED MATCHES MORE THAN ONCE, and we are withdrawing them. Our match feed publishes the same fixture under several different ids - a first-round match can arrive as six separate records - and nothing in the pipeline was collapsing them. About two in every five rows were repeats. That inflated the history the ratings trained on and, worse, inflated the held-out set they were scored against, so the same result got a vote several times over. Matches are now identified by who played and on what day, which is the thing that actually makes a match a match.',
+      'ONE OF 4.0\'S CONCLUSIONS DID NOT SURVIVE THE FIX. Rerun on deduplicated history, the ATP wants a different learning speed than the one we shipped last week - a gentler starting step that decays faster - and it wants the dominance weighting OFF, where 4.0 had it on. On held-out matches that is 0.6497 to 0.6373 log loss and 62.2% to 63.7% accuracy. The WTA setting from 4.0 survived unchanged: nothing in a 240-configuration sweep beat it on both measures, so it stays.',
+      'THE HONEST VERSION OF 4.0\'S HEADLINE: it claimed ATP accuracy of 73.8% and WTA of 74.7% on held-out matches. Those figures were an artifact of the duplicates and are not reproducible. The real held-out figures are the ones above, 63.7% and 64.7%. The direction of 4.0 was right - the learning step genuinely had never been tuned, and tuning it genuinely helps - but the size of the prize was overstated and one of the two answers was wrong.',
+      'THE SEASON RECORD ON THIS SITE WILL DROP, for the same reason and by design. The graded ledger carried those duplicate rows too, so its match count falls by nearly two fifths and its accuracy moves by about a point and a half. No prediction changed and no result changed; we are simply no longer counting the same call several times. A smaller true number beats a bigger number built on repeats.',
+      'WHY THIS TOOK A WEEK TO NOTICE: the tests that check the rating engines were not running on pull requests. They only ran when someone triggered the verification workflow by hand. They now run on every change, which is where they should have been.',
+    ],
+  },
   {
     version: '4.0',
     date: '2026-08-20',
     type: 'model',
     title: 'The Form engine learns at the right speed - and the two tours disagree',
     notes: [
+      'CORRECTED IN 4.1: the accuracy and log-loss figures in this entry were measured on match history that counted the same fixture several times over, and are withdrawn. The ATP setting described below was also wrong and has since been changed. The entry is left standing as written; see 4.1 for what actually held up.',
       'THE FORM ENGINE WAS LEARNING AT THE WRONG SPEED. An Elo rating moves by a step that shrinks as a player plays more matches: big swings early, then stability once we know someone. That step had never actually been tuned - it was a reasonable default carried since the engine shipped. It is now fitted per tour on eleven years of match history (about 30,000 matches each), chosen on the first half of this season and scored on the second half it had never seen. On those held-out matches ATP accuracy went from 68.2% to 73.8% and log loss from 0.6171 to 0.5617; WTA went from 69.5% to 74.7% and 0.5892 to 0.5491.',
       'THE TWO TOURS WANT DIFFERENT THINGS, which is why this is set per tour now instead of one number for both. The ATP keeps a decaying step: early results move a rating hard, and an established player\'s rating settles down. The WTA prefers a small CONSTANT step - its results carry enough churn that a veteran\'s rating should stay as responsive as a newcomer\'s. The search range was deliberately wide, and widened again when the WTA\'s answer came back sitting on the edge of the first attempt; a setting pinned to the boundary of what you tried is not an answer.',
       'WHAT DID NOT CHANGE: the overall-versus-surface mix inside each rating, and the dominance weighting from 3.0. Letting the mix move as well was worth 0.0008 log loss on the ATP and nothing on the WTA - under the bar for touching a number the live pages also read. Nothing is computed differently in your browser; this changes how the ratings are BUILT, not how they are used.',

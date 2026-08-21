@@ -296,8 +296,16 @@ for (const tour of (onlyTour ? [onlyTour] : ['atp', 'wta'])) {
   console.log(`  1. Elo retune: ${dLL > 0.005 && dAcc > 0.005 ? 'CONFIRMED' : 'NOT confirmed'} - ` +
     `${eloLabel(eloBest.c)} beats shipped by ${dLL.toFixed(4)} LL / ${(dAcc * 100).toFixed(1)}pt acc on the holdout.`);
   if (variants.length > 1) {
+    // Both metrics, same bar as verdicts 1 and 3. Ranking this on log loss
+    // alone let it announce "BETTER" while accuracy said the opposite - on the
+    // ATP, full training won by 0.0033 LL and LOST by 1.2pt, and the line
+    // still read as a clean win for training on non-roster opponents.
     const f = tourOut.elo.full.tuned, r = tourOut.elo.rosterOnly.tuned;
-    console.log(`  2. Non-roster opponents: training on them is ${f.logLoss <= r.logLoss ? 'BETTER' : 'WORSE'} ` +
+    const betterLL = f.logLoss < r.logLoss, betterAcc = f.accuracy > r.accuracy;
+    const call = betterLL && betterAcc ? 'BETTER'
+      : !betterLL && !betterAcc ? 'WORSE'
+        : `MIXED (better ${betterLL ? 'log loss' : 'accuracy'}, worse ${betterLL ? 'accuracy' : 'log loss'} - no verdict)`;
+    console.log(`  2. Non-roster opponents: training on them is ${call} ` +
       `(full ${fmt(f.logLoss)}/${pct(f.accuracy)} vs rosterOnly ${fmt(r.logLoss)}/${pct(r.accuracy)}).`);
   } else {
     console.log('  2. Non-roster opponents: untestable on this universe (roster-vs-roster only).');
