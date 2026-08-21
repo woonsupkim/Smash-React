@@ -9,11 +9,20 @@
 // 14-point overstatement that survived because the figure was typed into a
 // sentence and never checked again.
 //
-// So the figures live here as data, and marketGap.test.js recomputes every one
-// of them from public/data/track_record.json and fails if the copy no longer
-// matches. A stale number is now a red build rather than a quiet lie.
+// So the figures are DERIVED rather than written down. data-pipeline/
+// buildMarketGap.js measures them from public/data/track_record.json into
+// src/data/marketGap.json, `prebuild` runs it before every production build,
+// and the refresh workflow runs it whenever the record changes.
 //
-// Recompute: npx vitest run src/utils/marketGap.test.js
+// They were hand-maintained constants until a refresh regenerated the graded
+// record with the match-identity dedupe applied. Every figure moved at once,
+// and because the only guard was a test, the drift surfaced hours later on an
+// unrelated pull request - while the wrong number sat on the live site. A test
+// can tell you a figure is stale; deriving it at build time means it cannot be.
+//
+// Recompute: npm run build-market-gap
+
+import FIGURES from '../data/marketGap.json';
 
 // Bookmaker-implied probability for OUR pick, vig removed. Null when the row
 // carries no usable price.
@@ -57,25 +66,25 @@ export function bandStats(rows, lo = GAP_FLOOR, hi = GAP_CEIL) {
   };
 }
 
-// Published figures for the band the builder actually suggests from, measured
-// on the graded record. Pinned by marketGap.test.js.
+// Published figures for the band the builder suggests from, measured on the
+// graded record. Generated - see the header.
 //
-// Re-measured after the match-identity dedupe (#11) reached the data: the
-// graded record carried the same fixture under several feed ids, so every
-// figure below was counting a share of its matches more than once. The priced
-// sample falls by a third and the band with it. The edge over the market
-// survives the correction and is slightly larger, but on a smaller sample, so
-// the honest reading is that it is less well established than it looked, not
-// better.
+// Full precision is kept in the file and rounded at the point of display, so
+// the copy and the ledger can never disagree by a rounding step that was baked
+// in months earlier.
 export const BAND = {
-  measuredAt: '2026-08-21',
-  pricedGraded: 1570,   // graded matches carrying a market price (was 2419)
-  n: 263,               // of those, how many fall in the 10-20pt band (was 385)
-  hitRate: 0.56,        // how often those calls actually landed (was 0.55)
-  marketImplied: 0.45,  // what the market gave them (was 0.44)
+  measuredAt: FIGURES.measuredAt,
+  pricedGraded: FIGURES.band.pricedGraded,  // graded matches carrying a price
+  n: FIGURES.band.n,                        // of those, how many in the 10-20pt band
+  hitRate: FIGURES.band.hitRate,            // how often those calls actually landed
+  marketImplied: FIGURES.band.marketImplied, // what the market gave them
+  stated: FIGURES.band.stated,              // what we claimed for them
 };
 
-// Beyond the ceiling, for the record: the model's boldest disagreements.
-// Also re-measured; these got materially worse, from 0.46 to 0.42, which
-// strengthens rather than weakens the reason for having a ceiling at all.
-export const BEYOND_CEIL = { n: 222, hitRate: 0.42, stated: 0.62 };
+// Beyond the ceiling, for the record: the model's boldest disagreements, and
+// the evidence for having a ceiling at all.
+export const BEYOND_CEIL = {
+  n: FIGURES.beyondCeil.n,
+  hitRate: FIGURES.beyondCeil.hitRate,
+  stated: FIGURES.beyondCeil.stated,
+};

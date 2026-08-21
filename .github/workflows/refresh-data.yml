@@ -139,6 +139,15 @@ jobs:
       - name: Rebuild Track Record (precomputed predictions)
         run: npm run build-track-record
 
+      # Immediately after, because these are figures the Parlay builder states
+      # as fact about the record that was just rewritten. They were constants
+      # once: the dedupe refresh moved every one of them, and the stale claim
+      # sat on the live site until an unrelated PR happened to run the test.
+      # The production build regenerates them anyway, so this is here to keep
+      # the committed file honest and to put the change in the diff.
+      - name: Re-derive the published market-gap figures
+        run: npm run build-market-gap
+
       # Prior-season components for the rolling-window tuner (the retune
       # workflow reads this committed artifact - it has no raw data itself).
       - name: Build tuner history
@@ -316,7 +325,7 @@ jobs:
         run: |
           git config user.name "smash-data-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add public/data public/sitemap.xml public/robots.txt data-pipeline/output src/assets/players src/assets/players-women
+          git add public/data public/sitemap.xml public/robots.txt data-pipeline/output src/assets/players src/assets/players-women src/data/marketGap.json
           git diff --cached --quiet && exit 0
           git commit -m "Automated data refresh"
           for attempt in 1 2 3; do
