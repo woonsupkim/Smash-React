@@ -425,7 +425,44 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   // still cover itself. Everything else is measured against it.
   const spread = spreadPlan(bets, B, { lambda });
   const combos = parlayCandidates(priced, maxParlayLegs, maxSearch);
-  const bestCombo = combos.length ? combos.reduce((a, c) => (c.f > a.f ? c : a), combos[0]) : null;
+
+  // How many legs the parlay should have is decided by the PLAN it lands in,
+  // not by the parlay on its own.
+  //
+  // This used to be `combos.reduce(max f)`: the candidate with the largest
+  // Kelly fraction, scored in isolation. Because a parlay's odds compound
+  // faster than its edge, Kelly shrinks with every leg added, so that rule
+  // returned a 2-leg parlay essentially always - and it never once looked at
+  // what the plan's chance of finishing ahead or expected profit actually did.
+  // It agreed with the plan-level rule by coincidence rather than by
+  // construction, and on a different card it would not have.
+  //
+  // Scoring all of them is not an option - a full card generates ~2,500
+  // candidates and each costs a convolution over the whole slip - so the
+  // shortlist is the best-sized candidate at each leg count, which is where
+  // the real trade-off lives (2 legs buys chance, 5 buys expectation).
+  const shortlist = (() => {
+    const byN = new Map();
+    for (const c of combos) {
+      const cur = byN.get(c.n);
+      if (!cur || c.f > cur.f) byN.set(c.n, c);
+    }
+    return [...byN.values()].sort((a, b) => a.n - b.n);
+  })();
+
+  // Build the plan for each shortlisted parlay and choose between them on the
+  // same both-axes rule the plan menu uses, so "which parlay" and "which plan"
+  // are finally answered by the same question.
+  const pickByPlan = (build) => {
+    const scored = [];
+    for (const c of shortlist) {
+      const plan = build(c);
+      if (plan) scored.push({ combo: c, plan });
+    }
+    if (!scored.length) return null;
+    const winner = recommendedPlanId(scored.map((s, i) => ({ id: i, metrics: s.plan.metrics })));
+    return scored[winner] || scored[0];
+  };
 
   const plans = [];
   if (spread.count >= 2 && spread.coversStake) {
@@ -434,32 +471,58 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
 
   // Same spread with a slice moved onto the best combination, sized by Kelly
   // against the singles so the split follows edge rather than a round number.
-  if (bestCombo && spread.count >= 2 && spread.coversStake && B > 0) {
+  if (shortlist.length && spread.count >= 2 && spread.coversStake && B > 0) {
     const chosen = priced.filter((b) => spread.legs.includes(b.key));
     const fSingles = chosen.reduce((t, b) => t + kellyFraction(b.p, b.o), 0);
-    const total = fSingles + bestCombo.f;
-    if (total > 0) {
+    const picked = pickByPlan((combo) => {
+      const total = fSingles + combo.f;
+      if (!(total > 0)) return null;
       const perMatch = (B * (fSingles / total)) / chosen.length;
       const singles = {};
       for (const b of chosen) singles[b.key] = perMatch;
-      plans.push({
-        id: 'spreadPlus',
-        label: 'Spread plus a parlay',
-        ...shape(singles, bestCombo, B * (bestCombo.f / total)),
-      });
+      return shape(singles, combo, B * (combo.f / total));
+    });
+    if (picked) {
+      plans.push({ id: 'spreadPlus', label: 'Spread plus a parlay', ...picked.plan });
     }
   }
 
-  // The concentrated alternative: only matches whose own price beats them,
-  // sized by edge. Fewer bets, more expected profit, more variance.
-  const evSingles = priced.filter((b) => kellyFraction(b.p, b.o) > 0);
-  if (evSingles.length >= 1 && B > 0) {
-    const fs = evSingles.map((b) => ({ key: b.key, f: kellyFraction(b.p, b.o) }));
-    const total = fs.reduce((t, i) => t + i.f, 0) + (bestCombo ? bestCombo.f : 0);
-    if (total > 0) {
+  // The tilted alternative: still every match on the card, but the money
+  // follows the prices instead of sitting flat.
+  //
+  // This used to fund ONLY matches whose own price beat them, which on a full
+  // card meant backing 27 of 40 and leaving 13 with nothing. The plan-level
+  // test this page is built on says the spread has to cover itself ON THE
+  // AVERAGE - that a match priced against us can be carried by stronger ones -
+  // and dropping those matches quietly abandons that premise the moment the
+  // recommendation is taken literally.
+  //
+  // So half the budget is spread evenly across everything priced, and half
+  // follows Kelly. Nothing is dropped, the best prices still get the most, and
+  // a match with negative edge gets the base share rather than zero.
+  const HALF = 0.5;
+  // One priced match is still a card: no spread is possible, but "back it" is
+  // the only sensible plan and the menu must not come back empty.
+  if (priced.length >= 1 && B > 0) {
+    const fs = priced.map((b) => ({ key: b.key, f: kellyFraction(b.p, b.o) }));
+    const fTotal = fs.reduce((t, i) => t + i.f, 0);
+    // The parlay is funded out of the edge-following half only, so adding one
+    // never dilutes the base share that guarantees nobody is dropped.
+    const edgePool = B * HALF;
+    const basePool = B * (1 - HALF);
+    const build = (combo) => {
+      const denom = fTotal + (combo ? combo.f : 0);
+      if (!(denom > 0)) return null;
       const singles = {};
-      for (const i of fs) singles[i.key] = (B * i.f) / total;
-      const sharp = shape(singles, bestCombo, bestCombo ? (B * bestCombo.f) / total : 0);
+      for (const i of fs) singles[i.key] = basePool / priced.length + (edgePool * i.f) / denom;
+      return shape(singles, combo, combo ? (edgePool * combo.f) / denom : 0);
+    };
+    // Same question as the plan menu asks, one level down: which parlay leaves
+    // THIS plan best off. Falls back to no parlay at all when none helps.
+    const pickedSharp = pickByPlan(build);
+    const sharp = pickedSharp ? pickedSharp.plan : build(null);
+    if (sharp) {
+      const singles = sharp.singles;
       // Only worth a slot if it differs from a spread that is ACTUALLY on the
       // menu. Comparing against a spread that was never offered (a one- or
       // two-match card) suppressed the only plan there was and left the page
@@ -469,7 +532,14 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
         && sharp.funded === offeredSpread.funded
         && offeredSpread.legs.every((k) => (singles[k] || 0) > 0)
         && !sharp.parlayStake;
-      if (!sameAsSpread) plans.push({ id: 'sharp', label: 'Best prices only', ...sharp });
+      // It has to clear the same bar as the spread. While this plan funded
+      // only +EV picks its expected return could not fall short, so nothing
+      // checked; now that it carries the negative-edge matches too, the page's
+      // claim that "every plan here passes" the cover test has to be earned
+      // rather than assumed.
+      if (!sameAsSpread && sharp.expReturn >= sharp.metrics.staked - 1e-9) {
+        plans.push({ id: 'sharp', label: 'Weighted to the best prices', ...sharp });
+      }
     }
   }
 

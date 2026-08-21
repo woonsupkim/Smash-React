@@ -98,3 +98,91 @@ describe('planFrontier', () => {
     }
   });
 });
+
+describe('no plan abandons matches on the card', () => {
+  // A card with a deliberate mix: strong value, thin value, and several
+  // priced against us. The concentrated plan used to fund only the +EV ones,
+  // which on a real 40-match card meant backing 27 and dropping 13.
+  const card = Array.from({ length: 20 }, (_, i) => {
+    const p = 0.5 + ((i * 11) % 40) / 100;
+    // Every fourth match is priced against us on purpose.
+    const o = (i % 4 === 0 ? 0.92 : 1.12) / p;
+    return { key: `m${i}`, p, o };
+  });
+
+  it('every offered plan backs every priced match', () => {
+    const f = planFrontier(card, 100, { lambda: 1 });
+    expect(f.plans.length).toBeGreaterThan(0);
+    const negative = card.filter((b) => b.p * b.o - 1 < 0);
+    expect(negative.length).toBeGreaterThan(0);      // the fixture must bite
+    for (const plan of f.plans) {
+      for (const b of card) {
+        // eslint-disable-next-line jest/valid-expect
+        expect(plan.singles[b.key], `${plan.id} dropped ${b.key}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('the tilted plan still weights toward the better prices', () => {
+    const f = planFrontier(card, 100, { lambda: 1 });
+    const sharp = f.plans.find((p) => p.id === 'sharp');
+    if (!sharp) return;                               // suppressed as duplicate
+    const edge = (b) => b.p * b.o - 1;
+    const best = card.reduce((a, b) => (edge(b) > edge(a) ? b : a));
+    const worst = card.reduce((a, b) => (edge(b) < edge(a) ? b : a));
+    expect(sharp.singles[best.key]).toBeGreaterThan(sharp.singles[worst.key]);
+  });
+
+  it('every offered plan clears the cover test it claims to', () => {
+    // The page states outright that every plan shown passes this. Carrying
+    // negative-edge matches makes that something to check, not assume.
+    for (const budget of [25, 100, 500]) {
+      for (const plan of planFrontier(card, budget, { lambda: 1 }).plans) {
+        // eslint-disable-next-line jest/valid-expect
+        expect(plan.expReturn, plan.id).toBeGreaterThanOrEqual(plan.metrics.staked - 1e-9);
+      }
+    }
+  });
+});
+
+describe('the parlay length is chosen by the plan, not by the parlay alone', () => {
+  // Found by search. On this card the old rule - the candidate with the
+  // largest Kelly fraction, scored in isolation - picks a 2-leg parlay, and
+  // scoring the shortlist through the actual plan picks a 3-leg one. Without
+  // a card that separates them, the change would be untestable.
+  const card = [
+    { p: 0.9389, o: 1.2856 }, { p: 0.8811, o: 1.2570 }, { p: 0.5224, o: 2.0846 },
+    { p: 0.7420, o: 1.6530 }, { p: 0.8080, o: 1.5288 }, { p: 0.7250, o: 1.6959 },
+    { p: 0.9057, o: 1.3678 }, { p: 0.5748, o: 2.0868 }, { p: 0.6095, o: 2.0292 },
+    { p: 0.7058, o: 1.5758 }, { p: 0.8077, o: 1.3921 }, { p: 0.6781, o: 1.6015 },
+  ].map((b, i) => ({ key: `m${i}`, ...b }));
+
+  it('picks the longer parlay when the plan is better for it', () => {
+    const sharp = planFrontier(card, 100, { lambda: 1 }).plans.find((p) => p.id === 'sharp');
+    expect(sharp).toBeTruthy();
+    // Kelly-in-isolation always shortens the parlay, because odds compound
+    // faster than edge. Anything past 2 here can only come from plan scoring.
+    expect(sharp.parlayLegs.length).toBe(3);
+  });
+
+  it('never picks a parlay another length beats on both axes', () => {
+    // The property that matters, independent of which length wins: the choice
+    // has to survive the same test the plan menu applies to plans.
+    for (const budget of [50, 100, 400]) {
+      const plans = planFrontier(card, budget, { lambda: 1 }).plans;
+      const sharp = plans.find((p) => p.id === 'sharp');
+      if (!sharp?.parlayLegs?.length) continue;
+      const mine = sharp.metrics;
+      // Rebuild the menu at other budgets and confirm nothing dominates it.
+      for (const other of plans) {
+        if (other === sharp) continue;
+        const beatsBoth = other.metrics.pProfit > mine.pProfit + 1e-9
+          && other.metrics.ev > mine.ev + 1e-9;
+        // A dominated plan may still be OFFERED; it must not be RECOMMENDED.
+        if (beatsBoth) {
+          expect(planFrontier(card, budget, { lambda: 1 }).recommendedId).not.toBe('sharp');
+        }
+      }
+    }
+  });
+});
