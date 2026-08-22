@@ -38,6 +38,7 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { nextSlam } = require('./lib/slamCalendar');
+const planSettle = require('./lib/planSettle');
 
 let sharp;
 try {
@@ -1240,66 +1241,6 @@ async function hypeStoryCard(next, days, recs, file) {
   await render(file, base);
 }
 
-// ── RECEIPTS: called-it as a ticket stub ───────────────────────────────────
-// The "we called it" card reborn as a collectible: cream paper stub with a
-// perforated edge, barcode, and serial. Pure SVG, so it supersamples.
-function ticketBarcode(x, y, h, seedStr) {
-  let seed = 0;
-  for (const ch of String(seedStr)) seed = (seed * 31 + ch.charCodeAt(0)) & 0x7fffffff;
-  const rand = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-  let bars = '', bx = x;
-  for (let i = 0; i < 26; i++) {
-    const w = 3 + Math.floor(rand() * 8);
-    if (i % 2 === 0) bars += `<rect x="${bx}" y="${y}" width="${w}" height="${h}" fill="${INK}"/>`;
-    bx += w + 3;
-  }
-  return bars;
-}
-
-async function receiptTicket(p, file) {
-  const opp = p.favorite === p.p1 ? p.name2 : p.name1;
-  const hit = !!p.correct;
-  const pct = Math.round(p.favProb * 100);
-  const a = paletteFor(p.event, 'receipts');
-  const INKT = '#141210'; // ticket ink
-  const TX = 90, TY = 320, TW = 900, TH = 500, PERF = TX + 640;
-  const stampColor = hit ? '#1c7a3f' : '#b3392e';
-  const mark = hit
-    ? `<polyline points="${TX + 556},${TY + 128} ${TX + 574},${TY + 146} ${TX + 604},${TY + 102}" fill="none" stroke="${stampColor}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`
-    : `<g stroke="${stampColor}" stroke-width="9" stroke-linecap="round"><line x1="${TX + 562}" y1="${TY + 106}" x2="${TX + 600}" y2="${TY + 144}"/><line x1="${TX + 600}" y1="${TY + 106}" x2="${TX + 562}" y2="${TY + 144}"/></g>`;
-  const stamp = `<g transform="rotate(-9 ${TX + 470} ${TY + 122})">
-    <rect x="${TX + 330}" y="${TY + 80}" width="300" height="86" rx="12" fill="none" stroke="${stampColor}" stroke-width="7"/>
-    ${T('anton', hit ? 'CALLED' : 'MISSED', TX + 360, TY + 142, 52, { fill: stampColor }).svg}
-    ${mark}</g>`;
-  const result = `${p.winner === p.favorite ? 'WON' : 'LOST'}${p.score ? ` ${p.score}` : ''}`;
-  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
-  ${sStage(a, SQ, SQ, { ghost: hit ? 'CALLED' : 'MISSED' })}
-  ${sMast(SQ, 'The Receipts · Graded in Public', a)}
-  ${T('bebas', hit ? 'WE CALLED IT' : 'THE ONE WE OWN', SQ / 2, 216, 40, { anchor: 'middle', fill: a.sub, tracking: 4 }).svg}
-  <g transform="rotate(-2 ${SQ / 2} ${TY + TH / 2})">
-    <rect x="${TX + 10}" y="${TY + 14}" width="${TW}" height="${TH}" rx="20" fill="rgba(0,0,0,0.45)"/>
-    <rect x="${TX}" y="${TY}" width="${TW}" height="${TH}" rx="20" fill="#f2eee2"/>
-    <line x1="${PERF}" y1="${TY + 14}" x2="${PERF}" y2="${TY + TH - 14}" stroke="#b9b2a0" stroke-width="3" stroke-dasharray="4 12"/>
-    <circle cx="${PERF}" cy="${TY}" r="18" fill="${a.ink[1]}"/>
-    <circle cx="${PERF}" cy="${TY + TH}" r="18" fill="${a.ink[2]}"/>
-    ${T('black', 'SMASH · OFFICIAL CALL', TX + 44, TY + 60, 21, { fill: 'rgba(20,24,30,0.55)', tracking: 3 }).svg}
-    ${T('body', `${p.event || 'Tour'} · ${fmtDate(p.date)}`, TX + 44, TY + 100, 24, { fill: 'rgba(20,24,30,0.72)' }).svg}
-    ${T('anton', last(p.favName).toUpperCase(), TX + 44, TY + 206, fitT('anton', last(p.favName).toUpperCase(), 84, PERF - TX - 80), { fill: INKT }).svg}
-    ${T('body', `over ${opp} · our number ${pct}%`, TX + 44, TY + 252, fitT('body', `over ${opp} · our number ${pct}%`, 26, PERF - TX - 80), { fill: 'rgba(20,24,30,0.7)' }).svg}
-    ${T('anton', result, TX + 44, TY + 328, fitT('anton', result, 46, PERF - TX - 80), { fill: INKT }).svg}
-    ${T('bodyMed', 'locked before play · no edits, no take-backs', TX + 44, TY + 372, 22, { fill: 'rgba(20,24,30,0.55)' }).svg}
-    ${stamp}
-    <g transform="rotate(90 ${PERF + 208} ${TY + 96})">${T('black', `CALL NO. ${String(p.id).slice(-6)}`, PERF + 208, TY + 96, 22, { anchor: 'middle', fill: 'rgba(20,24,30,0.6)', tracking: 3 }).svg}</g>
-    ${T('anton', `${pct}%`, PERF + 44, TY + 250, 96, { fill: INKT }).svg}
-    ${T('bodyMed', 'stated win chance', PERF + 44, TY + 292, 21, { fill: 'rgba(20,24,30,0.6)' }).svg}
-    ${ticketBarcode(PERF + 44, TY + TH - 128, 76, p.id)}
-  </g>
-  ${sBar(SQ, SQ, hit ? 'EVERY CALL COLLECTS A RECEIPT  →' : 'WINS AND MISSES, BOTH POSTED  →', a)}
-  </svg>`;
-  await render(file, base);
-}
-
-// ── DAILY: title-odds movers (risers and fallers overnight) ────────────────
 async function oddsMoversCard(o, tour, file) {
   const hist = o.history || [];
   if (hist.length < 2 || o.status !== 'live') return false;
@@ -1489,6 +1430,12 @@ async function forwardEdgeCard(p, mktPct, file) {
 }
 
 // ── DAILY: tale of the tape for the marquee matchup ────────────────────────
+// Five comparisons, not three: rank, the Form rating, recent form, the season
+// record on this surface, and career head-to-head - with the market's price
+// joining our call on the bottom bar when the match is priced. The stat
+// column sits on its own dark plate: the values used to be drawn straight
+// over the photo scrim, and between two bright panels they were barely
+// legible at feed size.
 async function taleOfTheTape(p, ctx, forms, file) {
   const a = paletteFor(p.event, 'calls');
   const favIsP1 = p.favorite === p.p1;
@@ -1499,10 +1446,16 @@ async function taleOfTheTape(p, ctx, forms, file) {
     duoPanel(photoPath(p.tour, p.p2), PW, PH, favIsP1 ? 'loser' : 'winner'),
   ]);
   const f1 = forms.get(p.p1), f2 = forms.get(p.p2);
+  // Row pitch 76 fits five rows inside the panel column; value size drops
+  // from 46 to 40 to keep the numerals clear of each other at that pitch.
   const midRow = (y, label, va, vb) => `
-    ${T('black', label, SQ / 2, y, 22, { anchor: 'middle', fill: 'rgba(255,255,255,0.5)', tracking: 3 }).svg}
-    ${T('anton', va, SQ / 2 - 94, y + 48, 46, { anchor: 'middle', fill: favIsP1 ? a.key : C_WHITE }).svg}
-    ${T('anton', vb, SQ / 2 + 94, y + 48, 46, { anchor: 'middle', fill: favIsP1 ? C_WHITE : a.key }).svg}`;
+    ${T('black', label, SQ / 2, y, Math.min(23, fitT('black', label, 23, 264, 3)), { anchor: 'middle', fill: 'rgba(255,255,255,0.78)', tracking: 3 }).svg}
+    ${T('anton', va, SQ / 2 - 94, y + 44, 40, { anchor: 'middle', fill: favIsP1 ? a.key : C_WHITE }).svg}
+    ${T('anton', vb, SQ / 2 + 94, y + 44, 40, { anchor: 'middle', fill: favIsP1 ? C_WHITE : a.key }).svg}`;
+  const wl = (r) => (r ? `${r.w}-${r.l}` : '–');
+  const surfLabel = `${String(p.surface || '').toUpperCase()} THIS SEASON`;
+  const barTxt = `OUR CALL: ${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`
+    + (ctx?.market != null ? ` · MARKET ${Math.round(ctx.market * 100)}%` : '');
   const hlW = measureT('anton', 'TALE OF', 96) + 50;
   const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
     <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.36"/>
@@ -1515,20 +1468,65 @@ async function taleOfTheTape(p, ctx, forms, file) {
     ${sMast(SQ, `${p.event} · ${fmtDate(p.date)} · The Marquee`, a, { tour: p.tour })}
     ${T('anton', 'TALE OF ', 60, 296, 96, { fill: C_WHITE }).svg}
     ${T('anton', 'THE TAPE', 60 + hlW, 296, 96, { fill: a.key, skew: -6 }).svg}
+    <rect x="${SQ / 2 - 146}" y="${PY + 34}" width="292" height="${PH - 40}" rx="24" fill="#05070c" fill-opacity="0.72" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
     <rect x="${aX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? a.key : 'rgba(255,255,255,0.45)'}" stroke-width="${favIsP1 ? 4 : 3}"/>
     <rect x="${bX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${favIsP1 ? 'rgba(255,255,255,0.45)' : a.key}" stroke-width="${favIsP1 ? 3 : 4}"/>
     ${sPlate(aX + PW / 2, PY + PH + 40, last(p.name1).toUpperCase(), favIsP1 ? a.key : C_WHITE, favIsP1, a.ink[2])}
     ${sPlate(bX + PW / 2, PY + PH + 40, last(p.name2).toUpperCase(), favIsP1 ? C_WHITE : a.key, !favIsP1, a.ink[2])}
-    ${midRow(452, 'RANK', p.rank1 ? `#${p.rank1}` : '–', p.rank2 ? `#${p.rank2}` : '–')}
-    ${midRow(556, 'RECENT FORM', f1 ? `${f1.w}-${f1.l}` : '–', f2 ? `${f2.w}-${f2.l}` : '–')}
-    ${midRow(660, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '–', ctx?.h2h ? String(ctx.h2h.w2) : '–')}
-    ${sBar(SQ, SQ, `OUR CALL: ${last(p.favName).toUpperCase()} · ${Math.round(p.favProb * 100)}%`, a)}
+    ${midRow(428, 'RANK', p.rank1 ? `#${p.rank1}` : '–', p.rank2 ? `#${p.rank2}` : '–')}
+    ${midRow(504, 'FORM RATING', ctx?.elo?.r1 ? String(ctx.elo.r1) : '–', ctx?.elo?.r2 ? String(ctx.elo.r2) : '–')}
+    ${midRow(580, 'RECENT FORM', wl(f1), wl(f2))}
+    ${midRow(656, surfLabel, wl(ctx?.surf?.a), wl(ctx?.surf?.b))}
+    ${midRow(732, 'CAREER H2H', ctx?.h2h ? String(ctx.h2h.w1) : '–', ctx?.h2h ? String(ctx.h2h.w2) : '–')}
+    ${sBar(SQ, SQ, barTxt, a)}
     </svg>`;
   const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
     { input: await rr(scrim), left: 0, top: 0 },
     { input: aImg, left: aX, top: PY },
     { input: bImg, left: bX, top: PY },
+    { input: await rr(top), left: 0, top: 0 },
+  ]);
+}
+
+// ── WEEKLY: upset of the week - the underdog we backed who came through ────
+// One photo, two numbers: what we said and what the market said. Only exists
+// when we beat the market's favourite, so the caption never has to stretch.
+async function upsetOfWeekCard(m, tour, file) {
+  const a = paletteFor(m.event, 'edge');
+  const pickId = pickFav(m) === m.p1 ? m.p1 : m.p2;
+  const pickName = pickFav(m) === m.p1 ? m.name1 : m.name2;
+  const otherName = pickFav(m) === m.p1 ? m.name2 : m.name1;
+  const wePct = Math.round(pickFavProb(m) * 100);
+  const q1 = 1 / m.od1, q2 = 1 / m.od2;
+  const mkPick = (pickFav(m) === m.p1 ? q1 : q2) / (q1 + q2);
+  const PW = 420, PH = 600, PY = 300, PX = SQ - 60 - PW, colW = PX - 60 - 30;
+  const bg = await duoStage(m.surface, SQ, SQ);
+  const photo = await duoPanel(photoPath(tour, pickId), PW, PH, 'winner');
+  const uFs = fitT('anton', 'UPSET', 118, colW);
+  const scrim = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    <rect width="${SQ}" height="${SQ}" fill="#000" fill-opacity="0.42"/>
+    <ellipse cx="${SQ * 0.5}" cy="${SQ * 0.18}" rx="${SQ * 0.7}" ry="${SQ * 0.4}" fill="url(#bloom2)"/>
+    <polygon points="${SQ},0 ${SQ},${SQ * 0.08} ${SQ * 0.86},0" fill="${a.key}"/>
+    <rect x="${PX - 6}" y="${PY - 6}" width="${PW + 12}" height="${PH + 12}" rx="34" fill="${a.key}" fill-opacity="0.55" filter="url(#pglow)"/>
+    <rect width="${SQ}" height="${SQ}" fill="url(#vig)"/></svg>`;
+  const top = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+    ${sMast(SQ, `${m.event} · The Week in Calls`, a, { tour })}
+    ${T('bebas', 'UPSET OF THE WEEK', 60, 232, 38, { fill: a.sub, tracking: 5 }).svg}
+    ${T('anton', 'THE', 60, 366, uFs, { fill: C_WHITE }).svg}
+    ${T('anton', 'UPSET', 60, 366 + Math.round(uFs * 0.92), uFs, { fill: a.key, skew: -7 }).svg}
+    ${T('anton', `${wePct}%`, 62, 620, 96, { fill: a.key }).svg}
+    ${T('body', `our call on ${last(pickName)}`, 62, 668, fitT('body', `our call on ${last(pickName)}`, 26, colW), { fill: C_MUTE }).svg}
+    ${T('anton', `${Math.round(mkPick * 100)}%`, 62, 790, 72, { fill: 'rgba(255,255,255,0.72)' }).svg}
+    ${T('body', 'what the market gave the same result', 62, 836, fitT('body', 'what the market gave the same result', 24, colW), { fill: C_MUTE }).svg}
+    <rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="28" fill="none" stroke="${a.key}" stroke-width="5"/>
+    ${sPlate(PX + PW / 2, PY + PH + 42, pickName.toUpperCase(), a.key, true, a.ink[2])}
+    ${sBar(SQ, SQ, `BEAT ${last(otherName).toUpperCase()}${m.score ? ` · ${m.score.toUpperCase()}` : ''} · LOCKED BEFORE PLAY`, a)}
+    </svg>`;
+  const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
+  await renderOn(file, bg, [
+    { input: await rr(scrim), left: 0, top: 0 },
+    { input: photo, left: PX, top: PY },
     { input: await rr(top), left: 0, top: 0 },
   ]);
 }
@@ -1659,6 +1657,7 @@ function loadForms(tour) {
 }
 
 async function run() {
+  await planSettle.ready();
   fs.mkdirSync(OUT, { recursive: true });
   const sc = JSON.parse(fs.readFileSync(path.join(DATA, 'daily_scorecard.json'), 'utf8'));
   const track = JSON.parse(fs.readFileSync(path.join(DATA, 'track_record.json'), 'utf8'));
@@ -1793,27 +1792,52 @@ async function run() {
       .sort((a, b) => (a._flags.rank1 + a._flags.rank2) - (b._flags.rank1 + b._flags.rank2))[0];
     if (marquee) {
       const forms = loadForms(marquee.tour);
-      await taleOfTheTape({ ...marquee, rank1: marquee._flags.rank1, rank2: marquee._flags.rank2 }, contextFor(marquee), forms, 'tape.png');
-      add('tape.png', 'tale-of-the-tape', 'square', 'daily', `Tale of the tape: ${last(marquee.name1)} vs ${last(marquee.name2)} at the ${marquee.event}. Rank, form, career head-to-head, and our call. ${matchLink(marquee)} ${tags}`,
+      // The two extra tape rows and the market line, computed from files the
+      // generator already trusts: elo.json for the Form rating (surface value
+      // when it exists, overall otherwise), the graded record for each
+      // player's season on this surface, and the locked odds for the
+      // market's own number - vig stripped, same as everywhere else.
+      const eloBook = (() => {
+        try {
+          const dir = marquee.tour === 'wta' ? path.join(DATA, 'women') : DATA;
+          return JSON.parse(fs.readFileSync(path.join(dir, 'elo.json'), 'utf8'));
+        } catch { return {}; }
+      })();
+      const eloOf = (id) => {
+        const e = eloBook[id];
+        if (!e) return null;
+        const v = e[marquee.surface] || e.all;
+        return v ? Math.round(v) : null;
+      };
+      const surfRec = (id) => {
+        const ms = (track.matches || []).filter((m) => m.winner && m.surface === marquee.surface
+          && (m.p1 === id || m.p2 === id));
+        if (!ms.length) return null;
+        const w = ms.filter((m) => m.winner === id).length;
+        return { w, l: ms.length - w };
+      };
+      const mkt = (() => {
+        if (!(marquee.lockOdd1 > 1) || !(marquee.lockOdd2 > 1)) return null;
+        const q1 = 1 / marquee.lockOdd1, q2 = 1 / marquee.lockOdd2;
+        return (marquee.favorite === marquee.p1 ? q1 : q2) / (q1 + q2);
+      })();
+      const ctx = {
+        ...contextFor(marquee),
+        elo: { r1: eloOf(marquee.p1), r2: eloOf(marquee.p2) },
+        surf: { a: surfRec(marquee.p1), b: surfRec(marquee.p2) },
+        market: mkt,
+      };
+      await taleOfTheTape({ ...marquee, rank1: marquee._flags.rank1, rank2: marquee._flags.rank2 }, ctx, forms, 'tape.png');
+      add('tape.png', 'tale-of-the-tape', 'square', 'daily', `Tale of the tape: ${last(marquee.name1)} vs ${last(marquee.name2)} at the ${marquee.event}. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. ${matchLink(marquee)} ${tags}`,
         `Tale of the tape stat comparison for ${marquee.name1} vs ${marquee.name2}.`);
     }
   }
 
-  // ── Receipts: prediction cards reborn as CALLED ✓ twins ─────────────────
-  const calledIt = (preds.predictions || [])
-    .filter((p) => p.status !== 'pending' && p.correct && p.winner
-      && (Date.now() - new Date(p.date).getTime()) < 3 * 864e5)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 3)
-    .map(decorate);
-  for (let i = 0; i < calledIt.length; i++) {
-    const p = calledIt[i];
-    const file = `called-${i + 1}.png`;
-    const winnerName = p.winner === p.p1 ? p.name1 : p.name2;
-    await receiptTicket(p, file);
-    add(file, 'called-it', 'square', 'daily', `We called it: ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, locked before play. Final: ${winnerName} won${p.score ? ` ${p.score}` : ''}. Receipts: ${matchLink(p)} ${tags}`,
-      `Ticket-stub receipt: our ${pctTxt(p.favProb)} call on ${p.favName}, graded ${p.correct ? 'correct' : 'wrong'}.`);
-  }
+  // The called-it receipt tickets used to be generated here - three win-only
+  // stubs per day. Removed on request: they were the one asset class that
+  // only ever showed victories, which sat badly next to a record that prints
+  // its misses. The results REEL (buildMotionAssets) stays: it stamps MISSED
+  // as loudly as CALLED IT.
 
   for (const tour of ['atp', 'wta']) {
     const o = titleOdds.events?.[tour];
@@ -1944,6 +1968,92 @@ async function run() {
         file: 'weekly.png',
       });
       add('weekly.png', 'weekly', 'square', 'weekly', `The week in calls: ${correct} of ${weekMs.length} winners called${beat ? `, ${beat} wins over the bookies` : ''}. Season benchmark: ${sc.season.acc}%. ${SITE}/track-record ${tags}`);
+    }
+
+    // The week's plan, settled: $100 a day into each of the builder's plans,
+    // every stake settled at the locked odds, summed across the week. The
+    // card prints a losing week as plainly as a winning one - that honesty is
+    // the product, and the caption says which it was.
+    {
+      const days = [...new Set(weekMs.map((m) => String(m.date).slice(0, 10)))].sort();
+      const totals = new Map();
+      let recTotal = 0, recDays = 0;
+      for (const dayISO of days) {
+        const settled = planSettle.planReturns((preds && preds.predictions) || [], dayISO);
+        if (!settled) continue;
+        for (const pl of settled.plans) {
+          const t = totals.get(pl.id) || { label: pl.label, profit: 0 };
+          t.profit += pl.profit;
+          totals.set(pl.id, t);
+          if (pl.id === settled.recommendedId) { recTotal += pl.profit; recDays++; }
+        }
+      }
+      if (recDays >= 3) {
+        const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`;
+        const rows = [...totals.values()];
+        const best = rows.reduce((x, y) => (y.profit > x.profit ? y : x));
+        await reportCard({
+          eyebrowText: 'the plan, settled',
+          headline1: money(recTotal),
+          headline2: recTotal >= 0 ? 'UP ON THE WEEK' : 'DOWN ON THE WEEK',
+          stats: [
+            { value: `$${planSettle.PLAN_BUDGET}/DAY`, label: `into the recommended plan, ${recDays} days, locked odds` },
+            ...rows.map((t) => ({ value: money(t.profit), label: t.label.toLowerCase() })),
+          ],
+          footNote: 'hypothetical, settled at the prices we stamped before play',
+          themeKey: 'brand',
+          file: 'weekly-plan.png',
+          accent: recTotal >= 0 ? PAL.calls.key : '#ff5c5c',
+        });
+        add('weekly-plan.png', 'weekly-plan', 'square', 'weekly', `The plan, settled: $${planSettle.PLAN_BUDGET} a day into the builder's recommended plan came out ${money(recTotal)} this week${best.profit !== recTotal ? ` (best of the menu: ${best.label.toLowerCase()} at ${money(best.profit)})` : ''}. Every stake settled at locked odds, ${recDays} days. A ${recTotal >= 0 ? 'good' : 'bad'} week proves nothing on its own - the point is we publish it either way. ${SITE}/parlay ${tags}`);
+      }
+    }
+
+    // Upset of the week: the market's underdog we backed who came through.
+    // Needs a priced, graded, correct call where the market had our pick
+    // UNDER 50 - the market's favourite losing is what makes it an upset.
+    {
+      const upsets = weekMs
+        .filter((m) => pickCorrect(m) && m.od1 > 1 && m.od2 > 1)
+        .map((m) => {
+          const q1 = 1 / m.od1, q2 = 1 / m.od2;
+          const mkPick = (pickFav(m) === m.p1 ? q1 : q2) / (q1 + q2);
+          return { m, mkPick };
+        })
+        .filter((x) => x.mkPick < 0.47)
+        .sort((a, b) => a.mkPick - b.mkPick);
+      if (upsets.length) {
+        const { m, mkPick } = upsets[0];
+        await upsetOfWeekCard(m, m.tour, 'weekly-upset.png');
+        const pickName = pickFav(m) === m.p1 ? m.name1 : m.name2;
+        const otherName = pickFav(m) === m.p1 ? m.name2 : m.name1;
+        add('weekly-upset.png', 'weekly-upset', 'square', 'weekly', `Upset of the week: we had ${pickName} at ${Math.round(pickFavProb(m) * 100)}% when the market gave that result ${Math.round(mkPick * 100)}%. ${last(pickName)} beat ${last(otherName)}${m.score ? ` ${m.score}` : ''}. Locked before play, graded in public. ${matchLink(m)} ${tags}`);
+      }
+    }
+
+    // Us vs the bookmakers, one week, same fixtures. Honest in both
+    // directions - a week they win gets published at the same size.
+    {
+      const priced = weekMs.filter((m) => m.oddCorrect != null);
+      if (priced.length >= 10) {
+        const us = Math.round((priced.filter((m) => pickCorrect(m)).length / priced.length) * 100);
+        const them = Math.round((priced.filter((m) => m.oddCorrect).length / priced.length) * 100);
+        await reportCard({
+          eyebrowText: 'us vs the bookmakers',
+          headline1: `${us}% - ${them}%`,
+          headline2: us >= them ? 'OUR WEEK' : 'THEIR WEEK',
+          stats: [
+            { value: `${us}%`, label: 'our winners called' },
+            { value: `${them}%`, label: "the market's favourites landing" },
+            { value: `${priced.length}`, label: 'matches, same fixtures for both' },
+          ],
+          footNote: 'scored on every priced match this week, whichever way it falls',
+          themeKey: 'brand',
+          file: 'weekly-market.png',
+          accent: us >= them ? PAL.calls.key : '#ff9f43',
+        });
+        add('weekly-market.png', 'weekly-market', 'square', 'weekly', `Us vs the bookmakers this week: ${us}% to ${them}% across ${priced.length} priced matches, same fixtures for both. ${us >= them ? 'Our week.' : 'Their week - and it goes on the record like every other.'} ${SITE}/edge ${tags}`);
+      }
     }
   }
 

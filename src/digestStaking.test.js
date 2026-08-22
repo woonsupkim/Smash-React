@@ -20,9 +20,14 @@ const src = fs.readFileSync(
 );
 
 describe('the digest runs the real staking module, not a mirror', () => {
-  it('imports staking.mjs', () => {
-    expect(src).toMatch(/import\(pathToFileURL\(.*staking\.mjs/);
-    expect(src).toMatch(/staking = await stakingReady/);
+  it('runs on the shared settlement lib, which imports staking.mjs', () => {
+    expect(src).toMatch(/require\('\.\/lib\/planSettle'\)/);
+    expect(src).toMatch(/staking = await planSettle\.ready\(\)/);
+    const lib = fs.readFileSync(
+      path.join(__dirname, '..', 'data-pipeline', 'lib', 'planSettle.js'),
+      'utf8'
+    );
+    expect(lib).toMatch(/import\(pathToFileURL\(.*staking\.mjs/);
   });
 
   it('carries no local reimplementation of the staking maths', () => {
