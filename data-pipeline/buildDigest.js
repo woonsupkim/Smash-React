@@ -172,90 +172,16 @@ function marketProb(p) {
   return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
 }
 
-// ── Staking maths: the app's own module, not a mirror ──────────────────────
-// This block used to carry hand-copied versions of edgePerDollar, Kelly,
-// reliability and the spread - "the pipeline is CommonJS and cannot import
-// the ES module" - with a parity test pinning the copies together. The copies
-// still drifted in the way parity tests cannot catch: the app moved from the
-// spread to a scored plan menu (planFrontier) and the digest kept faithfully
-// mirroring the OLD recommendation. staking.mjs is importable from Node now,
-// so the digest runs the same code the site runs, and there is nothing left
-// to pin.
-//
-// Loaded once, awaited at the top of main(); everything below reads the
-// module-level binding.
-const { pathToFileURL } = require('url');
-const stakingReady = import(pathToFileURL(path.join(__dirname, '..', 'src', 'utils', 'staking.mjs')).href);
+// ── Staking maths: the app's own module, via the shared settlement lib ─────
+// This block used to carry hand-copied staking formulas, then a local copy of
+// the plan settlement. Both now live in one place - lib/planSettle.js wraps
+// src/utils/staking.mjs - so the digest and the share-asset generator settle
+// plans with the same code the site runs. `staking` is bound at the top of
+// main() via planSettle.ready().
+const planSettle = require('./lib/planSettle');
+const { ledgerGraded, PLAN_BUDGET } = planSettle;
+const planReturns = (preds, dayISO) => planSettle.planReturns(preds, dayISO);
 let staking = null;
-
-const PLAN_BUDGET = 100;
-
-// The graded LEDGER rows are the plan's whole universe. The builder only
-// ever offers plans over locked calls (predictions.json), so both the
-// reliability haircut and any settlement of "the plan you were shown" must
-// come from there too. The track record grades far more tennis than the
-// builder ever stakes - challengers, qualifiers, small events - and building
-// a settlement from it would price a plan that never existed on the site.
-function ledgerGraded(preds) {
-  return (preds || []).filter((m) => m.status === 'won' || m.status === 'lost');
-}
-
-// Locked bets for one calendar day, straight off the ledger: the pick, the
-// price stamped before play, and what actually happened.
-function lockedBets(preds, dayISO) {
-  const bets = [];
-  for (const m of ledgerGraded(preds)) {
-    if (String(m.date).slice(0, 10) !== dayISO) continue;
-    const favIsP1 = m.favorite === m.p1;
-    const o = Number(favIsP1 ? m.lockOdd1 : m.lockOdd2);
-    if (!(o > 1) || typeof m.favProb !== 'number') continue;
-    bets.push({ key: String(m.id), p: m.favProb, o, won: !!m.correct });
-  }
-  return bets;
-}
-
-// Settle one plan against what actually happened. Singles pay at their price
-// or lose their stake; the parlay pays only if every leg landed.
-function settlePlan(plan, bets) {
-  const by = new Map(bets.map((b) => [b.key, b]));
-  let staked = 0, profit = 0, hits = 0, backed = 0;
-  for (const [key, stake] of Object.entries(plan.singles || {})) {
-    if (!(stake > 0.005)) continue;
-    const b = by.get(key);
-    if (!b) continue;
-    backed++; staked += stake;
-    if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
-  }
-  let parlay = null;
-  if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => by.has(k))) {
-    staked += plan.parlayStake;
-    const won = plan.parlayLegs.every((k) => by.get(k).won);
-    const o = plan.parlayLegs.reduce((m, k) => m * by.get(k).o, 1);
-    profit += won ? plan.parlayStake * (o - 1) : -plan.parlayStake;
-    parlay = { legs: plan.parlayLegs.length, won, o };
-  }
-  return { id: plan.id, label: plan.label, n: backed, hits, staked, profit, parlay };
-}
-
-// What each of a day's recommended plans would have returned, settled at the
-// odds stamped before play. The plans are rebuilt exactly as the site would
-// have built them that morning: the same locked card, the same maths, and
-// reliability measured only on what was graded BEFORE that day - the site
-// could not have known the day's results when it recommended, so neither may
-// this settlement.
-function planReturns(preds, dayISO) {
-  const bets = lockedBets(preds, dayISO);
-  if (bets.length < 2) return null;
-  const history = ledgerGraded(preds).filter((m) => String(m.date).slice(0, 10) < dayISO);
-  const rel = staking.reliability(history);
-  const frontier = staking.planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
-  if (!frontier.plans.length) return null;
-  return {
-    budget: PLAN_BUDGET,
-    recommendedId: frontier.recommendedId,
-    plans: frontier.plans.map((pl) => settlePlan(pl, bets)),
-  };
-}
 
 // Tournament crests for the countdown. Same on-demand mirror as the headshots.
 const SLAM_LOGOS = {
@@ -721,7 +647,7 @@ async function main() {
   // The staking module the whole plan machinery below runs on. Resolved once;
   // a failure here should kill the build loudly rather than mail a digest
   // with no money sections.
-  staking = await stakingReady;
+  staking = await planSettle.ready();
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
