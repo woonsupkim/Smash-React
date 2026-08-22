@@ -142,6 +142,9 @@ export default function MatchPage() {
   const graded = pred.status === 'won' || pred.status === 'lost';
   const voided = pred.status === 'void';
   const decided = graded || voided;
+  // A no-call: locked and graded like any row (the audit trail is the
+  // point), but never presented as a claim. noCall rides alongside status.
+  const noCall = !!pred.noCall;
   const accent = SURFACE_ACCENTS[pred.surface] || '#fff';
   const studioHref = `${pred.tour === 'wta' ? '/women' : ''}/h2h?surface=${pred.surface}&a=${pred.p1}&b=${pred.p2}`;
 
@@ -171,7 +174,11 @@ export default function MatchPage() {
       <h1 className="match-title-line">{pred.name1} <span className="match-vs">vs</span> {pred.name2}</h1>
 
       <div className="match-when">
-        {graded ? (
+        {graded && noCall ? (
+          <span className="match-result-chip void">
+            No call - our lean {pred.correct ? 'landed' : 'missed'} · {pred.winner === pred.p1 ? pred.name1 : pred.name2} won{pred.score ? ` ${pred.score}` : ''}
+          </span>
+        ) : graded ? (
           <span className={`match-result-chip ${pred.correct ? 'hit' : 'miss'}`}>
             {pred.correct ? '✓ Called it' : '✗ Missed'} · {pred.winner === pred.p1 ? pred.name1 : pred.name2} won{pred.score ? ` ${pred.score}` : ''}
           </span>
@@ -195,7 +202,7 @@ export default function MatchPage() {
         {playerCard(pred.p1, pred.name1, favIsP1)}
         <div className="match-center">
           <div className="match-center-pct">{favPct}%</div>
-          <div className="match-center-cap">{favLast} to win</div>
+          <div className="match-center-cap">{noCall ? `we lean ${favLast} - no call` : `${favLast} to win`}</div>
         </div>
         {playerCard(pred.p2, pred.name2, !favIsP1)}
       </div>
@@ -207,6 +214,7 @@ export default function MatchPage() {
         <p className="match-verdict-line">
           {verdictLine(pred.favProb, favLast)} Locked before play
           {graded ? ', graded after' : voided ? '. The match was never played, so it counts for nothing either way' : ''}.
+          {noCall ? ' This one sits inside our coin-flip band, so we did not make a call: the lean is recorded and graded for honesty, but it never counts toward the record and we never claim it.' : ''}
         </p>
       </div>
 

@@ -412,6 +412,11 @@ async function run() {
           favProb: Math.round(favProb * 1000) / 1000,
           engine,
           status: 'pending', lockedAt: new Date().toISOString(),
+          // Below the call threshold we LEAN, we do not call: the row locks and
+          // grades like any other (the audit trail is the point, and the parlay
+          // builder still prices it), but every headline surface excludes it and
+          // every call surface shows it as restraint. engineConfig.callThreshold.
+          ...(favProb < (ENGINE.callThreshold || 0) ? { noCall: true } : {}),
         };
         store.predictions.push(row);
         seen.set(key, row);

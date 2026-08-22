@@ -114,7 +114,7 @@ function run() {
   // counting it here both understated the record and could trip the sub-50%
   // alert below on matches nobody ever played.
   const decided = (preds.predictions || [])
-    .filter((p) => p.status === 'won' || p.status === 'lost')
+    .filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const fRecent = decided.slice(-WINDOW);
   const fAcc = pct(fRecent, (p) => p.correct);

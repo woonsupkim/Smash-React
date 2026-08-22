@@ -10,6 +10,18 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.1',
+    date: '2026-08-23',
+    type: 'product',
+    title: 'Coin flips stop being calls',
+    notes: [
+      'A CALL NOW HAS TO EARN THE WORD. From today, a matchup where our number lands under 60% locks as a NO CALL: the lean is still recorded before play and still graded afterward - restraint you cannot audit is just silence - but it is not a claim, it does not appear on the board, and it never counts toward the forward record. The Today page and the Receipts panel show exactly which matches we passed on and what the lean was.',
+      'THE PARLAY BUILDER STILL PRICES THEM, on purpose, and the two things are both true at once: the builder bets edges, not calls, and a 56% lean at long odds can be worth a small stake even when it is nobody\'s idea of a confident pick. Rows like that are labeled "no call - priced anyway" in the plan table, so the restraint and the stake are both visible.',
+      'THE FORWARD RECORD WILL READ HIGHER FROM HERE, and we want to be exact about why: not because the model improved today, but because it stops claiming coin flips. On the current ledger, calls at 60% or above landed 72.5%; the coin flips underneath landed 56.5%. Only new matches are affected - every call locked before today keeps counting exactly as it was made, because relabeling history is how records stop meaning anything.',
+      'THE SEASON BENCHMARK DOES NOT MOVE. It grades every completed tour match between ranked players, coin flips included, and stays the honest floor under everything. The by-confidence table on the Receipts panel keeps grading the passed matches too, so you can check whether sitting out the coin flips was wise - that is the whole point of writing the lean down.',
+    ],
+  },
+  {
     version: '4.2',
     date: '2026-08-22',
     type: 'model',

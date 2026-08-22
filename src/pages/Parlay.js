@@ -92,7 +92,9 @@ export default function Parlay() {
   const suggestions = useMemo(() => {
     if (!all || all.length < 2) return [];
     const out = [];
-    const byConfidence = [...all].sort((a, b) => b.favProb - a.favProb);
+    // "Most confident" means calls: a no-call is priced by the plan below
+    // (the builder bets edges), but it is nobody's idea of a confident pick.
+    const byConfidence = [...all].filter((x) => !x.noCall).sort((a, b) => b.favProb - a.favProb);
     for (const n of [2, 3, 5]) {
       if (byConfidence.length < n) continue;
       const set = byConfidence.slice(0, n);

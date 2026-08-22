@@ -58,7 +58,7 @@ async function main() {
     // the favorite's number and never dips below 0.5, so "low favProb"
     // can't define boldness - market disagreement does.)
     const preds = readJson(path.join(DATA, 'predictions.json'))?.predictions || [];
-    const stillOpen = (p) => p.status === 'pending' && new Date(p.date) > new Date();
+    const stillOpen = (p) => p.status === 'pending' && !p.noCall && new Date(p.date) > new Date();
     const impliedOurs = (p) => {
       if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1)) return null;
       const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
