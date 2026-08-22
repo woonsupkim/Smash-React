@@ -30,7 +30,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { logLoss, accuracy, fitWeights, fitCalib, applyCalib, foldKey, marketProb } = require('./lib/evalCore');
+const { logLoss, accuracy, fitWeights, fitCalib, applyCalib, foldKey, marketProb, blendP } = require('./lib/evalCore');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'src', 'engineConfig.json');
 const TR_PATH = path.join(__dirname, '..', 'public', 'data', 'track_record.json');
@@ -48,8 +48,31 @@ const decayWeight = (dateStr, asOf) => {
 
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 const seasonRows = JSON.parse(fs.readFileSync(TR_PATH, 'utf8')).matches;
+deriveH2h(seasonRows);
 const history = fs.existsSync(HIST_PATH) ? JSON.parse(fs.readFileSync(HIST_PATH, 'utf8')) : null;
 if (!history) console.log('No tuner_history.json - tuning on the season alone (run buildTunerHistory.js in the refresh to enable the rolling window).');
+
+// Pair-surface head-to-head, derived chronologically when rows do not carry
+// it yet: P(p1) from prior meetings on this surface among graded rows,
+// shrunk toward 0.5 by two pseudo-meetings ((w+1)/(n+2)). Strictly leak-free:
+// each row sees only meetings before it. Rows without player ids (the tuner
+// history predates the field) are left without h2h and take the
+// renormalization path in blendP - buildTunerHistory writes the field going
+// forward, so the history heals on the next refresh.
+function deriveH2h(rows) {
+  const hist = new Map();
+  for (const m of [...rows].sort((a, b) => new Date(a.date) - new Date(b.date))) {
+    if (!m.p1 || !m.p2 || !m.surface) continue;
+    const first = [m.p1, m.p2].sort()[0];
+    const k = [m.p1, m.p2].sort().join('_') + '@' + m.surface;
+    const h = hist.get(k) || { n: 0, wFirst: 0 };
+    if (typeof m.h2hProbP1 !== 'number') {
+      const pFirst = (h.wFirst + 1) / (h.n + 2);
+      m.h2hProbP1 = m.p1 === first ? pFirst : 1 - pFirst;
+    }
+    if (m.winner) { h.n++; if (m.winner === first) h.wFirst++; hist.set(k, h); }
+  }
+}
 
 const surfaces = ['hard', 'clay', 'grass'];
 const usable = (m) => typeof m.probP1 === 'number' && typeof m.eloProbP1 === 'number' && typeof m.rankProbP1 === 'number';
@@ -65,35 +88,53 @@ for (const tour of ['atp', 'wta']) {
   }
 
   // Weighted fit helpers over the rolling window as of a date.
-  const fitAt = (list, asOf) => {
+  const fitAt = (list, asOf, withH2h = false) => {
     const pairs = list.map((m) => [m, decayWeight(m.date, asOf)]).filter(([, w]) => w > 0);
     if (pairs.length < 40) return null;
-    return fitWeights(pairs.map(([m]) => m), 0.05, pairs.map(([, w]) => w));
+    return fitWeights(pairs.map(([m]) => m), 0.05, pairs.map(([, w]) => w), { h2h: withH2h });
   };
 
   // 1. Walk-forward over season months: honest expected performance + the
-  // OOF the calibration selection runs on.
+  // OOF the calibration selection runs on. Run TWICE - with and without the
+  // head-to-head component - because a fourth weight is not free: the grid
+  // grows eightfold, and on the ATP that variance cost showed up as a WORSE
+  // walk-forward the first time this ran. The component must earn its slot
+  // per tour on the same both-metrics rule every promotion here follows:
+  // better log loss and no worse accuracy, out of fold.
   const folds = new Map();
   for (const m of season) {
     const k = foldKey(m.date, 'month');
     if (!folds.has(k)) folds.set(k, []);
     folds.get(k).push(m);
   }
-  const oof = [];
-  for (const [k, test] of folds) {
-    const foldStart = new Date(`${k}-01T00:00:00Z`);
-    const train = pool.filter((m) => new Date(m.date) < foldStart);
-    const tourFit = fitAt(train, foldStart);
-    if (!tourFit) continue;
-    const bySurf = {};
-    for (const s of surfaces) {
-      bySurf[s] = fitAt(train.filter((m) => m.surface === s), foldStart) || tourFit;
+  const walkForward = (withH2h) => {
+    const rows = [];
+    for (const [k, test] of folds) {
+      const foldStart = new Date(`${k}-01T00:00:00Z`);
+      const train = pool.filter((m) => new Date(m.date) < foldStart);
+      const tourFit = fitAt(train, foldStart, withH2h);
+      if (!tourFit) continue;
+      const bySurf = {};
+      for (const s of surfaces) {
+        bySurf[s] = fitAt(train.filter((m) => m.surface === s), foldStart, withH2h) || tourFit;
+      }
+      for (const m of test) {
+        const w = bySurf[m.surface] || tourFit;
+        rows.push({ ...m, fold: k, p: blendP(w, m), won: m.p1Won ? 1 : 0 });
+      }
     }
-    for (const m of test) {
-      const w = bySurf[m.surface] || tourFit;
-      oof.push({ ...m, fold: k, p: w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1, won: m.p1Won ? 1 : 0 });
-    }
-  }
+    return rows;
+  };
+  const oofBase = walkForward(false);
+  const oofH2h = walkForward(true);
+  const llBase = logLoss(oofBase), accBase = accuracy(oofBase);
+  const llH2h = logLoss(oofH2h), accH2h = accuracy(oofH2h);
+  const useH2h = llH2h < llBase - 1e-4 && accH2h >= accBase - 1e-3;
+  console.log(
+    `${tour} h2h component: base LL ${llBase.toFixed(4)}/acc ${(accBase * 100).toFixed(1)}% vs ` +
+    `with-h2h LL ${llH2h.toFixed(4)}/acc ${(accH2h * 100).toFixed(1)}% -> ${useH2h ? 'EARNED its slot' : 'not earned, wh stays 0'}`
+  );
+  const oof = useH2h ? oofH2h : oofBase;
   const rawLL = logLoss(oof);
   const rawAcc = accuracy(oof);
 
@@ -113,11 +154,11 @@ for (const tour of ['atp', 'wta']) {
 
   // 3. Shipped weights: rolling-window weighted fit as of today.
   const now = new Date();
-  const tourFinal = fitAt(pool, now);
+  const tourFinal = fitAt(pool, now, useH2h);
   for (const surface of surfaces) {
-    const fit = fitAt(pool.filter((m) => m.surface === surface), now) || tourFinal;
-    config.weights[tour][surface] = { ws: fit.ws, we: fit.we, wr: fit.wr };
-    console.log(`${tour} ${surface}: ws=${fit.ws} we=${fit.we} wr=${fit.wr}`);
+    const fit = fitAt(pool.filter((m) => m.surface === surface), now, useH2h) || tourFinal;
+    config.weights[tour][surface] = { ws: fit.ws, we: fit.we, wr: fit.wr, wh: fit.wh || 0 };
+    console.log(`${tour} ${surface}: ws=${fit.ws} we=${fit.we} wr=${fit.wr} wh=${fit.wh || 0}`);
   }
 
   // 4. Report card for the PR body.
