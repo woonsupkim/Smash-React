@@ -152,12 +152,31 @@ function buildTour(tour, seasonStart, windowStart) {
     const r3 = (x) => Math.round(x * 1000) / 1000;
     rows.push({
       id: String(m.id), tour, date: m.date, surface, bestOf, p1Won,
+      // Short roster ids ride along so the tuner can rebuild any pairwise
+      // feature without re-fetching; they cost a few bytes per row.
+      p1, p2,
       probP1: r3(matchProb(pa, pb, bestOf)),
       eloProbP1: r3(eloProbP1),
       rankProbP1: r3(1 / (1 + Math.pow(10, (Math.log10(rankA) - Math.log10(rankB)) * ENGINE.rankScale))),
       od1: Number(m.odd1) > 1 ? Number(m.odd1) : null,
       od2: Number(m.odd2) > 1 ? Number(m.odd2) : null,
     });
+  }
+
+  // Pair-surface head-to-head, chronological within this window: P(p1) from
+  // prior meetings on the surface, shrunk toward 0.5 ((w+1)/(n+2)). Same
+  // definition buildTrackRecord emits for season rows; the tuner's fourth
+  // blend component reads both. Leak-free: each row sees only earlier rows.
+  const pairs = new Map();
+  for (const r of [...rows].sort((a, b) => new Date(a.date) - new Date(b.date))) {
+    const first = [r.p1, r.p2].sort()[0];
+    const k = [r.p1, r.p2].sort().join('_') + '@' + r.surface;
+    const h = pairs.get(k) || { n: 0, wFirst: 0 };
+    const pFirst = (h.wFirst + 1) / (h.n + 2);
+    r.h2hProbP1 = Math.round((r.p1 === first ? pFirst : 1 - pFirst) * 1000) / 1000;
+    const winner = r.p1Won ? r.p1 : r.p2;
+    h.n++; if (winner === first) h.wFirst++;
+    pairs.set(k, h);
   }
   console.log(`  ${tour}: ${rows.length} prior-window matches (of ${cases.length} candidates)`);
   return rows;

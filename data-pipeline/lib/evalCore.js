@@ -30,28 +30,55 @@ function accuracy(list) {
 }
 
 // Candidate (ws, we, wr) triples on the simplex ws+we+wr=1.
-function weightGrid(step = 0.05) {
+function weightGrid(step = 0.05, withH2h = false) {
   const out = [];
   const n = Math.round(1 / step);
   for (let i = 0; i <= n; i++) {
     for (let j = 0; j <= n - i; j++) {
-      out.push({ ws: +(i / n).toFixed(3), we: +(j / n).toFixed(3), wr: +((n - i - j) / n).toFixed(3) });
+      if (!withH2h) {
+        out.push({ ws: +(i / n).toFixed(3), we: +(j / n).toFixed(3), wr: +((n - i - j) / n).toFixed(3) });
+        continue;
+      }
+      for (let k = 0; k <= n - i - j; k++) {
+        out.push({
+          ws: +(i / n).toFixed(3), we: +(j / n).toFixed(3),
+          wr: +(k / n).toFixed(3), wh: +((n - i - j - k) / n).toFixed(3),
+        });
+      }
     }
   }
   return out;
 }
 
+// The blend, with the one rule every consumer must share: when a row has no
+// head-to-head number (new pairing, or an artifact built before the field
+// existed), the h2h weight is not spent on a made-up 0.5 - the other three
+// components are renormalized to sum to 1. Sending wh to a neutral 0.5
+// instead would drag every new pairing toward a coin flip, which is exactly
+// the kind of quiet distortion the rho lesson was about.
+function blendP(w, m) {
+  const base = w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1;
+  const wh = w.wh || 0;
+  if (!wh) return base;
+  const h = typeof m.h2hProbP1 === 'number' ? m.h2hProbP1 : null;
+  if (h == null) {
+    const rest = w.ws + w.we + w.wr;
+    return rest > 0 ? base / rest : 0.5;
+  }
+  return base + wh * h;
+}
+
 // Fits blend weights on a training list by log loss. Rows need
 // {probP1, eloProbP1, rankProbP1, p1Won}. Optional per-row weights turn
 // this into a recency-weighted fit (rolling-window tuner).
-function fitWeights(list, step = 0.05, wts = null) {
+function fitWeights(list, step = 0.05, wts = null, { h2h = false } = {}) {
   let best = null;
-  for (const w of weightGrid(step)) {
+  for (const w of weightGrid(step, h2h)) {
     let s = 0, W = 0;
     for (let i = 0; i < list.length; i++) {
       const m = list[i];
       const wt = wts ? wts[i] : 1;
-      const p = clampP(w.ws * m.probP1 + w.we * m.eloProbP1 + w.wr * m.rankProbP1);
+      const p = clampP(blendP(w, m));
       s += wt * -(m.p1Won ? Math.log(p) : Math.log(1 - p));
       W += wt;
     }
@@ -181,5 +208,4 @@ module.exports = {
   clampP, logit, sigmoid, logLoss, accuracy,
   weightGrid, fitWeights, applyCalib, fitCalib,
   foldKey, walkForwardOOF, sequentialCalibLogLoss, marketProb,
-  fitLogistic, predictLogistic,
-};
+  fitLogistic, predictLogistic, blendP };

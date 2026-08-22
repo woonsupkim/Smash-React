@@ -19,7 +19,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { matchProb } = require('./lib/analyticProb');
 const { predElo, expected } = require('./eloCore');
-const { applyCalib } = require('./lib/evalCore');
+const { applyCalib, blendP } = require('./lib/evalCore');
 const { normName, normSurface, matchRoster } = require('./lib/espnParse');
 const { matchEvent } = require('./lib/events');
 const ENGINE = require('../src/engineConfig.json'); // per tour x surface blend weights
@@ -84,7 +84,25 @@ function loadTour(tour) {
     }
   }
 
-  return { tour, dir, roster, statsBySurface, upsetBySurface, elo, completed, feedLatest, bestOf: tour === 'wta' ? 3 : 5 };
+  // Pair-surface head-to-head from the committed graded record: the fourth
+  // blend component, same definition buildTrackRecord uses ((wins+1)/(n+2),
+  // prior meetings on this surface only). Locked calls only ever look
+  // BACKWARD into the record, so this is leak-free by construction. Whether
+  // it carries weight is the tuner's earn-your-slot decision, not ours.
+  const pairSurf = new Map();
+  try {
+    const tr = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'public', 'data', 'track_record.json'), 'utf8'));
+    for (const m of (tr.matches || [])) {
+      if (m.tour !== tour || !m.winner || !m.surface) continue;
+      const first = [m.p1, m.p2].sort()[0];
+      const k = [m.p1, m.p2].sort().join('_') + '@' + m.surface;
+      const h = pairSurf.get(k) || { n: 0, wFirst: 0 };
+      h.n++; if (m.winner === first) h.wFirst++;
+      pairSurf.set(k, h);
+    }
+  } catch { /* no record yet - every pairing reads as no history (0.5) */ }
+
+  return { tour, dir, roster, statsBySurface, upsetBySurface, elo, completed, feedLatest, pairSurf, bestOf: tour === 'wta' ? 3 : 5 };
 }
 
 const probsFromRow = (r) => [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6].map((v) => Number(v) || 0);
@@ -156,7 +174,11 @@ function predict(ctx, a, b, surface, bestOf) {
   // Per-tour Platt recalibration (mirrors src/engines.js calibrate):
   // tempers stated confidence, never flips the favorite.
   const calibA = ENGINE.calibration && ENGINE.calibration[ctx.tour] && ENGINE.calibration[ctx.tour].a;
-  const smashP = applyCalib(w.ws * simP + w.we * eloP + w.wr * rankP, calibA);
+  const first = [a.id, b.id].sort()[0];
+  const hRec = ctx.pairSurf.get([a.id, b.id].sort().join('_') + '@' + surface);
+  const pFirst = hRec ? (hRec.wFirst + 1) / (hRec.n + 2) : 0.5;
+  const h2hP = a.id === first ? pFirst : 1 - pFirst;
+  const smashP = applyCalib(blendP(w, { probP1: simP, eloProbP1: eloP, rankProbP1: rankP, h2hProbP1: h2hP }), calibA);
 
   const probs = { smash: smashP, sim: simP, elo: eloP, rank: rankP, upset: upsetP };
   const engine = probs[best] != null ? best : 'smash';

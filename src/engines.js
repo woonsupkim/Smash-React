@@ -50,7 +50,22 @@ export function engineProbs(feats, tour, surfaceKey) {
   // If Elo is unavailable, fold its weight into the simulation so the blend
   // still sums to 1.
   const eloVal = elo == null ? sim : elo;
-  const smash = calibrate(w.ws * sim + w.we * eloVal + w.wr * rank, tour);
+  // Fourth component: pair-surface head-to-head (feats.h2h, P(player 1) from
+  // prior meetings, shrunk toward 0.5). The weight ships from the tuner only
+  // when it EARNS its slot per tour (tuneWeights' gate); today it is 0. The
+  // rule when wh > 0 but the caller has no h2h number MUST match the
+  // pipeline's blendP (data-pipeline/lib/evalCore.js): renormalize the other
+  // three components to sum to 1 - never substitute a made-up 0.5, which
+  // would drag every uncovered matchup toward a coin flip. If these two
+  // implementations ever disagree, the live page and the graded record
+  // disagree, which is the rho lesson all over again.
+  const wh = w.wh || 0;
+  const base = w.ws * sim + w.we * eloVal + w.wr * rank;
+  const blended = !wh ? base
+    : (typeof feats.h2h === 'number'
+      ? base + wh * feats.h2h
+      : base / (w.ws + w.we + w.wr));
+  const smash = calibrate(blended, tour);
   return { sim, elo: elo == null ? null : elo, rank, smash };
 }
 

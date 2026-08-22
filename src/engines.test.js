@@ -100,3 +100,42 @@ describe('pickEngineProb', () => {
     expect(pickEngineProb('nope', feats, 'atp', 'hard')).toBe(0.7);
   });
 });
+
+describe('the h2h blend component (wh)', () => {
+  // These pin the CONTRACT with data-pipeline/lib/evalCore.js blendP: same
+  // inputs, same number, and the same renormalization rule when a caller has
+  // no head-to-head figure. The weight itself ships from the tuner only when
+  // it earns its slot; nothing here assumes it is nonzero in config.
+  const feats = { sim: 0.6, elo: 0.7, rankA: 5, rankB: 20 };
+
+  it('wh=0 (and legacy weight blocks without wh) change nothing', () => {
+    const w = CONFIG.weights.atp.hard;
+    const withFlag = engineProbs({ ...feats, h2h: 0.9 }, 'atp', 'hard');
+    const without = engineProbs(feats, 'atp', 'hard');
+    if (!w.wh) expect(withFlag.smash).toBeCloseTo(without.smash, 12);
+  });
+
+  it('wh>0 with an h2h figure blends it linearly, matching blendP', () => {
+    const orig = CONFIG.weights.atp.hard;
+    CONFIG.weights.atp.hard = { ws: 0.3, we: 0.3, wr: 0.2, wh: 0.2 };
+    try {
+      const p = engineProbs({ ...feats, h2h: 0.8 }, 'atp', 'hard');
+      const rank = 1 / (1 + Math.pow(10, (Math.log10(5) - Math.log10(20)) * CONFIG.rankScale));
+      const expected = 0.3 * 0.6 + 0.3 * 0.7 + 0.2 * rank + 0.2 * 0.8;
+      expect(p.smash).toBeCloseTo(expected, 12);
+    } finally { CONFIG.weights.atp.hard = orig; }
+  });
+
+  it('wh>0 with NO h2h figure renormalizes the other three, never injects 0.5', () => {
+    const orig = CONFIG.weights.atp.hard;
+    CONFIG.weights.atp.hard = { ws: 0.3, we: 0.3, wr: 0.2, wh: 0.2 };
+    try {
+      const p = engineProbs(feats, 'atp', 'hard');
+      const rank = 1 / (1 + Math.pow(10, (Math.log10(5) - Math.log10(20)) * CONFIG.rankScale));
+      const renorm = (0.3 * 0.6 + 0.3 * 0.7 + 0.2 * rank) / 0.8;
+      const fake05 = 0.3 * 0.6 + 0.3 * 0.7 + 0.2 * rank + 0.2 * 0.5;
+      expect(p.smash).toBeCloseTo(renorm, 12);
+      expect(Math.abs(p.smash - fake05)).toBeGreaterThan(1e-9);
+    } finally { CONFIG.weights.atp.hard = orig; }
+  });
+});

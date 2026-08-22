@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { buildTimeline, predElo, expected, parseSets, setEloParams, eloParamsFor } = require('./eloCore');
-const { applyCalib, logLoss, marketProb } = require('./lib/evalCore');
+const { applyCalib, logLoss, marketProb, blendP } = require('./lib/evalCore');
 const { matchProb, matchDetail } = require('./lib/analyticProb');
 const { slamsForYear } = require('./lib/slamCalendar');
 const { isDeployTier } = require('./lib/events');
@@ -202,11 +202,32 @@ function loadTour(tour) {
     preElo.set(ident, { winnerId: mm.winnerId, we: predElo(rw, mm.surface), le: predElo(rl, mm.surface) });
   });
 
-  return { tour, season, upset, evalMatches, preElo, bestOf: tour === 'wta' ? 3 : 5 };
+  // Pair-surface head-to-head, computed chronologically over the same graded
+  // rows this file emits: P(p1) from prior meetings on this surface, shrunk
+  // toward 0.5 by two pseudo-meetings ((w+1)/(n+2)). Strictly leak-free -
+  // each match sees only meetings decided before it. This is the fourth
+  // blend component; whether it carries weight is decided per tour by the
+  // tuner's earn-your-slot gate (tuneWeights.js), never here.
+  const h2hProb = new Map();
+  {
+    const pairs = new Map();
+    const ordered = [...evalMatches.values()].sort((a, b) => new Date(a.m.date) - new Date(b.m.date));
+    for (const rec of ordered) {
+      const first = [rec.p1, rec.p2].sort()[0];
+      const k = [rec.p1, rec.p2].sort().join('_') + '@' + rec.surface;
+      const h = pairs.get(k) || { n: 0, wFirst: 0 };
+      const pFirst = (h.wFirst + 1) / (h.n + 2);
+      h2hProb.set(rec.ident, rec.p1 === first ? pFirst : 1 - pFirst);
+      h.n++; if (rec.winner === first) h.wFirst++;
+      pairs.set(k, h);
+    }
+  }
+
+  return { tour, season, upset, evalMatches, preElo, h2hProb, bestOf: tour === 'wta' ? 3 : 5 };
 }
 
 function evaluate(ctx, rec) {
-  const { season, upset, preElo, bestOf, tour } = ctx;
+  const { season, upset, preElo, h2hProb, bestOf, tour } = ctx;
   const { m, id, p1, p2, p1Id, surface, winner, rowA, rowB, eventName } = rec;
 
   // Per-match format: ATP is best-of-five at slams ONLY - Masters and the
@@ -253,7 +274,8 @@ function evaluate(ctx, rec) {
   // 6. SMASH model - per tour x surface blend of sim + Elo + ranking, with
   // the per-tour Platt recalibration (engineConfig calibration).
   const w = (ENGINE.weights[tour] && ENGINE.weights[tour][surface]) || { ws: 0.5, we: 0.5, wr: 0 };
-  const smashProbP1 = calibrate(w.ws * probP1 + w.we * eloProbP1 + w.wr * rankProbP1, tour);
+  const h2hProbP1 = h2hProb && h2hProb.has(rec.ident) ? h2hProb.get(rec.ident) : null;
+  const smashProbP1 = calibrate(blendP(w, { probP1, eloProbP1, rankProbP1, h2hProbP1 }), tour);
   const smashFavorite = smashProbP1 >= 0.5 ? p1 : p2;
 
   // Predicted scoreline for BOTH winner orientations (the most likely
@@ -284,7 +306,8 @@ function evaluate(ctx, rec) {
     winner, score: m.result || '',
     probP1: r3(probP1), favorite, favProb: r3(favProb), correct: favorite === winner,
     upsetProbP1: r3(upsetProbP1), upsetFavorite, upsetCorrect: upsetFavorite === winner,
-    eloProbP1: r3(eloProbP1), eloCorrect: eloFavorite === winner,
+    eloProbP1: r3(eloProbP1),
+    h2hProbP1: h2hProbP1 == null ? null : Math.round(h2hProbP1 * 1000) / 1000, eloCorrect: eloFavorite === winner,
     rankProbP1: r3(rankProbP1),
     smashProbP1: r3(smashProbP1), smashFavorite, smashCorrect: smashFavorite === winner,
     predScore, predScoreP1Win, predScoreP2Win,
