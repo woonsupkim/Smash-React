@@ -6,9 +6,21 @@
 // the model's behavior changes (weights, engines, data windows) - product-only
 // changes bump the date, not the model version.
 
-export const MODEL_VERSION = '4.1';
+export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
+  {
+    version: '4.2',
+    date: '2026-08-22',
+    type: 'model',
+    title: 'The blend gets refit on the corrected record, and trusts rankings more',
+    notes: [
+      'EVERY PREDICTION HERE IS A BLEND of three engines: a point-by-point simulator built on serve and return stats, the Form rating (Elo), and the world rankings. How much say each one gets is set per tour and per surface, and those weights were tuned on the old, duplicate-inflated record. 4.1 corrected the record; this refits the mix on the corrected data, which is not optional housekeeping - weights chosen on data that counted some matches five times were chosen on the wrong question.',
+      'THE HEADLINE MOVE: rankings get more say almost everywhere, and the Form rating gets less on five of the six tour-and-surface combinations. The sharpest cut is WTA hard courts, where Form drops from nearly half the vote to a quarter. This also matches what the engine-health board has been showing since the fresh results landed: the blend trailing its own components was a mixing problem, not a ratings problem.',
+      'HOW THE NEW MIX WAS CHOSEN, so the number has a pedigree: walk-forward on rolling two-year windows, always predicting matches the tuner had not seen, on training pools of 4,114 ATP and 3,755 WTA matches. On those held-out predictions the blend lands 64.3% on the ATP and 66.2% on the WTA. Those are walk-forward figures, not the season scorecard, and they are lower than the scorecard because walk-forward includes the awkward early-window months on purpose. A calibration layer was tried and shipped flat: it did not help, so it does not exist.',
+      'THE SEASON RECORD WILL BE RECOMPUTED with these weights on the next refresh, so the published numbers will move once more. We are saying that before it happens rather than after, which is a lesson this changelog learned recently. The results and the calls do not change; what changes is the retrospective simulation the scorecard is built from.',
+    ],
+  },
   {
     version: '4.1',
     date: '2026-08-21',
