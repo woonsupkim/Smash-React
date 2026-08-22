@@ -42,7 +42,8 @@ describe('headline surfaces count calls only', () => {
 
   it('every headline consumer carries the flag check', () => {
     for (const f of ['src/pages/Home.js', 'src/pages/TrackRecord.js', 'data-pipeline/buildDigest.js', 'data-pipeline/buildShareAssets.js', 'data-pipeline/checkGuardrails.js']) {
-      expect(read(f), f).toMatch(/&& !p(r)?\.noCall/);
+      const hasCheck = /&& !p(r)?\.noCall/.test(read(f));
+      expect(`${f}: ${hasCheck}`).toBe(`${f}: true`);
     }
   });
 });
