@@ -172,116 +172,89 @@ function marketProb(p) {
   return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
 }
 
-// ── Staking maths, mirrored from src/utils/staking.js ───────────────────────
-// The app's copy is ES module and this pipeline is CommonJS, so it cannot be
-// imported here. These are the same two formulas, and digestStaking.test.js
-// asserts the two copies agree (same pattern as modelParity.test.js).
-const edgePerDollar = (p, o) => (o > 1 && p > 0 ? p * o - 1 : null);
-const kellyFraction = (p, o) => {
-  if (!(o > 1) || !(p > 0)) return 0;
-  const f = (p * o - 1) / (o - 1);
-  return f > 0 ? f : 0;
-};
-const clampP = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-// The model's stated probability re-expressed at its measured reliability.
-const adjustProb = (p, lambda = 1) =>
-  (lambda === 1 ? p : clampP(0.5 + lambda * (p - 0.5), 0.001, 0.999));
+// ── Staking maths: the app's own module, not a mirror ──────────────────────
+// This block used to carry hand-copied versions of edgePerDollar, Kelly,
+// reliability and the spread - "the pipeline is CommonJS and cannot import
+// the ES module" - with a parity test pinning the copies together. The copies
+// still drifted in the way parity tests cannot catch: the app moved from the
+// spread to a scored plan menu (planFrontier) and the digest kept faithfully
+// mirroring the OLD recommendation. staking.mjs is importable from Node now,
+// so the digest runs the same code the site runs, and there is nothing left
+// to pin.
+//
+// Loaded once, awaited at the top of main(); everything below reads the
+// module-level binding.
+const { pathToFileURL } = require('url');
+const stakingReady = import(pathToFileURL(path.join(__dirname, '..', 'src', 'utils', 'staking.mjs')).href);
+let staking = null;
 
-// How far the stated confidence is borne out, measured on the graded forward
-// record and shrunk toward 1 by sample size.
-function reliability(graded, minSample = 60) {
-  const rows = (graded || []).filter(
-    (r) => typeof r.favProb === 'number' && (r.status === 'won' || r.status === 'lost')
-  );
-  const n = rows.length;
-  if (!n) return { n: 0, lambda: 1, accuracy: null, stated: null, trusted: false };
-  const accuracy = rows.filter((r) => r.correct).length / n;
-  const stated = rows.reduce((t, r) => t + r.favProb, 0) / n;
-  const raw = stated > 0.5 + 1e-6 ? (accuracy - 0.5) / (stated - 0.5) : 1;
-  const w = n / (n + minSample);
-  return { n, accuracy, stated, lambda: clampP(1 + w * (raw - 1), 0.5, 1.5), trusted: n >= minSample };
-}
-
-// The flat-stake spread the builder recommends: an equal stake on as much of
-// the card as can still cover itself. Taken best-price-first and kept while
-// the portfolio's expected return covers the whole stake, which with equal
-// stakes is a test on the AVERAGE - so a short price rides along when the
-// rest of the card carries it.
-function spreadPlan(bets, budget, lambda = 1) {
-  const adj = (bets || [])
-    .map((b) => ({ ...b, p: adjustProb(b.p, lambda) }))
-    .filter((b) => b.o > 1 && b.p > 0);
-  const ranked = [...adj].sort((a, b) => (b.p * b.o) - (a.p * a.o));
-  let take = 0, sum = 0;
-  for (let i = 0; i < ranked.length; i++) {
-    const next = sum + ranked[i].p * ranked[i].o;
-    if (next < i + 1 - 1e-12) break;
-    sum = next;
-    take = i + 1;
-  }
-  const chosen = ranked.slice(0, take);
-  const perMatch = take > 0 ? (Number(budget) || 0) / take : 0;
-  const staked = perMatch * take;
-  const expWinners = chosen.reduce((t, b) => t + b.p, 0);
-  const expReturn = chosen.reduce((t, b) => t + perMatch * b.p * b.o, 0);
-
-  // Chance of finishing ahead, by enumerating every outcome. The card is
-  // small enough that exact beats approximate.
-  let pAhead = null;
-  if (take > 0 && take <= 16) {
-    let acc = 0;
-    for (let mask = 0; mask < (1 << take); mask++) {
-      let prob = 1, pl = 0;
-      for (let i = 0; i < take; i++) {
-        const win = (mask >> i) & 1;
-        prob *= win ? chosen[i].p : 1 - chosen[i].p;
-        pl += win ? perMatch * (chosen[i].o - 1) : -perMatch;
-      }
-      if (pl > 1e-9) acc += prob;
-    }
-    pAhead = acc;
-  }
-  return {
-    rows: chosen, count: take, perMatch, staked, expWinners, expReturn, pAhead,
-    coversStake: take > 0 && expReturn >= staked - 1e-9,
-  };
-}
-
-// What yesterday's suggested plan would actually have returned. Runs the
-// recommender over the calls that carried a price, then settles every stake at
-// the real result. This is a backtest of one day, not a promise: it is stated
-// as such in the copy, and a losing day is printed exactly as loudly.
 const PLAN_BUDGET = 100;
-function planReturn(rows) {
-  // Settle the plan we would ACTUALLY have given, which is the spread: equal
-  // money across as much of the card as covers itself. This used to filter
-  // match by match on +EV and size by Kelly, which is the plan the builder
-  // stopped recommending - so the email was reporting returns from a strategy
-  // it no longer suggests. Same selection as spreadPlan, then settled against
-  // what really happened.
+
+// The graded LEDGER rows are the plan's whole universe. The builder only
+// ever offers plans over locked calls (predictions.json), so both the
+// reliability haircut and any settlement of "the plan you were shown" must
+// come from there too. The track record grades far more tennis than the
+// builder ever stakes - challengers, qualifiers, small events - and building
+// a settlement from it would price a plan that never existed on the site.
+function ledgerGraded(preds) {
+  return (preds || []).filter((m) => m.status === 'won' || m.status === 'lost');
+}
+
+// Locked bets for one calendar day, straight off the ledger: the pick, the
+// price stamped before play, and what actually happened.
+function lockedBets(preds, dayISO) {
   const bets = [];
-  for (const m of rows) {
-    const fav = pickFavorite(m);
-    if (!fav || !(m.od1 > 1) || !(m.od2 > 1)) continue;
-    const raw = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1;
-    if (raw == null) continue;
-    const p = fav === m.p1 ? raw : 1 - raw;
-    const o = fav === m.p1 ? m.od1 : m.od2;
-    bets.push({ key: String(m.id), p, o, won: !!pickCorrect(m) });
+  for (const m of ledgerGraded(preds)) {
+    if (String(m.date).slice(0, 10) !== dayISO) continue;
+    const favIsP1 = m.favorite === m.p1;
+    const o = Number(favIsP1 ? m.lockOdd1 : m.lockOdd2);
+    if (!(o > 1) || typeof m.favProb !== 'number') continue;
+    bets.push({ key: String(m.id), p: m.favProb, o, won: !!m.correct });
   }
-  if (!bets.length) return null;
+  return bets;
+}
 
-  const plan = spreadPlan(bets, PLAN_BUDGET);
-  if (!plan.count) return null;
-
-  const backed = new Map(plan.rows.map((r) => [r.key, r]));
-  let staked = 0, profit = 0, hits = 0;
-  for (const b of bets) {
-    if (!backed.has(b.key)) continue;   // the spread left this one alone
-    staked += plan.perMatch;
-    if (b.won) { profit += plan.perMatch * (b.o - 1); hits++; } else { profit -= plan.perMatch; }
+// Settle one plan against what actually happened. Singles pay at their price
+// or lose their stake; the parlay pays only if every leg landed.
+function settlePlan(plan, bets) {
+  const by = new Map(bets.map((b) => [b.key, b]));
+  let staked = 0, profit = 0, hits = 0, backed = 0;
+  for (const [key, stake] of Object.entries(plan.singles || {})) {
+    if (!(stake > 0.005)) continue;
+    const b = by.get(key);
+    if (!b) continue;
+    backed++; staked += stake;
+    if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
   }
-  return { n: plan.count, hits, staked, profit, budget: PLAN_BUDGET, skipped: bets.length - plan.count };
+  let parlay = null;
+  if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => by.has(k))) {
+    staked += plan.parlayStake;
+    const won = plan.parlayLegs.every((k) => by.get(k).won);
+    const o = plan.parlayLegs.reduce((m, k) => m * by.get(k).o, 1);
+    profit += won ? plan.parlayStake * (o - 1) : -plan.parlayStake;
+    parlay = { legs: plan.parlayLegs.length, won, o };
+  }
+  return { id: plan.id, label: plan.label, n: backed, hits, staked, profit, parlay };
+}
+
+// What each of a day's recommended plans would have returned, settled at the
+// odds stamped before play. The plans are rebuilt exactly as the site would
+// have built them that morning: the same locked card, the same maths, and
+// reliability measured only on what was graded BEFORE that day - the site
+// could not have known the day's results when it recommended, so neither may
+// this settlement.
+function planReturns(preds, dayISO) {
+  const bets = lockedBets(preds, dayISO);
+  if (bets.length < 2) return null;
+  const history = ledgerGraded(preds).filter((m) => String(m.date).slice(0, 10) < dayISO);
+  const rel = staking.reliability(history);
+  const frontier = staking.planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
+  if (!frontier.plans.length) return null;
+  return {
+    budget: PLAN_BUDGET,
+    recommendedId: frontier.recommendedId,
+    plans: frontier.plans.map((pl) => settlePlan(pl, bets)),
+  };
 }
 
 // Tournament crests for the countdown. Same on-demand mirror as the headshots.
@@ -745,6 +718,10 @@ function pickTransport() {
 }
 
 async function main() {
+  // The staking module the whole plan machinery below runs on. Resolved once;
+  // a failure here should kill the build loudly rather than mail a digest
+  // with no money sections.
+  staking = await stakingReady;
   const scorecard = readJson(path.join(DATA, 'daily_scorecard.json'));
   const track = readJson(path.join(DATA, 'track_record.json'));
   const predsDoc = readJson(path.join(DATA, 'predictions.json'));
@@ -917,23 +894,43 @@ async function main() {
         vsMarketTxt = `Meanwhile, at the bookmakers - same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
       }
 
-      // What the suggested plan would have returned, settled at real results.
-      const plan = planReturn(ydayAll);
+      // What each recommended plan would have returned, settled individually
+      // at the odds stamped before play. All of them, not just the winner:
+      // yesterday's email recommended one, but a reader who preferred another
+      // deserves to see what their choice did too.
+      const settled = planReturns(preds, String(yday.date).slice(0, 10));
       let planBlock = '';
       let planTxt = '';
-      if (plan) {
-        const up = plan.profit >= 0;
-        const money = `${up ? '+' : '-'}$${Math.abs(plan.profit).toFixed(2)}`;
+      if (settled && settled.plans.length) {
+        const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
+        const best = settled.plans.reduce((a, b) => (b.profit > a.profit ? b : a));
+        const rows = settled.plans.map((pl) => {
+          const isRec = pl.id === settled.recommendedId;
+          const up = pl.profit >= 0;
+          return `
+          <tr>
+            <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
+              <strong style="color:${INK};">${esc(pl.label)}</strong>${isRec ? ` <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${LIME};font-weight:700;">&nbsp;recommended</span>` : ''}
+              <span style="display:block;font-size:12px;color:${MUTED};">${pl.hits} of ${pl.n} singles landed${pl.parlay ? `, parlay ${pl.parlay.won ? 'hit' : 'missed'}` : ''}</span>
+            </td>
+            <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${up ? WIN : LOSS};white-space:nowrap;">
+              ${money(pl.profit)}
+            </td>
+          </tr>`;
+        }).join('');
         planBlock = `
-          <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${up ? WIN : LOSS};">
+          <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${best.profit >= 0 ? WIN : LOSS};">
             ${kicker('If you had actually followed along')}
-            <div style="font-size:28px;font-weight:800;color:${up ? WIN : LOSS};line-height:1.1;">${money}</div>
-            <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
-              A $${plan.budget} bankroll spread over the ${plural(plan.n, 'call', 'calls')} worth backing, ${plan.hits} of which landed, settled at the odds we stamped before play.
-              One good day proves nothing. Neither does one bad one, which is why you get all of them.
+            <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:${BODY};">
+              Each plan the builder offered yesterday morning, $${settled.budget} in, settled at the odds we stamped before play.
+            </p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
+            <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
+              One good day proves nothing. Neither does one bad one, which is why you get all of them, every day.
             </p>
           </div>`;
-        planTxt = `If you had actually followed along: ${money} on a $${plan.budget} bankroll (${plan.hits}/${plan.n} landed)`;
+        planTxt = 'If you had actually followed along ($' + settled.budget + ' in): '
+          + settled.plans.map((pl) => `${pl.label} ${money(pl.profit)}${pl.id === settled.recommendedId ? ' (recommended)' : ''}`).join('; ');
       }
 
       blocks.push(section(`
@@ -989,7 +986,7 @@ async function main() {
     // Staking plan: the ACTUAL recommendation for today's card, not a
     // description of the tool that makes it. Same maths the builder runs,
     // mirrored above and pinned by digestStaking.test.js.
-    const rel = reliability(graded);
+    const rel = staking.reliability(ledgerGraded(preds));
     const planBets = card
       .map((pr) => {
         const favIsP1 = pr.favorite === pr.p1;
@@ -997,13 +994,22 @@ async function main() {
         return { pr, key: pr.id, p: pr.favProb, o: o > 1 ? o : 0 };
       })
       .filter((b) => b.o > 1 && b.p > 0);
-    const todayPlan = planBets.length ? spreadPlan(planBets, PLAN_BUDGET, rel.lambda) : null;
+    const byKey = new Map(planBets.map((b) => [String(b.key), b]));
+    const frontier = planBets.length >= 2
+      ? staking.planFrontier(planBets.map(({ key, p, o }) => ({ key: String(key), p, o })), PLAN_BUDGET, { lambda: rel.lambda })
+      : { plans: [] };
+    const todayPlan = frontier.plans.find((pl) => pl.id === frontier.recommendedId) || frontier.plans[0] || null;
 
-    if (todayPlan && todayPlan.count > 0) {
+    if (todayPlan) {
       // Whole amounts read better without the cents in prose ($100, not
       // $100.00); anything with a fraction keeps them.
       const money2 = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
-      const stakeRows = todayPlan.rows.map((b) => {
+      const stakes = Object.entries(todayPlan.singles || {})
+        .filter(([, v]) => v > 0.005)
+        .map(([key, v]) => ({ b: byKey.get(String(key)), stake: v }))
+        .filter((r) => r.b)
+        .sort((a, b) => b.stake - a.stake);
+      const stakeRows = stakes.map(({ b, stake }) => {
         const pr = b.pr;
         const favIsP1 = pr.favorite === pr.p1;
         const favName = pr.favName || (favIsP1 ? pr.name1 : pr.name2);
@@ -1019,45 +1025,73 @@ async function main() {
             ${Math.round(pr.favProb * 100)}% @ ${b.o.toFixed(2)}
           </td>
           <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:14px;font-weight:700;color:${INK};white-space:nowrap;">
-            ${money2(todayPlan.perMatch)}
+            ${money2(stake)}
           </td>
         </tr>`;
       }).join('');
 
-      const skipped = planBets.length - todayPlan.count;
+      // The parlay leg, when the recommended plan carries one: named legs at
+      // the combined price, exactly as the builder would fund it.
+      let parlayRow = '';
+      if (todayPlan.parlayStake > 0.005 && (todayPlan.parlayLegs || []).length >= 2) {
+        const legs = todayPlan.parlayLegs.map((k) => byKey.get(String(k))).filter(Boolean);
+        const comboOdds = legs.reduce((m, b) => m * b.o, 1);
+        const names = legs.map((b) => {
+          const favIsP1 = b.pr.favorite === b.pr.p1;
+          return lastName(b.pr.favName || (favIsP1 ? b.pr.name1 : b.pr.name2));
+        }).join(' + ');
+        parlayRow = `
+        <tr>
+          <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
+            <strong style="color:${INK};">Parlay: ${esc(names)}</strong>
+            <span style="display:block;font-size:12px;color:${MUTED};">both must land; pays at the combined price</span>
+          </td>
+          <td align="right" style="padding:9px 0 9px 8px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:13px;color:${MUTED};white-space:nowrap;">
+            @ ${comboOdds.toFixed(2)}
+          </td>
+          <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:14px;font-weight:700;color:${INK};white-space:nowrap;">
+            ${money2(todayPlan.parlayStake)}
+          </td>
+        </tr>`;
+      }
+
       const unpriced = card.length - planBets.length;
+      const others = frontier.plans.filter((pl) => pl.id !== todayPlan.id);
+      const menuLine = others.length
+        ? ` The builder also offers ${others.map((pl) => `${pl.label.toLowerCase()} (${Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead, ${pl.metrics.ev >= 0 ? '+' : '-'}$${Math.abs(pl.metrics.ev).toFixed(2)} expected)`).join(' and ')}; this one leads because nothing on the menu beats it on both chance and expectation.`
+        : '';
 
       blocks.push(section(`
         ${kicker('The money question')}
         ${h2('What we would actually stake')}
-        ${p(`Here is the whole plan for today, on a hypothetical ${money2(PLAN_BUDGET)}. Equal money on ${plural(todayPlan.count, 'match', 'matches')}, because spreading is how a ${rel.accuracy != null ? Math.round(rel.accuracy * 100) : 69}% hit rate actually shows up instead of riding on one result.`)}
+        ${p(`Here is the recommended plan for today, on a hypothetical ${money2(PLAN_BUDGET)}: <strong style="color:${INK};">${esc(todayPlan.label.toLowerCase())}</strong>, funding ${plural(stakes.length, 'match', 'matches')}${parlayRow ? ' plus one small parlay' : ''}.${menuLine}`)}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 14px;">
           ${stakeRows}
+          ${parlayRow}
           <tr>
             <td style="padding:11px 0 0;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Total staked</td>
             <td></td>
-            <td align="right" style="padding:11px 0 0 14px;font-family:${MONO};font-size:15px;font-weight:700;color:${INK};">${money2(todayPlan.staked)}</td>
+            <td align="right" style="padding:11px 0 0 14px;font-family:${MONO};font-size:15px;font-weight:700;color:${INK};">${money2(todayPlan.metrics.staked)}</td>
           </tr>
         </table>
         <div style="padding:14px 16px;background:${PANEL};border-left:3px solid ${LIME};">
           <p style="margin:0;font-size:14px;line-height:1.6;color:${BODY};">
-            <strong style="color:${INK};">We expect ${todayPlan.expWinners.toFixed(1)} of those ${plural(todayPlan.count, 'call', 'calls')} to land, returning ${money2(todayPlan.expReturn)}.</strong>
-            ${todayPlan.coversStake
-    ? `That covers the ${money2(todayPlan.staked)} going out, which is the whole test a plan has to pass here.`
-    : `That is short of the ${money2(todayPlan.staked)} going out, so today the honest answer is to sit it out.`}
-            ${todayPlan.pAhead != null ? ` Odds of actually finishing ahead: ${Math.round(todayPlan.pAhead * 100)}%.` : ''}
+            <strong style="color:${INK};">We expect ${todayPlan.expWinners.toFixed(1)} of those to land, returning ${money2(todayPlan.expReturn)} on the ${money2(todayPlan.metrics.staked)} going out.</strong>
+            ${todayPlan.metrics.pProfit != null ? ` Odds of actually finishing ahead: ${Math.round(todayPlan.metrics.pProfit * 100)}%.` : ''}
+            Same numbers you will find on the builder itself, because it is the same arithmetic.
           </p>
         </div>
-        ${p(`${skipped > 0 ? `${plural(skipped, 'call', 'calls')} on the card got nothing: the price was too short to carry ${skipped === 1 ? 'it' : 'them'}. ` : ''}${unpriced > 0 ? `${plural(unpriced, 'more had', 'more had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
+        ${p(`${unpriced > 0 ? `${plural(unpriced, 'call on the card had', 'calls on the card had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}, so the plan cannot stake ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
         <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Build your own slip')}</div>
       `));
-      txtLines.push(`THE MONEY QUESTION - what we would actually stake (hypothetical $${PLAN_BUDGET}):`);
-      for (const b of todayPlan.rows) {
+      txtLines.push(`THE MONEY QUESTION - the recommended plan (hypothetical $${PLAN_BUDGET}, ${todayPlan.label.toLowerCase()}):`);
+      for (const { b, stake } of stakes) {
         const favIsP1 = b.pr.favorite === b.pr.p1;
         const favName = b.pr.favName || (favIsP1 ? b.pr.name1 : b.pr.name2);
-        txtLines.push(`  ${money2(todayPlan.perMatch)} on ${lastName(favName)} (${Math.round(b.pr.favProb * 100)}% @ ${b.o.toFixed(2)})`);
+        txtLines.push(`  $${stake.toFixed(2)} on ${lastName(favName)} (${Math.round(b.pr.favProb * 100)}% @ ${b.o.toFixed(2)})`);
       }
-      txtLines.push(`  Total ${money2(todayPlan.staked)}; we expect ${todayPlan.expWinners.toFixed(1)} to land, returning ${money2(todayPlan.expReturn)}${todayPlan.pAhead != null ? `; ${Math.round(todayPlan.pAhead * 100)}% chance of finishing ahead` : ''}`);
+      if (todayPlan.parlayStake > 0.005) txtLines.push(`  $${todayPlan.parlayStake.toFixed(2)} on the parlay`);
+      txtLines.push(`  Total $${todayPlan.metrics.staked.toFixed(2)}; we expect ${todayPlan.expWinners.toFixed(1)} to land, returning $${todayPlan.expReturn.toFixed(2)}${todayPlan.metrics.pProfit != null ? `; ${Math.round(todayPlan.metrics.pProfit * 100)}% chance of finishing ahead` : ''}`);
       txtLines.push(`  ${SITE}/parlay`, '');
     } else {
       blocks.push(section(`
@@ -1248,22 +1282,49 @@ async function main() {
         txtLines.push('');
       }
 
-      // What following the plan would have returned across the whole week. The
-      // daily prints this for one day, where it proves nothing; over seven it
-      // starts to mean something, which is the whole reason a weekly exists.
-      const weekPlan = planReturn(week);
-      if (weekPlan) {
-        const up = weekPlan.profit >= 0;
-        const amount = `${up ? '+' : '-'}$${Math.abs(weekPlan.profit).toFixed(2)}`;
-        const roi = weekPlan.staked > 0 ? (weekPlan.profit / weekPlan.staked) * 100 : 0;
+      // What following each plan would have returned across the whole week,
+      // settled the way a reader would actually have done it: $100 into that
+      // day's plan each morning, day after day. Not one plan over the week's
+      // whole card - nobody could have placed that, because the plans only
+      // ever exist one day at a time. The daily prints one day, where it
+      // proves nothing; over a week it starts to mean something, which is the
+      // whole reason a weekly exists.
+      const weekDays = [...new Set(week.map((m) => String(m.date).slice(0, 10)))].sort();
+      const totals = new Map(); // plan id -> { label, profit, days, hits, n }
+      let recTotal = 0, recDays = 0;
+      for (const dayISO of weekDays) {
+        const settledDay = planReturns(preds, dayISO);
+        if (!settledDay) continue;
+        for (const pl of settledDay.plans) {
+          const t = totals.get(pl.id) || { label: pl.label, profit: 0, days: 0, hits: 0, n: 0 };
+          t.profit += pl.profit; t.days++; t.hits += pl.hits; t.n += pl.n;
+          totals.set(pl.id, t);
+          if (pl.id === settledDay.recommendedId) { recTotal += pl.profit; recDays++; }
+        }
+      }
+      if (recDays >= 2) {
+        const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
+        const rows = [...totals.entries()].map(([id, t]) => `
+          <tr>
+            <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
+              <strong style="color:${INK};">${esc(t.label)}</strong>
+              <span style="display:block;font-size:12px;color:${MUTED};">$${PLAN_BUDGET} a day for ${plural(t.days, 'day', 'days')} · ${t.hits} of ${t.n} singles landed</span>
+            </td>
+            <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${t.profit >= 0 ? WIN : LOSS};white-space:nowrap;">
+              ${money(t.profit)}
+            </td>
+          </tr>`).join('');
         blocks.push(section(`
           ${kicker('If you had followed along all week')}
-          ${h2(`${amount} on $${weekPlan.budget}`)}
-          ${p(`Equal money across the ${plural(weekPlan.n, 'call', 'calls')} the plan actually backed, ${weekPlan.hits} of which landed, every one settled at the price we stamped before play. That is ${roi >= 0 ? 'a return of' : 'a loss of'} ${Math.abs(roi).toFixed(1)}% on the week.`)}
-          ${p(`${up ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and seven days is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
+          ${h2(`${money(recTotal)} taking the recommendation every day`)}
+          ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did, followed daily:`)}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 10px;">${rows}</table>
+          ${p(`${recTotal >= 0 ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and a week is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
           <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
         `));
-        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK: ${amount} on $${weekPlan.budget} (${weekPlan.hits}/${weekPlan.n} landed, ${roi.toFixed(1)}%)`, '');
+        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK ($${PLAN_BUDGET} a day, recommended plan): ${money(recTotal)} over ${recDays} days`);
+        for (const [, t] of totals) txtLines.push(`  ${t.label}: ${money(t.profit)} (${t.hits}/${t.n} singles, ${t.days} days)`);
+        txtLines.push('');
       }
 
       const priced = week.filter((m) => m.oddCorrect != null);

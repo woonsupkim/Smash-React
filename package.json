@@ -31,7 +31,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint --max-warnings=0 --ext .js src",
+    "lint": "eslint --max-warnings=0 --ext .js,.mjs src",
     "e2e": "playwright test",
     "build-roster": "node data-pipeline/buildRoster.js",
     "fetch-images": "node data-pipeline/fetchImages.js",
