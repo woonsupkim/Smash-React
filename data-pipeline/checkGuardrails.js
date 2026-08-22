@@ -28,6 +28,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const ENGINE = require('../src/engineConfig.json');
 const { isDeployTier } = require('./lib/events');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
@@ -56,7 +57,12 @@ function run() {
   const preds = fs.existsSync(path.join(DATA, 'predictions.json'))
     ? JSON.parse(fs.readFileSync(path.join(DATA, 'predictions.json'), 'utf8'))
     : { predictions: [] };
-  const ms = (track.matches || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  // Calls only, mirroring src/utils/deployedPick.pickNoCall (pinned by
+  // noCall.test.js): the guardrails watch what the site claims, and the
+  // site no longer claims coin flips.
+  const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
+  const ms = (track.matches || []).filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0))
+    .slice().sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const alerts = [];
   const cells = [];

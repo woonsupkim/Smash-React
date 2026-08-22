@@ -726,3 +726,16 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
 /* No-call receipt rows: on the record, stepped back, never bold. */
 .track-forward-row.nocall .track-forward-status { color: var(--text-2, #ced2d8); }
 .track-forward-row.nocall .track-forward-call { color: var(--text-3, #9aa1ab); font-weight: 400; }
+
+/* Log rows the policy declines to claim: listed, graded, marked. */
+.track-row.nocall { opacity: 1; }
+.track-row.nocall .track-row-matchup { filter: saturate(0.6); }
+.track-row-nocall {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-2, #ced2d8);
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.24));
+  border-radius: var(--radius-pill, 999px);
+  padding: 0.05rem 0.45rem;
+}

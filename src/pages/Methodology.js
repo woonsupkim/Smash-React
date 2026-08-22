@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
-import { pickCorrect, pickFavProb } from '../utils/deployedPick';
+import { pickCorrect, pickFavProb, pickNoCall } from '../utils/deployedPick';
 import useDocMeta from '../utils/useDocMeta';
 import './Methodology.css';
 
@@ -43,7 +43,9 @@ export default function Methodology() {
   }, []);
 
   const stats = useMemo(() => {
-    const matches = data?.matches || [];
+    // Calls only, same policy as everywhere: no-call rows grade in the
+    // by-confidence view but never enter a published claim.
+    const matches = (data?.matches || []).filter((m) => !pickNoCall(m));
     const n = matches.length;
     const k = matches.filter((m) => pickCorrect(m)).length;
     const ci = wilson(k, n);

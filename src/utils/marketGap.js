@@ -54,6 +54,11 @@ export function bandStats(rows, lo = GAP_FLOOR, hi = GAP_CEIL) {
   for (const r of rows || []) {
     const mk = marketProbOf(r);
     if (mk == null || typeof r.favProb !== 'number' || typeof r.correct !== 'boolean') continue;
+    // Calls only: a coin flip under the call threshold is not a claim, so it
+    // cannot be evidence for one. Mirrors deployedPick.pickNoCall on the
+    // deployed pick's stated probability; pinned by noCall.test.js.
+    const pp = r.pickProbP1 != null ? r.pickProbP1 : r.smashProbP1;
+    if (pp != null && Math.max(pp, 1 - pp) < (FIGURES.gapCallThreshold ?? 0.6)) continue;
     const gap = r.favProb - mk;
     if (gap >= lo && gap < hi) inBand.push({ r, mk });
   }

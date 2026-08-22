@@ -3,16 +3,17 @@
   "measuredAt": "2026-08-22",
   "gapFloor": 0.1,
   "gapCeil": 0.2,
+  "gapCallThreshold": 0.6,
   "band": {
     "pricedGraded": 1650,
-    "n": 287,
-    "hitRate": 0.5226,
-    "marketImplied": 0.447,
-    "stated": 0.596
+    "n": 137,
+    "hitRate": 0.5547,
+    "marketImplied": 0.4632,
+    "stated": 0.6129
   },
   "beyondCeil": {
-    "n": 231,
-    "hitRate": 0.4502,
-    "stated": 0.6277
+    "n": 135,
+    "hitRate": 0.4148,
+    "stated": 0.61
   }
 }
