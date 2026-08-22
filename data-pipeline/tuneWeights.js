@@ -195,6 +195,34 @@ for (const tour of ['atp', 'wta']) {
     return `${Math.round(lo * 100)}-${Math.round(Math.min(hi, 1) * 100)}: said ${(said * 100).toFixed(0)} landed ${(hit * 100).toFixed(0)} (n=${g.length}, z=${z.toFixed(1)})`;
   }).join(' | ');
   console.log(`${tour} calibration by band (OOF): ${bandTxt}`);
+
+  // 6. The money line, same OOF. Accuracy framing ties the market; the
+  // return framing is where the product actually lives, so every retune
+  // reports what a selective flat-stake policy would have returned on the
+  // out-of-fold predictions at the recorded odds. One price snapshot exists
+  // per match in this feed (verified: lock price == graded price, byte for
+  // byte), so this is settle-at-the-only-price, not closing-line value -
+  // CLV stays unmeasurable until a second snapshot is captured.
+  const pricedOof = calOof.map((r, i) => ({ ...r, od1: oof[i].od1, od2: oof[i].od2 }))
+    .filter((r) => r.od1 > 1 && r.od2 > 1);
+  const money = (bets) => {
+    let pl = 0;
+    for (const r of bets) {
+      const pickP1 = r.p >= 0.5;
+      const o = pickP1 ? r.od1 : r.od2;
+      const wonPick = pickP1 === (r.won === 1);
+      pl += wonPick ? o - 1 : -1;
+    }
+    return { n: bets.length, roi: bets.length ? pl / bets.length : 0 };
+  };
+  const evBets = pricedOof.filter((r) => {
+    const pickP1 = r.p >= 0.5;
+    const p = pickP1 ? r.p : 1 - r.p;
+    const o = pickP1 ? r.od1 : r.od2;
+    return p * o > 1;
+  });
+  const all = money(pricedOof), ev = money(evBets);
+  console.log(`${tour} money (OOF, flat $1): all priced n=${all.n} ROI ${(all.roi * 100).toFixed(1)}% | +EV only n=${ev.n} ROI ${(ev.roi * 100).toFixed(1)}%`);
 }
 
 config.tunedAt = new Date().toISOString();
