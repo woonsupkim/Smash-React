@@ -13,7 +13,13 @@ function collectErrors(page) {
 test('home renders the board and proof rail', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  await expect(page.getByText('We Beat the', { exact: false })).toBeVisible();
+  // The headline is an HONESTY GATE, not fixed copy: "We Beat the Bookmakers"
+  // only while the split ledger supports the claim, "Every Call, Graded in
+  // Public" the moment it does not. Asserting the boastful branch made every
+  // PR red the morning the real results tied the split record 50-50 - the
+  // gate did its job and the test called that a failure. Assert the gate
+  // rendered one of its two honest states, not which one the season is in.
+  await expect(page.locator('.main-title')).toHaveText(/We Beat the|Every Call/, { timeout: 15000 });
   // The proof rail loads from track_record.json - a number, not a skeleton.
   // Asserted on the rail itself rather than any one caption: the captions
   // change with the season (off-season copy vs a live board), and this test
