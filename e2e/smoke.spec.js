@@ -127,7 +127,9 @@ test('nav pillars open and navigate', async ({ page }) => {
 test('parlay builder: the plan prices today\'s card and dropping a leg re-prices it', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/parlay');
-  await expect(page.getByRole('heading', { name: /stack today's calls/i })).toBeVisible();
+  // Retitled when the page became a staking plan you follow rather than a
+  // parlay you assemble (changelog 4.2.3).
+  await expect(page.getByRole('heading', { name: /today's staking plan/i })).toBeVisible();
 
   // Either there are calls today (the plan renders) or the honest empty state.
   // There is no separate selection list any more: every call arrives already
@@ -172,7 +174,9 @@ test('parlay builder: the plan prices today\'s card and dropping a leg re-prices
 test('edge board: disagreement hero and graded split rows', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/edge');
-  await expect(page.getByRole('heading', { name: /disagree with the market/i })).toBeVisible();
+  // The Edge leads with what disagreements RETURN, not who guesses better
+  // (changelog 4.2.4).
+  await expect(page.getByRole('heading', { name: /what our disagreements are worth/i })).toBeVisible();
   await expect(page.locator('.edge-hero-val').first()).toHaveText(/%/, { timeout: 15000 });
   await expect(page.locator('.edge-row').first()).toBeVisible();
   expect(errors).toEqual([]);

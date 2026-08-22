@@ -1276,7 +1276,7 @@ async function main() {
         blocks.push(section(`
           ${kicker('Us vs the bookmakers')}
           ${h2(verdict)}
-          ${p(`Measured across the ${priced.length} matches this week that carried a closing price, scoring both sides on the same fixtures.`)}
+          ${p(`Measured across the ${priced.length} matches this week that carried a market price, scoring both sides on the same fixtures.`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
               <td width="50%" style="padding:0 10px 0 0;vertical-align:top;">

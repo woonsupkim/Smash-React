@@ -185,7 +185,7 @@ export default function ModelCard() {
           </div>
         )}
         <p className="mc-fine">
-          The bookmakers' closing line is the strongest public predictor of a tennis
+          The bookmakers' price is the strongest public predictor of a tennis
           match, so the gap to it is the honest measure of how much headroom the model
           has left. Odds are the market's, with the bookmaker's margin removed.
         </p>
@@ -303,7 +303,7 @@ export default function ModelCard() {
         <ul className="mc-list">
           <li>Per-match serve and return box scores for every rostered tour player, weighted by recency (a match from last month counts far more than one from last year; grass decays on its own clock because its season is six weeks long).</li>
           <li>Full match history for the Elo timeline, replayed in date order so every rating a prediction uses existed before the match was played.</li>
-          <li>ESPN's public scoreboard for live draws, and bookmaker closing odds where available for benchmarking only. Market odds are never an input to the prediction.</li>
+          <li>ESPN's public scoreboard for live draws, and the bookmaker price at lock time where available, for benchmarking only. Market odds are never an input to the prediction.</li>
         </ul>
       </section>
 

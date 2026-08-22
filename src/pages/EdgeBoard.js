@@ -121,17 +121,32 @@ export default function EdgeBoard() {
   return (
     <div className="edge-page">
       <div className="eyebrow">THE EDGE</div>
-      <h1 className="edge-title">Where we disagree with the market</h1>
+      <h1 className="edge-title">What our disagreements are worth</h1>
       <p className="edge-sub">
-        The bookmakers are the strongest public forecast in tennis. On the matches where
-        our locked pick and the market's favorite differ, somebody has to be wrong - so we
-        grade both sides, in public, all season.
+        The bookmakers are the strongest public forecast in tennis, and we do not out-guess
+        them: on the matches where our locked pick and the market's favorite differ, both
+        sides win about as often. The difference is the price. A split puts us on the longer
+        ticket, so the same hit rate pays differently - and that is the edge this page grades,
+        in public, all season.
       </p>
       <p className="edge-disclaimer">
         For research and entertainment only. Probabilities, not betting advice - if this page
         makes you want to bet, that is the one prediction we won't stand behind.
       </p>
 
+      {stats.disagreements > 0 && (
+        <div className="edge-money edge-money-lead">
+          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked on every split, both ways</div>
+          <div className="edge-money-row">
+            <span className={`edge-money-cell us ${stats.usNet >= 0 ? 'pos' : 'neg'}`}>
+              $1 on our picks → <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
+            </span>
+            <span className={`edge-money-cell ${stats.mktNet >= 0 ? 'pos' : 'neg'}`}>
+              $1 on the market's → <strong>{stats.mktNet >= 0 ? '+' : '-'}${Math.abs(stats.mktNet).toFixed(0)}</strong>
+            </span>
+          </div>
+        </div>
+      )}
       {stats.disagreements > 0 ? (
         <div className="edge-hero">
           <div className="edge-hero-cell us">
@@ -155,18 +170,10 @@ export default function EdgeBoard() {
       )}
       {stats.disagreements > 0 && (
         <div className="edge-money">
-          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked on every split, both ways</div>
-          <div className="edge-money-row">
-            <span className={`edge-money-cell us ${stats.usNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on our picks → <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
-            </span>
-            <span className={`edge-money-cell ${stats.mktNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on the market's → <strong>{stats.mktNet >= 0 ? '+' : '-'}${Math.abs(stats.mktNet).toFixed(0)}</strong>
-            </span>
-          </div>
           <div className="edge-money-note">
-            Hypothetical, settled at the closing odds each side was actually quoted.
+            Hypothetical, settled at the price each side was quoted when we locked the call.
             Splits put us on the underdog ticket, so being right pays more than being popular.
+            Our feed carries one price per match, so this is not a closing-line comparison.
           </div>
         </div>
       )}

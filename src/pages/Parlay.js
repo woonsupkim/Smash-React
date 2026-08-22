@@ -23,7 +23,12 @@ import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
+import { planFrontier, reliability } from '../utils/staking';
 import './Parlay.css';
+
+// The budget the receipt below replays yesterday's plan on, matching the
+// StakingPlan default so the number means the same thing on both.
+const PLAN_BUDGET = 100;
 
 const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
 // The market's own view of our pick, with the bookmaker's margin divided
@@ -127,6 +132,46 @@ export default function Parlay() {
     return out;
   }, [all]);
 
+  // Yesterday's plan, settled. The follower's first question is not "what is
+  // today's plan" but "does following it work", and the page had no answer:
+  // the digest carried this and the page did not. Same frontier the page
+  // shows, reliability measured only on rows graded BEFORE that day, settled
+  // at the price stamped before play. Wins and losses print identically.
+  const yesterdayPlan = useMemo(() => {
+    const rows = (graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1 && typeof m.favProb === 'number');
+    if (rows.length < 2) return null;
+    const day = rows.map((m) => String(m.date).slice(0, 10)).sort().pop();
+    const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
+    if (card.length < 2) return null;
+    const bets = card.map((m) => ({
+      key: String(m.id), p: m.favProb,
+      o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
+      won: !!m.correct,
+    }));
+    const before = (graded || []).filter((m) => String(m.date).slice(0, 10) < day);
+    const rel = reliability(before);
+    const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
+    const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+    if (!plan) return null;
+    const byKey = new Map(bets.map((b) => [b.key, b]));
+    let staked = 0, profit = 0, hits = 0, backed = 0;
+    for (const [key, stake] of Object.entries(plan.singles || {})) {
+      if (!(stake > 0.005)) continue;
+      const b = byKey.get(key); if (!b) continue;
+      backed++; staked += stake;
+      if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+    }
+    let parlayWon = null;
+    if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => byKey.has(k))) {
+      staked += plan.parlayStake;
+      parlayWon = plan.parlayLegs.every((k) => byKey.get(k).won);
+      const o = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).o, 1);
+      profit += parlayWon ? plan.parlayStake * (o - 1) : -plan.parlayStake;
+    }
+    if (staked < 0.01) return null;
+    return { day, label: plan.label, staked, profit, hits, backed, parlayWon };
+  }, [graded]);
+
   // A suggestion narrows the card down to its own legs: everything not in the
   // set gets dropped.
   const applySuggestion = (keys) => {
@@ -137,14 +182,27 @@ export default function Parlay() {
   return (
     <div className="parlay-page">
       <div className="eyebrow">THE PARLAY BUILDER</div>
-      <h1 className="parlay-title">Stack today's calls</h1>
+      <h1 className="parlay-title">Today's staking plan</h1>
       <p className="parlay-intro">
-        Every call on today's card is locked before play and graded in public afterwards,
-        wins and misses alike. Below is what we would actually do with a hundred dollars
-        across them: how much on which matches, how often that comes off, and what it
-        returns when it does. Drop any match with the × and the whole plan re-prices as
-        you go.
+        One plan, ready to follow: exactly how much to put on which of today's matches,
+        and whether a parlay earns a slice. It only backs calls priced better than we
+        think they should be, so most days it stakes less than the full budget and the
+        rest stays in your pocket. Every call was locked before play and is graded in
+        public afterwards, wins and misses alike.
       </p>
+
+      {yesterdayPlan && (
+        <div className={`parlay-receipt${yesterdayPlan.profit >= 0 ? ' pos' : ' neg'}`}>
+          <span className="parlay-receipt-cap">Yesterday, following this plan</span>
+          <span className="parlay-receipt-val">
+            {yesterdayPlan.profit >= 0 ? '+' : '-'}${Math.abs(yesterdayPlan.profit).toFixed(2)}
+          </span>
+          <span className="parlay-receipt-sub">
+            on ${yesterdayPlan.staked.toFixed(2)} staked · {yesterdayPlan.hits} of {yesterdayPlan.backed} landed
+            {yesterdayPlan.parlayWon != null ? `, parlay ${yesterdayPlan.parlayWon ? 'hit' : 'missed'}` : ''}
+          </span>
+        </div>
+      )}
 
       {all === null && <div className="skeleton parlay-skel" />}
 
@@ -159,26 +217,6 @@ export default function Parlay() {
 
       {all && all.length > 0 && (
         <>
-          {suggestions.length > 0 && (
-            <div className="parlay-suggest">
-              <div className="parlay-suggest-cap">Or narrow it to one of ours</div>
-              <div className="parlay-suggest-row">
-                {suggestions.map((s) => (
-                  <button key={s.id} type="button" className="parlay-chip" onClick={() => applySuggestion(s.keys)}>
-                    <span className="parlay-chip-title">{s.title}</span>
-                    <span className="parlay-chip-sub">{s.sub}</span>
-                  </button>
-                ))}
-                {dropped.size > 0 && (
-                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setDropped(new Set())}>
-                    <span className="parlay-chip-title">All {all.length} back</span>
-                    <span className="parlay-chip-sub">put today's whole card in</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Everything is in by default, so an empty slip means you took the
               last leg out - offer the way back rather than a generic prompt. */}
           {legs.length === 0 && (
@@ -197,6 +235,27 @@ export default function Parlay() {
           {legs.length > 0 && (
             <StakingPlan legs={legs} graded={graded} onDrop={(l) => toggle(legKey(l))} />
           )}
+
+          {suggestions.length > 0 && (
+            <div className="parlay-suggest">
+              <div className="parlay-suggest-cap">Rather build your own? Start from one of these</div>
+              <div className="parlay-suggest-row">
+                {suggestions.map((s) => (
+                  <button key={s.id} type="button" className="parlay-chip" onClick={() => applySuggestion(s.keys)}>
+                    <span className="parlay-chip-title">{s.title}</span>
+                    <span className="parlay-chip-sub">{s.sub}</span>
+                  </button>
+                ))}
+                {dropped.size > 0 && (
+                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setDropped(new Set())}>
+                    <span className="parlay-chip-title">All {all.length} back</span>
+                    <span className="parlay-chip-sub">put today's whole card in</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
         </>
       )}
 

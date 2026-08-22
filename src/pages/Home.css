@@ -872,3 +872,8 @@
   border-radius: var(--radius-pill);
   padding: 0.12rem 0.5rem;
 }
+
+/* Recent form shows in both directions now, so it needs a down colour that
+   still clears AA on the hero scrim (darkening, never lightening - the
+   StakingPlan lesson). */
+.home-stat-trend.down { color: #ff8f8f; }

@@ -10,6 +10,17 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.4',
+    date: '2026-08-23',
+    type: 'product',
+    title: 'The edge is the price, not the pick',
+    notes: [
+      'THE HEADLINE CLAIM CHANGES, because the old one was the wrong claim. We used to lead with beating the bookmakers, gated on how often our pick won when we split from them. On the corrected record that race is level: 75% to their 74% on the same matches, and the research literature says a model built from public pre-match numbers should not expect to pull ahead. What we do beat them on is PRICE. A split puts us on the longer ticket, so across the 66 matches where we and the market backed different players, a flat dollar on our side returned +23% while a dollar on theirs lost 23%. Same hit rate, opposite outcome, and the page now says so.',
+      'THE CALL THRESHOLD MOVES FROM 60% TO 58%. That keeps 244 more matches on the record as real calls and costs about two points of headline accuracy, which is the honest trade: it grows the sample behind the money claim by more than half (42 splits to 66) and a claim about returns needs price disagreements more than it needs a flattering percentage. THE FIGURES IN 4.2.1 AND 4.2.2 ARE SUPERSEDED BY THIS: the season benchmark reads 72% of 2,381 calls rather than 74% of 2,137, and the disagreement band 55% against the market\'s 46%. Both entries stand as written; these are the current numbers.',
+      'WHAT ELSE STOPPED BEING TRUE: several pages described their money numbers as settled at "closing odds". They are not. Our feed carries one price per match, the one we stamp when the call locks, so there is no closing line in this data and nothing here is a closing-line comparison. Every one of those lines now says what it actually is. Recent form on the home page also shows in both directions instead of appearing only when it flattered us, which is why it currently reads 60% over the last 40 against a 68% forward record.',
+    ],
+  },
+  {
     version: '4.2.3',
     date: '2026-08-23',
     type: 'product',
@@ -26,6 +37,7 @@ export const CHANGELOG = [
     type: 'product',
     title: 'The whole record speaks the call policy',
     notes: [
+      'SUPERSEDED IN 4.2.4: the threshold moved from 60% to 58% after this shipped, so the benchmark figures quoted below are no longer current. The rule is unchanged; the entry stands as written.',
       'EVERY HISTORICAL CLAIM NOW GRADES CALLS ONLY. 4.2.1 stopped the ledger claiming coin flips going forward; this applies the same rule to everything retrospective - the season benchmark, the per-surface cards, the market head-to-head, the Edge board, the weekly recaps, the share cards. The rule is derived when the numbers are computed, from the same stored probabilities, so not one historical row was edited: a match the deployed pick had under 60% is listed in the log marked NO CALL, still graded, never claimed.',
       'WHAT THAT DOES TO THE NUMBERS, exactly: the season benchmark goes from 66% of 3,370 graded matches to 74% of the 2,137 we would have called, because the 1,233 coin flips underneath landed 52.7% and are no longer claimed. Against the bookmakers on the same called fixtures it is 77% to 77%. The matches-where-we-disagreed record sharpens to 55% against the market\'s 45%. Bigger numbers from a stricter rule, not from hiding anything: the full graded record stays on the page, the by-confidence table keeps grading the coin flips, and the log lists every match.',
       'WHY NOW AND NOT GRADUALLY: the app has not launched. The forward ledger earns its record one locked call at a time and stays prospective-only, exactly as 4.2.1 said. But a benchmark that described a policy we no longer follow would have greeted every launch-day visitor with a number we would immediately have to explain away. Pre-launch is the one moment this redefinition costs nobody anything, so it happens now, in public, with both numbers shown.',
@@ -37,6 +49,7 @@ export const CHANGELOG = [
     type: 'product',
     title: 'Coin flips stop being calls',
     notes: [
+      'SUPERSEDED IN 4.2.4: the threshold described here moved from 60% to 58%, so the figures in this entry are no longer current. The policy is unchanged; the entry stands as written.',
       'A CALL NOW HAS TO EARN THE WORD. From today, a matchup where our number lands under 60% locks as a NO CALL: the lean is still recorded before play and still graded afterward - restraint you cannot audit is just silence - but it is not a claim, it does not appear on the board, and it never counts toward the forward record. The Today page and the Receipts panel show exactly which matches we passed on and what the lean was.',
       'THE PARLAY BUILDER STILL PRICES THEM, on purpose, and the two things are both true at once: the builder bets edges, not calls, and a 56% lean at long odds can be worth a small stake even when it is nobody\'s idea of a confident pick. Rows like that are labeled "no call - priced anyway" in the plan table, so the restraint and the stake are both visible.',
       'THE FORWARD RECORD WILL READ HIGHER FROM HERE, and we want to be exact about why: not because the model improved today, but because it stops claiming coin flips. On the current ledger, calls at 60% or above landed 72.5%; the coin flips underneath landed 56.5%. Only new matches are affected - every call locked before today keeps counting exactly as it was made, because relabeling history is how records stop meaning anything.',
