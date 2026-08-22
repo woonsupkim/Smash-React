@@ -37,6 +37,7 @@
     "fetch-images": "node data-pipeline/fetchImages.js",
     "fetch-stats": "node data-pipeline/fetch.js",
     "fetch-surfaces": "node data-pipeline/fetchSurfaces.js",
+    "fetch-odds-snapshots": "node data-pipeline/fetchOddsSnapshots.js",
     "compute-stats": "node data-pipeline/computeStats.js",
     "build-stats-csv": "node data-pipeline/buildTournamentCsv.js",
     "build-upset-csv": "node data-pipeline/computeStats.js 7 \"\" upset && node data-pipeline/buildTournamentCsv.js upset",

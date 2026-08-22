@@ -132,6 +132,18 @@ jobs:
       - name: Compute Elo form ratings
         run: npm run compute-elo
 
+      # Odds snapshots for closing-line value: re-read the same upcoming-
+      # matches endpoint the lock pass uses and append a snapshot for every
+      # locked, still-pending call whose price moved. ~6 requests. Runs
+      # BEFORE build-predictions so today's matches get a morning-of reading
+      # ahead of any new locks. The dedicated odds-snapshots workflow adds
+      # two afternoon readings closer to first serve.
+      - name: Snapshot odds for locked pending calls
+        continue-on-error: true
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: npm run fetch-odds-snapshots
+
       # Must run LAST - it re-simulates every completed 2026 match using the
       # freshly-rebuilt surface + upset CSVs and the newly-fetched match
       # caches (and replays Elo), so the Track Record page picks up new
