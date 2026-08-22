@@ -1,7 +1,7 @@
 /* Same vertical gradient scrim as Home and the H2H studio (.overlay in
    App.css), so all photo-backed pages share one atmosphere. */
 .bracket-overlay {
-  background: linear-gradient(180deg, rgba(13, 16, 24, 0.82) 0%, rgba(11, 13, 19, 0.90) 45%, rgba(9, 11, 16, 0.96) 100%);
+  background: var(--scrim-photo);
   min-height: calc(100vh - 70px);
   padding: var(--page-pad-top) 1.5rem 3rem;
   color: #fff;
