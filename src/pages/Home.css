@@ -6,12 +6,21 @@
 .home-page {
   /* Court photo up top, deepening scrim below so content stays readable. */
   background:
-    linear-gradient(180deg, rgba(13,16,24,0.72) 0%, rgba(11,13,19,0.88) 45%, rgba(9,11,16,0.97) 100%),
+    var(--scrim-hero),
     url(../assets/smash1.jpg);
   background-size: cover;
   background-position: center top;
-  background-attachment: fixed;
   min-height: calc(100vh - 70px);
+}
+
+/* fixed attachment only where it is actually smooth: iOS/iPadOS treats
+   fixed+cover as a zoomed, repainted layer (visible jank), and a parallax
+   backdrop is motion a reduced-motion user asked not to have. Everyone else
+   gets a plain scrolling background - same pixels, no drama. Must come AFTER
+   .home-page: its background shorthand resets attachment to scroll, so an
+   earlier block loses the cascade at equal specificity. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .home-page { background-attachment: fixed; }
 }
 
 .home-shell {

@@ -1,5 +1,5 @@
 .method-bg {
-  background: linear-gradient(180deg, #0d1117 0%, #090b10 100%);
+  background: var(--stage-flat);
 }
 .method-overlay {
   background: none;

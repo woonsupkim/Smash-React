@@ -43,6 +43,21 @@
   /* ── Design tokens (gray scale, type, radii) ─────────────────────────
      One named scale instead of scattered one-off rgba values. Surfaces
      go lighter as they stack; text goes dimmer as emphasis drops. */
+  /* ── Stage tokens ─────────────────────────────────────────────────────
+     The page-background atmosphere, in one place. --scrim-photo was
+     duplicated verbatim in three files (here, DreamBrackets.css, and a
+     lighter cousin in Home.css) and --stage-flat in two (TrackRecord,
+     Methodology); a scrim that exists once cannot drift. Policy: photo
+     stages are for "moment" pages (Home, H2H, Brackets); data-dense
+     "workbench" pages stay flat on purpose (TrackRecord's opt-out is the
+     precedent). If real staged imagery returns, the recipe to match the
+     share cards is buildShareAssets.js duoStage(). Contrast rule from hard
+     experience (StakingPlan.css): fix failures by DARKENING the scrim,
+     never lightening text. */
+  --scrim-photo: linear-gradient(180deg, rgba(13, 16, 24, 0.82) 0%, rgba(11, 13, 19, 0.90) 45%, rgba(9, 11, 16, 0.96) 100%);
+  --scrim-hero: linear-gradient(180deg, rgba(13, 16, 24, 0.72) 0%, rgba(11, 13, 19, 0.88) 45%, rgba(9, 11, 16, 0.97) 100%);
+  --stage-flat: linear-gradient(180deg, #0d1117 0%, #090b10 100%);
+
   --surface-1: rgba(255, 255, 255, 0.05);
   --surface-2: rgba(255, 255, 255, 0.08);
   --surface-3: rgba(255, 255, 255, 0.14);
@@ -472,13 +487,12 @@ h1, h2, h3, .heading-xl, .heading-lg,
 .french-bg    { background-image: url(./assets/smash2a.jpg); }
 .wimbledon-bg { background-image: url(./assets/smash2b.jpg); }
 .usopen-bg    { background-image: url(./assets/smash2c.jpg); }
-.about-bg     { background-image: url(./assets/smash3.jpg); }
 
 /* Dark scrim over the background photo on the deep pages - the SAME
    vertical gradient treatment as Home, so every photo-backed page shares
    one atmosphere: photo showing through up top, deepening behind content. */
 .overlay {
-  background: linear-gradient(180deg, rgba(13, 16, 24, 0.82) 0%, rgba(11, 13, 19, 0.90) 45%, rgba(9, 11, 16, 0.96) 100%);
+  background: var(--scrim-photo);
   min-height: calc(100vh - 70px);
   padding: var(--page-pad-top) 1.5rem 3rem;
 }
