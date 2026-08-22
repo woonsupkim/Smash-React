@@ -61,3 +61,34 @@ describe('the staking universe still includes no-calls', () => {
     expect(read('data-pipeline/lib/planSettle.js')).not.toMatch(/noCall/);
   });
 });
+
+describe('the retrospective record speaks the same policy', () => {
+  it('pickNoCall derives from the deployed probability and the config threshold', () => {
+    const src = read('src/utils/deployedPick.js');
+    const hasRule = /pickNoCall = \(m\) => pickFavProb\(m\) < \(CONFIG\.callThreshold \|\| 0\)/.test(src);
+    expect(hasRule).toBe(true);
+  });
+
+  it('every retrospective claim surface mirrors the rule', () => {
+    // Client pages go through pickNoCall; pipeline builders carry the
+    // inline mirror. Either marker counts; absence fails with the filename.
+    const files = [
+      'src/pages/Home.js', 'src/pages/TrackRecord.js', 'src/pages/Methodology.js',
+      'src/pages/EdgeBoard.js', 'data-pipeline/buildDailyScorecard.js',
+      'data-pipeline/buildDigest.js', 'data-pipeline/buildShareAssets.js',
+      'data-pipeline/checkGuardrails.js', 'data-pipeline/buildMarketGap.js',
+      'src/utils/marketGap.js',
+    ];
+    for (const f of files) {
+      const src = read(f);
+      const ok = /pickNoCall/.test(src) || /callThreshold/.test(src);
+      expect(`${f}: ${ok}`).toBe(`${f}: true`);
+    }
+  });
+
+  it('the exclusion is computed, never written onto track rows', () => {
+    const rows = JSON.parse(read('public/data/track_record.json')).matches || [];
+    const flagged = rows.filter((m) => m.noCall != null).length;
+    expect(flagged).toBe(0);
+  });
+});

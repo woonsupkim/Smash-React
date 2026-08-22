@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
-import { pickCorrect, pickFavorite } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite, pickNoCall } from '../utils/deployedPick';
 import { planFrontier, reliability } from '../utils/staking';
 import { nextSlam, prevSlam } from '../utils/slamCalendar';
 import DigestSignup from '../components/DigestSignup';
@@ -213,7 +213,10 @@ export default function Home() {
     fetch(process.env.PUBLIC_URL + '/data/track_record.json')
       .then((r) => { if (!r.ok) throw new Error('bad response'); return r.json(); })
       .then((d) => {
-        const ms = d.matches || [];
+        // The benchmark speaks the call policy: rows the deployed pick would
+        // not have called (pickNoCall) grade in the by-confidence table but
+        // enter no published claim. Same rule the ledger locks under.
+        const ms = (d.matches || []).filter((m) => !pickNoCall(m));
         const n = ms.length;
         const k = ms.filter((m) => pickCorrect(m)).length;
         const odds = ms.filter((m) => m.oddCorrect != null);
@@ -483,7 +486,7 @@ export default function Home() {
                 val: <>{proof.acc}%<span className="home-stat-ci"> ±{proof.ciHalf}</span></>,
                 cap: 'winners called · season',
               },
-              { key: 'n', val: proof.n.toLocaleString(), cap: 'matches graded in public' },
+              { key: 'n', val: proof.n.toLocaleString(), cap: 'calls graded in public' },
             ].filter(Boolean).map((s) => (
               <div className="home-stat" key={s.key}>
                 <span className="home-stat-val">{s.val}</span>

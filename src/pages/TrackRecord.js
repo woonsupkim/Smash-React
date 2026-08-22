@@ -12,7 +12,7 @@ import { countryFlagUrl } from '../components/countryFlags';
 import { playerPhoto } from '../utils/playerPhotos';
 import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
-import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite, pickFavProb, pickNoCall } from '../utils/deployedPick';
 import { cleanEvents } from '../utils/eventName';
 import { slugify } from '../utils/slug';
 import useDocMeta from '../utils/useDocMeta';
@@ -255,10 +255,18 @@ export default function TrackRecord() {
         && (eventF === 'all' || m.event === eventF))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [data, tour, surface, eventF]);
+  // Published stats grade CALLS only - the same policy the ledger locks
+  // under, applied to the whole history (derived on read, no row rewritten).
+  // The match log below still lists every graded match, no-calls tagged, and
+  // the by-confidence table keeps grading them: restraint stays auditable.
+  const filteredCalls = useMemo(() => filtered.filter((m) => !pickNoCall(m)), [filtered]);
 
   const stats = useMemo(() => {
-    const n = filtered.length;
-    const pct = (k) => (n ? Math.round((filtered.filter((m) => m[k]).length / n) * 100) : 0);
+    // Claims grade CALLS; the calibration buckets below deliberately keep
+    // every graded row (coin flips included) - that view exists to audit
+    // the no-call policy, not to flatter it.
+    const n = filteredCalls.length;
+    const pct = (k) => (n ? Math.round((filteredCalls.filter((m) => m[k]).length / n) * 100) : 0);
 
     // Per-surface accuracy (for the whole tour, ignoring the surface filter).
     // Each card shows its BEST engine's number - matching the "Most accurate"
@@ -266,7 +274,7 @@ export default function TrackRecord() {
     // so the figure is never quietly cherry-picked. Smart Blend wins ties.
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
       const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s
-        && (eventF === 'all' || m.event === eventF));
+        && (eventF === 'all' || m.event === eventF) && !pickNoCall(m));
       const accOf = (key) => (list.length ? Math.round((list.filter((m) => m[key]).length / list.length) * 100) : 0);
       const best = [
         { label: 'Smart Blend', acc: accOf('smashCorrect') },
@@ -303,7 +311,7 @@ export default function TrackRecord() {
       .reduce((b, id) => (engines[id] > engines[b] ? id : b), 'smash');
 
     // Bookmaker-favorite baseline: only over matches that actually carry odds.
-    const oddList = filtered.filter((m) => m.oddCorrect != null);
+    const oddList = filteredCalls.filter((m) => m.oddCorrect != null);
     const oddAcc = oddList.length ? Math.round((oddList.filter((m) => m.oddCorrect).length / oddList.length) * 100) : null;
 
     // Head-to-head vs the market on the SAME odds-carrying matches, scored
@@ -320,7 +328,7 @@ export default function TrackRecord() {
     };
 
     // 95% Wilson interval on the headline (deployed calls) accuracy.
-    const smashK = filtered.filter((m) => pickCorrect(m)).length;
+    const smashK = filteredCalls.filter((m) => pickCorrect(m)).length;
     const ci = wilson(smashK, n);
     const ciHalf = Math.round(((ci.hi - ci.lo) / 2) * 100);
 
@@ -329,7 +337,7 @@ export default function TrackRecord() {
     // the right number of sets.
     const scoreline = (() => {
       let total = 0, hits = 0;
-      for (const m of filtered) {
+      for (const m of filteredCalls) {
         if (!m.predScore || !m.score) continue;
         const sets = parseScore(m.score);
         if (!sets.length) continue;
@@ -403,7 +411,7 @@ export default function TrackRecord() {
       perSurface,
       buckets,
     };
-  }, [filtered, data, tour, eventF]);
+  }, [filtered, filteredCalls, data, tour, eventF]);
 
   const isLoading = !data;
   const shown = filtered.slice(0, visible);
@@ -430,8 +438,9 @@ export default function TrackRecord() {
             <h1 className="track-title">Every call, graded</h1>
             <p className="track-sub">
               Every completed {new Date().getFullYear()} tour match between two ranked players, scored
-              against what actually happened. No cherry-picking, no quiet deletions. The misses are
-              in here too, and they count the same.
+              against what actually happened. The stats grade our calls; matches too close to call
+              are in the log below marked NO CALL, still graded, never claimed. No cherry-picking,
+              no quiet deletions. The misses count the same as the wins.
             </p>
             <div className="track-header-meta">
               <Link className="track-method-link" to="/methodology">How it works →</Link>
@@ -854,9 +863,11 @@ export default function TrackRecord() {
                   const favWon = callFav === m.winner;
                   const actualFav = sets.length ? (favWon ? `${wSets}–${lSets}` : `${lSets}–${wSets}`) : null;
                   const scoreHit = m.predScore && actualFav && m.predScore === actualFav;
+                  const rowNoCall = pickNoCall(m);
                   return (
-                    <div className={`track-row${callCorrect ? '' : ' miss'}`} key={m.id}>
+                    <div className={`track-row${callCorrect ? '' : ' miss'}${rowNoCall ? ' nocall' : ''}`} key={m.id}>
                       <div className="track-row-meta">
+                        {rowNoCall && <span className="track-row-nocall">NO CALL</span>}
                         <span className="track-row-surface" style={{ color: (SURFACES[m.surface] || {}).accent }}>
                           {(SURFACES[m.surface] || { label: m.surface }).label}
                         </span>

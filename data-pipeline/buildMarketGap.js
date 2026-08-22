@@ -39,11 +39,17 @@ function marketProbOf(row) {
   return row.favorite === row.p1 ? p1 : 1 - p1;
 }
 
+const CALL_THRESHOLD = require('../src/engineConfig.json').callThreshold || 0.6;
+
 function bandStats(rows, lo, hi) {
   const inBand = [];
   for (const r of rows) {
     const mk = marketProbOf(r);
     if (mk == null || typeof r.favProb !== 'number' || typeof r.correct !== 'boolean') continue;
+    // Calls only - a coin flip under the call threshold is not a claim, so
+    // it cannot be evidence for one. Same rule as src/utils/marketGap.js.
+    const pp = r.pickProbP1 != null ? r.pickProbP1 : r.smashProbP1;
+    if (pp != null && Math.max(pp, 1 - pp) < CALL_THRESHOLD) continue;
     const gap = r.favProb - mk;
     if (gap >= lo && gap < hi) inBand.push({ r, mk });
   }
@@ -81,6 +87,7 @@ function build() {
     measuredAt: new Date().toISOString().slice(0, 10),
     gapFloor: GAP_FLOOR,
     gapCeil: GAP_CEIL,
+    gapCallThreshold: CALL_THRESHOLD,
     band: {
       pricedGraded: priced.length,
       n: band.n,

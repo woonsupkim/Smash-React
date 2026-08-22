@@ -10,6 +10,17 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.2',
+    date: '2026-08-23',
+    type: 'product',
+    title: 'The whole record speaks the call policy',
+    notes: [
+      'EVERY HISTORICAL CLAIM NOW GRADES CALLS ONLY. 4.2.1 stopped the ledger claiming coin flips going forward; this applies the same rule to everything retrospective - the season benchmark, the per-surface cards, the market head-to-head, the Edge board, the weekly recaps, the share cards. The rule is derived when the numbers are computed, from the same stored probabilities, so not one historical row was edited: a match the deployed pick had under 60% is listed in the log marked NO CALL, still graded, never claimed.',
+      'WHAT THAT DOES TO THE NUMBERS, exactly: the season benchmark goes from 66% of 3,370 graded matches to 74% of the 2,137 we would have called, because the 1,233 coin flips underneath landed 52.7% and are no longer claimed. Against the bookmakers on the same called fixtures it is 77% to 77%. The matches-where-we-disagreed record sharpens to 55% against the market\'s 45%. Bigger numbers from a stricter rule, not from hiding anything: the full graded record stays on the page, the by-confidence table keeps grading the coin flips, and the log lists every match.',
+      'WHY NOW AND NOT GRADUALLY: the app has not launched. The forward ledger earns its record one locked call at a time and stays prospective-only, exactly as 4.2.1 said. But a benchmark that described a policy we no longer follow would have greeted every launch-day visitor with a number we would immediately have to explain away. Pre-launch is the one moment this redefinition costs nobody anything, so it happens now, in public, with both numbers shown.',
+    ],
+  },
+  {
     version: '4.2.1',
     date: '2026-08-23',
     type: 'product',

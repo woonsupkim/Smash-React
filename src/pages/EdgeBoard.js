@@ -11,7 +11,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { countryFlagUrl } from '../components/countryFlags';
 import { lastName } from '../utils/names';
 import { cleanEvents } from '../utils/eventName';
-import { pickFavorite, pickFavProb, pickCorrect } from '../utils/deployedPick';
+import { pickFavorite, pickFavProb, pickCorrect, pickNoCall } from '../utils/deployedPick';
 import useDocMeta from '../utils/useDocMeta';
 import './EdgeBoard.css';
 
@@ -49,7 +49,7 @@ export default function EdgeBoard() {
   // (different winners) make the board; agreements carry no edge.
   const forward = useMemo(() => {
     return (preds || [])
-      .filter((p) => p.status === 'pending' && p.lockOdd1 && p.lockOdd2)
+      .filter((p) => p.status === 'pending' && !p.noCall && p.lockOdd1 && p.lockOdd2)
       .filter((p) => tour === 'all' || p.tour === tour)
       .map((p) => {
         const mktP1 = impliedP1(p.lockOdd1, p.lockOdd2);
@@ -64,7 +64,7 @@ export default function EdgeBoard() {
   // Rows where the ledger has both closing odds and a market favorite.
   const oddsRows = useMemo(() => {
     return (data?.matches || [])
-      .filter((m) => m.od1 && m.od2 && m.oddFav && pickFavorite(m))
+      .filter((m) => m.od1 && m.od2 && m.oddFav && pickFavorite(m) && !pickNoCall(m))
       .filter((m) => tour === 'all' || m.tour === tour)
       .map((m) => {
         const ourProbP1 = m.pickProbP1 ?? m.smashProbP1 ?? m.probP1;

@@ -46,6 +46,7 @@ try { require('dotenv').config(); } catch { /* dotenv optional */ }
 
 const fs = require('fs');
 const path = require('path');
+const ENGINE = require('../src/engineConfig.json');
 const Papa = require('papaparse');
 
 const ROOT = path.join(__dirname, '..');
@@ -691,7 +692,12 @@ async function main() {
   const yday = scorecard && scorecard.yesterday ? scorecard.yesterday : null;
   const upsetById = new Map(((scorecard && scorecard.upsetWatch) || []).map((u) => [u.id, u]));
   const matches = (track && track.matches) || [];
-  const graded = matches.filter((m) => m.date && pickCorrect(m) != null);
+  // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
+  // pinned by noCall.test.js). `graded` = the CALLS every claim grades;
+  // gradedAll keeps the full record for anything that audits the policy.
+  const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
+  const gradedAll = matches.filter((m) => m.date && pickCorrect(m) != null);
+  const graded = gradedAll.filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0));
   const preds = (predsDoc && predsDoc.predictions) || [];
 
   let slam = null;

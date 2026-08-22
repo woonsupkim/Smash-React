@@ -38,6 +38,7 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { nextSlam } = require('./lib/slamCalendar');
+const ENGINE = require('../src/engineConfig.json');
 const planSettle = require('./lib/planSettle');
 
 let sharp;
@@ -1661,6 +1662,12 @@ async function run() {
   fs.mkdirSync(OUT, { recursive: true });
   const sc = JSON.parse(fs.readFileSync(path.join(DATA, 'daily_scorecard.json'), 'utf8'));
   const track = JSON.parse(fs.readFileSync(path.join(DATA, 'track_record.json'), 'utf8'));
+  // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
+  // pinned by noCall.test.js): every published claim on a card grades calls.
+  {
+    const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
+    track.matches = (track.matches || []).filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0));
+  }
   const preds = fs.existsSync(path.join(DATA, 'predictions.json'))
     ? JSON.parse(fs.readFileSync(path.join(DATA, 'predictions.json'), 'utf8'))
     : { predictions: [] };
