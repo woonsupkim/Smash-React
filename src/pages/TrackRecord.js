@@ -212,6 +212,35 @@ export default function TrackRecord() {
   const FORWARD_HERO_MIN = 25;
   const forwardHero = forwardAll.n >= FORWARD_HERO_MIN;
 
+  // The ledger by stated confidence: every verified call, bucketed by what we
+  // CLAIMED before play, with what actually landed next to it. All bands are
+  // shown, including the coin flips - a "confident calls" line without the
+  // rest sitting under it would be cherry-picking, and the whole point of
+  // this page is that we do not do that. Unfiltered on purpose: it grades the
+  // same population as the headline record, not whatever the filters show.
+  const confTiers = useMemo(() => {
+    const decided = dedupePreds((predictions?.predictions || []).filter(isForwardEvent))
+      .filter((p) => (p.status === 'won' || p.status === 'lost') && typeof p.favProb === 'number');
+    if (decided.length < FORWARD_HERO_MIN) return null;
+    const bands = [
+      { label: 'Coin flips', lo: 0.5, hi: 0.65 },
+      { label: 'Leans', lo: 0.65, hi: 0.75 },
+      { label: 'Confident', lo: 0.75, hi: 1.01 },
+    ];
+    return bands.map(({ label, lo, hi }) => {
+      const g = decided.filter((p) => p.favProb >= lo && p.favProb < hi);
+      const won = g.filter((p) => p.correct).length;
+      return {
+        label,
+        range: `${Math.round(lo * 100)}–${Math.round(Math.min(hi, 1) * 100)}%`,
+        n: g.length,
+        said: g.length ? g.reduce((s, p) => s + p.favProb, 0) / g.length : null,
+        landed: g.length ? won / g.length : null,
+        wilson: g.length ? wilson(won, g.length) : null,
+      };
+    }).filter((b) => b.n > 0);
+  }, [predictions]);
+
   // Reset pagination whenever the filters change
   useEffect(() => { setVisible(PAGE_SIZE); }, [tour, surface, eventF]);
 
@@ -501,6 +530,38 @@ export default function TrackRecord() {
                 <div className="track-note" style={{ marginTop: '0.6rem' }}>
                   These calls are on the record now. When the matches finish we score them
                   automatically. No hindsight, no edits.
+                </div>
+              )}
+
+              {confTiers && (
+                <div className="track-conf">
+                  <div className="track-section-label" style={{ marginTop: '1rem' }}>
+                    BY STATED CONFIDENCE · what we claimed vs what landed
+                  </div>
+                  <table className="track-conf-table">
+                    <thead>
+                      <tr><th scope="col">Band</th><th scope="col">Calls</th><th scope="col">We said</th><th scope="col">Landed</th></tr>
+                    </thead>
+                    <tbody>
+                      {confTiers.map((b) => (
+                        <tr key={b.label}>
+                          <th scope="row">{b.label} <span className="track-conf-range">{b.range}</span></th>
+                          <td>{b.n}</td>
+                          <td>{Math.round(b.said * 100)}%</td>
+                          <td>
+                            <strong>{Math.round(b.landed * 100)}%</strong>
+                            <span className="track-conf-ci"> ±{Math.round(((b.wilson.hi - b.wilson.lo) / 2) * 100)}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="track-note" style={{ marginTop: '0.4rem' }}>
+                    Every verified call, bucketed by the probability we published before play.
+                    All three rows are the same model on the same ledger - a coin flip we call
+                    55% is supposed to land about 55%, and a confident call is supposed to earn
+                    the label. The ± is a 95% interval; small buckets swing.
+                  </p>
                 </div>
               )}
             </div>

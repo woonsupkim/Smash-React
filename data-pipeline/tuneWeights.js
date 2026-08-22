@@ -133,6 +133,27 @@ for (const tour of ['atp', 'wta']) {
     `acc ${(rawAcc * 100).toFixed(1)}% | LL raw ${rawLL.toFixed(4)} vs per-tour calib ${perTourLL.toFixed(4)} ` +
     `-> shipping ${useCalib ? `a=${a}` : 'no calibration (a=1)'} | training pool ${pool.length} (${prior.length} prior + ${season.length} season) | closing odds: ${marketLine}`
   );
+
+  // 5. Bucketwise honesty, on the same OOF the selection ran on. Log loss is
+  // an aggregate and a single temperature is a global shape, so a model can
+  // pass both while being wrong in one confidence band - stated 90s landing
+  // like 82s is invisible above. This line exists so a SHAPE defect shows up
+  // in the retune PR body the day it appears, with the binomial noise floor
+  // printed next to it so nobody chases a ghost either. (An August 2026 scare
+  // was exactly that: said 90 landed 82 on n=38, z=1.7 - noise.)
+  const calOof = oof.map((r) => ({ p: applyCalib(r.p, a), won: r.won }));
+  const bands = [[0.5, 0.65], [0.65, 0.75], [0.75, 0.85], [0.85, 1.01]];
+  const bandTxt = bands.map(([lo, hi]) => {
+    const g = calOof.map((r) => ({ pf: Math.max(r.p, 1 - r.p), hit: (r.p >= 0.5) === (r.won === 1) }))
+      .filter((r) => r.pf >= lo && r.pf < hi);
+    if (g.length < 20) return `${Math.round(lo * 100)}+: n<20`;
+    const said = g.reduce((s, r) => s + r.pf, 0) / g.length;
+    const hit = g.filter((r) => r.hit).length / g.length;
+    const sigma = Math.sqrt(said * (1 - said) / g.length);
+    const z = (said - hit) / sigma;
+    return `${Math.round(lo * 100)}-${Math.round(Math.min(hi, 1) * 100)}: said ${(said * 100).toFixed(0)} landed ${(hit * 100).toFixed(0)} (n=${g.length}, z=${z.toFixed(1)})`;
+  }).join(' | ');
+  console.log(`${tour} calibration by band (OOF): ${bandTxt}`);
 }
 
 config.tunedAt = new Date().toISOString();
