@@ -241,10 +241,12 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               <span className="stake-best-v pos">{money(analysis.ev)}</span>
               <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
             </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v">{expWinners.toFixed(1)}<span className="stake-best-of"> of {stakedCount}</span></span>
-              <span className="stake-best-l">matches we expect to land</span>
-            </div>
+            {/* "matches we expect to land" used to sit here. It is decorative
+                for someone following the plan - it does not change what they
+                stake or what they can expect back - and it competed with the
+                four numbers that do. The same figure still appears in the
+                sentence below, where it reads as reasoning rather than as a
+                headline metric. */}
             {/* The extremes are not the forecast. On a 40-match spread
                 "everything lands" and "nothing does" both have probabilities
                 with twenty zeros after the point, and leading with -$100 as

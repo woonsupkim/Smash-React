@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
+import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
 import './Parlay.css';
@@ -29,6 +30,33 @@ import './Parlay.css';
 // The budget the receipt below replays yesterday's plan on, matching the
 // StakingPlan default so the number means the same thing on both.
 const PLAN_BUDGET = 100;
+// How many settleable days the "how it has been going" strip replays.
+const HISTORY_DAYS = 10;
+
+// Cumulative profit across the replayed days. Deliberately plain: a zero
+// line, one stroke, and the end point marked. It answers "is this thing
+// going up or down" at a glance, which the P&L distribution below cannot -
+// that chart describes one hypothetical day, this one describes the record.
+function PlanCurve({ values }) {
+  if (!values || values.length < 2) return null;
+  const w = 132, h = 40, pad = 3;
+  const lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+  const span = Math.max(hi - lo, 1e-6);
+  const x = (i) => pad + (i / (values.length - 1)) * (w - pad * 2);
+  const y = (v) => h - pad - ((v - lo) / span) * (h - pad * 2);
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const end = values[values.length - 1];
+  const up = end >= 0;
+  return (
+    <svg className="parlay-curve" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img"
+      aria-label={`Cumulative profit over the last ${values.length} settled days, ending ${up ? 'up' : 'down'}`}>
+      <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeDasharray="3 3" />
+      <polyline points={pts} fill="none" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+        stroke={up ? 'var(--accent-positive, #4caf7d)' : '#ff8f8f'} />
+      <circle cx={x(values.length - 1)} cy={y(end)} r="3" fill={up ? 'var(--accent-positive, #4caf7d)' : '#ff8f8f'} />
+    </svg>
+  );
+}
 
 const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
 // The market's own view of our pick, with the bookmaker's margin divided
@@ -132,47 +160,66 @@ export default function Parlay() {
     return out;
   }, [all]);
 
-  // Yesterday's plan, settled. The follower's first question is not "what is
-  // today's plan" but "does following it work", and the page had no answer:
-  // the digest carried this and the page did not. Same frontier the page
-  // shows, reliability measured only on rows graded BEFORE that day, settled
-  // at the price stamped before play. Wins and losses print identically.
-  const yesterdayPlan = useMemo(() => {
+  // How the recommended plan has actually been doing, day by day.
+  //
+  // The follower's first question is not "what is today's plan" but "does
+  // following it work", and the page had no answer: the digest carried this
+  // and the page did not. So the last settleable days are replayed with the
+  // same frontier the page shows - reliability measured only on rows graded
+  // BEFORE each day, settled at the price stamped before play - and the
+  // result is a cumulative curve plus the total. Losing days print exactly
+  // like winning ones; that is the point of showing it at all.
+  const planHistory = useMemo(() => {
     const rows = (graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1 && typeof m.favProb === 'number');
     if (rows.length < 2) return null;
-    const day = rows.map((m) => String(m.date).slice(0, 10)).sort().pop();
-    const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
-    if (card.length < 2) return null;
-    const bets = card.map((m) => ({
-      key: String(m.id), p: m.favProb,
-      o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
-      won: !!m.correct,
-    }));
-    const before = (graded || []).filter((m) => String(m.date).slice(0, 10) < day);
-    const rel = reliability(before);
-    const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
-    const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
-    if (!plan) return null;
-    const byKey = new Map(bets.map((b) => [b.key, b]));
-    let staked = 0, profit = 0, hits = 0, backed = 0;
-    for (const [key, stake] of Object.entries(plan.singles || {})) {
-      if (!(stake > 0.005)) continue;
-      const b = byKey.get(key); if (!b) continue;
-      backed++; staked += stake;
-      if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+    const days = [...new Set(rows.map((m) => String(m.date).slice(0, 10)))].sort();
+    const out = [];
+    for (const day of days.slice(-HISTORY_DAYS)) {
+      const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
+      if (card.length < 2) continue;
+      const bets = card.map((m) => ({
+        key: String(m.id), p: m.favProb,
+        o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
+        won: !!m.correct,
+      }));
+      const before = rows.filter((m) => String(m.date).slice(0, 10) < day);
+      const rel = reliability(before);
+      const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
+      const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+      if (!plan) continue;
+      const byKey = new Map(bets.map((b) => [b.key, b]));
+      let staked = 0, profit = 0, hits = 0, backed = 0;
+      for (const [key, stake] of Object.entries(plan.singles || {})) {
+        if (!(stake > 0.005)) continue;
+        const b = byKey.get(key); if (!b) continue;
+        backed++; staked += stake;
+        if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+      }
+      let parlayWon = null;
+      if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => byKey.has(k))) {
+        staked += plan.parlayStake;
+        parlayWon = plan.parlayLegs.every((k) => byKey.get(k).won);
+        const o = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).o, 1);
+        profit += parlayWon ? plan.parlayStake * (o - 1) : -plan.parlayStake;
+      }
+      if (staked < 0.01) continue;
+      out.push({ day, staked, profit, hits, backed, parlayWon });
     }
-    let parlayWon = null;
-    if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => byKey.has(k))) {
-      staked += plan.parlayStake;
-      parlayWon = plan.parlayLegs.every((k) => byKey.get(k).won);
-      const o = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).o, 1);
-      profit += parlayWon ? plan.parlayStake * (o - 1) : -plan.parlayStake;
-    }
-    if (staked < 0.01) return null;
-    return { day, label: plan.label, staked, profit, hits, backed, parlayWon };
+    if (!out.length) return null;
+    let run = 0;
+    const curve = out.map((d) => { run += d.profit; return run; });
+    const last = out[out.length - 1];
+    return {
+      days: out,
+      curve,
+      total: run,
+      staked: out.reduce((t, d) => t + d.staked, 0),
+      up: out.filter((d) => d.profit > 0).length,
+      last,
+    };
   }, [graded]);
 
-  // A suggestion narrows the card down to its own legs: everything not in the
+  // A suggestion narrows the card down to its own legs  // A suggestion narrows the card down to its own legs: everything not in the
   // set gets dropped.
   const applySuggestion = (keys) => {
     const keep = new Set(keys);
@@ -191,16 +238,21 @@ export default function Parlay() {
         public afterwards, wins and misses alike.
       </p>
 
-      {yesterdayPlan && (
-        <div className={`parlay-receipt${yesterdayPlan.profit >= 0 ? ' pos' : ' neg'}`}>
-          <span className="parlay-receipt-cap">Yesterday, following this plan</span>
-          <span className="parlay-receipt-val">
-            {yesterdayPlan.profit >= 0 ? '+' : '-'}${Math.abs(yesterdayPlan.profit).toFixed(2)}
-          </span>
-          <span className="parlay-receipt-sub">
-            on ${yesterdayPlan.staked.toFixed(2)} staked · {yesterdayPlan.hits} of {yesterdayPlan.backed} landed
-            {yesterdayPlan.parlayWon != null ? `, parlay ${yesterdayPlan.parlayWon ? 'hit' : 'missed'}` : ''}
-          </span>
+      {planHistory && (
+        <div className={`parlay-receipt${planHistory.total >= 0 ? ' pos' : ' neg'}`}>
+          <div className="parlay-receipt-main">
+            <span className="parlay-receipt-cap">
+              Following this plan, last {planHistory.days.length} {planHistory.days.length === 1 ? 'day' : 'days'}
+            </span>
+            <span className="parlay-receipt-val">
+              {planHistory.total >= 0 ? '+' : '-'}${Math.abs(planHistory.total).toFixed(2)}
+            </span>
+            <span className="parlay-receipt-sub">
+              on ${planHistory.staked.toFixed(2)} staked · {planHistory.up} of {planHistory.days.length} days up
+              {planHistory.last ? ` · yesterday ${planHistory.last.profit >= 0 ? '+' : '-'}$${Math.abs(planHistory.last.profit).toFixed(2)}` : ''}
+            </span>
+          </div>
+          <PlanCurve values={planHistory.curve} />
         </div>
       )}
 
@@ -234,6 +286,16 @@ export default function Parlay() {
               already names every leg, so it took over the dropping too. */}
           {legs.length > 0 && (
             <StakingPlan legs={legs} graded={graded} onDrop={(l) => toggle(legKey(l))} />
+          )}
+
+          {/* The conversion point that actually makes sense on this page: the
+              plan changes every morning and is worth nothing to someone who
+              forgets to come back. Placed under the plan, not above it, so
+              the page answers the question before it asks for anything. */}
+          {legs.length > 0 && (
+            <div className="parlay-signup">
+              <DigestSignup variant="band" />
+            </div>
           )}
 
           {suggestions.length > 0 && (

@@ -106,7 +106,8 @@
    Losses print at the same size as wins - that is the point of showing it. */
 .parlay-receipt {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem 0.9rem;
   padding: 0.7rem 1rem;
@@ -128,3 +129,21 @@
 .parlay-receipt.pos .parlay-receipt-val { color: var(--accent-positive, #4caf7d); }
 .parlay-receipt.neg .parlay-receipt-val { color: #ff8f8f; }
 .parlay-receipt-sub { font-size: 0.82rem; color: var(--text-2, #ced2d8); }
+
+/* The receipt carries a cumulative curve now, so the text column and the
+   sparkline sit as two blocks rather than one baseline-aligned run. */
+.parlay-receipt-main {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  min-width: 0;
+}
+.parlay-curve { flex: none; }
+
+/* Signup band on the parlay page: the plan is a daily thing, so this is the
+   page's honest ask. Spaced away from the plan table above it. */
+.parlay-signup { margin-top: 1.75rem; }
+/* DigestSignup renders nothing when the cloud is not configured; without
+   this the wrapper still contributes its margin as dead space. */
+.parlay-signup:empty { display: none; margin: 0; }
