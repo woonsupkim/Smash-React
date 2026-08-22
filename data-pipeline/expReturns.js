@@ -142,3 +142,33 @@ setTimeout(() => {
   console.log('captured per match (a small pre-start odds poll would do it), and');
   console.log('none of the ROI above can be attributed to beating the line early.');
 }, 4000);
+
+// ── 4. Closing-line value, once the snapshot log has data ──────────────────
+setTimeout(() => {
+  const fs = require('fs');
+  const snapPath = path.join(__dirname, 'output', 'odds_snapshots.json');
+  console.log('\nClosing-line value (fetchOddsSnapshots.js log):');
+  if (!fs.existsSync(snapPath)) { console.log('  no snapshot log yet - run the fetcher a few tournament days first.'); return; }
+  const store = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+  const key = (a, b, d) => [String(a), String(b)].sort().join('_') + '@' + String(d).slice(0, 10);
+  const byKey = new Map(Object.entries(store));
+  const graded = preds.filter((m) => (m.status === 'won' || m.status === 'lost') && m.lockOdd1 > 1);
+  const strip = (o1, o2, isP1) => { const q1 = 1 / o1, q2 = 1 / o2; const p1 = q1 / (q1 + q2); return isP1 ? p1 : 1 - p1; };
+  const clvs = [];
+  let moved = 0, tracked = 0;
+  for (const m of graded) {
+    const rec = byKey.get(key(m.p1, m.p2, m.date));
+    if (!rec || !rec.snaps.length) continue;
+    tracked++;
+    const last = rec.snaps[rec.snaps.length - 1];
+    if (Math.abs(last.o1 - rec.lock.o1) > 1e-9 || Math.abs(last.o2 - rec.lock.o2) > 1e-9) moved++;
+    clvs.push(strip(last.o1, last.o2, m.favorite === m.p1) - strip(rec.lock.o1, rec.lock.o2, m.favorite === m.p1));
+  }
+  if (clvs.length < 10) { console.log(`  only ${clvs.length} graded call(s) have snapshots - not enough to read yet (${moved} moved).`); return; }
+  const mean = clvs.reduce((s, v) => s + v, 0) / clvs.length;
+  const se = Math.sqrt(clvs.reduce((s, v) => s + (v - mean) ** 2, 0) / (clvs.length - 1) / clvs.length);
+  console.log(`  n=${clvs.length} graded with snapshots | line ever moved on ${moved} (${(100 * moved / tracked).toFixed(0)}%)`);
+  console.log(`  mean CLV ${(100 * mean).toFixed(2)}pts | t vs zero ${(mean / se).toFixed(2)} | positive on ${(100 * clvs.filter((v) => v > 0).length / clvs.length).toFixed(0)}%`);
+  console.log('  (CLV > 0 = the market moved toward our pick after we locked. If the moved-share');
+  console.log('   stays ~0, this provider has static odds and CLV needs a second source.)');
+}, 6000);

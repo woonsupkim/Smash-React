@@ -1,0 +1,58 @@
+name: Odds snapshots (closing-line value)
+
+# Two light afternoon readings of the odds on locked, still-pending calls,
+# closer to first serve than the 09:00 refresh gets. Exists so closing-line
+# value - did the market move toward our pick after we locked? - becomes
+# measurable at all: the graded record keeps only the lock price.
+#
+# Cheap and self-limiting: ~6 API requests per run when calls are pending,
+# ZERO when nothing is locked and pending (the fetcher exits before any
+# request), so an all-year daily cron costs nothing outside tournament
+# windows. The fetcher is also budget-guarded like every other one.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 15 * * *'
+    - cron: '0 21 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: odds-snapshots
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Snapshot odds
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: npm run fetch-odds-snapshots
+
+      - name: Commit the log if it moved
+        run: |
+          git config user.name "smash-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data-pipeline/output/odds_snapshots.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Odds snapshots"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push attempt $attempt failed; retrying..."
+            sleep 15
+          done
+          echo "Could not push after 3 attempts" >&2
+          exit 1
