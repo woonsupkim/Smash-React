@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T05:28:13.894Z",
+  "generatedAt": "2026-08-22T09:20:15.686Z",
   "seasonN": 3370,
   "lastStreak": {
     "key": "wta|grass",
@@ -7,11 +7,11 @@
   },
   "thread": [
     "Today at the Cincinnati: 4 calls, every one locked before play. 68% of winners called before play (188 of 278 verified, no take-backs). Picks below.",
-    "1/4 Flavio Cobolli over Arthur Fils at 54% on hard. https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987",
-    "2/4 Iga Swiatek over Jessica Pegula at 64% on hard. https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426",
-    "3/4 Frances Tiafoe over Brandon Nakashima at 55% on hard. https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984",
-    "4/4 Cori Gauff over Sara Bejlek at 98% on hard. High confidence. https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418",
-    "If every call hits, $10 at fair odds returns $54. Not betting advice, just the math on our own confidence.",
+    "1/4 Flavio Cobolli over Arthur Fils at 56% on hard. https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987",
+    "2/4 Iga Swiatek over Jessica Pegula at 63% on hard. https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426",
+    "3/4 Frances Tiafoe over Brandon Nakashima at 56% on hard. https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984",
+    "4/4 Cori Gauff over Sara Bejlek at 76% on hard. High confidence. https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418",
+    "If every call hits, $10 at fair odds returns $66. Not betting advice, just the math on our own confidence.",
     "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
   ],
   "assets": [
@@ -36,32 +36,32 @@
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Flavio Cobolli over Arthur Fils at 54%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987 #tennis #atp #wta #tennisprediction",
-      "alt": " Flavio Cobolli over Arthur Fils at 54%, Cincinnati (hard)."
+      "caption": " Flavio Cobolli over Arthur Fils at 56%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987 #tennis #atp #wta #tennisprediction",
+      "alt": " Flavio Cobolli over Arthur Fils at 56%, Cincinnati (hard)."
     },
     {
       "file": "match-2.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Iga Swiatek over Jessica Pegula at 64%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426 #tennis #atp #wta #tennisprediction",
-      "alt": " Iga Swiatek over Jessica Pegula at 64%, Cincinnati (hard)."
+      "caption": " Iga Swiatek over Jessica Pegula at 63%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426 #tennis #atp #wta #tennisprediction",
+      "alt": " Iga Swiatek over Jessica Pegula at 63%, Cincinnati (hard)."
     },
     {
       "file": "match-3.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " Frances Tiafoe over Brandon Nakashima at 55%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984 #tennis #atp #wta #tennisprediction",
-      "alt": " Frances Tiafoe over Brandon Nakashima at 55%, Cincinnati (hard)."
+      "caption": " Frances Tiafoe over Brandon Nakashima at 56%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984 #tennis #atp #wta #tennisprediction",
+      "alt": " Frances Tiafoe over Brandon Nakashima at 56%, Cincinnati (hard)."
     },
     {
       "file": "match-4.png",
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " High confidence: Cori Gauff over Sara Bejlek at 98%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Cori Gauff over Sara Bejlek at 98%, Cincinnati (hard)."
+      "caption": " High confidence: Cori Gauff over Sara Bejlek at 76%, Cincinnati (hard). Full breakdown: https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Cori Gauff over Sara Bejlek at 76%, Cincinnati (hard)."
     },
     {
       "file": "rivalry.png",
@@ -76,8 +76,8 @@
       "type": "carousel-closer",
       "format": "square",
       "category": "daily",
-      "caption": "If every call today hits, $10 at fair odds returns $54. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "alt": "If every call today hits, $10 at fair odds returns $54."
+      "caption": "If every call today hits, $10 at fair odds returns $66. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "alt": "If every call today hits, $10 at fair odds returns $66."
     },
     {
       "file": "slate-story.png",
@@ -100,48 +100,24 @@
       "type": "tale-of-the-tape",
       "format": "square",
       "category": "daily",
-      "caption": "Tale of the tape: Swiatek vs Pegula at the Cincinnati. Rank, form, career head-to-head, and our call. https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426 #tennis #atp #wta #tennisprediction",
+      "caption": "Tale of the tape: Swiatek vs Pegula at the Cincinnati. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426 #tennis #atp #wta #tennisprediction",
       "alt": "Tale of the tape stat comparison for Iga Swiatek vs Jessica Pegula."
-    },
-    {
-      "file": "called-1.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Cori Gauff over Marta Kostyuk at 73%, locked before play. Final: Cori Gauff won 6-2 6-2. Receipts: https://smash-react.vercel.app/match/marta-kostyuk-vs-cori-gauff-182368 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 73% call on Cori Gauff, graded correct."
-    },
-    {
-      "file": "called-2.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Arthur Fils over Thiago Agustin Tirante at 65%, locked before play. Final: Arthur Fils won 6-3 6-2. Receipts: https://smash-react.vercel.app/match/arthur-fils-vs-thiago-agustin-tirante-181910 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 65% call on Arthur Fils, graded correct."
-    },
-    {
-      "file": "called-3.png",
-      "type": "called-it",
-      "format": "square",
-      "category": "daily",
-      "caption": "We called it: Flavio Cobolli over Tommy Paul at 52%, locked before play. Final: Flavio Cobolli won 2-6 6-3 6-4. Receipts: https://smash-react.vercel.app/match/flavio-cobolli-vs-tommy-paul-181911 #tennis #atp #wta #tennisprediction",
-      "alt": "Ticket-stub receipt: our 52% call on Flavio Cobolli, graded correct."
     },
     {
       "file": "title-odds-atp.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 49%, Alcaraz 24%, Zverev 7%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 49%, Alcaraz 24%, Zverev 7%."
+      "caption": "US Open ATP title odds today: Sinner 49%, Alcaraz 24%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 49%, Alcaraz 24%, Zverev 9%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Sabalenka 79%, Rybakina 16%, Swiatek 4%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Sabalenka 79%, Rybakina 16%, Swiatek 4%."
+      "caption": "US Open WTA title odds today: Sabalenka 26%, Rybakina 22%, Swiatek 20%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Sabalenka 26%, Rybakina 22%, Swiatek 20%."
     },
     {
       "file": "results.png",
@@ -192,14 +168,6 @@
       "alt": "The week in calls: 37 of 54 winners called, 1 wins over the bookies."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
-      "format": "square",
-      "category": "moments",
-      "caption": "3,250 matches graded in public - season benchmark 66%, zero deletions. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "3,250 matches graded in public - season benchmark 66%, zero deletions."
-    },
-    {
       "file": "autopsy.png",
       "type": "upset-autopsy",
       "format": "square",
@@ -212,8 +180,8 @@
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $1 test: $1 on every one of the 239 matches where we and the betting market picked different winners. Our picks: +$39. The market's own favorites: -$45. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 239 disagreements."
+      "caption": "The $1 test: $1 on every one of the 224 matches where we and the betting market picked different winners. Our picks: +$34. The market's own favorites: -$42. Hypothetical, settled at closing odds, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 224 disagreements."
     },
     {
       "file": "edge-split.png",
@@ -228,7 +196,7 @@
       "type": "edge-forward",
       "format": "square",
       "category": "edge",
-      "caption": "Locked before play: we're backing Flavio Cobolli at 54% while the market has them at 29%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "caption": "Locked before play: we're backing Flavio Cobolli at 56% while the market has them at 29%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
       "alt": "Forward edge card: our underdog call on Flavio Cobolli, locked with the market price attached."
     },
     {
@@ -316,8 +284,8 @@
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1728 matches this season. ATP 64% · WTA 66% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1728 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1730 matches this season. ATP 64% · WTA 66% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1730 matches this season."
     },
     {
       "file": "hype-favorites-atp.png",

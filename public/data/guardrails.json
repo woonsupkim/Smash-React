@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T05:27:47.518Z",
+  "generatedAt": "2026-08-22T09:19:44.962Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -12,18 +12,18 @@
       "n": 457,
       "seasonAcc": 67,
       "recentN": 40,
-      "recentAcc": 55,
+      "recentAcc": 57,
       "rankRecentAcc": 57,
       "recentEngines": {
-        "smash": 55,
+        "smash": 57,
         "sim": 57,
-        "elo": 65,
+        "elo": 63,
         "rank": 57,
-        "upset": 80
+        "upset": 83
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 80
+        "acc": 83
       },
       "reasons": []
     },
@@ -43,7 +43,7 @@
         "sim": 63,
         "elo": 60,
         "rank": 63,
-        "upset": 63
+        "upset": 60
       },
       "bestRecent": {
         "engine": "smash",
@@ -64,10 +64,10 @@
       "rankRecentAcc": 78,
       "recentEngines": {
         "smash": 78,
-        "sim": 78,
+        "sim": 75,
         "elo": 78,
         "rank": 78,
-        "upset": 78
+        "upset": 75
       },
       "bestRecent": {
         "engine": "smash",
@@ -79,23 +79,23 @@
       "tour": "wta",
       "surface": "hard",
       "label": "WTA hard",
-      "engine": "rank",
+      "engine": "smash",
       "status": "ok",
       "n": 426,
-      "seasonAcc": 73,
+      "seasonAcc": 71,
       "recentN": 40,
-      "recentAcc": 83,
-      "rankRecentAcc": 83,
+      "recentAcc": 80,
+      "rankRecentAcc": 80,
       "recentEngines": {
         "smash": 80,
         "sim": 68,
-        "elo": 78,
-        "rank": 83,
+        "elo": 73,
+        "rank": 80,
         "upset": 65
       },
       "bestRecent": {
-        "engine": "rank",
-        "acc": 83
+        "engine": "smash",
+        "acc": 80
       },
       "reasons": []
     },
@@ -106,16 +106,16 @@
       "engine": "smash",
       "status": "ok",
       "n": 261,
-      "seasonAcc": 67,
+      "seasonAcc": 68,
       "recentN": 40,
-      "recentAcc": 70,
+      "recentAcc": 73,
       "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 70,
-        "sim": 55,
+        "smash": 73,
+        "sim": 57,
         "elo": 70,
         "rank": 75,
-        "upset": 55
+        "upset": 63
       },
       "bestRecent": {
         "engine": "rank",
@@ -130,19 +130,19 @@
       "engine": "smash",
       "status": "ok",
       "n": 90,
-      "seasonAcc": 73,
+      "seasonAcc": 72,
       "recentN": 40,
-      "recentAcc": 78,
+      "recentAcc": 75,
       "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 78,
+        "smash": 75,
         "sim": 73,
         "elo": 78,
         "rank": 75,
         "upset": 73
       },
       "bestRecent": {
-        "engine": "smash",
+        "engine": "elo",
         "acc": 78
       },
       "reasons": []

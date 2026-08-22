@@ -4,15 +4,15 @@
   "gapFloor": 0.1,
   "gapCeil": 0.2,
   "band": {
-    "pricedGraded": 1654,
-    "n": 283,
-    "hitRate": 0.5583,
-    "marketImplied": 0.448,
-    "stated": 0.597
+    "pricedGraded": 1650,
+    "n": 287,
+    "hitRate": 0.5226,
+    "marketImplied": 0.447,
+    "stated": 0.596
   },
   "beyondCeil": {
-    "n": 230,
-    "hitRate": 0.4217,
-    "stated": 0.6252
+    "n": 231,
+    "hitRate": 0.4502,
+    "stated": 0.6277
   }
 }
