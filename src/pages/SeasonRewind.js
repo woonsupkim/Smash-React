@@ -84,7 +84,7 @@ export default function SeasonRewind() {
             <div className="rewind-hero-val">{pct(H.odds.us, H.odds.n)}% <span className="rewind-vs">vs</span> {pct(H.odds.market, H.odds.n)}%</div>
             <div className="rewind-hero-label">US VS THE BOOKIES</div>
             <div className="rewind-hero-sub">
-              on {H.odds.n.toLocaleString()} matches with closing odds
+              on {H.odds.n.toLocaleString()} matches with a market price
               {H.odds.disagreements ? ` · splits went ${H.odds.usOnSplits}-${H.odds.disagreements - H.odds.usOnSplits} our way` : ''}
             </div>
           </div>

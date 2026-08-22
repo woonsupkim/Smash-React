@@ -164,8 +164,15 @@ export default function Home() {
   // Does the graded split record still support the headline? null while
   // loading or below the sample floor, in which case the claim stands as
   // written rather than flip-flopping on thin evidence.
+  //
+  // The test is RETURN, not hit rate. On the matches where we and the
+  // bookmakers back different players we land about as often as they do -
+  // that race is level and the literature says it stays level from public
+  // pre-match features. What differs is the price: our side pays when it
+  // lands. Gating the headline on accuracy made the page claim something
+  // the data does not support while ignoring the thing it does.
   const beatsMarket = proof.state === 'ready' && proof.edge
-    ? proof.edge.usAcc > proof.edge.mktAcc
+    ? proof.edge.usNet > proof.edge.mktNet
     : null;
 
   const upsetById = useMemo(
@@ -230,7 +237,7 @@ export default function Home() {
         // market proves nothing, so the splits are the only honest test of
         // whether the model adds anything - and the flat-stake payout is
         // what that difference is worth. Same math as EdgeBoard; keep in
-        // step. (Not betting advice: it settles at closing odds, after the
+        // step. (Not betting advice: it settles at the locked price, after the
         // fact, and it is on the record either way.)
         const splits = odds.filter((m) => m.oddFav && pickFavorite(m) !== m.oddFav && m.od1 > 1 && m.od2 > 1);
         let usReturn = 0, mktReturn = 0;
@@ -431,17 +438,18 @@ export default function Home() {
           <h1 className="main-title">
             {beatsMarket === false
               ? <>Every Call,<br />Graded in Public</>
-              : <>We Beat the<br />Bookmakers</>}
+              : <>We Beat the<br />Market on Price</>}
           </h1>
           <p className="sub-title">
             Every ATP and WTA match gets a call locked before play and graded in
             public after, wins and misses alike.
             {beatsMarket === false
-              ? " We are behind the betting favorite on the matches where we split from it, and we are showing you that too."
-              : ' When we split from the betting favorite, our pick lands more often than theirs'}
-            {beatsMarket !== false && proof.state === 'ready' && proof.edge ? ` (${proof.edge.usAcc}% against their ${proof.edge.mktAcc}%)` : ''}
-            {beatsMarket === false ? '' : '.'}
-            {' '}Today&apos;s card is live below, priced and ready to stack.
+              ? ' On the matches where we split from the betting favorite, backing our side has not paid better than backing theirs, and we are showing you that too.'
+              : ' We pick winners about as often as the bookmakers do. The difference is the price'}
+            {beatsMarket !== false && proof.state === 'ready' && proof.edge
+              ? `: on the ${proof.edge.n} matches where we split from the betting favorite, a flat $1 on our side returned ${proof.edge.usNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.usNet)} where theirs returned ${proof.edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.mktNet)}.`
+              : ''}
+            {' '}Today&apos;s card is live below, with a staking plan you can follow.
           </p>
           <div className="hero-ctas">
             <Button as={Link} to="/today" className="cta-primary">
@@ -460,11 +468,26 @@ export default function Home() {
         {proof.state === 'ready' && proof.n > 0 && (
           <Link to="/track-record" className="home-stats">
             {[
-              // 1. The thesis, when we have prices to compare against.
+              // 1. The thesis, and the thesis is RETURN. This slot used to
+              //    lead with hit rate against the market, which is the claim
+              //    the data does not support (that race is level) while the
+              //    one it does support sat further down the page.
+              proof.edge && {
+                key: 'roi',
+                val: (
+                  <>
+                    {proof.edge.usNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.usNet / proof.edge.n) * 100))}%
+                    <span className="home-stat-vs"> vs {proof.edge.mktNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.mktNet / proof.edge.n) * 100))}%</span>
+                  </>
+                ),
+                cap: `return where we split from the market · ${proof.edge.n} matches`,
+              },
+              // 2. Hit rate, kept as context rather than as the claim: level
+              //    with the market is the honest reading of this number.
               proof.marketAcc != null && {
                 key: 'mkt',
                 val: <>{proof.smashOnOdds}%<span className="home-stat-vs"> vs {proof.marketAcc}%</span></>,
-                cap: 'us vs the bookmakers',
+                cap: 'winners called, same matches as the market',
               },
               // 2. Locked before play is the number that has moved most, so it
               //    carries its own recent form instead of a bare season figure.
@@ -473,8 +496,14 @@ export default function Home() {
                 val: (
                   <>
                     {forward.acc}%
-                    {forward.recentAcc != null && forward.recentAcc > forward.acc && (
-                      <span className="home-stat-trend"> ▲{forward.recentAcc}% last {forward.recentN}</span>
+                    {/* Recent form is shown WHETHER OR NOT it flatters: it
+                        used to appear only when it beat the season figure,
+                        which is a stat rail that goes quiet exactly when the
+                        reader most needs it. */}
+                    {forward.recentAcc != null && (
+                      <span className={`home-stat-trend${forward.recentAcc >= forward.acc ? '' : ' down'}`}>
+                        {forward.recentAcc >= forward.acc ? ' ▲' : ' ▼'}{forward.recentAcc}% last {forward.recentN}
+                      </span>
                     )}
                   </>
                 ),
@@ -501,13 +530,13 @@ export default function Home() {
         )}
 
         {/* ── The Edge, directly under the numbers it explains ───────────
-            The stat rail claims we beat the bookmakers; this is the working.
+            The stat rail claims we beat the market on price; this is the working.
             Only the matches where our pick and the bookmakers' favorite were
             different people, because agreeing with the market proves nothing. */}
         {proof.state === 'ready' && proof.edge && (
           <section className="home-edge">
             <div className="home-section-head">
-              <h2 className="home-section-title">When we disagree with the bookmakers</h2>
+              <h2 className="home-section-title">What our disagreements are worth</h2>
               <span className="home-section-sub">{proof.edge.n} graded splits this season</span>
             </div>
             <Link to="/edge" className="home-edge-card">
@@ -534,7 +563,7 @@ export default function Home() {
                     {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
                   </strong> backing theirs.
                 </p>
-                <span className="home-edge-note">Settled at closing odds, every split graded. Not betting advice.</span>
+                <span className="home-edge-note">Settled at the price we stamped before play, every split graded. Not betting advice.</span>
               </div>
               <span className="home-nav-go">See every split →</span>
             </Link>
@@ -681,7 +710,7 @@ export default function Home() {
                 ) : (
                   <>
                     <div className="home-plan-sub">
-                      how the builder would put ${PLAN_BUDGET} on today&apos;s {plan.n} priced calls
+                      how the builder would stake a ${PLAN_BUDGET} budget on today&apos;s {plan.n} priced calls
                     </div>
                     <div className="home-plan-out">
                       <span className="home-plan-ev">

@@ -149,3 +149,8 @@
   .edge-hero { grid-template-columns: 1fr; gap: 0.75rem; }
   .edge-hero-vs { border: none; padding: 0; }
 }
+
+/* The $1 test leads the page now: the hit-rate hero below is context for it,
+   not the claim. Same panel treatment, more prominence. */
+.edge-money.edge-money-lead { margin-bottom: 1rem; }
+.edge-money.edge-money-lead .edge-money-cell strong { font-size: 1.5rem; }

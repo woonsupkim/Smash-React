@@ -227,7 +227,7 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                     {p.metrics.pProfit != null ? `${pct(p.metrics.pProfit)} to win` : 'chance not available'}
                     {' · '}{money(p.metrics.ev)} expected
                   </span>
-                  <span className="stake-best-opt-k">{composition(p)}</span>
+                  <span className="stake-best-opt-k">{composition(p)} · stakes {money(p.metrics.staked)}</span>
                 </button>
               ))}
             </div>
@@ -241,10 +241,12 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               <span className="stake-best-v pos">{money(analysis.ev)}</span>
               <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
             </div>
-            <div className="stake-best-metric">
-              <span className="stake-best-v">{expWinners.toFixed(1)}<span className="stake-best-of"> of {stakedCount}</span></span>
-              <span className="stake-best-l">matches we expect to land</span>
-            </div>
+            {/* "matches we expect to land" used to sit here. It is decorative
+                for someone following the plan - it does not change what they
+                stake or what they can expect back - and it competed with the
+                four numbers that do. The same figure still appears in the
+                sentence below, where it reads as reasoning rather than as a
+                headline metric. */}
             {/* The extremes are not the forecast. On a 40-match spread
                 "everything lands" and "nothing does" both have probabilities
                 with twenty zeros after the point, and leading with -$100 as
@@ -287,9 +289,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}. We
               expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
               {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
+              {mode === 'budget' && rec?.id === 'edge' && analysis.staked < (Number(budget) || 0) - 0.5
+                ? ` The other ${money((Number(budget) || 0) - analysis.staked)} stays in your pocket - that is part of the plan, not a leftover.`
+                : ''}
             </strong>{' '}
-            That is the test every plan here passes, and it is a whole-plan test: spread evenly, it
-            falls on the average, so a match priced against us can be carried by stronger ones.
+            {mode === 'budget' && rec?.id === 'edge'
+              ? 'This plan only funds calls that beat their price, sized by how much they beat it, with one small parlay when a pair earns it. Backtested over 94 tournament days it returned +19.7% on money staked with a worst day of -$32 per $100 budget; the whole-card plans below stake more for thinner returns.'
+              : 'That is the test every plan here passes, and it is a whole-plan test: spread evenly, it falls on the average, so a match priced against us can be carried by stronger ones.'}
             {' '}It is an expectation, not a floor. A plan can be worth making and still lose more
             often than it wins, which is why the chance of finishing ahead sits right beside it.
             {rel.trusted && (

@@ -29,16 +29,27 @@ describe('planFrontier', () => {
     }
   });
 
-  it('spends the whole budget on each plan', () => {
+  it('whole-card plans spend the budget; the edge plan spends what the card deserves', () => {
+    // The contract changed on tournament evidence (expPlanPolicies.js, 94
+    // deploy-tier days): forcing the full budget onto every plan was the
+    // 6%-ROI coin-flip experience; the edge plan stakes quarter-Kelly on the
+    // +EV calls and keeping the rest IS the recommendation.
     for (const p of planFrontier(slate, 250).plans) {
-      expect(p.metrics.staked).toBeCloseTo(250, 6);
+      if (p.id === 'edge') {
+        expect(p.metrics.staked).toBeGreaterThan(0);
+        expect(p.metrics.staked).toBeLessThanOrEqual(250 + 1e-6);
+      } else {
+        expect(p.metrics.staked).toBeCloseTo(250, 6);
+      }
     }
   });
 
-  it('leads with the spread, and the spread is never a lone bet', () => {
-    const { plans } = planFrontier(slate, 100);
-    expect(plans[0].id).toBe('spread');
-    expect(plans[0].funded).toBeGreaterThan(1);
+  it('leads with the edge plan whenever it stakes; the spread stays on the menu', () => {
+    const { plans, recommendedId } = planFrontier(slate, 100);
+    expect(recommendedId).toBe('edge');
+    const spread = plans.find((p) => p.id === 'spread');
+    expect(spread).toBeTruthy();
+    expect(spread.funded).toBeGreaterThan(1);
   });
 
   it('carries a match that is -EV on its own when the portfolio still covers', () => {
@@ -65,11 +76,18 @@ describe('planFrontier', () => {
     expect(plans.some((p) => p.parlayLegs.includes('x'))).toBe(true);
   });
 
-  it('still offers the one sensible plan on a single-match card', () => {
-    // No spread is possible with one match, but "back it" is still the answer.
-    const { plans } = planFrontier([bet('a', 0.8, 1.5)], 100);
-    expect(plans.length).toBe(1);
-    expect(plans[0].metrics.staked).toBeCloseTo(100, 6);
+  it('still offers sensible plans on a single-match card', () => {
+    // No spread is possible with one match. The edge plan sizes the single
+    // +EV bet by Kelly; the whole-card option still offers backing it with
+    // the full budget for whoever wants full allocation.
+    const { plans, recommendedId } = planFrontier([bet('a', 0.8, 1.5)], 100);
+    expect(plans.length).toBeGreaterThan(0);
+    expect(recommendedId).toBe('edge');
+    const edge = plans.find((p) => p.id === 'edge');
+    expect(edge.metrics.staked).toBeGreaterThan(0);
+    expect(edge.metrics.staked).toBeLessThan(100);
+    const whole = plans.find((p) => p.id !== 'edge');
+    if (whole) expect(whole.metrics.staked).toBeCloseTo(100, 6);
   });
 
   it('reports no plan rather than a bad one when nothing covers the stake', () => {
@@ -86,7 +104,7 @@ describe('planFrontier', () => {
 
   it('a reliability haircut can empty the menu', () => {
     const bets = [bet('a', 0.7, 1.5)]; // 1.05 as stated, 0.90 at lambda 0.5
-    expect(planFrontier(bets, 100, { lambda: 1 }).plans.length).toBe(1);
+    expect(planFrontier(bets, 100, { lambda: 1 }).plans.length).toBeGreaterThan(0);
     expect(planFrontier(bets, 100, { lambda: 0.5 }).plans).toEqual([]);
   });
 
@@ -110,12 +128,18 @@ describe('no plan abandons matches on the card', () => {
     return { key: `m${i}`, p, o };
   });
 
-  it('every offered plan backs every priced match', () => {
+  it('every WHOLE-CARD plan backs every priced match; the edge plan is selective by design', () => {
     const f = planFrontier(card, 100, { lambda: 1 });
     expect(f.plans.length).toBeGreaterThan(0);
     const negative = card.filter((b) => b.p * b.o - 1 < 0);
     expect(negative.length).toBeGreaterThan(0);      // the fixture must bite
     for (const plan of f.plans) {
+      if (plan.id === 'edge') {
+        // The edge plan funds only +EV calls - that selectivity is the whole
+        // point (it is the tournament winner, +19.7% vs the spread's +5.1%).
+        for (const b of negative) expect(plan.singles[b.key] || 0).toBe(0);
+        continue;
+      }
       for (const b of card) {
         // eslint-disable-next-line jest/valid-expect
         expect(plan.singles[b.key], `${plan.id} dropped ${b.key}`).toBeGreaterThan(0);
