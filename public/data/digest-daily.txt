@@ -1,44 +1,46 @@
-SMASH DAILY - Friday, August 21
+SMASH DAILY - Saturday, August 22
 
-2 from 4 yesterday. Half right, which means half wrong, and both halves are below. 4 more are locked for today at Cincinnati, every one of them public before a ball is struck.
+2 from 5 yesterday. Not our finest hour. It is all in the record anyway. 4 more are locked for today at Cincinnati, every one of them public before a ball is struck.
 
-YESTERDAY, GRADED: 2 from 4 (50%)
-  The one that stings: Katie Volynets (we said 52%) - Katie Boulter had other ideas
-  Meanwhile, at the bookmakers - same 4 priced matches: us 50%, them 75%
-  If you had actually followed along: -$18.85 on a $100 bankroll (2/4 landed)
+YESTERDAY, GRADED: 2 from 5 (40%)
+  The one that stings: Elena Rybakina (we said 60%) - Iga Swiatek had other ideas
+  Meanwhile, at the bookmakers - same 12 priced matches: us 75%, them 92%
+  If you had actually followed along: +$21.30 on a $100 bankroll (9/12 landed)
 
 ON COURT TODAY
   [ Cincinnati - ATP ]
-  Fils over Tirante - 65%
-    Call: https://smash-react.vercel.app/match/arthur-fils-vs-thiago-agustin-tirante-181910
-    Compare: https://smash-react.vercel.app/compare/atp/arthur-fils-vs-thiago-agustin-tirante
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=fils&b=tiran
-  Fritz over Nakashima - 69%
-    Call: https://smash-react.vercel.app/match/brandon-nakashima-vs-taylor-fritz-181916
-    Compare: https://smash-react.vercel.app/compare/atp/brandon-nakashima-vs-taylor-fritz
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=nakas&b=fritz
-  Musetti over Tiafoe - 57%
-    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-lorenzo-musetti-181915
-    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-lorenzo-musetti
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=muset
+  Cobolli over Fils - 54%
+    Call: https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987
+    Compare: https://smash-react.vercel.app/compare/atp/arthur-fils-vs-flavio-cobolli
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=fils&b=cobol
+  Tiafoe over Nakashima - 55%
+    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984
+    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-brandon-nakashima
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=nakas
   [ Cincinnati - WTA ]
-  Keys over Bejlek - 74%
-    Call: https://smash-react.vercel.app/match/madison-keys-vs-sara-bejlek-182367
-    Compare: https://smash-react.vercel.app/compare/wta/madison-keys-vs-sara-bejlek
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=keys&b=bejle
+  Swiatek over Pegula - 64%
+    Call: https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426
+    Compare: https://smash-react.vercel.app/compare/wta/iga-swiatek-vs-jessica-pegula
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=swiat&b=pegul
+  Gauff over Bejlek - 98%
+    Call: https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418
+    Compare: https://smash-react.vercel.app/compare/wta/cori-gauff-vs-sara-bejlek
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=gauff&b=bejle
 
 THE MONEY QUESTION - what we would actually stake (hypothetical $100):
-  $50 on Musetti (57% @ 1.89)
-  $50 on Fritz (69% @ 1.45)
-  Total $100; we expect 1.3 to land, returning $103.92; 39% chance of finishing ahead
+  $25 on Cobolli (54% @ 3.24)
+  $25 on Gauff (98% @ 1.36)
+  $25 on Tiafoe (55% @ 2.05)
+  $25 on Swiatek (64% @ 1.40)
+  Total $100; we expect 2.7 to land, returning $127.26; 69% chance of finishing ahead
   https://smash-react.vercel.app/parlay
 
-COMING UP: 10 days to the US Open (hard)
-  ATP: Jannik Sinner 54%, Carlos Alcaraz 24%, Alexander Zverev 8%
-  WTA: Aryna Sabalenka 40%, Elena Rybakina 22%, Iga Swiatek 12%
+COMING UP: 9 days to the US Open (hard)
+  ATP: Jannik Sinner 48%, Carlos Alcaraz 21%, Alexander Zverev 9%
+  WTA: Aryna Sabalenka 32%, Elena Rybakina 24%, Iga Swiatek 18%
   https://smash-react.vercel.app/draw
 
-SEASON: 67% (3,371 of 5,018)
+SEASON: 66% (2,092 of 3,175)
 
 See today's full card: https://smash-react.vercel.app/today
 
