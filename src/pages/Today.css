@@ -169,3 +169,20 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* A no-call row: present (restraint is content), visually stepped back. The
+   tag stays high-contrast - it is the row's actual statement. */
+.today-row.nocall .today-match .fav { font-weight: 400; }
+.today-nocall-tag {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-2, #ced2d8);
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.24));
+  border-radius: var(--radius-pill, 999px);
+  padding: 0.1rem 0.5rem;
+  margin-bottom: 0.2rem;
+}
+.today-call.nocall { text-align: right; }
+.today-call.nocall .today-pick { color: var(--text-3, #9aa1ab); }

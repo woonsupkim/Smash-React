@@ -722,3 +722,7 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
 .track-conf-table tbody th { font-weight: 600; color: var(--text-1, #e8ecf4); }
 .track-conf-range { color: var(--text-3, #7c8698); font-weight: 400; font-size: 0.8rem; }
 .track-conf-ci { color: var(--text-3, #7c8698); font-size: 0.8rem; }
+
+/* No-call receipt rows: on the record, stepped back, never bold. */
+.track-forward-row.nocall .track-forward-status { color: var(--text-2, #ced2d8); }
+.track-forward-row.nocall .track-forward-call { color: var(--text-3, #9aa1ab); font-weight: 400; }

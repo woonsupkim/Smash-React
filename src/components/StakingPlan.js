@@ -364,6 +364,9 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                 <em>
                   over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
                   {l.event ? ` · ${l.event}` : ''}
+                  {/* The plan prices no-calls (it bets edges, not calls); the
+                      ledger does not claim them. Both true, both said. */}
+                  {l.noCall ? ' · no call - priced anyway' : ''}
                 </em>
               </span>
               <span className="stake-odds" role="cell">

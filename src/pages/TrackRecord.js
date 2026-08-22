@@ -184,7 +184,7 @@ export default function TrackRecord() {
       if (ua !== ub) return ua ? -1 : 1;
       return ua ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
     });
-    const decided = list.filter((p) => p.status === 'won' || p.status === 'lost').sort((a, b) => new Date(b.date) - new Date(a.date));
+    const decided = list.filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall).sort((a, b) => new Date(b.date) - new Date(a.date));
     // Graded calls only guest-star here briefly: after a few days they live
     // in the match log below (every graded call lands there), and this panel
     // stays focused on fresh calls. The record count keeps ALL of them.
@@ -197,7 +197,8 @@ export default function TrackRecord() {
   // the page's headline once it has enough verified calls behind it.
   const forwardAll = useMemo(() => {
     const all = dedupePreds((predictions?.predictions || []).filter(isForwardEvent));
-    const decided = all.filter((p) => p.status === 'won' || p.status === 'lost');
+    // Calls only: a no-call is graded for audit, never counted as a claim.
+    const decided = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall);
     const correct = decided.filter((p) => p.correct).length;
     const dates = all.map((p) => new Date(p.date)).filter((d) => !isNaN(d));
     return {
@@ -223,6 +224,9 @@ export default function TrackRecord() {
       .filter((p) => (p.status === 'won' || p.status === 'lost') && typeof p.favProb === 'number');
     if (decided.length < FORWARD_HERO_MIN) return null;
     const bands = [
+      // Includes the graded LEANS of no-call rows: the coin flips we declined
+      // to call still grade here, which is the shadow audit that shows
+      // whether the passes were wise.
       { label: 'Coin flips', lo: 0.5, hi: 0.65 },
       { label: 'Leans', lo: 0.65, hi: 0.75 },
       { label: 'Confident', lo: 0.75, hi: 1.01 },
@@ -496,6 +500,19 @@ export default function TrackRecord() {
                 // hasn't been fetched yet reads "Awaiting result", not
                 // "Upcoming" - honest when the data refresh is lagging.
                 const awaiting = new Date(p.date).getTime() < Date.now();
+                // A no-call shows here too: restraint IS a receipt. The lean
+                // is on the record; it just is not a claim.
+                if (p.noCall) {
+                  return (
+                    <Link className="track-forward-row pending nocall" to={`/match/${matchSlug(p)}`} key={p.id}>
+                      <span className="track-forward-status">
+                        <span aria-hidden="true">✋ </span>No call
+                      </span>
+                      <span className="track-forward-match">{p.name1} vs {p.name2}</span>
+                      <span className="track-forward-call">too close - we lean {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
+                    </Link>
+                  );
+                }
                 return (
                   <Link className={`track-forward-row pending${awaiting ? ' awaiting' : ''}`} to={`/match/${matchSlug(p)}`} key={p.id}>
                     <span className="track-forward-status">

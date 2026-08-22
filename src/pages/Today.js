@@ -145,7 +145,7 @@ export default function Today() {
             const when = timeUntil(p.date);
             const favIsP1 = p.favorite === p.p1;
             return (
-              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className="today-row">
+              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className={`today-row${p.noCall ? ' nocall' : ''}`}>
                 <span className="today-faces">
                   <img src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
                   <img src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />
@@ -158,10 +158,19 @@ export default function Today() {
                     {p.tour.toUpperCase()} · {p.event} · {p.surface}{when ? ` · ${when.label}` : ''}
                   </span>
                 </span>
-                <span className="today-call">
-                  <span className="today-pct">{Math.round(p.favProb * 100)}%</span>
-                  <span className="today-pick">{lastName(p.favName)}</span>
-                </span>
+                {p.noCall ? (
+                  /* A coin flip we declined to call: the lean is on the record
+                     (locked, graded for audit) but it is not a claim. */
+                  <span className="today-call nocall">
+                    <span className="today-nocall-tag">NO CALL</span>
+                    <span className="today-pick">too close - we lean {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
+                  </span>
+                ) : (
+                  <span className="today-call">
+                    <span className="today-pct">{Math.round(p.favProb * 100)}%</span>
+                    <span className="today-pick">{lastName(p.favName)}</span>
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -715,8 +715,12 @@ async function main() {
       .filter((pr) => pr.status === 'pending' && String(pr.date || '').slice(0, 10) >= todayISO)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
     const todays = upcoming.filter((pr) => String(pr.date || '').slice(0, 10) === todayISO);
+    // `card` is the staking universe (the builder prices no-calls too);
+    // `calls` is what we CLAIM, and the passes get named, not hidden.
     const card = todays.length ? todays : upcoming.slice(0, 6);
-    const shown = card.slice(0, 5);
+    const calls = card.filter((pr) => !pr.noCall);
+    const passes = card.filter((pr) => pr.noCall);
+    const shown = calls.slice(0, 5);
     const events = [...new Set(card.map((pr) => pr.event).filter(Boolean))];
     const splits = card.filter((pr) => {
       const mk = marketProb(pr);
@@ -749,7 +753,7 @@ async function main() {
         if (yp >= 70) return `${yday.correct} from ${yday.n}, and ${card.length} more locked`;
         return `${yday.correct} from ${yday.n} yesterday, ${card.length} locked today`;
       }
-      return `${plural(card.length, 'call', 'calls')} locked before play`;
+      return `${plural(calls.length, 'call', 'calls')} locked before play`;
     })();
     preheader = card.length
       ? `Every pick below was locked before play. ${events.length ? events.join(' and ') + '. ' : ''}Plus what we would stake, and ${slamDays != null ? `${slamDays} days to the ${slam.label}` : 'the road ahead'}.`
@@ -771,7 +775,7 @@ async function main() {
             : ' Not our finest hour. It is all in the record anyway.');
     }
     if (card.length) {
-      ledeBits.push(` ${plural(card.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck.`);
+      ledeBits.push(` ${plural(calls.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck${passes.length ? `, plus ${plural(passes.length, 'coin flip', 'coin flips')} we are sitting out` : ''}.`);
     }
     if (ledeBits.length) {
       blocks.push(section(p(ledeBits.join('').trim())));
@@ -888,12 +892,12 @@ async function main() {
         : 'We land more or less where the market does today. No arguments, just conviction.';
       blocks.push(section(`
         ${kicker(todays.length ? 'On court today' : 'Next up')}
-        ${h2(`${plural(card.length, 'call', 'calls')}, no takebacks`)}
-        ${p(intro)}
+        ${h2(`${plural(calls.length, 'call', 'calls')}, no takebacks`)}
+        ${p(intro + (passes.length ? ` And ${plural(passes.length, 'match', 'matches')} we are NOT calling: too close to claim, so the lean is on the record and the call column stays empty. Passing is a position too.` : ''))}
         ${hero ? taleOfTheTape(hero, marketProb(hero.pr), rankBook[hero.pr.tour === 'wta' ? 'wta' : 'atp'], pairRecord(track, hero.pr.p1, hero.pr.p2)) : ''}
         ${hero ? p(heroRead, `color:${BODY};`) : ''}
         ${rest.length ? `<div style="padding-top:4px;">${groupCard(rest).map((g) => groupHead(g) + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">${g.rows.map((pr) => compactRow(pr, rankBook[pr.tour === 'wta' ? 'wta' : 'atp'])).join('')}</table>`).join('')}</div>` : ''}
-        ${card.length > shown.length ? p(textLink(`${SITE}/today`, `See the other ${plural(card.length - shown.length, 'match', 'matches')}`)) : ''}
+        ${calls.length > shown.length || passes.length ? p(textLink(`${SITE}/today`, `See the full card${passes.length ? ' including the no-calls' : ''}`)) : ''}
       `));
       txtLines.push(todays.length ? 'ON COURT TODAY' : 'NEXT UP');
       const txtRows = groupCard(shown).flatMap((g) => [{ head: `${g.event} - ${g.tour.toUpperCase()}` }, ...g.rows]);
@@ -1285,9 +1289,10 @@ async function main() {
       }
     }
 
-    const decided = preds.filter((pr) => pr.status === 'won' || pr.status === 'lost');
+    // Calls only: no-call rows grade for audit but are never claimed.
+    const decided = preds.filter((pr) => (pr.status === 'won' || pr.status === 'lost') && !pr.noCall);
     const fwdWon = decided.filter((pr) => pr.status === 'won').length;
-    const pending = preds.filter((pr) => pr.status === 'pending').length;
+    const pending = preds.filter((pr) => pr.status === 'pending' && !pr.noCall).length;
     if (decided.length || (season && season.n)) {
       blocks.push(section(`
         ${kicker('The standing record')}

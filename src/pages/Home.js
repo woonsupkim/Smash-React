@@ -85,7 +85,13 @@ export default function Home() {
         // whose day has PASSED and still has no result is only awaiting a
         // scoreline, and must never lead a board with a live dot on it.
         const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-        const pending = all.filter((p) => p.status === 'pending');
+        // Two different populations on purpose. The BOARD is "the calls", so
+        // no-calls (noCall: true - coin flips we declined to call) stay off
+        // it and live on the Today page as restraint. The PLAN card is the
+        // parlay builder's universe, which prices no-calls too - the builder
+        // bets edges, not calls - and must match /parlay exactly.
+        const pendingAll = all.filter((p) => p.status === 'pending');
+        const pending = pendingAll.filter((p) => !p.noCall);
         const upcoming = pending
           .filter((p) => new Date(p.date) >= startOfToday)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -99,7 +105,7 @@ export default function Home() {
         // the viewer's calendar day using reliability measured on everything
         // graded so far. Feeding it the display slice quietly priced a
         // six-match "card" nobody would see anywhere else on the site.
-        const card = pending.filter((p) => isToday(p.date) && stillUpcoming(p.date));
+        const card = pendingAll.filter((p) => isToday(p.date) && stillUpcoming(p.date));
         const gradedRows = all.filter((p) => p.status === 'won' || p.status === 'lost');
         setPicks({ state: 'ready', list, live: upcoming.length > 0, card, graded: gradedRows });
         // "Decided" means GRADED, not merely "not pending". A void is a call
@@ -107,8 +113,12 @@ export default function Home() {
         // pipeline retired), and p.correct is false on all of them - counting
         // those as misses understated the forward record by five points. Same
         // rule the Track Record page and the share cards already use.
+        // No-calls (coin flips we declined to call, noCall: true) grade for
+        // audit but are NOT calls: the forward record counts calls only.
+        // Positive filter + explicit flag check - excluded-by-negation is
+        // this file's documented bug class (the void-counting incident).
         const decided = all
-          .filter((p) => p.status === 'won' || p.status === 'lost')
+          .filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         const correct = decided.filter((p) => p.correct).length;
         const recent = decided.slice(-RECENT_WINDOW);

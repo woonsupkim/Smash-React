@@ -1673,7 +1673,8 @@ async function run() {
   // locked-before-play record has 25+ verified calls it IS the proof line;
   // until then the season number appears, labeled as the resimulated
   // benchmark it is. Cards and captions read these off sc.
-  const fwdDecided = (preds.predictions || []).filter((p) => p.status === 'won' || p.status === 'lost');
+  // Calls only: no-call rows grade for audit and never enter the claim.
+  const fwdDecided = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall);
   const fwd = { n: fwdDecided.length, correct: fwdDecided.filter((p) => p.correct).length };
   fwd.acc = fwd.n ? Math.round((fwd.correct / fwd.n) * 100) : 0;
   const fwdArmed = fwd.n >= 25;
@@ -1722,7 +1723,7 @@ async function run() {
   // coin-flips instead of the day's real headliners.
   const NOW = Date.now();
   const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending' && ['slam', '1000'].includes(p.tier || 'slam')
+    .filter((p) => p.status === 'pending' && !p.noCall && ['slam', '1000'].includes(p.tier || 'slam')
       && new Date(p.date).getTime() >= NOW)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
