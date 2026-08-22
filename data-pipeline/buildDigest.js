@@ -1013,6 +1013,7 @@ async function main() {
         <div style="padding:14px 16px;background:${PANEL};border-left:3px solid ${LIME};">
           <p style="margin:0;font-size:14px;line-height:1.6;color:${BODY};">
             <strong style="color:${INK};">We expect ${todayPlan.expWinners.toFixed(1)} of those to land, returning ${money2(todayPlan.expReturn)} on the ${money2(todayPlan.metrics.staked)} going out.</strong>
+            ${todayPlan.metrics.staked < PLAN_BUDGET - 0.5 ? ` The other ${money2(PLAN_BUDGET - todayPlan.metrics.staked)} stays in your pocket - betting less is part of the recommendation.` : ''}
             ${todayPlan.metrics.pProfit != null ? ` Odds of actually finishing ahead: ${Math.round(todayPlan.metrics.pProfit * 100)}%.` : ''}
             Same numbers you will find on the builder itself, because it is the same arithmetic.
           </p>

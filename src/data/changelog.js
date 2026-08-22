@@ -10,6 +10,17 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.3',
+    date: '2026-08-23',
+    type: 'product',
+    title: 'The builder recommends the plan that actually made money',
+    notes: [
+      'THE PARLAY BUILDER NOW LEADS WITH "FOLLOW THE EDGE": quarter-Kelly stakes on the calls that beat their price, each bet capped at a fifth of your budget, plus at most one small two-leg parlay when a pair earns it - and nothing else. It routinely stakes less than the full budget. The remainder staying in your pocket is part of the recommendation, not a failure to spend.',
+      'CHOSEN BY TOURNAMENT, NOT TASTE. Every candidate plan was replayed over 94 tournament days of the graded record, walk-forward, settled at the recorded odds: follow-the-edge returned +19.7% on money staked with a worst day of -$32 and a maximum drawdown of $63 per $100 budget. Spreading the whole budget across every call - the old default - returned +5.1% with a 53% up-day rate, which is a coin flip wearing a plan\'s clothes. The whole-card plans stay on the menu for anyone who wants full allocation, with what each stakes printed beside it.',
+      'THE NUMBERS TO HOLD US TO: +19.7% return on stake, 63% of days up, worst day -$32, on roughly $40 of each $100 budget staked per day. Backtests flatter - one odds snapshot per match, no line movement, no limits - so treat the sign and the ordering as the finding, not the third digit. The plan-calibration watchdog now grades this exact recommendation weekly, and if reality runs materially below the backtest, that verdict prints itself.',
+    ],
+  },
+  {
     version: '4.2.2',
     date: '2026-08-23',
     type: 'product',

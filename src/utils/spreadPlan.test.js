@@ -106,7 +106,7 @@ describe('spreadPlan keeps breadth at the plan level', () => {
   });
 });
 
-describe('the recommended menu leads with the spread', () => {
+describe('the recommended menu', () => {
   it('offers a spread across the card, not a single bet', () => {
     const { plans } = planFrontier(ten(1.5), 100);
     const spread = plans.find((p) => p.id === 'spread');
@@ -121,9 +121,15 @@ describe('the recommended menu leads with the spread', () => {
     }
   });
 
-  it('does not offer a lone single as the headline plan', () => {
-    const { plans } = planFrontier(ten(1.5), 100);
-    expect(plans[0].id).toBe('spread');
-    expect(plans[0].funded).toBeGreaterThan(1);
+  it('recommends the edge plan when it stakes, and it is never a lone reckless bet', () => {
+    // Policy recommendation, chosen by tournament (expPlanPolicies.js), not
+    // by per-day beauty contest: a daily follower needs one consistent rule.
+    const { plans, recommendedId } = planFrontier(ten(1.5), 100);
+    expect(recommendedId).toBe('edge');
+    const edge = plans.find((p) => p.id === 'edge');
+    expect(edge.metrics.staked).toBeLessThanOrEqual(100);
+    // per-bet cap: no single bet above 20% of budget
+    for (const v of Object.values(edge.singles)) expect(v).toBeLessThanOrEqual(20 + 1e-9);
+    if (edge.parlayStake) expect(edge.parlayStake).toBeLessThanOrEqual(10 + 1e-9);
   });
 });

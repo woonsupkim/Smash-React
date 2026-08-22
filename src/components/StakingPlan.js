@@ -227,7 +227,7 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                     {p.metrics.pProfit != null ? `${pct(p.metrics.pProfit)} to win` : 'chance not available'}
                     {' · '}{money(p.metrics.ev)} expected
                   </span>
-                  <span className="stake-best-opt-k">{composition(p)}</span>
+                  <span className="stake-best-opt-k">{composition(p)} · stakes {money(p.metrics.staked)}</span>
                 </button>
               ))}
             </div>
@@ -287,9 +287,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}. We
               expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
               {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
+              {mode === 'budget' && rec?.id === 'edge' && analysis.staked < (Number(budget) || 0) - 0.5
+                ? ` The other ${money((Number(budget) || 0) - analysis.staked)} stays in your pocket - that is part of the plan, not a leftover.`
+                : ''}
             </strong>{' '}
-            That is the test every plan here passes, and it is a whole-plan test: spread evenly, it
-            falls on the average, so a match priced against us can be carried by stronger ones.
+            {mode === 'budget' && rec?.id === 'edge'
+              ? 'This plan only funds calls that beat their price, sized by how much they beat it, with one small parlay when a pair earns it. Backtested over 94 tournament days it returned +19.7% on money staked with a worst day of -$32 per $100 budget; the whole-card plans below stake more for thinner returns.'
+              : 'That is the test every plan here passes, and it is a whole-plan test: spread evenly, it falls on the average, so a match priced against us can be carried by stronger ones.'}
             {' '}It is an expectation, not a floor. A plan can be worth making and still lose more
             often than it wins, which is why the chance of finishing ahead sits right beside it.
             {rel.trusted && (

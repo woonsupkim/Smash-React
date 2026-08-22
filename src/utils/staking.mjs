@@ -464,9 +464,54 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
     return scored[winner] || scored[0];
   };
 
+  // ── The edge plan: what a daily follower should actually do ──────────────
+  // Quarter-Kelly on the calls that beat their price, each bet capped at 20%
+  // of budget, plus at most one 2-leg parlay of +EV legs capped at 10% -
+  // and NOTHING else. It routinely stakes less than the budget; "keep the
+  // rest for tomorrow" is part of the recommendation, not a failure to
+  // allocate.
+  //
+  // Chosen by tournament, not taste (expPlanPolicies.js, 94 deploy-tier
+  // days Apr-Aug, walk-forward reliability, settled at the recorded odds):
+  // this sizing returned +19.6% ROI with a worst day of -$32 and a $63 max
+  // drawdown per $100 budget, versus +6.2% ROI and a 52% up-day coin flip
+  // for the flat spread. Fractions above a quarter staked more for less.
+  const EDGE_FRACTION = 0.25;   // of budget, per Kelly unit
+  const EDGE_BET_CAP = 0.20;    // of budget, per single
+  const EDGE_PARLAY_CAP = 0.10; // of budget
+  const edgePlan = (() => {
+    if (!(B > 0)) return null;
+    const singles = {};
+    for (const b of priced) {
+      const f = kellyFraction(b.p, b.o);
+      if (!(f > 0)) continue;
+      const stake = Math.min(B * EDGE_BET_CAP, B * EDGE_FRACTION * f);
+      if (stake >= 0.5) singles[b.key] = stake;
+    }
+    // One 2-leg parlay from the best-edge +EV legs, only when the pair is
+    // itself +EV - same construction the backtest scored.
+    const pos = priced.filter((b) => kellyFraction(b.p, b.o) > 0)
+      .sort((a, b2) => (b2.p * b2.o) - (a.p * a.o)).slice(0, 4);
+    let combo = null;
+    for (let i = 0; i < pos.length; i++) {
+      for (let j = i + 1; j < pos.length; j++) {
+        const cp = pos[i].p * pos[j].p, co = pos[i].o * pos[j].o;
+        const f = kellyFraction(cp, co);
+        if (f > 0 && (!combo || f > combo.f)) combo = { legs: [pos[i].key, pos[j].key], p: cp, o: co, f, edge: cp * co - 1, n: 2 };
+      }
+    }
+    const spent = Object.values(singles).reduce((t, v) => t + v, 0);
+    const parStake = combo ? Math.min(B * EDGE_PARLAY_CAP, B * EDGE_FRACTION * combo.f, Math.max(0, B - spent)) : 0;
+    if (!Object.keys(singles).length && !(parStake > 0.5)) return null;
+    return shape(singles, combo, parStake > 0.5 ? parStake : 0);
+  })();
+
   const plans = [];
+  if (edgePlan) {
+    plans.push({ id: 'edge', label: 'Follow the edge', ...edgePlan });
+  }
   if (spread.count >= 2 && spread.coversStake) {
-    plans.push({ id: 'spread', label: 'Spread across the card', ...spread, expReturn: spread.expReturn });
+    plans.push({ id: 'spread', label: 'Back every call', ...spread, expReturn: spread.expReturn });
   }
 
   // Same spread with a slice moved onto the best combination, sized by Kelly
@@ -538,13 +583,18 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
       // claim that "every plan here passes" the cover test has to be earned
       // rather than assumed.
       if (!sameAsSpread && sharp.expReturn >= sharp.metrics.staked - 1e-9) {
-        plans.push({ id: 'sharp', label: 'Weighted to the best prices', ...sharp });
+        plans.push({ id: 'sharp', label: 'Whole card, weighted', ...sharp });
       }
     }
   }
 
   if (plans.length) {
-    return { plans, lambda, reason: null, recommendedId: recommendedPlanId(plans) };
+    // The recommendation is POLICY, not a per-day beauty contest: the edge
+    // plan won the plan tournament (see the constants above) and a daily
+    // follower needs one consistent answer, so it leads whenever it stakes
+    // anything. The chance-first rule remains the tiebreak among the rest.
+    const recommendedId = plans.some((p) => p.id === 'edge') ? 'edge' : recommendedPlanId(plans);
+    return { plans, lambda, reason: null, recommendedId };
   }
   if (!plans.length) {
     return {

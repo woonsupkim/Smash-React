@@ -681,7 +681,7 @@ export default function Home() {
                 ) : (
                   <>
                     <div className="home-plan-sub">
-                      how the builder would put ${PLAN_BUDGET} on today&apos;s {plan.n} priced calls
+                      how the builder would stake a ${PLAN_BUDGET} budget on today&apos;s {plan.n} priced calls
                     </div>
                     <div className="home-plan-out">
                       <span className="home-plan-ev">
