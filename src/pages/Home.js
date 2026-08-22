@@ -7,9 +7,9 @@ import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
-import { timeUntil, matchSlug } from '../utils/matchTime';
+import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import { pickCorrect, pickFavorite } from '../utils/deployedPick';
-import { edgePerDollar, parlayCombo, recommendStakes, analyzeSlip } from '../utils/staking';
+import { planFrontier, reliability } from '../utils/staking';
 import { nextSlam, prevSlam } from '../utils/slamCalendar';
 import DigestSignup from '../components/DigestSignup';
 import './Home.css';
@@ -93,7 +93,15 @@ export default function Home() {
           .filter((p) => new Date(p.date) < startOfToday)
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         const list = [...upcoming, ...awaiting].slice(0, 6);
-        setPicks({ state: 'ready', list, live: upcoming.length > 0 });
+        // The suggested plan gets the FULL card and the graded history, not
+        // the six-row display list: it must reproduce the parlay builder's
+        // recommendation exactly, and that page prices every pending call on
+        // the viewer's calendar day using reliability measured on everything
+        // graded so far. Feeding it the display slice quietly priced a
+        // six-match "card" nobody would see anywhere else on the site.
+        const card = pending.filter((p) => isToday(p.date) && stillUpcoming(p.date));
+        const gradedRows = all.filter((p) => p.status === 'won' || p.status === 'lost');
+        setPicks({ state: 'ready', list, live: upcoming.length > 0, card, graded: gradedRows });
         // "Decided" means GRADED, not merely "not pending". A void is a call
         // that never resolved (walkover, retirement, an orphaned fixture the
         // pipeline retired), and p.correct is false on all of them - counting
@@ -155,38 +163,39 @@ export default function Home() {
     [scorecard]
   );
 
-  // Today's suggested plan: one concrete answer, not a browse. It runs the
-  // Parlay builder's own recommender over today's priced calls, weighing the
-  // individual matches AND the parlay of the +EV ones together, then splits a
-  // sample bankroll by edge strength (Kelly). Only bets that beat their price
-  // get money, so the suggestion is break-even or better by construction.
-  // Unpriced calls sit it out: with no price there is no edge to size against.
+  // Today's suggested plan: THE parlay builder's recommendation, not a cousin
+  // of it. This used to run the old recommendStakes recommender (+EV picks
+  // only, sized by Kelly) over the six-match display list - so the home page
+  // and /parlay could show two different plans for the same day, and the home
+  // one funded a policy the builder itself had moved away from. Same inputs
+  // now: the full card, the same reliability haircut measured on everything
+  // graded, the same budget the builder opens with, planFrontier end to end.
+  // If the numbers here and on /parlay ever disagree, one of them is wrong.
   const plan = useMemo(() => {
     const oddsOf = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
-    const priced = (picks.list || []).filter((p) => oddsOf(p) > 1 && p.favProb > 0);
+    const card = picks.card || [];
+    const priced = card.filter((p) => oddsOf(p) > 1 && p.favProb > 0);
     if (priced.length < 2) return null;
     const bets = priced.map((p) => ({ key: p.id, p: p.favProb, o: oddsOf(p) }));
-    // The parlay is only ever built from legs that are +EV on their own, the
-    // same rule the builder applies before it will fund a combination.
-    const plusKeys = bets.filter((b) => edgePerDollar(b.p, b.o) > 0).map((b) => b.key);
-    const rec = recommendStakes(bets, plusKeys, PLAN_BUDGET);
-    if (!rec.anyPositive) return { n: priced.length, none: true };
-    const staked = bets.map((b) => ({ ...b, single: rec.singles[b.key] || 0 }));
-    const analysis = analyzeSlip(staked, { stake: rec.parlay, legs: plusKeys });
-    const combo = parlayCombo(bets, plusKeys);
-    const singles = priced
-      .map((p) => ({ name: lastName(p.favName), stake: rec.singles[p.id] || 0 }))
-      .filter((r) => r.stake >= 0.005)
-      .sort((a, b) => b.stake - a.stake);
+    const rel = reliability(picks.graded || []);
+    const frontier = planFrontier(bets, PLAN_BUDGET, { lambda: rel.lambda });
+    if (!frontier.plans.length) return { n: priced.length, none: true };
+    const rec = frontier.plans.find((p) => p.id === frontier.recommendedId) || frontier.plans[0];
+    const compose = (p) => {
+      const singles = Object.values(p.singles).filter((v) => v > 0.005).length;
+      const legs = (p.parlayLegs || []).length;
+      return `${singles} singles${p.parlayStake > 0.005 ? ` + a ${legs}-leg parlay` : ''}`;
+    };
     return {
       n: priced.length,
-      singles,
-      parlay: rec.parlay >= 0.005 ? { stake: rec.parlay, n: combo.n, o: combo.o } : null,
-      ev: analysis.ev,
-      roi: analysis.roi,
-      pProfit: analysis.pProfit,
+      recommendedId: rec.id,
+      rec: { label: rec.label, composition: compose(rec), metrics: rec.metrics },
+      menu: frontier.plans.map((p) => ({
+        id: p.id, label: p.label, composition: compose(p),
+        pProfit: p.metrics.pProfit, ev: p.metrics.ev,
+      })),
     };
-  }, [picks.list]);
+  }, [picks.card, picks.graded]);
 
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
@@ -640,59 +649,50 @@ export default function Home() {
               })}
             </div>
 
-            {/* One suggested plan, not a browse: the builder's recommender
-                weighs every priced call and the parlay of the +EV ones
-                together, then hands back a split that is break-even or
-                better. Sized on a sample bankroll you can change over there. */}
+            {/* The parlay builder's own recommendation, verbatim: same maths,
+                same inputs, same numbers a visitor finds when they click
+                through. The menu shows all the plans it offers today with the
+                recommended one marked, so the choice is visible here too. */}
             {plan && (
-              <aside className="home-plan" aria-label="Suggested stake plan">
-                <div className="home-plan-cap">Suggested plan</div>
+              <aside className="home-plan" aria-label="Recommended staking plan">
+                <div className="home-plan-cap">Today&apos;s recommended plan</div>
                 {plan.none ? (
                   <>
                     <p className="home-plan-none">
-                      Nothing on today's card beats the price it is offered at, so the
-                      plan is to stake nothing. That is the answer more often than
-                      anyone selling picks will admit.
+                      Nothing on today's card returns what it costs to back, spread or
+                      stacked, so the plan is to stake nothing. That is the answer more
+                      often than anyone selling picks will admit.
                     </p>
                     <Link to="/parlay" className="home-plan-cta">See why for each call →</Link>
                   </>
                 ) : (
                   <>
                     <div className="home-plan-sub">
-                      splitting ${PLAN_BUDGET} across today's {plan.n} priced calls, by edge
-                    </div>
-                    <div className="home-plan-rows">
-                      {plan.singles.map((r) => (
-                        <div className="home-plan-row" key={r.name}>
-                          <span className="home-plan-row-k">{r.name}</span>
-                          <span className="home-plan-row-v">${r.stake.toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {plan.parlay && (
-                        <div className="home-plan-row parlay">
-                          <span className="home-plan-row-k">
-                            Parlay <em>{plan.parlay.n} legs at {plan.parlay.o.toFixed(2)}</em>
-                          </span>
-                          <span className="home-plan-row-v">${plan.parlay.stake.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {plan.singles.length === 0 && !plan.parlay && (
-                        <div className="home-plan-row">
-                          <span className="home-plan-row-k">No bet</span>
-                          <span className="home-plan-row-v">$0.00</span>
-                        </div>
-                      )}
+                      how the builder would put ${PLAN_BUDGET} on today&apos;s {plan.n} priced calls
                     </div>
                     <div className="home-plan-out">
                       <span className="home-plan-ev">
-                        {plan.ev >= 0 ? '+' : '-'}${Math.abs(plan.ev).toFixed(2)}
+                        {Math.round((plan.rec.metrics.pProfit || 0) * 100)}%
                       </span>
                       <span className="home-plan-evcap">
-                        expected value ({plan.roi >= 0 ? '+' : ''}{(plan.roi * 100).toFixed(1)}%)
-                        {plan.pProfit != null && ` · ${Math.round(plan.pProfit * 100)}% chance you finish ahead`}
+                        chance you finish ahead · {plan.rec.metrics.ev >= 0 ? '+' : '-'}$
+                        {Math.abs(plan.rec.metrics.ev).toFixed(2)} expected on {plan.rec.composition}
                       </span>
                     </div>
-                    <Link to="/parlay" className="home-plan-cta">Size it your way →</Link>
+                    <div className="home-plan-rows">
+                      {plan.menu.map((p) => (
+                        <div className={`home-plan-row${p.id === plan.recommendedId ? ' parlay' : ''}`} key={p.id}>
+                          <span className="home-plan-row-k">
+                            {p.label}
+                            {p.id === plan.recommendedId && <em> · recommended</em>}
+                          </span>
+                          <span className="home-plan-row-v">
+                            {Math.round((p.pProfit || 0) * 100)}% · {p.ev >= 0 ? '+' : '-'}${Math.abs(p.ev).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <Link to="/parlay" className="home-plan-cta">Open the parlay builder →</Link>
                   </>
                 )}
               </aside>
