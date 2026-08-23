@@ -1,10 +1,9 @@
 SMASH DAILY - Sunday, August 23
 
-2 from 3 yesterday. Half right, which means half wrong, and both halves are below. Today at Cincinnati we are calling nothing: all 2 matches on the card sit inside our coin-flip band. Sitting out is a position.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. Today at Cincinnati we are calling nothing: all 2 matches on the card sit inside our coin-flip band. Sitting out is a position.
 
-YESTERDAY, GRADED: 2 from 3 (67%)
-  The one that stings: Lanlana Tararudee (we said 61%) - Maria Timofeeva had other ideas
-  CINCINNATI SO FAR: -$50.90 (-26.0% on $195.96, 2/8 days up)
+YESTERDAY, GRADED: 2 from 2 (100%)
+  CINCINNATI SO FAR: +$8.84 (+4.7% on $186.60, 5/8 days up)
 
 ON COURT TODAY
   No calls - the whole card is inside our coin-flip band.
@@ -16,7 +15,7 @@ COMING UP: 8 days to the US Open (hard)
   WTA: Elena Rybakina 26%, Aryna Sabalenka 25%, Iga Swiatek 17%
   https://smash-react.vercel.app/draw
 
-SEASON: 72% (1,717 of 2,390)
+SEASON: 74% (1,622 of 2,195)
 
 See today's full card: https://smash-react.vercel.app/today
 

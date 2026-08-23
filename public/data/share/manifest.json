@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-23T13:49:34.089Z",
-  "seasonN": 2390,
+  "generatedAt": "2026-08-23T15:20:35.114Z",
+  "seasonN": 2195,
   "lastStreak": {
     "key": "wta|grass",
     "len": 6
@@ -28,8 +28,8 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-08-23: called 2 of 3 winners. Season benchmark: 72%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-08-23: called 2 of 3 winners."
+      "caption": "Receipts from 2026-08-23: called 2 of 2 winners. Season benchmark: 74%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-08-23: called 2 of 2 winners."
     },
     {
       "file": "draw-road-atp.png",
@@ -84,8 +84,8 @@
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $1 test: $1 on our side of every one of the 67 matches where we and the betting market picked different winners. Returned +$16, +24% on the money staked. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 67 disagreements."
+      "caption": "The $1 test: $1 on each side of every one of the 48 matches where we and the betting market picked different winners. Our picks: +$17. Their own favorites: -$16. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 48 disagreements."
     },
     {
       "file": "edge-split.png",
@@ -108,7 +108,7 @@
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: 71% of winners called before play (147 of 206 verified, no take-backs), all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: 74% of winners called before play (134 of 182 verified, no take-backs), all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -116,7 +116,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: 71% of winners called before play (147 of 206 verified, no take-backs). #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: 74% of winners called before play (134 of 182 verified, no take-backs). #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -124,7 +124,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. 71% of winners called before play (147 of 206 verified, no take-backs). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. 74% of winners called before play (134 of 182 verified, no take-backs). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -148,7 +148,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. 71% of winners called before play (147 of 206 verified, no take-backs). #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. 74% of winners called before play (134 of 182 verified, no take-backs). #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -188,8 +188,8 @@
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1270 matches this season. ATP 70% · WTA 71% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1270 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1081 matches this season. ATP 74% · WTA 76% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1081 matches this season."
     },
     {
       "file": "hype-favorites-atp.png",

@@ -174,13 +174,13 @@ export default function Home() {
   // lands. Gating the headline on accuracy made the page claim something
   // the data does not support while ignoring the thing it does.
   //
-  // Tested against zero, not against the market's mirror. On a two-player
-  // disagreement exactly one side can be right, so the market's return is
-  // ours reflected: usNet > mktNet is the same test as usNet > 0 dressed up
-  // as a comparison, and it made the page look like it was clearing a bar
-  // set by someone else. The real bar is the vig, i.e. break-even.
+  // Two bars, and the claim needs both: our side must clear BREAK-EVEN (a
+  // flat stake at bookmakers' prices loses money by default, which is how
+  // they stay open) and it must out-return theirs. Those are different
+  // tests because the two sides are paid at different prices - we hold the
+  // longer ticket on a split - so neither implies the other.
   const beatsMarket = proof.state === 'ready' && proof.edge
-    ? proof.edge.usNet > 0
+    ? proof.edge.usNet > 0 && proof.edge.usNet > proof.edge.mktNet
     : null;
 
   const upsetById = useMemo(
@@ -455,7 +455,7 @@ export default function Home() {
               ? ' On the matches where we split from the betting favorite, backing our side has not cleared break-even, and we are showing you that too.'
               : ' We pick winners about as often as the bookmakers do. The difference is the price'}
             {beatsMarket !== false && proof.state === 'ready' && proof.edge
-              ? `: a flat $1 on our side of the ${proof.edge.n} matches where we split from the betting favorite returned +$${Math.abs(proof.edge.usNet)}.`
+              ? `: across the ${proof.edge.n} matches where we split from the betting favorite, a flat $1 on our side returned +$${Math.abs(proof.edge.usNet)} where the same dollar on theirs returned ${proof.edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.mktNet)}.`
               : ''}
             {' '}Today&apos;s card is live below, with a staking plan you can follow.
           </p>
@@ -480,22 +480,24 @@ export default function Home() {
               //    lead with hit rate against the market, which is the claim
               //    the data does not support (that race is level) while the
               //    one it does support sat further down the page.
-              //    Stated ONCE. It used to read "+23% vs -23%", which looks
-              //    like two measurements and is one: a split has exactly one
-              //    winner, so the market's side returns what ours does not,
-              //    and the pair is yoked by arithmetic rather than by us
-              //    being twice as good. Printing the mirror invited the
-              //    reader to add the two into a 46-point gap that does not
-              //    exist. What is worth reporting is whether our side clears
-              //    break-even at all - most bets do not.
+              //    BOTH SIDES, deliberately. I briefly cut the market's
+              //    figure here believing the pair was forced - a split has
+              //    one winner, so the two HIT RATES must sum to 100%. The
+              //    money does not follow: the two sides are paid at
+              //    different prices. On these splits our ticket averages
+              //    2.23 and theirs 1.67, so identical hit rates would still
+              //    pay differently and the gap between the returns is the
+              //    entire claim. The sum landing near zero here is a
+              //    coincidence of this season's odds, not arithmetic.
               proof.edge && {
                 key: 'roi',
                 val: (
                   <>
                     {proof.edge.usNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.usNet / proof.edge.n) * 100))}%
+                    <span className="home-stat-vs"> vs {proof.edge.mktNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.mktNet / proof.edge.n) * 100))}%</span>
                   </>
                 ),
-                cap: `return backing our side of ${proof.edge.n} market disagreements`,
+                cap: `return on our side vs theirs · ${proof.edge.n} market disagreements`,
               },
               // 2. Hit rate, kept as context rather than as the claim: level
               //    with the market is the honest reading of this number.
@@ -573,10 +575,13 @@ export default function Home() {
                   on each, so the bookmakers took the other {100 - proof.edge.usAcc}%.
                 </p>
                 <p className="home-edge-money">
-                  The part that is not forced is the price. A flat $1 on our side of every split
-                  returned <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
+                  The part that is not forced is the price, and it is where the two sides come
+                  apart. A flat $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
                     {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
-                  </strong>{proof.edge.usNet >= 0 ? ' after the bookmakers’ margin' : ', before we account for their margin'}.
+                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
+                    {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
+                  </strong> backing theirs. A split puts us on the longer ticket, so the same
+                  hit rate does not pay the same.
                 </p>
                 <span className="home-edge-note">Settled at the price we stamped before play, every split graded. Not betting advice.</span>
               </div>

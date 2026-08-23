@@ -1410,12 +1410,13 @@ async function dollarTestCard(edge, file) {
     eyebrowText: 'The Edge · The $1 Test',
     headline1: '$1 ON EVERY',
     headline2: 'SPLIT',
-    // Our side only. The market's return on the same splits is the mirror
-    // of ours by construction (one winner per match), so a card printing
-    // both showed one measurement as two and doubled the apparent gap.
+    // BOTH sides. The two HIT RATES are forced to sum to 100% on a split, so
+    // only one of those is worth printing - but the returns are not forced,
+    // because the sides are paid at different prices, and the gap between
+    // them is the whole point of the card.
     stats: [
       { value: money(edge.usNet), label: `our picks, net of $${edge.n} staked` },
-      { value: `${edge.usNet >= 0 ? '+' : '-'}${Math.abs(Math.round((100 * edge.usNet) / Math.max(1, edge.n)))}%`, label: 'return on the money staked' },
+      { value: money(edge.mktNet), label: "the market's own favorites, same stakes" },
       { value: `${edge.usAcc}%`, label: `winners called on the ${edge.n} splits` },
     ],
     footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
@@ -2167,7 +2168,7 @@ async function run() {
     };
     await dollarTestCard(edge, 'edge-dollar.png');
     add('edge-dollar.png', 'edge-dollar-test', 'square', 'edge',
-      `The $1 test: $1 on our side of every one of the ${edge.n} matches where we and the betting market picked different winners. Returned ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}, ${edge.usNet >= 0 ? '+' : '-'}${Math.abs(Math.round((100 * edge.usNet) / Math.max(1, edge.n)))}% on the money staked. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
+      `The $1 test: $1 on each side of every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}. Their own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet).toFixed(0)}. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
       `The $1 test card: flat-stake payout of our picks versus the market's on ${edge.n} disagreements.`);
 
     // The freshest big split (last 7 days), else the season's biggest gap -

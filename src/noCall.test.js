@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import CONFIG from './engineConfig.json';
-import { pickNoCall, ledgerNoCall, CALL_THRESHOLD } from './utils/deployedPick';
+import { pickNoCall, ledgerNoCall, CALL_THRESHOLD, CALL_THRESHOLDS, thresholdFor } from './utils/deployedPick';
 
 const read = (p) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
 const json = (p) => JSON.parse(read(p));
@@ -40,16 +40,44 @@ describe('the rule is DERIVED, never trusted from the stored flag', () => {
   // The flag is written prospectively and only against the threshold in
   // force that day, so a filter that reads it alone silently passes the
   // whole back history. Both accessors must fall back to the probability.
-  it('a ledger row under the threshold is a no-call with no flag present', () => {
-    expect(ledgerNoCall({ favProb: CONFIG.callThreshold - 0.01 })).toBe(true);
-    expect(ledgerNoCall({ favProb: CONFIG.callThreshold + 0.01 })).toBe(false);
-    expect(ledgerNoCall({ favProb: 0.9, noCall: true })).toBe(true);
+  it('a ledger row under its cell threshold is a no-call with no flag present', () => {
+    const T = thresholdFor('atp', 'hard');
+    expect(ledgerNoCall({ tour: 'atp', surface: 'hard', favProb: T - 0.01 })).toBe(true);
+    expect(ledgerNoCall({ tour: 'atp', surface: 'hard', favProb: T + 0.01 })).toBe(false);
+    expect(ledgerNoCall({ tour: 'atp', surface: 'hard', favProb: 0.99, noCall: true })).toBe(true);
   });
 
-  it('a track row under the threshold is a no-call from its deployed pick', () => {
-    const under = 1 - (CONFIG.callThreshold - 0.01); // oriented to p1, favourite is p2
-    expect(pickNoCall({ pickProbP1: under })).toBe(true);
-    expect(pickNoCall({ pickProbP1: CONFIG.callThreshold + 0.01 })).toBe(false);
+  it('a track row under its cell threshold is a no-call from its deployed pick', () => {
+    const T = thresholdFor('atp', 'hard');
+    const under = 1 - (T - 0.01); // oriented to p1, favourite is p2
+    expect(pickNoCall({ tour: 'atp', surface: 'hard', pickProbP1: under })).toBe(true);
+    expect(pickNoCall({ tour: 'atp', surface: 'hard', pickProbP1: T + 0.01 })).toBe(false);
+  });
+
+  it('the cutoff varies by cell, and unknown cells fall back to the default', () => {
+    // The whole point of the table: one number cannot be right for both of
+    // these. If they ever collapse to equal, either the tuner has stopped
+    // running or the evidence really did converge - check before deleting.
+    expect(thresholdFor('atp', 'clay')).not.toBe(thresholdFor('wta', 'clay'));
+    expect(thresholdFor('nope', 'nope')).toBe(CONFIG.callThreshold);
+    for (const T of Object.values(CALL_THRESHOLDS.cells)) {
+      expect(T).toBeGreaterThanOrEqual(CALL_THRESHOLDS.clamp[0]);
+      expect(T).toBeLessThanOrEqual(CALL_THRESHOLDS.clamp[1]);
+    }
+  });
+
+  it('every cell threshold is justified by the record it was fitted on', () => {
+    // Re-derives each published cutoff from track_record.json with the
+    // tuner's own rule. A hand-edit to callThresholds.json fails here.
+    const { cellThreshold } = require('../data-pipeline/tuneCallThreshold');
+    const rows = JSON.parse(read('public/data/track_record.json')).matches || [];
+    for (const [key, T] of Object.entries(CALL_THRESHOLDS.cells)) {
+      const [tour, surface] = key.split('|');
+      const cell = rows.filter((m) => m.tour === tour && m.surface === surface);
+      const raw = cellThreshold(cell);
+      const clamped = Math.min(CALL_THRESHOLDS.clamp[1], Math.max(CALL_THRESHOLDS.clamp[0], raw));
+      expect(`${key}: ${clamped}`).toBe(`${key}: ${T}`);
+    }
   });
 
   it('the live ledger actually contains rows the flag alone would miss', () => {
@@ -126,9 +154,9 @@ describe('the staking universe is calls only', () => {
 });
 
 describe('the retrospective record speaks the same policy', () => {
-  it('pickNoCall derives from the deployed probability and the config threshold', () => {
+  it('pickNoCall derives from the deployed probability and the cell threshold', () => {
     const src = read('src/utils/deployedPick.js');
-    expect(src).toMatch(/pickNoCall = \(m\) => pickFavProb\(m\) < \(CONFIG\.callThreshold \|\| 0\)/);
+    expect(src).toMatch(/pickNoCall = \(m\) => pickFavProb\(m\) < thresholdFor\(m\.tour, m\.surface\)/);
   });
 
   it('every retrospective claim surface mirrors the rule', () => {

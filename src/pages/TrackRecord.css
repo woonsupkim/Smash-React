@@ -778,3 +778,36 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
 .track-conf-pass { color: var(--text-3, #9aa1ab); }
 .track-conf-pass th[scope="row"] { font-style: italic; }
 .track-conf-pass td, .track-conf-pass th { border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.18)); }
+
+/* The restraint audit, now its own panel. */
+.track-shadow-panel .track-shadow { margin-bottom: 0.9rem; }
+.track-shadow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.track-shadow-table th[scope="col"] {
+  text-align: right;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3, #9aa1ab);
+  padding: 0 0 0.4rem;
+  font-weight: 700;
+}
+.track-shadow-table th[scope="col"]:first-child { text-align: left; }
+.track-shadow-table th[scope="row"] {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-1, #fff);
+}
+.track-shadow-table td { text-align: right; color: var(--text-2, #ced2d8); }
+.track-shadow-table th[scope="row"], .track-shadow-table td {
+  padding: 0.42rem 0;
+  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.12));
+}
+/* A cell whose passed leans run well above a coin flip is the tuner's cue
+   to lower that cutoff - flagged so it is visible without reading the row. */
+.track-shadow-table td.hot { color: var(--accent-warn, #e8b04a); }
+.track-shadow-rate { color: var(--text-3, #9aa1ab); }

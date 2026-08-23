@@ -10,6 +10,18 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.6',
+    date: '2026-08-23',
+    type: 'model',
+    title: 'The cutoff is six numbers now, and it moves',
+    notes: [
+      'THE NO-CALL CUTOFF IS PER TOUR AND SURFACE, AND DERIVED RATHER THAN TYPED. It was a single 58% constant that nobody had re-computed since the day it was guessed, which made "we do not call coin flips" a promise backed by a hunch. How far our confidence has to run before it beats a coin flip depends on the tennis: it takes 64% on WTA clay and only 54% on ATP clay. Each cutoff is now the lowest one from which the weakest calls it still permits beat a coin flip at 95% confidence, measured on the graded record, and it is re-derived on every retune instead of staying put. The season benchmark rises to 74% of 2,195 calls and the locked-before-play record to 74% of 182, because both now exclude matches a global cutoff was letting through.',
+      'THE PASSES ARE AUDITED IN PUBLIC, PER CELL. Restraint that nobody checks is just a way of never being wrong, so the ledger now shows how the leans went on every match we declined to call: 611-573 overall, and broken out by tour and surface next to the cutoff that produced it. ATP hard sits at 176-177, which is what a correctly placed cutoff looks like. WTA clay sits at 126-95, a little hot, which is the signal to lower that one at the next retune - and it is the same table the tuner reads when it does.',
+      'I WAS WRONG ABOUT THE MONEY, AND HAVE PUT IT BACK. Version 4.2.5 cut the market\'s return from the Edge page arguing the pair was forced. Half of that is true: on a split exactly one side can be right, so the two HIT RATES must add to 100% and printing both says one thing twice. The returns are not forced. The two sides are paid at different prices - our ticket on these splits averages 2.23 against their 1.67 - so identical hit rates would still pay differently, and the gap between the returns is the entire claim. Both figures are back, and the Edge page now charts the two running totals so you can see whether the gap opened steadily or came from one lucky afternoon. It opened steadily.',
+      'AND THE LEDGER SAYS WHICH POPULATION EACH NUMBER DESCRIBES. Three sat on one page without labels: the locked-before-play record (we lock calls at slams and the combined 1000s), the season benchmark (every tour-level match, re-simulated), and the market comparison (only matches that carried a price). The surface cards had no scope note at all, which is why their counts read as inflated next to the priced panel directly above them. The slam/1000 restriction on the forward record is also gone - it excluded nothing, since those are the only events we lock at, so all it did was hide the constraint behind a filter.',
+    ],
+  },
+  {
     version: '4.2.5',
     date: '2026-08-23',
     type: 'product',

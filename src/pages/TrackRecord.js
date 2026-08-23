@@ -12,7 +12,7 @@ import { countryFlagUrl } from '../components/countryFlags';
 import { playerPhoto } from '../utils/playerPhotos';
 import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
-import { pickCorrect, pickFavorite, pickFavProb, pickNoCall, ledgerNoCall, CALL_THRESHOLD } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite, pickFavProb, pickNoCall, ledgerNoCall, thresholdFor } from '../utils/deployedPick';
 import { cleanEvents } from '../utils/eventName';
 import { slugify } from '../utils/slug';
 import useDocMeta from '../utils/useDocMeta';
@@ -51,10 +51,17 @@ const eventTier = (name) => MAJOR_EVENT_TIERS.find(({ re }) => re.test(name))?.t
 // since neither is complete in the data: the event-name regex catches the
 // slams (which carry no tier code), and the native `tier` field catches
 // Masters even when the event name is a sponsor string the regex misses.
-const FORWARD_TIERS = new Set(['Grand Slams', 'Masters & 1000s']);
-const FORWARD_TIER_CODES = new Set(['1000', '2000', '3000', 'grand slam', 'grandslam', 'slam']);
-const isForwardEvent = (p) =>
-  FORWARD_TIERS.has(eventTier(p.event || '')) || FORWARD_TIER_CODES.has(String(p.tier || '').toLowerCase());
+// The forward record counts EVERY locked call, at whatever event.
+//
+// It used to be filtered to slams and 1000s here on the reasoning that
+// lower-tier calls are noise for a public scoreboard. Two problems. It was a
+// no-op - buildPredictions only locks calls at those events anyway, so the
+// filter excluded nothing and merely hid the constraint - and it made the
+// scope of the headline a display decision rather than a locking one. If we
+// ever start locking calls at a 500, they belong in the record the moment we
+// make them, not once someone remembers to widen a regex. The scope is now
+// whatever we actually locked, stated on the page.
+const isForwardEvent = () => true;
 
 // One call per matchup: the ESPN id can reassign between refreshes, so the
 // same match can appear twice (often one pending + one graded). Key by the
@@ -223,26 +230,30 @@ export default function TrackRecord() {
     const decided = dedupePreds((predictions?.predictions || []).filter(isForwardEvent))
       .filter((p) => (p.status === 'won' || p.status === 'lost') && typeof p.favProb === 'number');
     if (decided.length < FORWARD_HERO_MIN) return null;
-    // The first band now ENDS at the call threshold instead of straddling it.
-    // "Coin flips 50-65%" mixed the matches we declined to call with the
-    // lowest band we do call, under a column headed CALLS, and its 124 rows
-    // could not be reconciled with the 204-call record two panels down. Split
-    // at the threshold, the top row IS the passes - the shadow audit, in the
-    // same table as the claims, which is where it belongs.
-    const T = CALL_THRESHOLD;
+    // The passes are their OWN row, split off by the per-cell rule rather
+    // than by a probability boundary. "Coin flips 50-65%" used to mix the
+    // matches we declined to call with the lowest band we do call, under a
+    // column headed CALLS, so its count could not be reconciled with the
+    // record two panels down. A fixed boundary cannot do the job any more
+    // either: the cutoff is 0.54 on ATP clay and 0.64 on WTA clay, so no
+    // single number separates the passes from the claims. Ask the rule.
     const bands = [
-      { label: 'Passed on', lo: 0.5, hi: T, pass: true },
-      { label: 'Slim calls', lo: T, hi: 0.65 },
+      { label: 'Passed on', pass: true },
+      { label: 'Slim calls', lo: 0.5, hi: 0.65 },
       { label: 'Leans', lo: 0.65, hi: 0.75 },
       { label: 'Confident', lo: 0.75, hi: 1.01 },
     ];
     return bands.map(({ label, lo, hi, pass }) => {
-      const g = decided.filter((p) => p.favProb >= lo && p.favProb < hi);
+      const g = pass
+        ? decided.filter((pr) => ledgerNoCall(pr))
+        : decided.filter((pr) => !ledgerNoCall(pr) && pr.favProb >= lo && pr.favProb < hi);
       const won = g.filter((p) => p.correct).length;
       return {
         label,
         pass: !!pass,
-        range: `${Math.round(lo * 100)}–${Math.round(Math.min(hi, 1) * 100)}%`,
+        range: pass
+          ? 'under its cutoff'
+          : `${Math.round(lo * 100)}–${Math.round(Math.min(hi, 1) * 100)}%`,
         n: g.length,
         said: g.length ? g.reduce((s, p) => s + p.favProb, 0) / g.length : null,
         landed: g.length ? won / g.length : null,
@@ -418,10 +429,36 @@ export default function TrackRecord() {
     // move it by.
     const passed = filtered.filter((m) => pickNoCall(m));
     const passedRight = passed.filter((m) => pickCorrect(m)).length;
+    // Broken out per tour x surface, because that is the grain the cutoff is
+    // set at. One aggregate number cannot tell you which cell is passing on
+    // matches it could call - and that per-cell read is exactly what the
+    // tuner consumes when it re-derives the cutoffs.
+    const cells = [];
+    for (const t of ['atp', 'wta']) {
+      for (const sf of ['hard', 'clay', 'grass']) {
+        const cellRows = filtered.filter((m) => m.tour === t && m.surface === sf);
+        const cellPassed = cellRows.filter((m) => pickNoCall(m));
+        if (cellPassed.length < 15) continue;
+        const right = cellPassed.filter((m) => pickCorrect(m)).length;
+        cells.push({
+          key: `${t}|${sf}`,
+          tour: t,
+          surface: sf,
+          threshold: thresholdFor(t, sf),
+          n: cellPassed.length,
+          right,
+          wrong: cellPassed.length - right,
+          rate: Math.round((right / cellPassed.length) * 100),
+          calls: cellRows.length - cellPassed.length,
+        });
+      }
+    }
     const shadow = {
       n: passed.length,
       right: passedRight,
+      wrong: passed.length - passedRight,
       rate: passed.length ? Math.round((passedRight / passed.length) * 100) : null,
+      cells,
     };
 
     return {
@@ -654,7 +691,9 @@ export default function TrackRecord() {
                       <div className="track-hero-label">of winners called before the match</div>
                       <div className="track-hero-sub">
                         {forwardAll.correct} of {forwardAll.n.toLocaleString()} verified calls · every one timestamped
-                        before play and graded automatically when the result lands
+                        before play and graded automatically when the result lands. We lock calls at the slams
+                        and the combined 1000s, so that is the scope of this number — a different, smaller
+                        population than the season benchmark below.
                       </div>
                       <div className="track-hero-marks">
                         <span className="track-hero-hit">✓ {forwardAll.correct} hits</span>
@@ -670,7 +709,9 @@ export default function TrackRecord() {
                       <span className="track-benchmark-text">
                         of winners across {stats.n.toLocaleString()} matches ({tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}),
                         calling each match with the strongest engine for its tour and surface,
-                        re-run over the full season. A model benchmark, not locked picks.
+                        re-run over the full season. Every tour-level event, not just the ones we lock
+                        calls at, which is why the count dwarfs the record above. A model benchmark,
+                        not locked picks.
                         {stats.scoreline.n > 0 ? ` Exact set score called in ${stats.scoreline.pct}%.` : ''}
                       </span>
                     </div>
@@ -789,7 +830,14 @@ export default function TrackRecord() {
                 </div>
               )}
 
-              {/* Per-surface accuracy */}
+              {/* Per-surface accuracy. The scope note is not decoration: these
+                  cards sit directly beneath two panels scoped to the priced
+                  subset, so their larger counts read as inflated unless the
+                  page says out loud that they cover every graded match rather
+                  than only the ones that carried a price. */}
+              <div className="track-section-label" style={{ marginTop: '1rem' }}>
+                By surface · every graded call, priced or not
+              </div>
               <div className="track-surface-row">
                 {stats.perSurface.map((s) => (
                   <button
@@ -900,27 +948,70 @@ export default function TrackRecord() {
                 </div>
               </div>
 
+              {/* The restraint audit, promoted to its own panel above the log.
+                  It was buried between the log's section label and its first
+                  row, which is nowhere: the one number that holds the passes
+                  accountable was the hardest thing on the page to find. Without
+                  it you could abstain on everything and never be shown to be
+                  wrong. The per-cell table is the same evidence the tuner reads
+                  when it re-derives each cutoff, so what the page shows and what
+                  the model is fitted on are the same thing. */}
+              {stats.shadow.n >= 20 && (
+                <div className="track-panel track-shadow-panel">
+                  <div className="track-section-label">The matches we passed on</div>
+                  <div className="track-shadow">
+                    <span className="track-shadow-val">{stats.shadow.right}–{stats.shadow.wrong}</span>
+                    <span className="track-shadow-text">
+                      is how the leans went on the {stats.shadow.n.toLocaleString()} matches we declined to
+                      call — <strong>{stats.shadow.rate}% right</strong>. We claim none of them either way, in
+                      either direction. A cutoff set correctly leaves this near a coin flip; drifting well
+                      above it means we are passing on matches we could be calling, and that is the signal to
+                      lower it at the next retune.
+                    </span>
+                  </div>
+                  {stats.shadow.cells.length > 1 && (
+                    <>
+                      <table className="track-shadow-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Tour &amp; surface</th>
+                            <th scope="col">Cutoff</th>
+                            <th scope="col">Called</th>
+                            <th scope="col">Passed</th>
+                            <th scope="col">Leans right</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.shadow.cells.map((c) => (
+                            <tr key={c.key}>
+                              <th scope="row">{c.tour.toUpperCase()} {SURFACES[c.surface].label}</th>
+                              <td>{Math.round(c.threshold * 100)}%</td>
+                              <td>{c.calls.toLocaleString()}</td>
+                              <td>{c.n.toLocaleString()}</td>
+                              <td className={c.rate >= 60 ? 'hot' : undefined}>
+                                {c.right}–{c.wrong} <span className="track-shadow-rate">({c.rate}%)</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="track-note">
+                        The cutoff is not one number. It is set per tour and surface, because how far our
+                        confidence has to run before it beats a coin flip depends on the tennis: it takes
+                        {' '}{Math.round(thresholdFor('wta', 'clay') * 100)}% on WTA clay and only
+                        {' '}{Math.round(thresholdFor('atp', 'clay') * 100)}% on ATP clay. Each one is the lowest
+                        cutoff from which the weakest calls it still permits beat a coin flip at 95% confidence,
+                        re-derived from this record every time the model is retuned rather than typed in once.
+                        Cells with too little evidence use the {Math.round(thresholdFor('nope', 'nope') * 100)}% default.
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Match log - paginated */}
               <div className="track-panel">
                 <div className="track-section-label">Match log · newest first</div>
-                {/* The restraint audit. No-call rows carry no verdict, so
-                    without this the passes would be unaccountable: you could
-                    abstain on everything and never be shown to be wrong.
-                    A threshold set correctly should leave a shadow rate near
-                    a coin flip - well above it means we are passing on
-                    matches we could call, and it is the number the tuner
-                    reads when it revisits the threshold. */}
-                {stats.shadow.n >= 20 && (
-                  <div className="track-shadow">
-                    <span className="track-shadow-val">{stats.shadow.rate}%</span>
-                    <span className="track-shadow-text">
-                      of the {stats.shadow.n.toLocaleString()} matches we passed on would have gone our way
-                      ({stats.shadow.right} right, {stats.shadow.n - stats.shadow.right} wrong). We claim none of
-                      them either way. At a coin flip the {Math.round(CALL_THRESHOLD * 100)}% cutoff is doing its
-                      job; drifting well above it is the signal to lower it at the next retune.
-                    </span>
-                  </div>
-                )}
                 {shown.map((m) => {
                   const winnerIsP1 = m.winner === m.p1;
                   const wName = winnerIsP1 ? m.name1 : m.name2;
