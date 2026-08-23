@@ -23,3 +23,21 @@ export const pickFavProb = (m) => {
 // history speaks the same policy the ledger now locks under. The
 // by-confidence table still grades these - restraint stays auditable.
 export const pickNoCall = (m) => pickFavProb(m) < (CONFIG.callThreshold || 0);
+
+// The same rule for a LEDGER row (predictions.json), whose stated
+// probability lives in `favProb`. Derived, not read off the stored flag:
+// buildPredictions writes `noCall: true` at lock time, but only onto rows
+// locked after that shipped and only against the threshold in force that
+// day. Every row locked before it - the entire graded history at the time
+// of writing - carried no flag at all, so `!p.noCall` silently passed the
+// whole ledger through and 74 of 278 graded coin flips were still being
+// counted as calls. Deriving on read means one threshold governs the
+// record, and moving it moves the history with it.
+// The cutoff itself, for copy that needs to state it. Exported so no page
+// types the number into a sentence where it can go stale.
+export const CALL_THRESHOLD = CONFIG.callThreshold || 0;
+
+export const ledgerNoCall = (p) => (
+  p.noCall === true
+  || (typeof p.favProb === 'number' && p.favProb < (CONFIG.callThreshold || 0))
+);

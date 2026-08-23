@@ -38,8 +38,8 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { nextSlam } = require('./lib/slamCalendar');
-const ENGINE = require('../src/engineConfig.json');
 const planSettle = require('./lib/planSettle');
+const { rowNoCall, ledgerNoCall } = require('./lib/noCall');
 
 let sharp;
 try {
@@ -179,11 +179,18 @@ function sMast(w, kicker, a, { tour = null } = {}) {
 // Bold accent slab at the bottom - the brand signature CTA bar.
 function sBar(w, h, text, a, { sub = 'EVERY CALL PUBLIC · GRADED DAILY' } = {}) {
   const barY = h - 150, tw = fitT('anton', text, 62, w - 130);
+  // The sub-line is fitted too. It used to render at a fixed 19px with no
+  // measurement, so it fitted only because every caller happened to pass
+  // something short; the first longer one ("...SETTLED AT THE PRICE STAMPED
+  // BEFORE PLAY · NOT BETTING ADVICE") ran off the right edge of the card and
+  // cut the disclaimer in half. Tracking is passed as the 5th argument -
+  // omitting it under-measures and is how a caption overflowed here before.
+  const sw = fitT('black', sub, 19, w - 130, 2);
   return `
   <polygon points="0,${barY + 20} ${w},${barY - 20} ${w},${h} 0,${h}" fill="url(#keyGrad)"/>
   <polygon points="0,${barY + 20} ${w},${barY - 20} ${w},${barY - 8} 0,${barY + 32}" fill="#ffffff" fill-opacity="0.28"/>
   ${T('anton', text, 60, barY + 86, tw, { fill: a.ink[2] }).svg}
-  ${T('black', sub, 62, barY + 122, 19, { fill: 'rgba(0,0,0,0.68)', tracking: 2 }).svg}`;
+  ${T('black', sub, 62, barY + 122, sw, { fill: 'rgba(0,0,0,0.68)', tracking: 2 }).svg}`;
 }
 // Glass stat chip centered at cx, shrinking to stay within maxW.
 function sChip(cx, y, text, a, maxW = 820) {
@@ -988,11 +995,15 @@ async function proofCard(track, file) {
   const a = PAL.receipts;
   const subTxt = `of winners called correctly · ${n.toLocaleString()} matches, all public`;
   const hero = T('anton', `${acc}%`, SQ / 2, 392, 244, { anchor: 'middle', fill: a.key });
+  // Draw order below matters: the eyebrow is painted AFTER the hero. The
+  // hero's glow layer is a wide blur at half opacity, and although the digits
+  // themselves clear the eyebrow's baseline the blur does not - it washed
+  // straight over "GRADED IN PUBLIC, NO TAKE-BACKS" and left it half legible.
   const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
   ${sStage(a, SQ, SQ, { ghost: 'RECEIPTS' })}
   ${sMast(SQ, `The Receipts · ${SEASON_YEAR} Season`, a)}
-  ${T('bebas', 'GRADED IN PUBLIC, NO TAKE-BACKS', SQ / 2, 188, 38, { anchor: 'middle', fill: a.sub, tracking: 4 }).svg}
   <g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}
+  ${T('bebas', 'GRADED IN PUBLIC, NO TAKE-BACKS', SQ / 2, 188, 38, { anchor: 'middle', fill: a.sub, tracking: 4 }).svg}
   ${T('body', subTxt, SQ / 2, 462, fitT('body', subTxt, 31, SQ - 150), { anchor: 'middle', fill: C_MUTE }).svg}
   ${us != null ? `
   <line x1="200" y1="516" x2="${SQ - 200}" y2="516" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
@@ -1399,12 +1410,15 @@ async function dollarTestCard(edge, file) {
     eyebrowText: 'The Edge · The $1 Test',
     headline1: '$1 ON EVERY',
     headline2: 'SPLIT',
+    // Our side only. The market's return on the same splits is the mirror
+    // of ours by construction (one winner per match), so a card printing
+    // both showed one measurement as two and doubled the apparent gap.
     stats: [
       { value: money(edge.usNet), label: `our picks, net of $${edge.n} staked` },
-      { value: money(edge.mktNet), label: "the market's own favorites, same stakes" },
-      { value: `${edge.usAcc}% VS ${edge.mktAcc}%`, label: `winners called on the ${edge.n} splits` },
+      { value: `${edge.usNet >= 0 ? '+' : '-'}${Math.abs(Math.round((100 * edge.usNet) / Math.max(1, edge.n)))}%`, label: 'return on the money staked' },
+      { value: `${edge.usAcc}%`, label: `winners called on the ${edge.n} splits` },
     ],
-    footNote: 'hypothetical · settled at closing odds · not betting advice',
+    footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
     file,
     accent: edge.usNet >= 0 ? PAL.edge.key : '#ff5c5c',
     cta: 'THE EDGE BOARD  →',
@@ -1664,10 +1678,7 @@ async function run() {
   const track = JSON.parse(fs.readFileSync(path.join(DATA, 'track_record.json'), 'utf8'));
   // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
   // pinned by noCall.test.js): every published claim on a card grades calls.
-  {
-    const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
-    track.matches = (track.matches || []).filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0));
-  }
+  track.matches = (track.matches || []).filter((m) => !rowNoCall(m));
   const preds = fs.existsSync(path.join(DATA, 'predictions.json'))
     ? JSON.parse(fs.readFileSync(path.join(DATA, 'predictions.json'), 'utf8'))
     : { predictions: [] };
@@ -1681,7 +1692,7 @@ async function run() {
   // until then the season number appears, labeled as the resimulated
   // benchmark it is. Cards and captions read these off sc.
   // Calls only: no-call rows grade for audit and never enter the claim.
-  const fwdDecided = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall);
+  const fwdDecided = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
   const fwd = { n: fwdDecided.length, correct: fwdDecided.filter((p) => p.correct).length };
   fwd.acc = fwd.n ? Math.round((fwd.correct / fwd.n) * 100) : 0;
   const fwdArmed = fwd.n >= 25;
@@ -1730,7 +1741,7 @@ async function run() {
   // coin-flips instead of the day's real headliners.
   const NOW = Date.now();
   const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending' && !p.noCall && ['slam', '1000'].includes(p.tier || 'slam')
+    .filter((p) => p.status === 'pending' && !ledgerNoCall(p) && ['slam', '1000'].includes(p.tier || 'slam')
       && new Date(p.date).getTime() >= NOW)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
@@ -2156,7 +2167,7 @@ async function run() {
     };
     await dollarTestCard(edge, 'edge-dollar.png');
     add('edge-dollar.png', 'edge-dollar-test', 'square', 'edge',
-      `The $1 test: $1 on every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}. The market's own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet).toFixed(0)}. Hypothetical, settled at closing odds, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
+      `The $1 test: $1 on our side of every one of the ${edge.n} matches where we and the betting market picked different winners. Returned ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}, ${edge.usNet >= 0 ? '+' : '-'}${Math.abs(Math.round((100 * edge.usNet) / Math.max(1, edge.n)))}% on the money staked. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
       `The $1 test card: flat-stake payout of our picks versus the market's on ${edge.n} disagreements.`);
 
     // The freshest big split (last 7 days), else the season's biggest gap -

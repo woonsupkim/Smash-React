@@ -1,9 +1,32 @@
-SMASH WEEKLY - Friday, August 21
+SMASH WEEKLY - Sunday, August 23
 
-FORWARD TEST: 109-50 (123 pending)
-SEASON: 67%
+THE WEEK: 47 from 63 (75%)
 
-NEXT UP: 10 days to the US Open
+DAY BY DAY
+  Mon: 8/10 (80%)
+  Tue: 11/14 (79%)
+  Wed: 4/9 (44%)
+  Thu: 6/8 (75%)
+  Fri: 1/2 (50%)
+  Sat: 1/1 (100%)
+
+THE ONES WE GOT WRONG
+  - Sabalenka lost to Bejlek 7-6(7) 6-4
+  - Shelton lost to Faria 6-4 6-4
+  - Zverev lost to Paul 4-6 7-6(6) 6-4
+
+IF YOU HAD FOLLOWED ALONG ALL WEEK ($100 a day, recommended plan): -$34.44 over 4 days
+  Follow the edge: -$34.44 (11/17 singles, 4 days)
+  Back every call: -$18.63 (25/33 singles, 4 days)
+  Spread plus a parlay: -$73.80 (25/33 singles, 4 days)
+  Whole card, weighted: -$80.70 (27/36 singles, 4 days)
+
+US VS THE BOOKMAKERS: 75% vs 79% (28 priced matches)
+
+FORWARD TEST: 146-58 (2 pending)
+SEASON: 72%
+
+NEXT UP: 8 days to the US Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 

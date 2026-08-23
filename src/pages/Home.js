@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
-import { pickCorrect, pickFavorite, pickNoCall } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite, pickNoCall, ledgerNoCall } from '../utils/deployedPick';
 import { planFrontier, reliability } from '../utils/staking';
 import { nextSlam, prevSlam } from '../utils/slamCalendar';
 import DigestSignup from '../components/DigestSignup';
@@ -85,13 +85,13 @@ export default function Home() {
         // whose day has PASSED and still has no result is only awaiting a
         // scoreline, and must never lead a board with a live dot on it.
         const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-        // Two different populations on purpose. The BOARD is "the calls", so
-        // no-calls (noCall: true - coin flips we declined to call) stay off
-        // it and live on the Today page as restraint. The PLAN card is the
-        // parlay builder's universe, which prices no-calls too - the builder
-        // bets edges, not calls - and must match /parlay exactly.
-        const pendingAll = all.filter((p) => p.status === 'pending');
-        const pending = pendingAll.filter((p) => !p.noCall);
+        // One population now. The board and the plan card used to differ:
+        // the board showed calls, the plan priced the no-calls too because
+        // the builder bet edges rather than calls. That split is gone - we
+        // do not stake what we will not call - so both read the same list,
+        // which is also the list /parlay builds. The coin flips still show
+        // on the Today page, as restraint.
+        const pending = all.filter((p) => p.status === 'pending' && !ledgerNoCall(p));
         const upcoming = pending
           .filter((p) => new Date(p.date) >= startOfToday)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -105,8 +105,10 @@ export default function Home() {
         // the viewer's calendar day using reliability measured on everything
         // graded so far. Feeding it the display slice quietly priced a
         // six-match "card" nobody would see anywhere else on the site.
-        const card = pendingAll.filter((p) => isToday(p.date) && stillUpcoming(p.date));
-        const gradedRows = all.filter((p) => p.status === 'won' || p.status === 'lost');
+        const card = pending.filter((p) => isToday(p.date) && stillUpcoming(p.date));
+        // Calls only here too: the plan is sized on the population it bets,
+        // exactly as /parlay and planSettle.ledgerGraded do it.
+        const gradedRows = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
         setPicks({ state: 'ready', list, live: upcoming.length > 0, card, graded: gradedRows });
         // "Decided" means GRADED, not merely "not pending". A void is a call
         // that never resolved (walkover, retirement, an orphaned fixture the
@@ -118,7 +120,7 @@ export default function Home() {
         // Positive filter + explicit flag check - excluded-by-negation is
         // this file's documented bug class (the void-counting incident).
         const decided = all
-          .filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall)
+          .filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p))
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         const correct = decided.filter((p) => p.correct).length;
         const recent = decided.slice(-RECENT_WINDOW);
@@ -171,8 +173,14 @@ export default function Home() {
   // pre-match features. What differs is the price: our side pays when it
   // lands. Gating the headline on accuracy made the page claim something
   // the data does not support while ignoring the thing it does.
+  //
+  // Tested against zero, not against the market's mirror. On a two-player
+  // disagreement exactly one side can be right, so the market's return is
+  // ours reflected: usNet > mktNet is the same test as usNet > 0 dressed up
+  // as a comparison, and it made the page look like it was clearing a bar
+  // set by someone else. The real bar is the vig, i.e. break-even.
   const beatsMarket = proof.state === 'ready' && proof.edge
-    ? proof.edge.usNet > proof.edge.mktNet
+    ? proof.edge.usNet > 0
     : null;
 
   const upsetById = useMemo(
@@ -444,10 +452,10 @@ export default function Home() {
             Every ATP and WTA match gets a call locked before play and graded in
             public after, wins and misses alike.
             {beatsMarket === false
-              ? ' On the matches where we split from the betting favorite, backing our side has not paid better than backing theirs, and we are showing you that too.'
+              ? ' On the matches where we split from the betting favorite, backing our side has not cleared break-even, and we are showing you that too.'
               : ' We pick winners about as often as the bookmakers do. The difference is the price'}
             {beatsMarket !== false && proof.state === 'ready' && proof.edge
-              ? `: on the ${proof.edge.n} matches where we split from the betting favorite, a flat $1 on our side returned ${proof.edge.usNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.usNet)} where theirs returned ${proof.edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.mktNet)}.`
+              ? `: a flat $1 on our side of the ${proof.edge.n} matches where we split from the betting favorite returned +$${Math.abs(proof.edge.usNet)}.`
               : ''}
             {' '}Today&apos;s card is live below, with a staking plan you can follow.
           </p>
@@ -472,15 +480,22 @@ export default function Home() {
               //    lead with hit rate against the market, which is the claim
               //    the data does not support (that race is level) while the
               //    one it does support sat further down the page.
+              //    Stated ONCE. It used to read "+23% vs -23%", which looks
+              //    like two measurements and is one: a split has exactly one
+              //    winner, so the market's side returns what ours does not,
+              //    and the pair is yoked by arithmetic rather than by us
+              //    being twice as good. Printing the mirror invited the
+              //    reader to add the two into a 46-point gap that does not
+              //    exist. What is worth reporting is whether our side clears
+              //    break-even at all - most bets do not.
               proof.edge && {
                 key: 'roi',
                 val: (
                   <>
                     {proof.edge.usNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.usNet / proof.edge.n) * 100))}%
-                    <span className="home-stat-vs"> vs {proof.edge.mktNet >= 0 ? '+' : '-'}{Math.abs(Math.round((proof.edge.mktNet / proof.edge.n) * 100))}%</span>
                   </>
                 ),
-                cap: `return where we split from the market · ${proof.edge.n} matches`,
+                cap: `return backing our side of ${proof.edge.n} market disagreements`,
               },
               // 2. Hit rate, kept as context rather than as the claim: level
               //    with the market is the honest reading of this number.
@@ -540,28 +555,28 @@ export default function Home() {
               <span className="home-section-sub">{proof.edge.n} graded splits this season</span>
             </div>
             <Link to="/edge" className="home-edge-card">
+              {/* One figure, not a duel. The old "55% vs 45%" pair read as
+                  two findings when a split has exactly one winner: whatever
+                  share we take, the market takes the rest, by definition.
+                  The number that carries information is the money, because
+                  that depends on the PRICE we got, which is not forced. */}
               <div className="home-edge-split">
                 <div className="home-edge-side">
                   <span className="home-edge-val">{proof.edge.usAcc}%</span>
-                  <span className="home-edge-cap">us</span>
-                </div>
-                <span className="home-edge-vs">vs</span>
-                <div className="home-edge-side muted">
-                  <span className="home-edge-val">{proof.edge.mktAcc}%</span>
-                  <span className="home-edge-cap">the bookmakers</span>
+                  <span className="home-edge-cap">of {proof.edge.n} disagreements, we named the winner</span>
                 </div>
               </div>
               <div className="home-edge-body">
                 <p className="home-edge-line">
                   Anyone can agree with the favorite. These are the {proof.edge.n} matches this season
-                  where we named a different winner than the market did, and one of us had to be wrong.
+                  where we named a different winner than the market did. Exactly one side can be right
+                  on each, so the bookmakers took the other {100 - proof.edge.usAcc}%.
                 </p>
                 <p className="home-edge-money">
-                  Staking $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
+                  The part that is not forced is the price. A flat $1 on our side of every split
+                  returned <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
                     {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
-                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
-                    {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
-                  </strong> backing theirs.
+                  </strong>{proof.edge.usNet >= 0 ? ' after the bookmakers’ margin' : ', before we account for their margin'}.
                 </p>
                 <span className="home-edge-note">Settled at the price we stamped before play, every split graded. Not betting advice.</span>
               </div>

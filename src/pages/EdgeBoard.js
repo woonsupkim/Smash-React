@@ -11,7 +11,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { countryFlagUrl } from '../components/countryFlags';
 import { lastName } from '../utils/names';
 import { cleanEvents } from '../utils/eventName';
-import { pickFavorite, pickFavProb, pickCorrect, pickNoCall } from '../utils/deployedPick';
+import { pickFavorite, pickFavProb, pickCorrect, pickNoCall, ledgerNoCall } from '../utils/deployedPick';
 import useDocMeta from '../utils/useDocMeta';
 import './EdgeBoard.css';
 
@@ -49,7 +49,7 @@ export default function EdgeBoard() {
   // (different winners) make the board; agreements carry no edge.
   const forward = useMemo(() => {
     return (preds || [])
-      .filter((p) => p.status === 'pending' && !p.noCall && p.lockOdd1 && p.lockOdd2)
+      .filter((p) => p.status === 'pending' && !ledgerNoCall(p) && p.lockOdd1 && p.lockOdd2)
       .filter((p) => tour === 'all' || p.tour === tour)
       .map((p) => {
         const mktP1 = impliedP1(p.lockOdd1, p.lockOdd2);
@@ -136,13 +136,17 @@ export default function EdgeBoard() {
 
       {stats.disagreements > 0 && (
         <div className="edge-money edge-money-lead">
-          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked on every split, both ways</div>
+          {/* One side, not two. Backing the market on the same splits
+              returns roughly the mirror of this by construction - a split
+              has exactly one winner - so printing both invited readers to
+              read a doubled gap into what is a single measurement. The bar
+              worth clearing is zero: flat-staking anything at bookmakers'
+              prices loses money on average, which is how they stay open. */}
+          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked, $1 on our side of every split</div>
           <div className="edge-money-row">
             <span className={`edge-money-cell us ${stats.usNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on our picks → <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
-            </span>
-            <span className={`edge-money-cell ${stats.mktNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on the market's → <strong>{stats.mktNet >= 0 ? '+' : '-'}${Math.abs(stats.mktNet).toFixed(0)}</strong>
+              returned <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
+              <span className="edge-money-roi"> ({stats.usNet >= 0 ? '+' : '-'}{Math.abs((100 * stats.usNet) / Math.max(1, stats.disagreements)).toFixed(0)}% on the money staked)</span>
             </span>
           </div>
         </div>
@@ -159,7 +163,7 @@ export default function EdgeBoard() {
           </div>
           <div className="edge-hero-cell">
             <div className="edge-hero-val">{stats.mktAcc}%</div>
-            <div className="edge-hero-label">MARKET WON</div>
+            <div className="edge-hero-label">MARKET WON<br /><span className="edge-hero-forced">the remainder, by definition</span></div>
           </div>
         </div>
       ) : (
@@ -173,12 +177,14 @@ export default function EdgeBoard() {
           <div className="edge-money-note">
             Hypothetical, settled at the price each side was quoted when we locked the call.
             Splits put us on the underdog ticket, so being right pays more than being popular.
+            The two hit rates above always add to 100%: one side has to be wrong. Only the money
+            is a free measurement, because only the price is not forced.
             Our feed carries one price per match, so this is not a closing-line comparison.
           </div>
         </div>
       )}
       <div className="edge-hero-note">
-        Across {stats.n.toLocaleString()} graded matches with closing odds. When both sides
+        Across {stats.n.toLocaleString()} graded matches that carried a price. When both sides
         picked the same winner, there is no edge to grade - only the {stats.disagreements} splits count here.
       </div>
 
@@ -267,8 +273,8 @@ export default function EdgeBoard() {
       </div>
 
       <p className="edge-note">
-        Market probabilities are the vig-stripped implied probabilities of the closing odds
-        recorded for each match. "Our pick" is the deployed call from the{' '}
+        Market probabilities are the vig-stripped implied probabilities of the price
+        recorded for each match when the call locked. "Our pick" is the deployed call from the{' '}
         <Link to="/track-record">the Ledger</Link> - the same one graded on every page of
         this site. Methodology in <Link to="/model">the Engine Room</Link>.
       </p>

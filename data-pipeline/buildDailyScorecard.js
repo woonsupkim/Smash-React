@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
+const { rowNoCall } = require('./lib/noCall');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
 
@@ -57,12 +58,10 @@ function run() {
     : { predictions: [] };
   const ranks = { atp: loadRanks('atp'), wta: loadRanks('wta') };
 
-  const ENGINE = require('../src/engineConfig.json');
   const allMs = track.matches || [];
   // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
   // pinned by noCall.test.js): published claims grade calls only.
-  const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
-  const ms = allMs.filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0));
+  const ms = allMs.filter((m) => !rowNoCall(m));
   // Deployed-call accessors: the pick made by the best engine for each
   // match's tour x surface (annotated by buildTrackRecord), with a Smart
   // Blend fallback for rows that predate the annotation.

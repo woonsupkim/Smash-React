@@ -739,3 +739,42 @@ a.track-forward-row:hover { background: var(--surface-2); border-radius: var(--r
   border-radius: var(--radius-pill, 999px);
   padding: 0.05rem 0.45rem;
 }
+
+/* No-call verdict: deliberately neutral. Neither the green of a hit nor the
+   red of a miss belongs on a row where no claim was made, so the lean reads
+   as grey commentary and the outcome sits in a lighter aside beside it. */
+.track-verdict.nocall { color: var(--text-2, #ced2d8); font-weight: 500; }
+.track-verdict-shadow { color: var(--text-3, #9aa1ab); font-weight: 400; }
+
+/* The restraint audit above the match log. Sits between the section label
+   and the rows so the tally of the passes is read before the passes are. */
+.track-shadow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.18));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+.track-shadow-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2, #ced2d8);
+  line-height: 1;
+}
+.track-shadow-text {
+  flex: 1 1 16rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-3, #9aa1ab);
+}
+
+/* The passed-on band in the confidence table. Muted and rule-separated so it
+   reads as context for the claims below it rather than as one of them. */
+.track-conf-pass { color: var(--text-3, #9aa1ab); }
+.track-conf-pass th[scope="row"] { font-style: italic; }
+.track-conf-pass td, .track-conf-pass th { border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.18)); }

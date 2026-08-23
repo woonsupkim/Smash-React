@@ -11,7 +11,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { lastName } from '../utils/names';
 import { cleanEvents } from '../utils/eventName';
 import { slugify } from '../utils/slug';
-import { pickCorrect, pickFavorite, pickFavProb } from '../utils/deployedPick';
+import { pickCorrect, pickNoCall, pickFavorite, pickFavProb } from '../utils/deployedPick';
 import useDocMeta from '../utils/useDocMeta';
 import './EventPage.css';
 
@@ -48,14 +48,20 @@ export default function EventPage() {
   );
 
   const stats = useMemo(() => {
-    const n = rows.length;
-    const correct = rows.filter((m) => pickCorrect(m)).length;
+    // "Winners called" grades CALLS, the same policy as every other claim on
+    // the site: a coin flip under the threshold was never claimed, so it
+    // cannot count for or against the event's record. The match list below
+    // still shows every graded match. Engines are scored on the same
+    // population so the bake-off compares like with like.
+    const calls = rows.filter((m) => !pickNoCall(m));
+    const n = calls.length;
+    const correct = calls.filter((m) => pickCorrect(m)).length;
     const byTour = ['atp', 'wta'].map((t) => {
-      const ms = rows.filter((m) => m.tour === t);
+      const ms = calls.filter((m) => m.tour === t);
       return { tour: t, n: ms.length, correct: ms.filter((m) => pickCorrect(m)).length };
     }).filter((t) => t.n > 0);
     const engines = ENGINES.map(([label, field]) => {
-      const graded = rows.filter((m) => typeof m[field] === 'boolean');
+      const graded = calls.filter((m) => typeof m[field] === 'boolean');
       return { label, n: graded.length, correct: graded.filter((m) => m[field]).length };
     }).filter((e) => e.n > 0);
     // Boldest hit: the biggest ranking underdog we backed and got right.

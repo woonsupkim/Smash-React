@@ -1,20 +1,32 @@
-// The no-call ledger contract. A coin flip below engineConfig.callThreshold
-// locks with noCall: true - graded for audit, priced by the parlay builder,
-// NEVER counted as a call. These pin the three behaviors that must not
-// drift apart, because excluded-by-negation is this repo's documented bug
-// class (a void once counted as a miss and understated the record by five
-// points; a no-call counted as a call would inflate it the same way).
+// The no-call contract. A match whose stated probability sits below
+// engineConfig.callThreshold is a coin flip: we do not call it, we do not
+// stake it, and no published claim counts it in either direction. The lean
+// is still recorded and still graded, as an audit of the restraint.
+//
+// These pin the behaviors that must not drift apart, because
+// excluded-by-negation is this repo's documented bug class. Two live
+// examples, both caught by hand rather than by a test, which is why the
+// coverage below is shaped the way it is:
+//
+//   - `!row.noCall` was the ledger filter, and NO ledger row carried the
+//     flag. Every one of the 278 graded rows, including 74 coin flips, sailed
+//     through a filter that looked correct and did nothing.
+//   - The season benchmark counted hits over EVERY graded row and divided by
+//     calls only, publishing 94% against a true 72%.
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import CONFIG from './engineConfig.json';
+import { pickNoCall, ledgerNoCall, CALL_THRESHOLD } from './utils/deployedPick';
 
 const read = (p) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
+const json = (p) => JSON.parse(read(p));
 
 describe('the no-call threshold', () => {
   it('exists, is a coin-flip band, and stays below the leans tier', () => {
     expect(CONFIG.callThreshold).toBeGreaterThan(0.5);
     expect(CONFIG.callThreshold).toBeLessThanOrEqual(0.65);
+    expect(CALL_THRESHOLD).toBe(CONFIG.callThreshold);
   });
 
   it('is applied at lock time in buildPredictions', () => {
@@ -24,54 +36,102 @@ describe('the no-call threshold', () => {
   });
 });
 
+describe('the rule is DERIVED, never trusted from the stored flag', () => {
+  // The flag is written prospectively and only against the threshold in
+  // force that day, so a filter that reads it alone silently passes the
+  // whole back history. Both accessors must fall back to the probability.
+  it('a ledger row under the threshold is a no-call with no flag present', () => {
+    expect(ledgerNoCall({ favProb: CONFIG.callThreshold - 0.01 })).toBe(true);
+    expect(ledgerNoCall({ favProb: CONFIG.callThreshold + 0.01 })).toBe(false);
+    expect(ledgerNoCall({ favProb: 0.9, noCall: true })).toBe(true);
+  });
+
+  it('a track row under the threshold is a no-call from its deployed pick', () => {
+    const under = 1 - (CONFIG.callThreshold - 0.01); // oriented to p1, favourite is p2
+    expect(pickNoCall({ pickProbP1: under })).toBe(true);
+    expect(pickNoCall({ pickProbP1: CONFIG.callThreshold + 0.01 })).toBe(false);
+  });
+
+  it('the live ledger actually contains rows the flag alone would miss', () => {
+    // Regression guard for the incident itself. If this ever reaches zero
+    // because the pipeline backfilled the flag, the derivation is still
+    // correct - but until then it is the only thing excluding them.
+    const rows = (json('public/data/predictions.json').predictions || [])
+      .filter((p) => p.status === 'won' || p.status === 'lost');
+    const derived = rows.filter(ledgerNoCall).length;
+    const flagged = rows.filter((p) => p.noCall === true).length;
+    expect(derived).toBeGreaterThanOrEqual(flagged);
+  });
+});
+
 describe('headline surfaces count calls only', () => {
-  // The exact forward-record filter, replicated. Rows: one call won, one
-  // call lost, one NO-CALL won, one void. Correct answer: 1 of 2.
   const rows = [
-    { status: 'won', correct: true },
-    { status: 'lost', correct: false },
-    { status: 'won', correct: true, noCall: true },
-    { status: 'void', correct: false },
+    { status: 'won', correct: true, favProb: 0.8 },
+    { status: 'lost', correct: false, favProb: 0.8 },
+    { status: 'won', correct: true, favProb: 0.52 }, // coin flip: not a call
+    { status: 'void', correct: false, favProb: 0.8 },
   ];
-  const decided = rows.filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall);
+  const decided = rows.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
 
   it('a graded no-call never enters the forward record', () => {
     expect(decided.length).toBe(2);
     expect(decided.filter((p) => p.correct).length).toBe(1);
   });
 
-  it('every headline consumer carries the flag check', () => {
-    for (const f of ['src/pages/Home.js', 'src/pages/TrackRecord.js', 'data-pipeline/buildDigest.js', 'data-pipeline/buildShareAssets.js', 'data-pipeline/checkGuardrails.js']) {
-      const hasCheck = /&& !p(r)?\.noCall/.test(read(f));
-      expect(`${f}: ${hasCheck}`).toBe(`${f}: true`);
+  it('every headline consumer derives the exclusion instead of reading the flag', () => {
+    for (const f of [
+      'src/pages/Home.js', 'src/pages/TrackRecord.js', 'src/pages/Parlay.js',
+      'data-pipeline/buildDigest.js', 'data-pipeline/buildShareAssets.js',
+      'data-pipeline/checkGuardrails.js', 'data-pipeline/sendPush.js',
+    ]) {
+      const src = read(f);
+      expect(`${f} uses ledgerNoCall: ${/ledgerNoCall/.test(src)}`).toBe(`${f} uses ledgerNoCall: true`);
+      // The bare-flag filter is the bug. It must not come back.
+      expect(`${f} has bare !p.noCall: ${/&& !p(r)?\.noCall\b/.test(src)}`).toBe(`${f} has bare !p.noCall: false`);
     }
+  });
+
+  it('a numerator is never counted over a wider population than its denominator', () => {
+    // The 94%-vs-72% incident: deployedCorrect came off `filtered` (all
+    // graded rows) while `n` came off `filteredCalls`.
+    const src = read('src/pages/TrackRecord.js');
+    expect(src).toMatch(/const deployedCorrect = filteredCalls\.filter/);
   });
 });
 
-describe('the staking universe still includes no-calls', () => {
-  it('Parlay legs filter on status only (the builder bets edges, not calls)', () => {
+describe('the staking universe is calls only', () => {
+  // Reversed on 2026-08-23. The builder used to price no-calls on the
+  // reasoning that it bets edges rather than calls; a product that declines
+  // to claim a coin flip and then asks you to stake one says two things at
+  // once, so the two now agree.
+  it('the parlay page filters the whole ledger before it builds anything', () => {
     const src = read('src/pages/Parlay.js');
-    // The legs selection must NOT exclude noCall...
-    expect(src).toMatch(/status === 'pending' && isToday\(p\.date\) && stillUpcoming\(p\.date\)/);
-    // ...while the "most confident" suggestions must.
-    expect(src).toMatch(/filter\(\(x\) => !x\.noCall\)/);
+    expect(src).toMatch(/\(d\.predictions \|\| \[\]\)\.filter\(\(p\) => !ledgerNoCall\(p\)\)/);
   });
 
-  it('plan settlement ignores the flag entirely', () => {
-    expect(read('data-pipeline/lib/planSettle.js')).not.toMatch(/noCall/);
+  it('plan settlement excludes them at the shared seam', () => {
+    const src = read('data-pipeline/lib/planSettle.js');
+    expect(src).toMatch(/function ledgerGraded[\s\S]*?!ledgerNoCall\(m\)/);
+  });
+
+  it('the home plan card and the builder read the same population', () => {
+    const src = read('src/pages/Home.js');
+    expect(src).toMatch(/const pending = all\.filter\(\(p\) => p\.status === 'pending' && !ledgerNoCall\(p\)\)/);
+    expect(src).toMatch(/const card = pending\.filter/);
+  });
+
+  it('the policy tournament scores the universe the builder actually prices', () => {
+    expect(read('data-pipeline/expPlanPolicies.js')).toMatch(/!rowNoCall\(m\)/);
   });
 });
 
 describe('the retrospective record speaks the same policy', () => {
   it('pickNoCall derives from the deployed probability and the config threshold', () => {
     const src = read('src/utils/deployedPick.js');
-    const hasRule = /pickNoCall = \(m\) => pickFavProb\(m\) < \(CONFIG\.callThreshold \|\| 0\)/.test(src);
-    expect(hasRule).toBe(true);
+    expect(src).toMatch(/pickNoCall = \(m\) => pickFavProb\(m\) < \(CONFIG\.callThreshold \|\| 0\)/);
   });
 
   it('every retrospective claim surface mirrors the rule', () => {
-    // Client pages go through pickNoCall; pipeline builders carry the
-    // inline mirror. Either marker counts; absence fails with the filename.
     const files = [
       'src/pages/Home.js', 'src/pages/TrackRecord.js', 'src/pages/Methodology.js',
       'src/pages/EdgeBoard.js', 'data-pipeline/buildDailyScorecard.js',
@@ -81,14 +141,22 @@ describe('the retrospective record speaks the same policy', () => {
     ];
     for (const f of files) {
       const src = read(f);
-      const ok = /pickNoCall/.test(src) || /callThreshold/.test(src);
+      const ok = /pickNoCall|rowNoCall|ledgerNoCall|callThreshold/.test(src);
       expect(`${f}: ${ok}`).toBe(`${f}: true`);
     }
   });
 
+  it('the pipeline mirror and the browser rule agree on the same rows', () => {
+    // One threshold, two runtimes. Sampled against the real record rather
+    // than asserted by eye, because the CommonJS copy is the one that can
+    // drift unnoticed.
+    const { rowNoCall } = require('../data-pipeline/lib/noCall');
+    const rows = (json('public/data/track_record.json').matches || []).slice(0, 800);
+    for (const m of rows) expect(rowNoCall(m)).toBe(pickNoCall(m));
+  });
+
   it('the exclusion is computed, never written onto track rows', () => {
-    const rows = JSON.parse(read('public/data/track_record.json')).matches || [];
-    const flagged = rows.filter((m) => m.noCall != null).length;
-    expect(flagged).toBe(0);
+    const rows = json('public/data/track_record.json').matches || [];
+    expect(rows.filter((m) => m.noCall != null).length).toBe(0);
   });
 });

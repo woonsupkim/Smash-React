@@ -28,8 +28,8 @@
  */
 const fs = require('fs');
 const path = require('path');
-const ENGINE = require('../src/engineConfig.json');
 const { isDeployTier } = require('./lib/events');
+const { rowNoCall, ledgerNoCall } = require('./lib/noCall');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
 const WINDOW = 40;   // recent matches per cell
@@ -60,8 +60,7 @@ function run() {
   // Calls only, mirroring src/utils/deployedPick.pickNoCall (pinned by
   // noCall.test.js): the guardrails watch what the site claims, and the
   // site no longer claims coin flips.
-  const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
-  const ms = (track.matches || []).filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0))
+  const ms = (track.matches || []).filter((m) => !rowNoCall(m))
     .slice().sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const alerts = [];
@@ -120,7 +119,7 @@ function run() {
   // counting it here both understated the record and could trip the sub-50%
   // alert below on matches nobody ever played.
   const decided = (preds.predictions || [])
-    .filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall)
+    .filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const fRecent = decided.slice(-WINDOW);
   const fAcc = pct(fRecent, (p) => p.correct);

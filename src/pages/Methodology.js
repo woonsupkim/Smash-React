@@ -177,8 +177,9 @@ export default function Methodology() {
               Two baselines keep the model honest. <strong>Higher rank wins</strong> is the naive pick
               - just take the better-ranked player. The much harder test is the
               <strong> bookmaker favorite</strong>: the market's shortest price already prices in
-              everything public, so matching or beating the closing line is the most credible claim in
-              sports prediction. Both are shown on the{' '}
+              everything public, so matching or beating it is the most credible claim in
+              sports prediction. (Their price here is the one quoted when we locked the call, not a
+              closing line - our feed carries a single snapshot per match.) Both are shown on the{' '}
               <Link to="/track-record">the Ledger</Link> over the exact same matches.
             </p>
           </section>

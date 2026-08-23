@@ -471,11 +471,18 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   // rest for tomorrow" is part of the recommendation, not a failure to
   // allocate.
   //
-  // Chosen by tournament, not taste (expPlanPolicies.js, 94 deploy-tier
-  // days Apr-Aug, walk-forward reliability, settled at the recorded odds):
-  // this sizing returned +19.6% ROI with a worst day of -$32 and a $63 max
-  // drawdown per $100 budget, versus +6.2% ROI and a 52% up-day coin flip
-  // for the flat spread. Fractions above a quarter staked more for less.
+  // Chosen by tournament, not taste (expPlanPolicies.js, walk-forward
+  // reliability, settled at the recorded odds). The live figures it produces
+  // are written to src/data/planBacktest.json and quoted from there, so the
+  // page and this comment cannot drift apart the way they did when the
+  // numbers were transcribed by hand. As of the 2026-08-23 run - the first
+  // on a calls-only universe, after no-calls stopped being staked - this
+  // sizing returned +17.1% on money staked over 78 staked days, worst day
+  // -$28, $55 max drawdown per $100 budget, against +6.2% and a $130
+  // drawdown for the flat spread. Fractions above a quarter staked more for
+  // less. Excluding the no-calls cost about 2.4 points of backtested ROI and
+  // was taken anyway: staking a match the record refuses to claim made the
+  // product say two different things about the same match.
   const EDGE_FRACTION = 0.25;   // of budget, per Kelly unit
   const EDGE_BET_CAP = 0.20;    // of budget, per single
   const EDGE_PARLAY_CAP = 0.10; // of budget

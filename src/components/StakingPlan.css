@@ -247,3 +247,67 @@
 
 /* "7.0 of 10" - the count is the number, the denominator is context. */
 .stake-best-of { font-size: 0.62em; font-weight: 700; color: var(--text-2, #ced2d8); }
+
+/* "recommended" tag inside the plan menu. The menu is a radio group and the
+   selected state already shows which plan is ON SCREEN; this says which one
+   the site would pick, which is a different fact and was previously only
+   inferable from the initial selection. */
+.stake-best-opt-rec {
+  margin-left: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-brand, #c8f560);
+  vertical-align: middle;
+}
+
+/* The "how this plan gets chosen" disclosure. Collapsed by default: the
+   reader who wants to place the bets should not have to scroll past the
+   reasoning, and the reader who distrusts the recommendation should not have
+   to leave the page to find it. */
+.stake-why {
+  margin: 0.75rem 0 0;
+  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.14));
+  padding-top: 0.7rem;
+}
+.stake-why > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-2, #ced2d8);
+  list-style: none;
+}
+.stake-why > summary::-webkit-details-marker { display: none; }
+.stake-why > summary::before { content: '▸ '; color: var(--text-3, #9aa1ab); }
+.stake-why[open] > summary::before { content: '▾ '; }
+.stake-why > summary:hover { color: var(--text-1, #fff); }
+.stake-why-body p {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-3, #9aa1ab);
+}
+.stake-why-body strong { color: var(--text-2, #ced2d8); }
+.stake-why-cal { font-style: italic; }
+
+/* How to read the distribution. Sits between the caption and the plot so it
+   is read before the bars, not after them. */
+.stake-dist-how {
+  margin: 0 0 0.5rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--text-3, #9aa1ab);
+}
+
+/* The verdict row. There was no container rule at all: the badge and its
+   explanation are adjacent inline spans, so they rendered butted together
+   ("...on averageAveraged over many days..."). It went unnoticed while only
+   one branch ever printed text next to the badge. */
+.stake-verdict {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  margin-top: 0.6rem;
+}

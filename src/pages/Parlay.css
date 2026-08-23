@@ -147,3 +147,31 @@
 /* DigestSignup renders nothing when the cloud is not configured; without
    this the wrapper still contributes its margin as dead space. */
 .parlay-signup:empty { display: none; margin: 0; }
+
+/* The applied chip. Previously a chip gave no indication it was in force, so
+   a reader who clicked one and then scrolled back had no way to tell whether
+   it had taken effect. */
+.parlay-chip.on {
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 12%, transparent);
+}
+.parlay-chip.on .parlay-chip-title { color: var(--accent-brand, #c8f560); }
+
+/* Dollars beside the percentage in the receipt: same line, quieter weight,
+   so the percentage leads and the raw amount is still there to check. */
+.parlay-receipt-dollars {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-3, #9aa1ab);
+  white-space: nowrap;
+}
+/* The per-tournament strip sits under the all-time one and reads as a
+   subordinate view of the same record, not a competing headline. */
+.parlay-receipt-event { margin-top: 0.5rem; }
+.parlay-receipt-event .parlay-receipt-val { font-size: 1.15rem; }
+
+/* Let the text column claim the remaining width so the sparkline stays on
+   the right instead of wrapping underneath it. Without this the longer
+   per-tournament caption pushed the curve onto its own line, where it read
+   as a stray graphic rather than as this row's chart. */
+.parlay-receipt-main { flex: 1 1 20rem; }
