@@ -1325,25 +1325,48 @@ async function main() {
       // proves nothing; over a week it starts to mean something, which is the
       // whole reason a weekly exists.
       const weekDays = [...new Set(week.map((m) => String(m.date).slice(0, 10)))].sort();
-      const totals = new Map(); // plan id -> { label, profit, days, hits, n }
+      // Two different questions, and they need two different day sets.
+      //
+      // What a FOLLOWER got is the recommendation on every settleable day in
+      // the window - that is the money that actually moved.
+      //
+      // What the alternatives WOULD have got has to be a like-for-like
+      // comparison, and it was not: each plan was summed over the days it
+      // happened to be offered on, then all four were printed in one table as
+      // if comparable. The builder does not always offer a full menu (a
+      // whole-card plan needs the spread to cover its own stake), so last
+      // week "follow the edge" totalled five days against the others' four -
+      // a table where the rows do not describe the same week. The comparison
+      // now runs over the days every plan was on the menu, and says so.
+      const byDay = [];
       let recTotal = 0, recDays = 0;
       for (const dayISO of weekDays) {
         const settledDay = planReturns(preds, dayISO);
         if (!settledDay) continue;
-        for (const pl of settledDay.plans) {
-          const t = totals.get(pl.id) || { label: pl.label, profit: 0, days: 0, hits: 0, n: 0 };
-          t.profit += pl.profit; t.days++; t.hits += pl.hits; t.n += pl.n;
+        byDay.push(settledDay);
+        const rec = settledDay.plans.find((pl) => pl.id === settledDay.recommendedId);
+        if (rec) { recTotal += rec.profit; recDays++; }
+      }
+      const everyId = [...new Set(byDay.flatMap((d) => d.plans.map((pl) => pl.id)))];
+      const commonDays = byDay.filter((d) => everyId.every((id) => d.plans.some((pl) => pl.id === id)));
+      const compareDays = commonDays.length >= 2 ? commonDays : byDay;
+      const totals = new Map(); // plan id -> { label, profit, days, hits, n }
+      for (const d of compareDays) {
+        for (const pl of d.plans) {
+          const t = totals.get(pl.id) || { label: pl.label, profit: 0, days: 0, hits: 0, n: 0, staked: 0 };
+          t.profit += pl.profit; t.days++; t.hits += pl.hits; t.n += pl.n; t.staked += pl.staked;
           totals.set(pl.id, t);
-          if (pl.id === settledDay.recommendedId) { recTotal += pl.profit; recDays++; }
         }
       }
+      const comparableDays = compareDays.length;
+      const partial = comparableDays < recDays;
       if (recDays >= 2) {
         const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
         const rows = [...totals.entries()].map(([id, t]) => `
           <tr>
             <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
               <strong style="color:${INK};">${esc(t.label)}</strong>
-              <span style="display:block;font-size:12px;color:${MUTED};">$${PLAN_BUDGET} a day for ${plural(t.days, 'day', 'days')} · ${t.hits} of ${t.n} singles landed</span>
+              <span style="display:block;font-size:12px;color:${MUTED};">${t.hits} of ${t.n} singles landed · $${t.staked.toFixed(0)} staked · ${t.staked > 0 ? `${t.profit >= 0 ? '+' : '-'}${Math.abs((100 * t.profit) / t.staked).toFixed(1)}%` : '-'} on the money</span>
             </td>
             <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${t.profit >= 0 ? WIN : LOSS};white-space:nowrap;">
               ${money(t.profit)}
@@ -1352,7 +1375,7 @@ async function main() {
         blocks.push(section(`
           ${kicker('If you had followed along all week')}
           ${h2(`${money(recTotal)} taking the recommendation every day`)}
-          ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did, followed daily:`)}
+          ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did over the ${plural(comparableDays, 'day', 'days')} all of them were on the menu${partial ? ' - a like-for-like comparison, so it is a shorter window than the total above' : ''}:`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 10px;">${rows}</table>
           ${p(`${recTotal >= 0 ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and a week is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
           <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
