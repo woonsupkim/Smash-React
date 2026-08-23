@@ -794,8 +794,15 @@ async function main() {
           : yPct >= 50 ? ' Half right, which means half wrong, and both halves are below.'
             : ' Not our finest hour. It is all in the record anyway.');
     }
-    if (card.length) {
-      ledeBits.push(` ${plural(calls.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck${passes.length ? `, plus ${plural(passes.length, 'coin flip', 'coin flips')} we are sitting out` : ''}.`);
+    // Two ledes, because a card of nothing but coin flips is a real state and
+    // "0 more are locked for today at Cincinnati" is not a sentence. The
+    // count in the first branch is CALLS, so it has to be non-zero to be
+    // spoken; when it is zero the passes are the whole story.
+    const whereAt = events.length ? ` at ${events.join(' and ')}` : '';
+    if (calls.length) {
+      ledeBits.push(` ${plural(calls.length, 'more is', 'more are')} locked for today${whereAt}, every one of them public before a ball is struck${passes.length ? `, plus ${plural(passes.length, 'coin flip', 'coin flips')} we are sitting out` : ''}.`);
+    } else if (passes.length) {
+      ledeBits.push(` Today${whereAt} we are calling nothing: all ${plural(passes.length, 'match', 'matches')} on the card sit inside our coin-flip band. Sitting out is a position.`);
     }
     if (ledeBits.length) {
       blocks.push(section(p(ledeBits.join('').trim())));
@@ -896,9 +903,20 @@ async function main() {
         const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
         const plain = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
         // Named through the registry so the heading reads the same whichever
-        // file the event name came from ("Cincinnati Open" vs "Cincinnati").
-        const reg = matchEvent((ydayRows.length && ydayRows[0].event) || (card.length && card[0].event) || null);
-        const liveEvent = reg ? reg.label : null;
+        // file the event name came from ("Cincinnati Open" vs "Cincinnati"),
+        // and chosen by MAJORITY of the rows rather than by taking index 0.
+        // A day's card routinely mixes a slam or 1000 with smaller stops the
+        // registry does not cover, and reading the first row's event meant a
+        // WTA 500 sitting at the top of the list ("Abierto GNP Seguros")
+        // resolved to nothing and silently suppressed the whole block.
+        const tally = new Map();
+        for (const r of [...ydayRows, ...card]) {
+          const hit = matchEvent(r.event);
+          if (hit) tally.set(hit.label, (tally.get(hit.label) || 0) + 1);
+        }
+        const liveEvent = tally.size
+          ? [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+          : null;
         const days = liveEvent ? planSettle.eventDays(preds, liveEvent) : [];
         const run = days.length >= 2 ? planSettle.planRun(preds, days) : null;
         if (run && run.days >= 2) {
@@ -991,7 +1009,13 @@ async function main() {
     // description of the tool that makes it. Same maths the builder runs,
     // mirrored above and pinned by digestStaking.test.js.
     const rel = staking.reliability(ledgerGraded(preds));
-    const planBets = card
+    // Built from CALLS, not from the raw card. `card` still carries the
+    // no-calls so the section above can name what we are sitting out - and
+    // feeding it to the staking plan quietly put money on them, which is the
+    // exact contradiction this policy change removed everywhere else. The
+    // mail was recommending stakes on a 57% and a 51% on a day the same mail
+    // said "no calls - the whole card is inside our coin-flip band".
+    const planBets = calls
       .map((pr) => {
         const favIsP1 = pr.favorite === pr.p1;
         const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
@@ -1059,7 +1083,7 @@ async function main() {
         </tr>`;
       }
 
-      const unpriced = card.length - planBets.length;
+      const unpriced = calls.length - planBets.length;
       const others = frontier.plans.filter((pl) => pl.id !== todayPlan.id);
       const menuLine = others.length
         ? ` The builder also offers ${others.map((pl) => `${pl.label.toLowerCase()} (${Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead, ${pl.metrics.ev >= 0 ? '+' : '-'}$${Math.abs(pl.metrics.ev).toFixed(2)} expected)`).join(' and ')}; this one leads because nothing on the menu beats it on both chance and expectation.`
