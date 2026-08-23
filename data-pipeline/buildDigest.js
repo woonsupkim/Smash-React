@@ -46,8 +46,8 @@ try { require('dotenv').config(); } catch { /* dotenv optional */ }
 
 const fs = require('fs');
 const path = require('path');
-const ENGINE = require('../src/engineConfig.json');
 const Papa = require('papaparse');
+const { rowNoCall, ledgerNoCall } = require('./lib/noCall');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
@@ -566,10 +566,25 @@ function resultRow(m) {
   // who the bookmakers made favourite, and whether that player won - so it
   // now just says that. Whether they were with us or against us is visible
   // from the name itself, without a word of jargon.
+  // "Bookies' pick / Swiatek lost" left the only question unanswered. When
+  // the bookmakers backed the same player we did, that cell repeated a name
+  // already in the row and never said it was a repeat, so a reader could not
+  // tell whether the market had been wrong alongside us or right against us -
+  // which is the entire reason the column exists. Say the relationship first,
+  // then the name, then the outcome.
   const marketCell = mv
-    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">Bookies' pick</div>
+    ? `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;white-space:nowrap;">
+         ${mv.agreed ? 'Bookies agreed' : 'Bookies disagreed'}
+       </div>
        <div style="font-size:13px;line-height:1.5;color:${mv.right ? WIN : LOSS};font-weight:700;padding-top:3px;white-space:nowrap;">
-         ${esc(lastName(mv.favName))} ${mv.right ? 'won' : 'lost'}
+         ${mv.agreed
+    ? `${esc(lastName(mv.favName))} too`
+    : `they had ${esc(lastName(mv.favName))}`}
+       </div>
+       <div style="font-size:11px;line-height:1.5;color:${MUTED};font-weight:400;white-space:nowrap;">
+         ${mv.agreed
+    ? (mv.right ? 'both of us right' : 'both of us wrong')
+    : (mv.right ? 'they were right, we were not' : 'we were right, they were not')}
        </div>`
     : `<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:${MUTED};font-weight:700;">No price</div>`;
   return `
@@ -695,9 +710,8 @@ async function main() {
   // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
   // pinned by noCall.test.js). `graded` = the CALLS every claim grades;
   // gradedAll keeps the full record for anything that audits the policy.
-  const rowProb = (m) => { const r = m.pickProbP1 != null ? m.pickProbP1 : m.smashProbP1; return Math.max(r, 1 - r); };
   const gradedAll = matches.filter((m) => m.date && pickCorrect(m) != null);
-  const graded = gradedAll.filter((m) => rowProb(m) >= (ENGINE.callThreshold || 0));
+  const graded = gradedAll.filter((m) => !rowNoCall(m));
   const preds = (predsDoc && predsDoc.predictions) || [];
 
   let slam = null;
@@ -724,8 +738,8 @@ async function main() {
     // `card` is the staking universe (the builder prices no-calls too);
     // `calls` is what we CLAIM, and the passes get named, not hidden.
     const card = todays.length ? todays : upcoming.slice(0, 6);
-    const calls = card.filter((pr) => !pr.noCall);
-    const passes = card.filter((pr) => pr.noCall);
+    const calls = card.filter((pr) => !ledgerNoCall(pr));
+    const passes = card.filter((pr) => ledgerNoCall(pr));
     const shown = calls.slice(0, 5);
     const events = [...new Set(card.map((pr) => pr.event).filter(Boolean))];
     const splits = card.filter((pr) => {
@@ -780,8 +794,15 @@ async function main() {
           : yPct >= 50 ? ' Half right, which means half wrong, and both halves are below.'
             : ' Not our finest hour. It is all in the record anyway.');
     }
-    if (card.length) {
-      ledeBits.push(` ${plural(calls.length, 'more is', 'more are')} locked for today${events.length ? ` at ${events.join(' and ')}` : ''}, every one of them public before a ball is struck${passes.length ? `, plus ${plural(passes.length, 'coin flip', 'coin flips')} we are sitting out` : ''}.`);
+    // Two ledes, because a card of nothing but coin flips is a real state and
+    // "0 more are locked for today at Cincinnati" is not a sentence. The
+    // count in the first branch is CALLS, so it has to be non-zero to be
+    // spoken; when it is zero the passes are the whole story.
+    const whereAt = events.length ? ` at ${events.join(' and ')}` : '';
+    if (calls.length) {
+      ledeBits.push(` ${plural(calls.length, 'more is', 'more are')} locked for today${whereAt}, every one of them public before a ball is struck${passes.length ? `, plus ${plural(passes.length, 'coin flip', 'coin flips')} we are sitting out` : ''}.`);
+    } else if (passes.length) {
+      ledeBits.push(` Today${whereAt} we are calling nothing: all ${plural(passes.length, 'match', 'matches')} on the card sit inside our coin-flip band. Sitting out is a position.`);
     }
     if (ledeBits.length) {
       blocks.push(section(p(ledeBits.join('').trim())));
@@ -867,6 +888,54 @@ async function main() {
           </div>`;
         planTxt = 'If you had actually followed along ($' + settled.budget + ' in): '
           + settled.plans.map((pl) => `${pl.label} ${money(pl.profit)}${pl.id === settled.recommendedId ? ' (recommended)' : ''}`).join('; ');
+
+      }
+
+      // Running total for the tournament in progress, INDEPENDENT of whether
+      // yesterday itself was settleable. A single day is noise in both
+      // directions, and a reader who only ever sees one day cannot tell a bad
+      // Tuesday from a bad strategy - so during a slam or a 1000 the daily
+      // mail carries where the recommendation stands across the whole event,
+      // win or lose. Yesterday having only one priced match (which is common
+      // at the tail of a draw) must not take the running total down with it.
+      {
+        const { matchEvent } = require('./lib/events');
+        const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
+        const plain = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
+        // Named through the registry so the heading reads the same whichever
+        // file the event name came from ("Cincinnati Open" vs "Cincinnati"),
+        // and chosen by MAJORITY of the rows rather than by taking index 0.
+        // A day's card routinely mixes a slam or 1000 with smaller stops the
+        // registry does not cover, and reading the first row's event meant a
+        // WTA 500 sitting at the top of the list ("Abierto GNP Seguros")
+        // resolved to nothing and silently suppressed the whole block.
+        const tally = new Map();
+        for (const r of [...ydayRows, ...card]) {
+          const hit = matchEvent(r.event);
+          if (hit) tally.set(hit.label, (tally.get(hit.label) || 0) + 1);
+        }
+        const liveEvent = tally.size
+          ? [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+          : null;
+        const days = liveEvent ? planSettle.eventDays(preds, liveEvent) : [];
+        const run = days.length >= 2 ? planSettle.planRun(preds, days) : null;
+        if (run && run.days >= 2) {
+          const pos = run.profit >= 0;
+          const roiPct = `${pos ? '+' : '-'}${Math.abs(run.roi * 100).toFixed(1)}%`;
+          planBlock += `
+            <div style="margin-top:10px;padding:14px 18px;background:${PANEL};border-left:3px solid ${pos ? WIN : LOSS};">
+              ${kicker(`${esc(liveEvent)} so far`)}
+              <p style="margin:0;font-size:14px;line-height:1.6;color:${BODY};">
+                Following the recommendation every day of this tournament:
+                <strong style="color:${pos ? WIN : LOSS};">${money(run.profit)}</strong>
+                <span style="color:${MUTED};">(${roiPct} on ${plain(run.staked)} staked, ${run.up} of ${run.days} days up)</span>.
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:${MUTED};">
+                Rebuilt each morning from what was known that morning, settled at the prices we stamped before play.
+              </p>
+            </div>`;
+          planTxt += `${planTxt ? ' | ' : ''}${liveEvent.toUpperCase()} SO FAR: ${money(run.profit)} (${roiPct} on $${run.staked.toFixed(2)}, ${run.up}/${run.days} days up)`;
+        }
       }
 
       blocks.push(section(`
@@ -886,7 +955,24 @@ async function main() {
       txtLines.push('');
     }
 
-    // Today's card.
+    // Today's card. This section is ALWAYS emitted, even with nothing to
+    // show. It used to be gated on `shown.length`, so on a day with no
+    // locked fixtures - between tournaments, or before the schedule lands -
+    // it vanished silently and "The money question" answered a question the
+    // reader had not been asked yet. A named empty state costs three lines
+    // and keeps the running order the same every morning.
+    if (!shown.length) {
+      const why = !card.length
+        ? 'Nothing is locked in. Either the draw has not been published yet or the tour is between events; new calls appear the moment the schedule lands.'
+        : `Every one of ${plural(card.length, 'match', 'matches')} on the card sits inside our coin-flip band, so we are not calling any of them. The leans are on the record and graded, they just are not claims. Passing is a position too.`;
+      blocks.push(section(`
+        ${kicker('On court today')}
+        ${h2(card.length ? 'No calls today' : 'Nothing on the card')}
+        ${p(why)}
+        <div style="padding-top:4px;">${textLink(`${SITE}/today`, card.length ? 'See the leans anyway' : "See what's next")}</div>
+      `));
+      txtLines.push('ON COURT TODAY', `  ${card.length ? 'No calls - the whole card is inside our coin-flip band.' : 'Nothing locked in yet.'}`, '');
+    }
     if (shown.length) {
       // One match carries the section; the rest are a list under it.
       const hero = pickHero(shown, h2hDoc, oddsDoc);
@@ -923,7 +1009,13 @@ async function main() {
     // description of the tool that makes it. Same maths the builder runs,
     // mirrored above and pinned by digestStaking.test.js.
     const rel = staking.reliability(ledgerGraded(preds));
-    const planBets = card
+    // Built from CALLS, not from the raw card. `card` still carries the
+    // no-calls so the section above can name what we are sitting out - and
+    // feeding it to the staking plan quietly put money on them, which is the
+    // exact contradiction this policy change removed everywhere else. The
+    // mail was recommending stakes on a 57% and a 51% on a day the same mail
+    // said "no calls - the whole card is inside our coin-flip band".
+    const planBets = calls
       .map((pr) => {
         const favIsP1 = pr.favorite === pr.p1;
         const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
@@ -991,7 +1083,7 @@ async function main() {
         </tr>`;
       }
 
-      const unpriced = card.length - planBets.length;
+      const unpriced = calls.length - planBets.length;
       const others = frontier.plans.filter((pl) => pl.id !== todayPlan.id);
       const menuLine = others.length
         ? ` The builder also offers ${others.map((pl) => `${pl.label.toLowerCase()} (${Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead, ${pl.metrics.ev >= 0 ? '+' : '-'}$${Math.abs(pl.metrics.ev).toFixed(2)} expected)`).join(' and ')}; this one leads because nothing on the menu beats it on both chance and expectation.`
@@ -1034,7 +1126,13 @@ async function main() {
       blocks.push(section(`
         ${kicker('The money question')}
         ${h2('What we would actually stake')}
-        ${p(`Nothing, today. ${planBets.length ? 'Every price on the card is short enough that even spread across all of them, the expected return does not cover the stake.' : 'Nothing on the card carried a market price when we locked it, so there is no edge to size against.'} Some days that is the answer, and pretending otherwise is how people lose money.`)}
+        ${p(`Nothing, today. ${!card.length
+    ? 'There is no card to stake yet - see above.'
+    : planBets.length
+      ? 'Every price on the card is short enough that even spread across all of them, the expected return does not cover the stake.'
+      : calls.length
+        ? 'Nothing on the card carried a market price when we locked it, so there is no edge to size against.'
+        : 'We are not calling anything on today\'s card, and we do not stake what we will not call.'} Some days that is the answer, and pretending otherwise is how people lose money.`)}
         <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Check it against your own book')}</div>
       `));
       txtLines.push(`THE MONEY QUESTION: nothing worth staking today. ${SITE}/parlay`, '');
@@ -1227,25 +1325,48 @@ async function main() {
       // proves nothing; over a week it starts to mean something, which is the
       // whole reason a weekly exists.
       const weekDays = [...new Set(week.map((m) => String(m.date).slice(0, 10)))].sort();
-      const totals = new Map(); // plan id -> { label, profit, days, hits, n }
+      // Two different questions, and they need two different day sets.
+      //
+      // What a FOLLOWER got is the recommendation on every settleable day in
+      // the window - that is the money that actually moved.
+      //
+      // What the alternatives WOULD have got has to be a like-for-like
+      // comparison, and it was not: each plan was summed over the days it
+      // happened to be offered on, then all four were printed in one table as
+      // if comparable. The builder does not always offer a full menu (a
+      // whole-card plan needs the spread to cover its own stake), so last
+      // week "follow the edge" totalled five days against the others' four -
+      // a table where the rows do not describe the same week. The comparison
+      // now runs over the days every plan was on the menu, and says so.
+      const byDay = [];
       let recTotal = 0, recDays = 0;
       for (const dayISO of weekDays) {
         const settledDay = planReturns(preds, dayISO);
         if (!settledDay) continue;
-        for (const pl of settledDay.plans) {
-          const t = totals.get(pl.id) || { label: pl.label, profit: 0, days: 0, hits: 0, n: 0 };
-          t.profit += pl.profit; t.days++; t.hits += pl.hits; t.n += pl.n;
+        byDay.push(settledDay);
+        const rec = settledDay.plans.find((pl) => pl.id === settledDay.recommendedId);
+        if (rec) { recTotal += rec.profit; recDays++; }
+      }
+      const everyId = [...new Set(byDay.flatMap((d) => d.plans.map((pl) => pl.id)))];
+      const commonDays = byDay.filter((d) => everyId.every((id) => d.plans.some((pl) => pl.id === id)));
+      const compareDays = commonDays.length >= 2 ? commonDays : byDay;
+      const totals = new Map(); // plan id -> { label, profit, days, hits, n }
+      for (const d of compareDays) {
+        for (const pl of d.plans) {
+          const t = totals.get(pl.id) || { label: pl.label, profit: 0, days: 0, hits: 0, n: 0, staked: 0 };
+          t.profit += pl.profit; t.days++; t.hits += pl.hits; t.n += pl.n; t.staked += pl.staked;
           totals.set(pl.id, t);
-          if (pl.id === settledDay.recommendedId) { recTotal += pl.profit; recDays++; }
         }
       }
+      const comparableDays = compareDays.length;
+      const partial = comparableDays < recDays;
       if (recDays >= 2) {
         const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
         const rows = [...totals.entries()].map(([id, t]) => `
           <tr>
             <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
               <strong style="color:${INK};">${esc(t.label)}</strong>
-              <span style="display:block;font-size:12px;color:${MUTED};">$${PLAN_BUDGET} a day for ${plural(t.days, 'day', 'days')} · ${t.hits} of ${t.n} singles landed</span>
+              <span style="display:block;font-size:12px;color:${MUTED};">${t.hits} of ${t.n} singles landed · $${t.staked.toFixed(0)} staked · ${t.staked > 0 ? `${t.profit >= 0 ? '+' : '-'}${Math.abs((100 * t.profit) / t.staked).toFixed(1)}%` : '-'} on the money</span>
             </td>
             <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${t.profit >= 0 ? WIN : LOSS};white-space:nowrap;">
               ${money(t.profit)}
@@ -1254,7 +1375,7 @@ async function main() {
         blocks.push(section(`
           ${kicker('If you had followed along all week')}
           ${h2(`${money(recTotal)} taking the recommendation every day`)}
-          ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did, followed daily:`)}
+          ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did over the ${plural(comparableDays, 'day', 'days')} all of them were on the menu${partial ? ' - a like-for-like comparison, so it is a shorter window than the total above' : ''}:`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 10px;">${rows}</table>
           ${p(`${recTotal >= 0 ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and a week is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
           <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
@@ -1297,9 +1418,9 @@ async function main() {
     }
 
     // Calls only: no-call rows grade for audit but are never claimed.
-    const decided = preds.filter((pr) => (pr.status === 'won' || pr.status === 'lost') && !pr.noCall);
+    const decided = preds.filter((pr) => (pr.status === 'won' || pr.status === 'lost') && !ledgerNoCall(pr));
     const fwdWon = decided.filter((pr) => pr.status === 'won').length;
-    const pending = preds.filter((pr) => pr.status === 'pending' && !pr.noCall).length;
+    const pending = preds.filter((pr) => pr.status === 'pending' && !ledgerNoCall(pr)).length;
     if (decided.length || (season && season.n)) {
       blocks.push(section(`
         ${kicker('The standing record')}

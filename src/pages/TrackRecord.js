@@ -12,7 +12,7 @@ import { countryFlagUrl } from '../components/countryFlags';
 import { playerPhoto } from '../utils/playerPhotos';
 import { matchSlug } from '../utils/matchTime';
 import { MODEL_VERSION } from '../data/changelog';
-import { pickCorrect, pickFavorite, pickFavProb, pickNoCall } from '../utils/deployedPick';
+import { pickCorrect, pickFavorite, pickFavProb, pickNoCall, ledgerNoCall, thresholdFor } from '../utils/deployedPick';
 import { cleanEvents } from '../utils/eventName';
 import { slugify } from '../utils/slug';
 import useDocMeta from '../utils/useDocMeta';
@@ -51,10 +51,17 @@ const eventTier = (name) => MAJOR_EVENT_TIERS.find(({ re }) => re.test(name))?.t
 // since neither is complete in the data: the event-name regex catches the
 // slams (which carry no tier code), and the native `tier` field catches
 // Masters even when the event name is a sponsor string the regex misses.
-const FORWARD_TIERS = new Set(['Grand Slams', 'Masters & 1000s']);
-const FORWARD_TIER_CODES = new Set(['1000', '2000', '3000', 'grand slam', 'grandslam', 'slam']);
-const isForwardEvent = (p) =>
-  FORWARD_TIERS.has(eventTier(p.event || '')) || FORWARD_TIER_CODES.has(String(p.tier || '').toLowerCase());
+// The forward record counts EVERY locked call, at whatever event.
+//
+// It used to be filtered to slams and 1000s here on the reasoning that
+// lower-tier calls are noise for a public scoreboard. Two problems. It was a
+// no-op - buildPredictions only locks calls at those events anyway, so the
+// filter excluded nothing and merely hid the constraint - and it made the
+// scope of the headline a display decision rather than a locking one. If we
+// ever start locking calls at a 500, they belong in the record the moment we
+// make them, not once someone remembers to widen a regex. The scope is now
+// whatever we actually locked, stated on the page.
+const isForwardEvent = () => true;
 
 // One call per matchup: the ESPN id can reassign between refreshes, so the
 // same match can appear twice (often one pending + one graded). Key by the
@@ -184,7 +191,7 @@ export default function TrackRecord() {
       if (ua !== ub) return ua ? -1 : 1;
       return ua ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
     });
-    const decided = list.filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const decided = list.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p)).sort((a, b) => new Date(b.date) - new Date(a.date));
     // Graded calls only guest-star here briefly: after a few days they live
     // in the match log below (every graded call lands there), and this panel
     // stays focused on fresh calls. The record count keeps ALL of them.
@@ -198,7 +205,7 @@ export default function TrackRecord() {
   const forwardAll = useMemo(() => {
     const all = dedupePreds((predictions?.predictions || []).filter(isForwardEvent));
     // Calls only: a no-call is graded for audit, never counted as a claim.
-    const decided = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !p.noCall);
+    const decided = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
     const correct = decided.filter((p) => p.correct).length;
     const dates = all.map((p) => new Date(p.date)).filter((d) => !isNaN(d));
     return {
@@ -223,20 +230,30 @@ export default function TrackRecord() {
     const decided = dedupePreds((predictions?.predictions || []).filter(isForwardEvent))
       .filter((p) => (p.status === 'won' || p.status === 'lost') && typeof p.favProb === 'number');
     if (decided.length < FORWARD_HERO_MIN) return null;
+    // The passes are their OWN row, split off by the per-cell rule rather
+    // than by a probability boundary. "Coin flips 50-65%" used to mix the
+    // matches we declined to call with the lowest band we do call, under a
+    // column headed CALLS, so its count could not be reconciled with the
+    // record two panels down. A fixed boundary cannot do the job any more
+    // either: the cutoff is 0.54 on ATP clay and 0.64 on WTA clay, so no
+    // single number separates the passes from the claims. Ask the rule.
     const bands = [
-      // Includes the graded LEANS of no-call rows: the coin flips we declined
-      // to call still grade here, which is the shadow audit that shows
-      // whether the passes were wise.
-      { label: 'Coin flips', lo: 0.5, hi: 0.65 },
+      { label: 'Passed on', pass: true },
+      { label: 'Slim calls', lo: 0.5, hi: 0.65 },
       { label: 'Leans', lo: 0.65, hi: 0.75 },
       { label: 'Confident', lo: 0.75, hi: 1.01 },
     ];
-    return bands.map(({ label, lo, hi }) => {
-      const g = decided.filter((p) => p.favProb >= lo && p.favProb < hi);
+    return bands.map(({ label, lo, hi, pass }) => {
+      const g = pass
+        ? decided.filter((pr) => ledgerNoCall(pr))
+        : decided.filter((pr) => !ledgerNoCall(pr) && pr.favProb >= lo && pr.favProb < hi);
       const won = g.filter((p) => p.correct).length;
       return {
         label,
-        range: `${Math.round(lo * 100)}–${Math.round(Math.min(hi, 1) * 100)}%`,
+        pass: !!pass,
+        range: pass
+          ? 'under its cutoff'
+          : `${Math.round(lo * 100)}–${Math.round(Math.min(hi, 1) * 100)}%`,
         n: g.length,
         said: g.length ? g.reduce((s, p) => s + p.favProb, 0) / g.length : null,
         landed: g.length ? won / g.length : null,
@@ -269,21 +286,18 @@ export default function TrackRecord() {
     const pct = (k) => (n ? Math.round((filteredCalls.filter((m) => m[k]).length / n) * 100) : 0);
 
     // Per-surface accuracy (for the whole tour, ignoring the surface filter).
-    // Each card shows its BEST engine's number - matching the "Most accurate"
-    // highlight in the engine panel below - and names that engine on the card
-    // so the figure is never quietly cherry-picked. Smart Blend wins ties.
+    // Each card shows the DEPLOYED call's accuracy on that surface - the
+    // number the site actually put on screen for those matches. It used to
+    // show the best engine's number instead, taking the max over five
+    // engines per surface, which is a cherry-pick even with the engine
+    // named on the card: the maximum of five estimates beats any one of
+    // them on noise alone, and it could print a surface figure higher than
+    // the "Our model" bar below it on exactly the same matches.
     const perSurface = ['hard', 'clay', 'grass'].map((s) => {
       const list = (data?.matches || []).filter((m) => (tour === 'all' || m.tour === tour) && m.surface === s
         && (eventF === 'all' || m.event === eventF) && !pickNoCall(m));
-      const accOf = (key) => (list.length ? Math.round((list.filter((m) => m[key]).length / list.length) * 100) : 0);
-      const best = [
-        { label: 'Smart Blend', acc: accOf('smashCorrect') },
-        { label: 'Point Sim', acc: accOf('correct') },
-        { label: 'Form', acc: accOf('eloCorrect') },
-        { label: 'Rankings', acc: accOf('rankCorrect') },
-        { label: 'Hot Streak', acc: accOf('upsetCorrect') },
-      ].reduce((b, e) => (e.acc > b.acc ? e : b));
-      return { key: s, ...SURFACES[s], n: list.length, acc: best.acc, engine: best.label };
+      const acc = list.length ? Math.round((list.filter((m) => pickCorrect(m)).length / list.length) * 100) : 0;
+      return { key: s, ...SURFACES[s], n: list.length, acc };
     });
 
     // Confidence calibration buckets on the DEPLOYED call's probability
@@ -313,6 +327,17 @@ export default function TrackRecord() {
     // Bookmaker-favorite baseline: only over matches that actually carry odds.
     const oddList = filteredCalls.filter((m) => m.oddCorrect != null);
     const oddAcc = oddList.length ? Math.round((oddList.filter((m) => m.oddCorrect).length / oddList.length) * 100) : null;
+    // ...and OUR two numbers re-scored on that same subset, because the
+    // comparison panel puts all three in one bar chart. It used to plot our
+    // model and rankings over every call (2,381) beside the bookmakers over
+    // the priced ones (1,140) - three bars, two populations, under a heading
+    // that promised "same matches". On this data that understated us: the
+    // like-for-like figures are 75% to 74%, not 72% to 74%.
+    const pricedAcc = {
+      deployed: oddList.length ? Math.round((oddList.filter((m) => pickCorrect(m)).length / oddList.length) * 100) : null,
+      rank: oddList.length ? Math.round((oddList.filter((m) => m.rankCorrect).length / oddList.length) * 100) : null,
+      n: oddList.length,
+    };
 
     // Head-to-head vs the market on the SAME odds-carrying matches, scored
     // on the DEPLOYED calls, plus how often we were right when we disagreed
@@ -356,7 +381,10 @@ export default function TrackRecord() {
     // matches with two distinct prices so every strategy (including "back the
     // bookmaker favorite") bets the exact same set. Beating the market here
     // means clearing the vig.
-    const betList = filtered.filter((m) => m.od1 != null && m.od2 != null && m.od1 !== m.od2);
+    // Calls only, same as every other published figure: we no longer stake a
+    // match we would not call, so a return panel that bet them would price a
+    // policy nobody follows. The baselines bet the identical set.
+    const betList = filteredCalls.filter((m) => m.od1 != null && m.od2 != null && m.od1 !== m.od2);
     const roiFor = (pickOf) => {
       let profit = 0, k = 0;
       for (const m of betList) {
@@ -369,15 +397,16 @@ export default function TrackRecord() {
       }
       return { profit, k, roi: k ? (profit / k) * 100 : 0 };
     };
-    const eloFav = (m) => (m.eloProbP1 >= 0.5 ? m.p1 : m.p2);
-    // Same names and order as the "Five ways to pick a winner" panel below,
-    // so the two sections read as one comparison. "Rankings" IS the
-    // higher-rank-wins baseline (identical picks), hence the tag.
+    // One model, two baselines. This used to break out all five engines
+    // alongside the baselines, which invited the reader to pick the best row
+    // and treat it as the product - but no visitor can bet "Point Sim", and
+    // which engine is deployed changes per tour x surface and again at every
+    // retune. "Our model" IS the deployed call: the strongest engine for each
+    // match's tour and surface, re-selected when the tuner runs. The
+    // per-engine detail still lives on the Model Card for anyone who wants
+    // to see the bake-off.
     const returns = [
-      { id: 'smash', label: 'Smart Blend', ...roiFor((m) => m.smashFavorite) },
-      { id: 'sim', label: 'Point Sim', ...roiFor((m) => m.favorite) },
-      { id: 'elo', label: 'Form', ...roiFor(eloFav) },
-      { id: 'upset', label: 'Hot Streak', ...roiFor((m) => m.upsetFavorite) },
+      { id: 'deployed', label: 'Our model', ...roiFor((m) => pickFavorite(m)) },
       { id: 'rank', label: 'Rankings', baseline: true, ...roiFor((m) => m.rankPick) },
       { id: 'odd', label: "The bookies' favorite", baseline: true, ...roiFor((m) => m.oddFav) },
     ];
@@ -386,12 +415,58 @@ export default function TrackRecord() {
     // Deployed calls: the pick the site actually showed for each match (best
     // engine for that tour x surface, annotated by the pipeline). These drive
     // the headline; the per-engine numbers below stay pure.
-    const deployedCorrect = filtered.filter((m) => pickCorrect(m)).length;
+    //
+    // Counted over filteredCalls, NOT filtered. These are numerators for a
+    // denominator (`n`) that has already dropped the no-calls, and they were
+    // being counted over every graded row - hits from matches the policy
+    // never claimed, divided by the claims only. That published a 94%
+    // season benchmark against a true 72%.
+    const deployedCorrect = filteredCalls.filter((m) => pickCorrect(m)).length;
+
+    // The restraint audit: how the LEANS on passed matches turned out. Not a
+    // claim and never counted as one - it exists so the no-call threshold is
+    // falsifiable rather than a free pass, and so the tuner has a number to
+    // move it by.
+    const passed = filtered.filter((m) => pickNoCall(m));
+    const passedRight = passed.filter((m) => pickCorrect(m)).length;
+    // Broken out per tour x surface, because that is the grain the cutoff is
+    // set at. One aggregate number cannot tell you which cell is passing on
+    // matches it could call - and that per-cell read is exactly what the
+    // tuner consumes when it re-derives the cutoffs.
+    const cells = [];
+    for (const t of ['atp', 'wta']) {
+      for (const sf of ['hard', 'clay', 'grass']) {
+        const cellRows = filtered.filter((m) => m.tour === t && m.surface === sf);
+        const cellPassed = cellRows.filter((m) => pickNoCall(m));
+        if (cellPassed.length < 15) continue;
+        const right = cellPassed.filter((m) => pickCorrect(m)).length;
+        cells.push({
+          key: `${t}|${sf}`,
+          tour: t,
+          surface: sf,
+          threshold: thresholdFor(t, sf),
+          n: cellPassed.length,
+          right,
+          wrong: cellPassed.length - right,
+          rate: Math.round((right / cellPassed.length) * 100),
+          calls: cellRows.length - cellPassed.length,
+        });
+      }
+    }
+    const shadow = {
+      n: passed.length,
+      right: passedRight,
+      wrong: passed.length - passedRight,
+      rate: passed.length ? Math.round((passedRight / passed.length) * 100) : null,
+      cells,
+    };
 
     return {
       n,
-      correct: filtered.filter((m) => m.correct).length,
-      smashCorrect: filtered.filter((m) => m.smashCorrect).length,
+      shadow,
+      pricedAcc,
+      correct: filteredCalls.filter((m) => m.correct).length,
+      smashCorrect: filteredCalls.filter((m) => m.smashCorrect).length,
       deployedCorrect,
       deployed: n ? Math.round((deployedCorrect / n) * 100) : 0,
       smash: engines.smash,
@@ -511,7 +586,7 @@ export default function TrackRecord() {
                 const awaiting = new Date(p.date).getTime() < Date.now();
                 // A no-call shows here too: restraint IS a receipt. The lean
                 // is on the record; it just is not a claim.
-                if (p.noCall) {
+                if (ledgerNoCall(p)) {
                   return (
                     <Link className="track-forward-row pending nocall" to={`/match/${matchSlug(p)}`} key={p.id}>
                       <span className="track-forward-status">
@@ -566,11 +641,11 @@ export default function TrackRecord() {
                   </div>
                   <table className="track-conf-table">
                     <thead>
-                      <tr><th scope="col">Band</th><th scope="col">Calls</th><th scope="col">We said</th><th scope="col">Landed</th></tr>
+                      <tr><th scope="col">Band</th><th scope="col">Matches</th><th scope="col">We said</th><th scope="col">Landed</th></tr>
                     </thead>
                     <tbody>
                       {confTiers.map((b) => (
-                        <tr key={b.label}>
+                        <tr key={b.label} className={b.pass ? 'track-conf-pass' : undefined}>
                           <th scope="row">{b.label} <span className="track-conf-range">{b.range}</span></th>
                           <td>{b.n}</td>
                           <td>{Math.round(b.said * 100)}%</td>
@@ -583,10 +658,12 @@ export default function TrackRecord() {
                     </tbody>
                   </table>
                   <p className="track-note" style={{ marginTop: '0.4rem' }}>
-                    Every verified call, bucketed by the probability we published before play.
-                    All three rows are the same model on the same ledger - a coin flip we call
-                    55% is supposed to land about 55%, and a confident call is supposed to earn
-                    the label. The ± is a 95% interval; small buckets swing.
+                    Every graded match, bucketed by the probability we published before play.
+                    A call we make at 70% is supposed to land about 70%, and a confident call is
+                    supposed to earn the label. The top row is the one we <em>passed on</em>: those
+                    leans are recorded and graded but never claimed, and they are shown here so the
+                    restraint can be checked rather than taken on trust. The ± is a 95% interval;
+                    small buckets swing.
                   </p>
                 </div>
               )}
@@ -614,7 +691,9 @@ export default function TrackRecord() {
                       <div className="track-hero-label">of winners called before the match</div>
                       <div className="track-hero-sub">
                         {forwardAll.correct} of {forwardAll.n.toLocaleString()} verified calls · every one timestamped
-                        before play and graded automatically when the result lands
+                        before play and graded automatically when the result lands. We lock calls at the slams
+                        and the combined 1000s, so that is the scope of this number — a different, smaller
+                        population than the season benchmark below.
                       </div>
                       <div className="track-hero-marks">
                         <span className="track-hero-hit">✓ {forwardAll.correct} hits</span>
@@ -630,7 +709,9 @@ export default function TrackRecord() {
                       <span className="track-benchmark-text">
                         of winners across {stats.n.toLocaleString()} matches ({tour === 'all' ? 'ATP + WTA' : tour.toUpperCase()}{surface !== 'all' ? ` · ${SURFACES[surface].label}` : ''}),
                         calling each match with the strongest engine for its tour and surface,
-                        re-run over the full season. A model benchmark, not locked picks.
+                        re-run over the full season. Every tour-level event, not just the ones we lock
+                        calls at, which is why the count dwarfs the record above. A model benchmark,
+                        not locked picks.
                         {stats.scoreline.n > 0 ? ` Exact set score called in ${stats.scoreline.pct}%.` : ''}
                       </span>
                     </div>
@@ -738,14 +819,25 @@ export default function TrackRecord() {
                     });
                   })()}
                   <div className="track-note">
-                    Total profit and return per $1. Just backing the bookies' favorite slowly loses
-                    money (that's their cut). Anything that stays in the green is genuinely beating them.
+                    Total profit and return per $1 staked. Read the GAP, not the sign: all three
+                    strategies bet the same filtered set - the matches we were confident enough to
+                    call - and on a set selected that way even backing the bookies' favorite can
+                    come out ahead. That baseline is not the market's true long-run return, which is
+                    negative by the width of their margin; it is what the market's pick returned on
+                    our card. Beating it is the claim.
                     {stats.betN < 50 && ' Not many matches in this view yet, so expect it to swing.'}
                   </div>
                 </div>
               )}
 
-              {/* Per-surface accuracy */}
+              {/* Per-surface accuracy. The scope note is not decoration: these
+                  cards sit directly beneath two panels scoped to the priced
+                  subset, so their larger counts read as inflated unless the
+                  page says out loud that they cover every graded match rather
+                  than only the ones that carried a price. */}
+              <div className="track-section-label" style={{ marginTop: '1rem' }}>
+                By surface · every graded call, priced or not
+              </div>
               <div className="track-surface-row">
                 {stats.perSurface.map((s) => (
                   <button
@@ -756,30 +848,29 @@ export default function TrackRecord() {
                   >
                     <div className="track-surface-acc" style={{ color: s.accent }}>{s.acc}%</div>
                     <div className="track-surface-label">{s.label}</div>
-                    <div className="track-surface-n">{s.engine} · {s.n} matches</div>
+                    <div className="track-surface-n">{s.n} matches</div>
                   </button>
                 ))}
               </div>
 
               {/* Engine comparison - the best engine for this filter is highlighted */}
               <div className="track-panel">
-                <div className="track-section-label">Five ways to pick a winner · {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}, same matches</div>
+                <div className="track-section-label">
+                  Our model against the two baselines · {surface !== 'all' ? SURFACES[surface].label : 'all surfaces'}
+                  {stats.pricedAcc.n ? ` · the same ${stats.pricedAcc.n.toLocaleString()} priced calls` : ', same matches'}
+                </div>
                 <div className="track-compare">
-                  {/* Same names and order as the betting panel above.
+                  {/* Same rows and order as the betting panel above.
                       Rankings doubles as the baseline: its picks ARE
                       "higher rank wins" (the probability it carries only
                       matters inside the blend). */}
                   {[
-                    { id: 'smash', label: 'Smart Blend', desc: 'Our best: a mix of everything below', acc: stats.smash },
-                    { id: 'sim', label: 'Point Sim', desc: 'The match, played out point by point', acc: stats.season },
-                    { id: 'elo', label: 'Form', desc: "Who's been winning on this surface", acc: stats.elo },
-                    { id: 'upset', label: 'Hot Streak', desc: "Who's hot in the last few weeks", acc: stats.upset },
-                    { id: 'rank', label: 'Rankings', desc: 'Just pick the higher-ranked player', acc: stats.rank, baseline: true },
+                    { id: 'deployed', label: 'Our model', desc: 'The strongest engine for each tour and surface, retuned as the season runs', acc: stats.pricedAcc.deployed ?? stats.deployed },
+                    { id: 'rank', label: 'Rankings', desc: 'Just pick the higher-ranked player', acc: stats.pricedAcc.rank ?? stats.rank, baseline: true },
                   ].map((mo) => (
-                    <div className={`track-compare-row${mo.id === stats.bestEngine ? ' primary' : ''}${mo.baseline ? ' baseline' : ''}`} key={mo.id}>
+                    <div className={`track-compare-row${mo.baseline ? ' baseline' : ' primary'}`} key={mo.id}>
                       <div className="track-compare-name">
                         {mo.label}
-                        {mo.id === stats.bestEngine && <span className="track-compare-best">Most accurate</span>}
                         {mo.baseline && <span className="track-compare-baseline-tag">Baseline</span>}
                         <span className="track-compare-desc">{mo.desc}</span>
                       </div>
@@ -807,11 +898,28 @@ export default function TrackRecord() {
                   )}
                 </div>
                 <div className="track-note">
-                  <em>Smart Blend</em> mixes the simulation, recent form, and world ranking, tuned
-                  for each tour and surface, which is why it beats just following the rankings. The
-                  tougher opponent is <em>the bookies' favorite</em>, shown only for matches that
-                  had odds. One honest caveat: the blend was tuned on this same season, so the
-                  purest proof is the called-before-the-match record up top.
+                  <em>Our model</em> is not one fixed engine. Each match is called by whichever
+                  engine measures strongest for that tour and surface, and that choice is re-made
+                  every time the model is retuned. We clear <em>rankings</em>, the easy test.
+                  {stats.oddAcc != null && stats.pricedAcc.deployed != null && (
+                    stats.pricedAcc.deployed > stats.oddAcc
+                      ? (
+                        <> Against <em>the bookies&apos; favorite</em> we are {stats.pricedAcc.deployed}% to{' '}
+                          {stats.oddAcc}% - a lead of {stats.pricedAcc.deployed - stats.oddAcc} point
+                          {stats.pricedAcc.deployed - stats.oddAcc === 1 ? '' : 's'}, thin enough that it should
+                          not be leaned on. Out-picking the market is not the claim this site makes; the money
+                          panel above is.</>
+                      )
+                      : (
+                        <> We do <strong>not</strong> clear <em>the bookies&apos; favorite</em>, who named the
+                          winner {stats.oddAcc}% of the time against our {stats.pricedAcc.deployed}%, and we do
+                          not expect that to reverse. Out-picking the market is not the claim this site makes;
+                          the money panel above is.</>
+                      )
+                  )}
+                  {' '}Honest caveat: the engines were tuned on this same season, so the purest
+                  proof is the called-before-the-match record up top. The engine-by-engine bake-off
+                  behind this single number is on the <Link to="/model">model card</Link>.
                 </div>
               </div>
 
@@ -839,6 +947,67 @@ export default function TrackRecord() {
                   percentages mean what they say.
                 </div>
               </div>
+
+              {/* The restraint audit, promoted to its own panel above the log.
+                  It was buried between the log's section label and its first
+                  row, which is nowhere: the one number that holds the passes
+                  accountable was the hardest thing on the page to find. Without
+                  it you could abstain on everything and never be shown to be
+                  wrong. The per-cell table is the same evidence the tuner reads
+                  when it re-derives each cutoff, so what the page shows and what
+                  the model is fitted on are the same thing. */}
+              {stats.shadow.n >= 20 && (
+                <div className="track-panel track-shadow-panel">
+                  <div className="track-section-label">The matches we passed on</div>
+                  <div className="track-shadow">
+                    <span className="track-shadow-val">{stats.shadow.right}–{stats.shadow.wrong}</span>
+                    <span className="track-shadow-text">
+                      is how the leans went on the {stats.shadow.n.toLocaleString()} matches we declined to
+                      call — <strong>{stats.shadow.rate}% right</strong>. We claim none of them either way, in
+                      either direction. A cutoff set correctly leaves this near a coin flip; drifting well
+                      above it means we are passing on matches we could be calling, and that is the signal to
+                      lower it at the next retune.
+                    </span>
+                  </div>
+                  {stats.shadow.cells.length > 1 && (
+                    <>
+                      <table className="track-shadow-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Tour &amp; surface</th>
+                            <th scope="col">Cutoff</th>
+                            <th scope="col">Called</th>
+                            <th scope="col">Passed</th>
+                            <th scope="col">Leans right</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.shadow.cells.map((c) => (
+                            <tr key={c.key}>
+                              <th scope="row">{c.tour.toUpperCase()} {SURFACES[c.surface].label}</th>
+                              <td>{Math.round(c.threshold * 100)}%</td>
+                              <td>{c.calls.toLocaleString()}</td>
+                              <td>{c.n.toLocaleString()}</td>
+                              <td className={c.rate >= 60 ? 'hot' : undefined}>
+                                {c.right}–{c.wrong} <span className="track-shadow-rate">({c.rate}%)</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="track-note">
+                        The cutoff is not one number. It is set per tour and surface, because how far our
+                        confidence has to run before it beats a coin flip depends on the tennis: it takes
+                        {' '}{Math.round(thresholdFor('wta', 'clay') * 100)}% on WTA clay and only
+                        {' '}{Math.round(thresholdFor('atp', 'clay') * 100)}% on ATP clay. Each one is the lowest
+                        cutoff from which the weakest calls it still permits beat a coin flip at 95% confidence,
+                        re-derived from this record every time the model is retuned rather than typed in once.
+                        Cells with too little evidence use the {Math.round(thresholdFor('nope', 'nope') * 100)}% default.
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Match log - paginated */}
               <div className="track-panel">
@@ -889,9 +1058,24 @@ export default function TrackRecord() {
                         />
                       </div>
                       <div className="track-row-model">
-                        <span className={`track-verdict ${callCorrect ? 'hit' : 'miss'}`}>
-                          {callCorrect ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(callProb * 100)}%
-                        </span>
+                        {/* A no-call gets no verdict. "Called it" on a match
+                            we explicitly declined to call is a contradiction,
+                            and "Missed" is worse - it books a loss against a
+                            claim that was never made. The lean and how it
+                            turned out still show, greyed, because the point
+                            of keeping these rows is to audit the restraint;
+                            the tally of that audit is the shadow line above
+                            the log. */}
+                        {rowNoCall ? (
+                          <span className="track-verdict nocall">
+                            No call · leaned {favName} {Math.round(callProb * 100)}%
+                            <span className="track-verdict-shadow">{callCorrect ? ' (lean was right)' : ' (lean was wrong)'}</span>
+                          </span>
+                        ) : (
+                          <span className={`track-verdict ${callCorrect ? 'hit' : 'miss'}`}>
+                            {callCorrect ? '✓ Called it' : '✗ Missed'} · {favName} {Math.round(callProb * 100)}%
+                          </span>
+                        )}
                         {m.predScore && actualFav && (
                           <span className={`track-scorecompare${scoreHit ? ' hit' : ''}`}>
                             Predicted {favName} {m.predScore} · actual {actualFav}{scoreHit ? ' ✓' : ''}

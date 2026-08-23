@@ -39,17 +39,18 @@ function marketProbOf(row) {
   return row.favorite === row.p1 ? p1 : 1 - p1;
 }
 
-const CALL_THRESHOLD = require('../src/engineConfig.json').callThreshold || 0.6;
+const { rowNoCall, FALLBACK: CALL_THRESHOLD } = require('./lib/noCall');
 
 function bandStats(rows, lo, hi) {
   const inBand = [];
   for (const r of rows) {
     const mk = marketProbOf(r);
     if (mk == null || typeof r.favProb !== 'number' || typeof r.correct !== 'boolean') continue;
-    // Calls only - a coin flip under the call threshold is not a claim, so
-    // it cannot be evidence for one. Same rule as src/utils/marketGap.js.
-    const pp = r.pickProbP1 != null ? r.pickProbP1 : r.smashProbP1;
-    if (pp != null && Math.max(pp, 1 - pp) < CALL_THRESHOLD) continue;
+    // Calls only - a coin flip under its cell's threshold is not a claim, so
+    // it cannot be evidence for one. Same rule as src/utils/marketGap.js,
+    // and per tour x surface: a single global compare here would readmit
+    // WTA clay coin flips (cutoff 0.64) that the ledger excludes.
+    if (rowNoCall(r)) continue;
     const gap = r.favProb - mk;
     if (gap >= lo && gap < hi) inBand.push({ r, mk });
   }

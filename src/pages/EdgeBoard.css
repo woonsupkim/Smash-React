@@ -154,3 +154,44 @@
    not the claim. Same panel treatment, more prominence. */
 .edge-money.edge-money-lead { margin-bottom: 1rem; }
 .edge-money.edge-money-lead .edge-money-cell strong { font-size: 1.5rem; }
+
+/* The divergence chart. Two cumulative $1 curves on the same splits: the
+   gap between them is the price advantage, which two end-point numbers can
+   state but cannot show. */
+.edge-diverge {
+  margin: 0 0 1.1rem;
+  padding: 0.85rem 1rem 0.4rem;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.16));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-1, rgba(255, 255, 255, 0.04));
+}
+.edge-diverge-cap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-3, #9aa1ab);
+  margin-bottom: 0.35rem;
+}
+.edge-diverge-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 600;
+}
+.edge-diverge-swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.2rem;
+  border-radius: 2px;
+  margin-left: 0.55rem;
+}
+.edge-diverge-swatch.us { background: var(--accent-brand, #c8f560); }
+.edge-diverge-swatch.mkt { background: #8b93a1; }

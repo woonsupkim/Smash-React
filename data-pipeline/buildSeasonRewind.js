@@ -65,7 +65,14 @@ function main() {
     return;
   }
 
-  const matches = track.matches.filter((m) => m.winner && (m.pickFavorite || m.smashFavorite));
+  // Calls only, the same policy every other published record speaks: a coin
+  // flip under engineConfig.callThreshold was never claimed, so it neither
+  // helps nor hurts the season's headline. Monthly bars, the engine bake-off
+  // and the market comparison all inherit this, so they stay comparable with
+  // the ledger rather than describing a wider population under the same
+  // words.
+  const { rowNoCall } = require('./lib/noCall');
+  const matches = track.matches.filter((m) => m.winner && (m.pickFavorite || m.smashFavorite) && !rowNoCall(m));
   const correct = matches.filter((m) => pickCorrect(m));
 
   // Bookie comparison on rows that carry closing odds.

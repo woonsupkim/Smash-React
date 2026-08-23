@@ -13,6 +13,7 @@ import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
+import { ledgerNoCall } from '../utils/deployedPick';
 import PushToggle from '../components/PushToggle';
 import useDocMeta from '../utils/useDocMeta';
 import './Today.css';
@@ -145,7 +146,7 @@ export default function Today() {
             const when = timeUntil(p.date);
             const favIsP1 = p.favorite === p.p1;
             return (
-              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className={`today-row${p.noCall ? ' nocall' : ''}`}>
+              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className={`today-row${ledgerNoCall(p) ? ' nocall' : ''}`}>
                 <span className="today-faces">
                   <img src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
                   <img src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />
@@ -158,7 +159,7 @@ export default function Today() {
                     {p.tour.toUpperCase()} · {p.event} · {p.surface}{when ? ` · ${when.label}` : ''}
                   </span>
                 </span>
-                {p.noCall ? (
+                {ledgerNoCall(p) ? (
                   /* A coin flip we declined to call: the lean is on the record
                      (locked, graded for audit) but it is not a claim. */
                   <span className="today-call nocall">

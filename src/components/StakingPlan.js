@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { matchSlug } from '../utils/matchTime';
 import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb } from '../utils/staking';
+import BACKTEST from '../data/planBacktest.json';
 import './StakingPlan.css';
 
 const money = (v) => `${v < 0 ? '-' : ''}$${Math.abs(v || 0).toFixed(2)}`;
@@ -213,33 +214,56 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
             </span>
           </div>
 
+          {/* The menu now leads with RETURN PER DOLLAR, and says what each
+              plan stakes right next to it.
+              Both of the old columns - chance of finishing ahead, and expected
+              profit in dollars - mechanically reward shovelling the whole
+              budget onto the table, because more bets means more ways to end
+              the day up and more capital means more expected dollars. The
+              recommended plan deliberately stakes about a third of the budget,
+              so it lost on both columns and appeared, on the page's own
+              numbers, to be the worst thing on the menu. It is not: it is the
+              best return on the money actually at risk, which is the axis a
+              follower with a fixed daily budget should be reading. */}
           {mode === 'budget' && frontier.plans.length > 1 && (
             <div className="stake-best-pick" role="radiogroup" aria-label="Which recommended plan">
               {frontier.plans.map((p) => (
                 <button key={p.id} type="button" role="radio" aria-checked={p.id === rec.id}
                   className={`stake-best-opt${p.id === rec.id ? ' on' : ''}`}
                   onClick={() => setPlanId(p.id)}>
-                  <span className="stake-best-opt-l">{p.label}</span>
-                  <span className="stake-best-opt-v">
-                    {/* Never `pProfit || 0`: a missing probability is not a zero
-                        one, and printing "0.0% to win" for it stated the most
-                        discouraging possible number with total confidence. */}
-                    {p.metrics.pProfit != null ? `${pct(p.metrics.pProfit)} to win` : 'chance not available'}
-                    {' · '}{money(p.metrics.ev)} expected
+                  <span className="stake-best-opt-l">
+                    {p.label}
+                    {p.id === frontier.recommendedId && <span className="stake-best-opt-rec">recommended</span>}
                   </span>
-                  <span className="stake-best-opt-k">{composition(p)} · stakes {money(p.metrics.staked)}</span>
+                  <span className="stake-best-opt-v">
+                    {p.metrics.staked > 0 ? pctSigned(p.metrics.ev / p.metrics.staked) : '–'} on the money staked
+                  </span>
+                  <span className="stake-best-opt-k">
+                    stakes {money(p.metrics.staked)} of {money(Number(budget) || 0)} · {composition(p)}
+                    {/* Never `pProfit || 0`: a missing probability is not a
+                        zero one, and printing "0.0%" for it stated the most
+                        discouraging possible number with total confidence. */}
+                    {p.metrics.pProfit != null ? ` · ${pct(p.metrics.pProfit)} to finish ahead` : ''}
+                  </span>
                 </button>
               ))}
             </div>
           )}
           <div className="stake-best-grid">
+            {/* Percentage first, dollars second. The raw dollar figure is
+                not comparable between plans that stake different amounts,
+                and it is the number a reader instinctively compares. */}
             <div className="stake-best-metric">
-              <span className="stake-best-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span>
-              <span className="stake-best-l">your chance of finishing ahead</span>
+              <span className={`stake-best-v${analysis.ev >= 0 ? ' pos' : ' neg'}`}>{pctSigned(analysis.roi)}</span>
+              <span className="stake-best-l">expected return <em>on the {money(analysis.staked)} staked</em></span>
             </div>
             <div className="stake-best-metric">
-              <span className="stake-best-v pos">{money(analysis.ev)}</span>
-              <span className="stake-best-l">expected profit <em>({pctSigned(analysis.roi)} of stake)</em></span>
+              <span className={`stake-best-v${analysis.ev >= 0 ? ' pos' : ' neg'}`}>{money(analysis.ev)}</span>
+              <span className="stake-best-l">expected profit <em>in dollars</em></span>
+            </div>
+            <div className="stake-best-metric">
+              <span className="stake-best-v">{analysis.pProfit != null ? pct(analysis.pProfit) : '–'}</span>
+              <span className="stake-best-l">chance of finishing ahead <em>today</em></span>
             </div>
             {/* "matches we expect to land" used to sit here. It is decorative
                 for someone following the plan - it does not change what they
@@ -284,27 +308,64 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
               Customise this plan →
             </button>
           )}
+          {/* Trimmed to one claim per sentence. This paragraph had grown to
+              six sentences of hedging above the fold; the reasoning that a
+              curious reader wants is now in the disclosure below, and the
+              reader who just wants to place the bets is not made to wade
+              through it first. */}
           <p className="stake-best-why">
             <strong>
-              {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}. We
-              expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
-              {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
-              {mode === 'budget' && rec?.id === 'edge' && analysis.staked < (Number(budget) || 0) - 0.5
-                ? ` The other ${money((Number(budget) || 0) - analysis.staked)} stays in your pocket - that is part of the plan, not a leftover.`
+              {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}.
+              {mode === 'budget' && analysis.staked < (Number(budget) || 0) - 0.5
+                ? ` The other ${money((Number(budget) || 0) - analysis.staked)} stays in your pocket, on purpose.`
                 : ''}
             </strong>{' '}
-            {mode === 'budget' && rec?.id === 'edge'
-              ? 'This plan only funds calls that beat their price, sized by how much they beat it, with one small parlay when a pair earns it. Backtested over 94 tournament days it returned +19.7% on money staked with a worst day of -$32 per $100 budget; the whole-card plans below stake more for thinner returns.'
-              : 'That is the test every plan here passes, and it is a whole-plan test: spread evenly, it falls on the average, so a match priced against us can be carried by stronger ones.'}
-            {' '}It is an expectation, not a floor. A plan can be worth making and still lose more
-            often than it wins, which is why the chance of finishing ahead sits right beside it.
-            {rel.trusted && (
-              <>
-                {' '}Sized on what the model has actually done: {pct(rel.accuracy)} of {rel.n} graded
-                calls landed while claiming {pct(rel.stated)}.
-              </>
-            )}
+            We expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
+            {expReturn >= analysis.staked - 1e-9 ? ', which covers the stake.' : ', short of the stake.'}
           </p>
+
+          {/* How the recommendation is made, in the reader's own words:
+              "why this one?" was unanswerable on the page, and the plan that
+              leads is the one that stakes least, which looks arbitrary
+              without the reasoning. Collapsed so it informs without
+              crowding. */}
+          {mode === 'budget' && (
+            <details className="stake-why">
+              <summary>How this plan gets chosen{rec ? ` (and why it is ${rec.label.toLowerCase()})` : ''}</summary>
+              <div className="stake-why-body">
+                <p>
+                  Every plan on the menu is scored on <strong>return per dollar staked</strong>, not on
+                  total dollars. A plan that puts the whole budget down will almost always show a bigger
+                  expected profit and a higher chance of finishing ahead, simply because more money is
+                  on the table. That is not an edge, it is arithmetic, and comparing plans that way would
+                  recommend the biggest bet every single day.
+                </p>
+                <p>
+                  The lead plan is <strong>fixed policy, not a daily beauty contest</strong>. It was picked
+                  by replaying {BACKTEST.windowDays} tournament days of graded calls through every
+                  candidate rule, walk-forward, settled at the prices stamped before play. Funding only
+                  calls priced better than we rate them, at a quarter of Kelly, staked on{' '}
+                  {BACKTEST.edge.days} of those days and returned <strong>+{BACKTEST.edge.roi}%</strong> on
+                  money staked, with a worst day of −${BACKTEST.edge.worst} and a ${BACKTEST.edge.maxDD}{' '}
+                  deepest drawdown per $100 of budget. Backing the whole card returned{' '}
+                  +{BACKTEST.spread.roi}% for {(BACKTEST.spread.staked / BACKTEST.edge.staked).toFixed(1)}× the
+                  money at risk and {(BACKTEST.spread.maxDD / BACKTEST.edge.maxDD).toFixed(1)}× the drawdown.
+                </p>
+                <p>
+                  Picking a different plan each morning based on that morning&apos;s numbers would be
+                  fitting to noise, so the recommendation does not move. You can still override it: the
+                  menu above switches the plan and every number on this page follows.
+                </p>
+                {rel.trusted && (
+                  <p className="stake-why-cal">
+                    Stakes are sized on what the model has actually done, not on what it claims:{' '}
+                    {pct(rel.accuracy)} of {rel.n} graded calls landed while claiming {pct(rel.stated)}, and
+                    the probabilities are shaded toward the truth by that gap before any money is sized.
+                  </p>
+                )}
+              </div>
+            </details>
+          )}
         </div>
       )}
 
@@ -451,7 +512,19 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
             const zeroPct = hi > lo ? ((0 - lo) / (hi - lo)) * 100 : 50;
             return (
               <div className="stake-dist">
-                <div className="stake-dist-cap">Every way this can finish, by our probabilities</div>
+                {/* The chart had a title and no instructions, so it looked
+                    like decoration. One line on how to read it and one on
+                    what to take from it costs nothing and turns it into the
+                    honest centrepiece of the page: the spread IS the product,
+                    and the losing half is not a disclaimer. */}
+                <div className="stake-dist-cap">Every way today can finish, by our probabilities</div>
+                <div className="stake-dist-how">
+                  Each bar is one possible end-of-day result; taller means likelier. Red is
+                  down on the day, green is up.
+                  {analysis.pProfit != null && <> The green area is {pct(analysis.pProfit)} of it, so
+                    roughly {Math.round((analysis.pProfit || 0) * 10)} days in 10 finish ahead
+                    and the rest do not.</>}
+                </div>
                 <div className="stake-dist-plot">
                   <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
                   <div className="stake-dist-bars">
@@ -464,17 +537,29 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                 </div>
                 <div className="stake-dist-axis">
                   <span>{money(lo)}</span>
-                  <span className="stake-dist-mid">loss ← break-even → profit</span>
+                  <span className="stake-dist-mid">down on the day ← break even → up on the day</span>
                   <span>+{money(hi).replace('-', '')}</span>
                 </div>
               </div>
             );
           })()}
 
+          {/* The badge used to read "Break-even or better", which is a
+              promise this number cannot make: `breakEven` is `ev >= 0`, a
+              statement about the AVERAGE of the distribution drawn directly
+              above it - a distribution whose left half is losing days. A
+              reader could see that badge, then see a negative running total
+              on the same page, and reasonably conclude one of them was
+              lying. Both were true; only the label was wrong. */}
           <div className="stake-verdict">
             {analysis.breakEven
-              ? <span className="stake-badge pos">✓ Break-even or better</span>
-              : <span className="stake-badge neg">Below break-even</span>}
+              ? <span className="stake-badge pos">✓ Worth staking on average</span>
+              : <span className="stake-badge neg">Not worth staking</span>}
+            <span className="stake-verdict-txt">
+              {analysis.breakEven
+                ? `Averaged over many days like this one the plan comes out ahead. It says nothing about today: ${analysis.pProfit != null ? `today it finishes ahead ${pct(analysis.pProfit)} of the time` : 'plenty of individual days still lose'}, and a run of losing days is normal rather than a sign the plan has stopped working.`
+                : 'At these prices the money going out is worth more than what it can be expected to bring back.'}
+            </span>
             {mode === 'mine' && !analysis.breakEven && (
               <>
                 <span className="stake-verdict-txt">The slip is −EV. No stake fixes a −EV leg, so balancing moves your total onto the +EV bets only.</span>

@@ -10,6 +10,32 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.6',
+    date: '2026-08-23',
+    type: 'model',
+    title: 'The cutoff is six numbers now, and it moves',
+    notes: [
+      'THE NO-CALL CUTOFF IS PER TOUR AND SURFACE, AND DERIVED RATHER THAN TYPED. It was a single 58% constant that nobody had re-computed since the day it was guessed, which made "we do not call coin flips" a promise backed by a hunch. How far our confidence has to run before it beats a coin flip depends on the tennis: it takes 64% on WTA clay and only 54% on ATP clay. Each cutoff is now the lowest one from which the weakest calls it still permits beat a coin flip at 95% confidence, measured on the graded record, and it is re-derived on every retune instead of staying put. The season benchmark rises to 74% of 2,195 calls and the locked-before-play record to 74% of 182, because both now exclude matches a global cutoff was letting through.',
+      'THE PASSES ARE AUDITED IN PUBLIC, PER CELL. Restraint that nobody checks is just a way of never being wrong, so the ledger now shows how the leans went on every match we declined to call: 611-573 overall, and broken out by tour and surface next to the cutoff that produced it. ATP hard sits at 176-177, which is what a correctly placed cutoff looks like. WTA clay sits at 126-95, a little hot, which is the signal to lower that one at the next retune - and it is the same table the tuner reads when it does.',
+      'I WAS WRONG ABOUT THE MONEY, AND HAVE PUT IT BACK. Version 4.2.5 cut the market\'s return from the Edge page arguing the pair was forced. Half of that is true: on a split exactly one side can be right, so the two HIT RATES must add to 100% and printing both says one thing twice. The returns are not forced. The two sides are paid at different prices - our ticket on these splits averages 2.23 against their 1.67 - so identical hit rates would still pay differently, and the gap between the returns is the entire claim. Both figures are back, and the Edge page now charts the two running totals so you can see whether the gap opened steadily or came from one lucky afternoon. It opened steadily.',
+      'AND THE LEDGER SAYS WHICH POPULATION EACH NUMBER DESCRIBES. Three sat on one page without labels: the locked-before-play record (we lock calls at slams and the combined 1000s), the season benchmark (every tour-level match, re-simulated), and the market comparison (only matches that carried a price). The surface cards had no scope note at all, which is why their counts read as inflated next to the priced panel directly above them. The slam/1000 restriction on the forward record is also gone - it excluded nothing, since those are the only events we lock at, so all it did was hide the constraint behind a filter.',
+    ],
+  },
+  {
+    version: '4.2.5',
+    date: '2026-08-23',
+    type: 'product',
+    title: 'We stopped staking what we refuse to call',
+    notes: [
+      'THE PRODUCT SAID TWO THINGS ABOUT THE SAME MATCH. A coin flip under the call threshold was excluded from every accuracy claim - and then priced and funded by the staking plan anyway, on the reasoning that the builder bets edges rather than calls. Both halves were defensible and together they were incoherent: we would not claim the match, but we would ask you to put money on it. One rule now. If we will not call it, we will not stake it. That cost about 2.4 points of backtested return and was worth it.',
+      'THE NO-CALL FILTER WAS NOT ACTUALLY RUNNING ON THE FORWARD LEDGER. It tested a flag written at lock time, and no ledger row had ever carried one - so every graded row passed a filter that looked correct and did nothing, and 74 coin flips were counted as calls. The rule is now derived from the stated probability wherever it is applied, so moving the threshold moves the whole history with it. The locked-before-play record is 71% of 206 calls, not 68% of 282, and recent form reads 70% over the last 40 rather than 60%.',
+      'THE SEASON BENCHMARK WAS PUBLISHED AT 94%. It counted winners across every graded match and divided by the calls only - a numerator from one population over a denominator from another. It is 72%, of 2,390 calls. The engine comparison had a quieter version of the same fault, plotting our model over every call beside the bookmakers over the priced ones under a heading promising "same matches"; scored like for like it is 75% to their 74%.',
+      'NUMBERS THAT MIRRORED EACH OTHER ARE NOW STATED ONCE. On a two-player disagreement exactly one side can be right, so "55% vs 45%" and "+23% vs -23%" were single measurements printed as pairs, inviting readers to add them into a gap twice the real size. The pages show our side and name the other as the remainder it is.',
+      'THE BUILDER EXPLAINS ITSELF, AND COMPARES PLANS FAIRLY. It ranked plans by chance-of-finishing-ahead and expected dollars, both of which reward staking the whole budget, so the recommended plan - which deliberately stakes about a fifth of it - looked like the worst thing on its own menu. Plans are now compared on return per dollar staked, where it leads by +28.5% to +9.3%, with what each one stakes printed beside it and the reasoning one click away. The "break-even or better" badge, which was a statement about the average and read as a guarantee, now says what it means.',
+      'AND SOME SMALLER HONESTIES. The daily digest\'s market column said "Bookies\' pick: Swiatek lost" without ever saying whether that was the same player we backed; it now leads with whether they agreed with us. The "on court today" section vanished on days with no locked fixtures, orphaning the section after it, and now names the empty state. During a tournament both the digest and the builder carry the running total from following the recommendation - currently -26.0% across Cincinnati, which is exactly the sort of number this note exists to publish rather than bury.',
+    ],
+  },
+  {
     version: '4.2.4',
     date: '2026-08-23',
     type: 'product',

@@ -25,6 +25,7 @@ import StakingPlan from '../components/StakingPlan';
 import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
+import { ledgerNoCall } from '../utils/deployedPick';
 import './Parlay.css';
 
 // The budget the receipt below replays yesterday's plan on, matching the
@@ -69,6 +70,10 @@ function marketProb(p) {
   return share;
 }
 const pct = (v) => `${Math.round(v * 100)}%`;
+// Return as a share of money staked. The dollar figure alone is unreadable
+// without the stake beside it: the plan deliberately stakes a different
+// amount every day, so "-$17" could be a rout or a rounding error.
+const signedPct = (v) => `${v >= 0 ? '+' : '-'}${Math.abs(v * 100).toFixed(1)}%`;
 
 // The gap window and the record behind it now live in utils/marketGap, where
 // a test recomputes every published figure from the graded ledger. They were
@@ -94,7 +99,13 @@ export default function Parlay() {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
       .then((d) => {
-        const rows = d.predictions || [];
+        // Calls only, on both sides. The builder used to price the no-calls
+        // too, on the reasoning that it bets edges rather than calls - but a
+        // product that refuses to claim a coin flip and then asks you to
+        // stake one is telling you two different things. The same filter
+        // runs on the graded history so the plan is sized on the population
+        // it actually bets. Mirrored by planSettle.ledgerGraded.
+        const rows = (d.predictions || []).filter((p) => !ledgerNoCall(p));
         setGraded(rows.filter((p) => p.status === 'won' || p.status === 'lost'));
         setAll(rows
           .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
@@ -125,9 +136,8 @@ export default function Parlay() {
   const suggestions = useMemo(() => {
     if (!all || all.length < 2) return [];
     const out = [];
-    // "Most confident" means calls: a no-call is priced by the plan below
-    // (the builder bets edges), but it is nobody's idea of a confident pick.
-    const byConfidence = [...all].filter((x) => !x.noCall).sort((a, b) => b.favProb - a.favProb);
+    // No no-call filter needed here any more: `all` is already calls only.
+    const byConfidence = [...all].sort((a, b) => b.favProb - a.favProb);
     for (const n of [2, 3, 5]) {
       if (byConfidence.length < n) continue;
       const set = byConfidence.slice(0, n);
@@ -174,7 +184,7 @@ export default function Parlay() {
     if (rows.length < 2) return null;
     const days = [...new Set(rows.map((m) => String(m.date).slice(0, 10)))].sort();
     const out = [];
-    for (const day of days.slice(-HISTORY_DAYS)) {
+    for (const day of days) {
       const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
       if (card.length < 2) continue;
       const bets = card.map((m) => ({
@@ -182,7 +192,13 @@ export default function Parlay() {
         o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
         won: !!m.correct,
       }));
-      const before = rows.filter((m) => String(m.date).slice(0, 10) < day);
+      // Reliability history is EVERY graded call before this day, priced or
+      // not - matching planSettle.planReturns exactly. It used to be measured
+      // on the priced rows only, which is a different population and a
+      // different lambda, so the page and the digest built different plans
+      // for the same day and reported different returns for the same
+      // tournament (-26.3% here against -5.9% there).
+      const before = (graded || []).filter((m) => String(m.date).slice(0, 10) < day);
       const rel = reliability(before);
       const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
       const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
@@ -206,16 +222,53 @@ export default function Parlay() {
       out.push({ day, staked, profit, hits, backed, parlayWon });
     }
     if (!out.length) return null;
-    let run = 0;
-    const curve = out.map((d) => { run += d.profit; return run; });
-    const last = out[out.length - 1];
+    // Summarise any run of days the same way, so the whole record and one
+    // tournament are never accidentally computed differently.
+    const summarise = (list) => {
+      if (!list.length) return null;
+      let run = 0;
+      const curve = list.map((d) => { run += d.profit; return run; });
+      const staked = list.reduce((t, d) => t + d.staked, 0);
+      return {
+        days: list,
+        curve,
+        total: run,
+        staked,
+        roi: staked > 0 ? run / staked : 0,
+        up: list.filter((d) => d.profit > 0).length,
+        last: list[list.length - 1],
+      };
+    };
+    // The most recent tournament, whole. Ten arbitrary days is a window that
+    // starts and ends mid-event, so it can open on a good run and close on a
+    // bad one for no reason connected to the tennis - which is exactly how a
+    // page ends up showing its worst possible face. A tournament is a unit a
+    // reader recognises and cannot be accused of having been chosen after
+    // seeing the result.
+    // A day belongs to whichever event MOST of its graded calls belong to,
+    // and only that one. Tournaments overlap at the changeover, a day is
+    // staked as a single card, and taking the first row's event made the
+    // label depend on array order. Mirrors planSettle.eventDayOwner.
+    const owner = new Map();
+    {
+      const tally = new Map();
+      for (const m of graded || []) {
+        if (!m.event) continue;
+        const day = String(m.date).slice(0, 10);
+        if (!tally.has(day)) tally.set(day, new Map());
+        const t = tally.get(day);
+        t.set(m.event, (t.get(m.event) || 0) + 1);
+      }
+      for (const [day, t] of tally) {
+        owner.set(day, [...t.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+      }
+    }
+    const latestEvent = owner.get(out[out.length - 1].day) || null;
+    const eventDays = latestEvent ? out.filter((d) => owner.get(d.day) === latestEvent) : [];
     return {
-      days: out,
-      curve,
-      total: run,
-      staked: out.reduce((t, d) => t + d.staked, 0),
-      up: out.filter((d) => d.profit > 0).length,
-      last,
+      all: summarise(out),
+      recent: summarise(out.slice(-HISTORY_DAYS)),
+      event: eventDays.length >= 2 ? { name: latestEvent, ...summarise(eventDays) } : null,
     };
   }, [graded]);
 
@@ -224,35 +277,88 @@ export default function Parlay() {
   const applySuggestion = (keys) => {
     const keep = new Set(keys);
     setDropped(new Set((all || []).map(legKey).filter((k) => !keep.has(k))));
+    // Scroll the plan back into view. The chips sit BELOW the plan they
+    // rewrite, so clicking one changed the page above the reader's viewport
+    // and looked, from where they were sitting, like nothing had happened.
+    // Reported as "clicking on it doesn't do anything"; the click always
+    // worked, the feedback never arrived.
+    if (typeof document !== 'undefined') {
+      const target = document.querySelector('.stake-plan');
+      if (target && target.scrollIntoView) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   };
+
+  // Which suggestion, if any, the current selection already matches. Without
+  // this a chip gives no sign it is the one in force, and a chip that would
+  // change nothing still looks like a live control.
+  const activeSuggestionId = useMemo(() => {
+    const inSlip = new Set(legs.map(legKey));
+    const same = (keys) => keys.length === inSlip.size && keys.every((k) => inSlip.has(k));
+    return (suggestions.find((s) => same(s.keys)) || {}).id || null;
+  }, [legs, suggestions]);
 
   return (
     <div className="parlay-page">
       <div className="eyebrow">THE PARLAY BUILDER</div>
       <h1 className="parlay-title">Today's staking plan</h1>
+      {/* Two sentences. This was five, and the reader who came to place
+          today's bets had to read a paragraph of policy before reaching the
+          plan. What the plan does is now visible in the plan; the reasoning
+          behind it is one click away inside it. */}
       <p className="parlay-intro">
-        One plan, ready to follow: exactly how much to put on which of today's matches,
-        and whether a parlay earns a slice. It only backs calls priced better than we
-        think they should be, so most days it stakes less than the full budget and the
-        rest stays in your pocket. Every call was locked before play and is graded in
-        public afterwards, wins and misses alike.
+        How much to put on which of today&apos;s matches, and whether a parlay earns a
+        slice. It only backs calls priced better than we rate them, so most days it
+        stakes well under the budget and the rest stays in your pocket.
       </p>
 
-      {planHistory && (
-        <div className={`parlay-receipt${planHistory.total >= 0 ? ' pos' : ' neg'}`}>
+      {/* The record, on two horizons, with percentages.
+          A single ten-day window was the whole answer here, and ten days is
+          both too short to mean anything and a window whose edges nobody
+          chose on purpose - it opened and closed mid-tournament, so a bad
+          fortnight could be the only thing a first-time reader ever saw. It
+          now shows the complete settled record beside the most recent
+          tournament, and the return as a percentage of money staked as well
+          as in dollars, because "-$17" means nothing without knowing whether
+          $50 or $500 went out to earn it. Red prints exactly like green. */}
+      {planHistory?.all && (
+        <div className={`parlay-receipt${planHistory.all.total >= 0 ? ' pos' : ' neg'}`}>
           <div className="parlay-receipt-main">
             <span className="parlay-receipt-cap">
-              Following this plan, last {planHistory.days.length} {planHistory.days.length === 1 ? 'day' : 'days'}
+              Following this plan, every settled day so far
             </span>
             <span className="parlay-receipt-val">
-              {planHistory.total >= 0 ? '+' : '-'}${Math.abs(planHistory.total).toFixed(2)}
+              {signedPct(planHistory.all.roi)}
+              <span className="parlay-receipt-dollars">
+                {' '}({planHistory.all.total >= 0 ? '+' : '-'}${Math.abs(planHistory.all.total).toFixed(2)} on ${planHistory.all.staked.toFixed(2)} staked)
+              </span>
             </span>
             <span className="parlay-receipt-sub">
-              on ${planHistory.staked.toFixed(2)} staked · {planHistory.up} of {planHistory.days.length} days up
-              {planHistory.last ? ` · yesterday ${planHistory.last.profit >= 0 ? '+' : '-'}$${Math.abs(planHistory.last.profit).toFixed(2)}` : ''}
+              {planHistory.all.days.length} days · {planHistory.all.up} up, {planHistory.all.days.length - planHistory.all.up} down
+              {planHistory.all.last ? ` · latest ${planHistory.all.last.profit >= 0 ? '+' : '-'}$${Math.abs(planHistory.all.last.profit).toFixed(2)}` : ''}
             </span>
           </div>
-          <PlanCurve values={planHistory.curve} />
+          <PlanCurve values={planHistory.all.curve} />
+        </div>
+      )}
+
+      {planHistory?.event && (
+        <div className={`parlay-receipt parlay-receipt-event${planHistory.event.total >= 0 ? ' pos' : ' neg'}`}>
+          <div className="parlay-receipt-main">
+            <span className="parlay-receipt-cap">{planHistory.event.name}, day by day</span>
+            <span className="parlay-receipt-val">
+              {signedPct(planHistory.event.roi)}
+              <span className="parlay-receipt-dollars">
+                {' '}({planHistory.event.total >= 0 ? '+' : '-'}${Math.abs(planHistory.event.total).toFixed(2)} on ${planHistory.event.staked.toFixed(2)} staked)
+              </span>
+            </span>
+            <span className="parlay-receipt-sub">
+              {planHistory.event.up} of {planHistory.event.days.length} days up · one tournament is a
+              small sample, and it is shown whole rather than cropped
+            </span>
+          </div>
+          <PlanCurve values={planHistory.event.curve} />
         </div>
       )}
 
@@ -300,14 +406,21 @@ export default function Parlay() {
 
           {suggestions.length > 0 && (
             <div className="parlay-suggest">
-              <div className="parlay-suggest-cap">Rather build your own? Start from one of these</div>
+              <div className="parlay-suggest-cap">
+                Rather build your own? Narrow the card to one of these, then the plan above re-prices it
+              </div>
               <div className="parlay-suggest-row">
-                {suggestions.map((s) => (
-                  <button key={s.id} type="button" className="parlay-chip" onClick={() => applySuggestion(s.keys)}>
-                    <span className="parlay-chip-title">{s.title}</span>
-                    <span className="parlay-chip-sub">{s.sub}</span>
-                  </button>
-                ))}
+                {suggestions.map((s) => {
+                  const on = s.id === activeSuggestionId;
+                  return (
+                    <button key={s.id} type="button" aria-pressed={on}
+                      className={`parlay-chip${on ? ' on' : ''}`}
+                      onClick={() => applySuggestion(s.keys)}>
+                      <span className="parlay-chip-title">{s.title}{on ? ' ✓' : ''}</span>
+                      <span className="parlay-chip-sub">{on ? 'this is what the plan is priced on now' : s.sub}</span>
+                    </button>
+                  );
+                })}
                 {dropped.size > 0 && (
                   <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setDropped(new Set())}>
                     <span className="parlay-chip-title">All {all.length} back</span>

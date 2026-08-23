@@ -33,7 +33,14 @@ const EVENTS = [
   { pattern: /miami open|miami masters/i, label: 'Miami', surface: 'hard', tier: '1000', bestOf: { atp: 3, wta: 3 } },
   { pattern: /mutua madrid|madrid open|madrid masters/i, label: 'Madrid', surface: 'clay', tier: '1000', bestOf: { atp: 3, wta: 3 } },
   { pattern: /internazionali bnl|italian open|rome masters/i, label: 'Rome', surface: 'clay', tier: '1000', bestOf: { atp: 3, wta: 3 } },
-  { pattern: /national bank open|canadian open|canada masters|rogers cup/i, label: 'Canada', surface: 'hard', tier: '1000', bestOf: { atp: 3, wta: 3 } },
+  // `^canada$` is deliberate and exact. predictions.json shortens this event
+  // to bare "Canada" while track_record.json keeps "National Bank Open", so
+  // without it every ledger-side lookup missed and those days were silently
+  // credited to whichever overlapping tournament DID match - Cincinnati
+  // absorbed three Canada days and reported a tournament return of -26.3%
+  // against a true -5.9%. Anchored so it cannot sweep in a "Canada Open"
+  // challenger the way a bare /canada/ would.
+  { pattern: /national bank open|canadian open|canada masters|rogers cup|^canada$/i, label: 'Canada', surface: 'hard', tier: '1000', bestOf: { atp: 3, wta: 3 } },
   { pattern: /cincinnati|western (&|and) southern/i, label: 'Cincinnati', surface: 'hard', tier: '1000', bestOf: { atp: 3, wta: 3 } },
 ];
 

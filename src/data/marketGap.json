@@ -6,14 +6,14 @@
   "gapCallThreshold": 0.58,
   "band": {
     "pricedGraded": 1652,
-    "n": 161,
-    "hitRate": 0.559,
-    "marketImplied": 0.4565,
-    "stated": 0.6051
+    "n": 144,
+    "hitRate": 0.5347,
+    "marketImplied": 0.4577,
+    "stated": 0.6075
   },
   "beyondCeil": {
-    "n": 156,
-    "hitRate": 0.4359,
-    "stated": 0.6115
+    "n": 135,
+    "hitRate": 0.3852,
+    "stated": 0.6063
   }
 }

@@ -10,6 +10,7 @@
 // once via dynamic import; call ready() before anything else.
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { ledgerNoCall } = require('./noCall');
 
 const stakingReady = import(pathToFileURL(path.join(__dirname, '..', '..', 'src', 'utils', 'staking.mjs')).href);
 let staking = null;
@@ -26,8 +27,16 @@ const PLAN_BUDGET = 100;
 // reliability haircut and any settlement of "the plan you were shown" must
 // come from there. The track record grades far more tennis than the builder
 // ever stakes; a settlement built from it prices a plan that never existed.
+//
+// No-calls are OUT, and this is the seam that puts them out everywhere.
+// The old policy staked them deliberately - the builder bets edges, not
+// calls, and sub-threshold stakes had measured +2.2% ROI - but that left
+// the product saying two things at once: the record refused to claim a
+// coin flip while the plan asked you to put money on it. One rule now. It
+// also means the reliability haircut is measured on the population we
+// actually stake, not on one padded with matches we decline to back.
 function ledgerGraded(preds) {
-  return (preds || []).filter((m) => m.status === 'won' || m.status === 'lost');
+  return (preds || []).filter((m) => (m.status === 'won' || m.status === 'lost') && !ledgerNoCall(m));
 }
 
 // Locked bets for one calendar day, straight off the ledger: the pick, the
@@ -88,4 +97,76 @@ function planReturns(preds, dayISO) {
   };
 }
 
-module.exports = { ready, ledgerGraded, lockedBets, settlePlan, planReturns, PLAN_BUDGET };
+// The settleable ledger days belonging to one event, oldest first.
+//
+// Matched through the event registry, not by string equality: the same
+// tournament is "Cincinnati Open" in track_record.json and "Cincinnati" in
+// predictions.json, so an exact compare silently returned zero days and the
+// tournament total never rendered. The registry is the one place that knows
+// those are the same event.
+// A day belongs to the event that MOST of its graded calls belong to, and to
+// only that one. Tournaments overlap by a few days at the changeover - the
+// Canada and Cincinnati draws share three - and a day is staked as one card,
+// so attributing it to every event it touches would count the same profit
+// under two tournaments and make the totals sum to more than the season.
+// Majority ownership partitions the days cleanly at the cost of a little
+// imprecision on the changeover days, which is the honest trade: the
+// alternative is a number that double-counts.
+function eventDayOwner(preds) {
+  const { matchEvent } = require('./events');
+  const tally = new Map();
+  for (const m of ledgerGraded(preds)) {
+    const reg = matchEvent(m.event);
+    if (!reg) continue;
+    const day = String(m.date).slice(0, 10);
+    if (!tally.has(day)) tally.set(day, new Map());
+    const t = tally.get(day);
+    t.set(reg.label, (t.get(reg.label) || 0) + 1);
+  }
+  const owner = new Map();
+  for (const [day, t] of tally) {
+    owner.set(day, [...t.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+  }
+  return owner;
+}
+
+function eventDays(preds, event) {
+  const { matchEvent } = require('./events');
+  const want = matchEvent(event);
+  if (!want) return [];
+  const owner = eventDayOwner(preds);
+  return [...owner.entries()]
+    .filter(([, label]) => label === want.label)
+    .map(([day]) => day)
+    .sort();
+}
+
+// Follow the recommendation across a run of days and keep the running total.
+// One day is noise in both directions; a tournament is the smallest window
+// where "does following this work" has an answer, which is the question a
+// daily reader is actually asking. Each day is rebuilt exactly as the site
+// would have built it that morning - planReturns measures reliability only
+// on rows graded strictly before the day - so the cumulative line carries no
+// hindsight anywhere in it.
+function planRun(preds, dayISOs) {
+  let staked = 0, profit = 0, up = 0, days = 0;
+  const series = [];
+  for (const day of dayISOs) {
+    const r = planReturns(preds, day);
+    if (!r) continue;
+    const rec = r.plans.find((pl) => pl.id === r.recommendedId) || r.plans[0];
+    if (!rec) continue;
+    days += 1;
+    staked += rec.staked;
+    profit += rec.profit;
+    if (rec.profit > 0) up += 1;
+    series.push({ day, profit: rec.profit, staked: rec.staked, cum: profit });
+  }
+  if (!days) return null;
+  return { days, staked, profit, up, series, roi: staked > 0 ? profit / staked : 0 };
+}
+
+module.exports = {
+  ready, ledgerGraded, lockedBets, settlePlan, planReturns, planRun,
+  eventDays, eventDayOwner, PLAN_BUDGET,
+};

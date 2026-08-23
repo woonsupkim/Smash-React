@@ -56,13 +56,19 @@ jobs:
         id: tune
         run: |
           node data-pipeline/tuneWeights.js | tee tune.log
-          # -I ignores the tunedAt timestamp line, which the tuner rewrites on
-          # every run - a PR should open only when weights or calibration
-          # actually moved.
-          if git diff --quiet -I'"tunedAt"' src/engineConfig.json; then
+          # The no-call cutoffs are re-derived in the same pass. They are a
+          # property of the model, so leaving them pinned while the weights
+          # move underneath is how "we do not call coin flips" turns into a
+          # promise backed by a stale constant. Per tour x surface, from the
+          # graded record; see data-pipeline/tuneCallThreshold.js.
+          node data-pipeline/tuneCallThreshold.js --write | tee thresholds.log
+          # -I ignores the timestamp lines, which both tuners rewrite on every
+          # run - a PR should open only when something actually moved.
+          if git diff --quiet -I'"tunedAt"' src/engineConfig.json \
+             && git diff --quiet -I'"measuredAt"' src/data/callThresholds.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Weights and calibration unchanged - no PR needed."
-            git checkout -- src/engineConfig.json
+            echo "Weights, calibration and call thresholds unchanged - no PR needed."
+            git checkout -- src/engineConfig.json src/data/callThresholds.json
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -92,8 +98,8 @@ jobs:
           git config user.name "smash-data-bot"
           git config user.email "actions@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add src/engineConfig.json
-          git commit -m "Retune Smart Blend weights (pre-slam)"
+          git add src/engineConfig.json src/data/callThresholds.json
+          git commit -m "Retune Smart Blend weights and call thresholds (pre-slam)"
           git push -u origin "$BRANCH"
           {
             echo "Pre-slam retune of the Smart Blend weights, fit on the season-to-date track record."
