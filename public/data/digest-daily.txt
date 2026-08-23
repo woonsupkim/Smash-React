@@ -1,45 +1,23 @@
-SMASH DAILY - Saturday, August 22
+SMASH DAILY - Sunday, August 23
 
-1 from 2 yesterday. Half right, which means half wrong, and both halves are below. 4 more are locked for today at Cincinnati, every one of them public before a ball is struck.
+1 from 1 yesterday. A clean sweep, and no, that is not the usual. 0 more are locked for today at Cincinnati, every one of them public before a ball is struck, plus 2 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 1 from 2 (50%)
-  The one that stings: Lorenzo Musetti (we said 56%) - Frances Tiafoe had other ideas
+YESTERDAY, GRADED: 1 from 1 (100%)
+  If you had actually followed along ($100 in): Follow the edge -$10.75 (recommended); Back every call -$14.68; Spread plus a parlay -$24.60; Whole card, weighted -$29.40
 
-ON COURT TODAY
-  [ Cincinnati - ATP ]
-  Cobolli over Fils - 56%
-    Call: https://smash-react.vercel.app/match/arthur-fils-vs-flavio-cobolli-181987
-    Compare: https://smash-react.vercel.app/compare/atp/arthur-fils-vs-flavio-cobolli
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=fils&b=cobol
-  Tiafoe over Nakashima - 56%
-    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-brandon-nakashima-181984
-    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-brandon-nakashima
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=nakas
-  [ Cincinnati - WTA ]
-  Swiatek over Pegula - 63%
-    Call: https://smash-react.vercel.app/match/iga-swiatek-vs-jessica-pegula-182426
-    Compare: https://smash-react.vercel.app/compare/wta/iga-swiatek-vs-jessica-pegula
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=swiat&b=pegul
-  Gauff over Bejlek - 76%
-    Call: https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418
-    Compare: https://smash-react.vercel.app/compare/wta/cori-gauff-vs-sara-bejlek
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=gauff&b=bejle
-
-THE MONEY QUESTION - the recommended plan (hypothetical $100, spread plus a parlay):
-  $22.10 on Tiafoe (56% @ 2.05)
-  $22.10 on Cobolli (56% @ 3.24)
-  $22.10 on Gauff (76% @ 1.36)
-  $22.10 on Swiatek (63% @ 1.40)
-  $11.61 on the parlay
-  Total $100.00; we expect 2.5 to land, returning $129.95; 66% chance of finishing ahead
+THE MONEY QUESTION - the recommended plan (hypothetical $100, follow the edge):
+  $5.66 on Pegula (57% @ 2.24)
+  $4.64 on Tiafoe (51% @ 2.55)
+  $3.44 on the parlay
+  Total $13.73; we expect 1.1 to land, returning $18.89; 29% chance of finishing ahead
   https://smash-react.vercel.app/parlay
 
-COMING UP: 9 days to the US Open (hard)
-  ATP: Jannik Sinner 49%, Carlos Alcaraz 24%, Alexander Zverev 7%
-  WTA: Aryna Sabalenka 79%, Elena Rybakina 16%, Iga Swiatek 4%
+COMING UP: 8 days to the US Open (hard)
+  ATP: Jannik Sinner 49%, Carlos Alcaraz 24%, Alexander Zverev 9%
+  WTA: Aryna Sabalenka 26%, Elena Rybakina 22%, Iga Swiatek 20%
   https://smash-react.vercel.app/draw
 
-SEASON: 66% (2,222 of 3,370)
+SEASON: 74% (1,577 of 2,137)
 
 See today's full card: https://smash-react.vercel.app/today
 

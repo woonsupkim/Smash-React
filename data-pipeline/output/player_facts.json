@@ -203,7 +203,7 @@
     "yearRecord": {
       "hard": {
         "w": 15,
-        "l": 10
+        "l": 11
       },
       "clay": {
         "w": 18,
@@ -400,7 +400,7 @@
     "age": 28,
     "yearRecord": {
       "hard": {
-        "w": 21,
+        "w": 22,
         "l": 11
       },
       "clay": {
@@ -413,8 +413,8 @@
       }
     },
     "recentForm": {
-      "w": 6,
-      "l": 4
+      "w": 7,
+      "l": 3
     }
   },
   "vache": {
@@ -510,7 +510,7 @@
     "age": 22,
     "yearRecord": {
       "hard": {
-        "w": 26,
+        "w": 27,
         "l": 10
       },
       "clay": {
@@ -617,7 +617,7 @@
   },
   "norri": {
     "country": "GBR",
-    "age": 30,
+    "age": 31,
     "yearRecord": {
       "hard": {
         "w": 34,
@@ -665,7 +665,7 @@
     "yearRecord": {
       "hard": {
         "w": 31,
-        "l": 10
+        "l": 11
       },
       "clay": {
         "w": 6,
@@ -677,8 +677,8 @@
       }
     },
     "recentForm": {
-      "w": 9,
-      "l": 1
+      "w": 8,
+      "l": 2
     }
   },
   "etche": {
@@ -1236,7 +1236,7 @@
     "age": 25,
     "yearRecord": {
       "hard": {
-        "w": 20,
+        "w": 22,
         "l": 8
       },
       "clay": {
@@ -1249,8 +1249,8 @@
       }
     },
     "recentForm": {
-      "w": 5,
-      "l": 5
+      "w": 6,
+      "l": 4
     }
   },
   "griek": {
@@ -1632,7 +1632,7 @@
     "age": 25,
     "yearRecord": {
       "hard": {
-        "w": 14,
+        "w": 15,
         "l": 20
       },
       "clay": {
@@ -1695,7 +1695,7 @@
   },
   "cazau": {
     "country": "FRA",
-    "age": 23,
+    "age": 24,
     "yearRecord": {
       "hard": {
         "w": 9,
@@ -1742,7 +1742,7 @@
     "age": 22,
     "yearRecord": {
       "hard": {
-        "w": 115,
+        "w": 116,
         "l": 22
       },
       "clay": {
@@ -1755,8 +1755,8 @@
       }
     },
     "recentForm": {
-      "w": 8,
-      "l": 2
+      "w": 9,
+      "l": 1
     }
   },
   "brook": {
@@ -2094,7 +2094,7 @@
     "age": 29,
     "yearRecord": {
       "hard": {
-        "w": 18,
+        "w": 19,
         "l": 17
       },
       "clay": {
@@ -2381,7 +2381,7 @@
     "yearRecord": {
       "hard": {
         "w": 122,
-        "l": 75
+        "l": 76
       },
       "clay": {
         "w": 3,
@@ -2601,7 +2601,7 @@
     "yearRecord": {
       "hard": {
         "w": 47,
-        "l": 31
+        "l": 32
       },
       "clay": {
         "w": 58,

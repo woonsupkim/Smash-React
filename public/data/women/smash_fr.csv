@@ -1,7 +1,7 @@
 id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5,p6,country,age,year_w,year_l,recent_w,recent_l
 sabal,Aryna Sabalenka,Aryna,Sabalenka,1,2,0.64,0.89,0.38,0.51,0.44,0.08,BLR,28,8,3,6,4
 rybak,Elena Rybakina,Elena,Rybakina,2,2,0.58,0.92,0.37,0.48,0.44,0.13,KAZ,27,10,3,8,2
-swiat,Iga Swiatek,Iga,Swiatek,3,2,0.63,0.89,0.41,0.57,0.45,0.04,POL,25,9,4,10,0
+swiat,Iga Swiatek,Iga,Swiatek,3,2,0.63,0.89,0.41,0.57,0.45,0.04,POL,25,9,4,9,1
 pegul,Jessica Pegula,Jessica,Pegula,4,2,0.61,0.93,0.41,0.48,0.42,0.06,USA,32,9,3,8,2
 andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.63,0.88,0.42,0.54,0.44,0.05,RUS,19,23,3,4,6
 anisi,Amanda Anisimova,Amanda,Anisimova,6,2,0.63,0.82,0.41,0.52,0.43,0.07,USA,24,2,1,5,5
@@ -43,7 +43,7 @@ samso,Liudmila Samsonova,Liudmila,Samsonova,41,2,0.61,0.89,0.37,0.48,0.42,0.06,R
 tjen,Janice Tjen,Janice,Tjen,42,2,0.63,0.85,0.38,0.54,0.40,0.06,INA,24,2,5,4,6
 sakka,Maria Sakkari,Maria,Sakkari,43,2,0.61,0.89,0.37,0.47,0.42,0.06,GRE,31,4,5,4,6
 frech,Magdalena Frech,Magdalena,Frech,44,2,0.62,0.94,0.39,0.45,0.38,0.05,POL,28,2,5,6,4
-bejle,Sara Bejlek,Sara,Bejlek,45,2,0.71,0.88,0.45,0.50,0.38,0.01,CZE,20,2,11,7,3
+bejle,Sara Bejlek,Sara,Bejlek,45,2,0.71,0.88,0.45,0.50,0.38,0.01,CZE,20,2,11,6,4
 cocci,Elisabetta Cocciaretto,Elisabetta,Cocciaretto,46,2,0.67,0.86,0.39,0.50,0.41,0.02,ITA,25,12,5,4,6
 marci,Petra Marcinko,Petra,Marcinko,47,2,0.57,0.84,0.44,0.50,0.40,0.05,CRO,20,55,41,5,5
 bartu,Nikola Bartunkova,Nikola,Bartunkova,48,2,0.51,0.79,0.42,0.50,0.43,0.08,CZE,20,11,11,7,3
@@ -67,12 +67,12 @@ kasat,Daria Kasatkina,Daria,Kasatkina,65,2,0.73,0.74,0.48,0.58,0.40,0.03,AUS,29,
 kalin1,Anhelina Kalinina,Anhelina,Kalinina,66,2,0.69,0.85,0.47,0.56,0.41,0.02,UKR,29,143,25,3,7
 yastr,Dayana Yastremska,Dayana,Yastremska,67,2,0.68,0.88,0.41,0.53,0.42,0.03,UKR,26,37,5,4,6
 serra,Maria Camila Osorio Serrano,Maria,Camila Osorio Serrano,68,2,0.67,0.80,0.41,0.55,0.43,0.04,COL,24,27,12,3,7
-udvar,Panna Udvardy,Panna,Udvardy,69,2,0.58,0.90,0.42,0.48,0.40,0.06,HUN,27,41,34,3,7
+udvar,Panna Udvardy,Panna,Udvardy,69,2,0.58,0.90,0.42,0.48,0.40,0.06,HUN,27,41,34,4,6
 rakhi,Kamilla Rakhimova,Kamilla,Rakhimova,70,2,0.58,0.86,0.36,0.50,0.37,0.03,UZB,24,2,11,7,3
 ruse,Elena Gabriela Ruse,Elena,Gabriela Ruse,71,2,0.57,0.85,0.39,0.50,0.38,0.08,ROU,28,5,9,5,5
 birre,Kimberly Birrell,Kimberly,Birrell,72,2,0.64,0.79,0.37,0.47,0.39,0.03,AUS,28,1,10,0,10
 plisk,Karolina Pliskova,Karolina,Pliskova,73,2,0.66,0.76,0.36,0.43,0.43,0.09,CZE,34,10,4,6,4
-bonda,Anna Bondar,Anna,Bondar,74,2,0.62,0.94,0.38,0.51,0.41,0.06,HUN,29,46,13,3,7
+bonda,Anna Bondar,Anna,Bondar,74,2,0.62,0.94,0.38,0.51,0.41,0.06,HUN,29,46,13,4,6
 zaraz,Renata Zarazua,Renata,Zarazua,75,2,0.74,0.91,0.44,0.48,0.39,0.01,MEX,28,37,18,3,7
 lys,Eva Lys,Eva,Lys,76,2,0.67,0.82,0.39,0.51,0.38,0.01,GER,24,3,6,3,7
 snigu,Daria Snigur,Daria,Snigur,77,2,0.72,0.84,0.43,0.51,0.37,0.02,UKR,24,5,3,6,4
@@ -91,13 +91,13 @@ erjav,Veronika Erjavec,Veronika,Erjavec,89,2,0.67,0.92,0.44,0.48,0.40,0.02,SLO,2
 walte,Simona Waltert,Simona,Waltert,90,2,0.64,0.84,0.45,0.49,0.41,0.03,SUI,25,62,46,2,8
 selek,Oksana Selekhmeteva,Oksana,Selekhmeteva,91,2,0.62,0.69,0.41,0.51,0.40,0.04,ESP,23,22,39,3,7
 vidma,Darja Vidmanova,Darja,Vidmanova,92,2,0.61,0.91,0.40,0.55,0.38,0.05,CZE,23,26,22,6,4
-kraus,Sinja Kraus,Sinja,Kraus,93,2,0.62,0.89,0.46,0.53,0.38,0.02,AUT,24,79,25,6,4
+kraus,Sinja Kraus,Sinja,Kraus,93,2,0.62,0.89,0.46,0.53,0.38,0.02,AUT,24,79,25,5,5
 tomlj,Ajla Tomljanovic,Ajla,Tomljanovic,94,2,0.65,0.78,0.41,0.56,0.40,0.03,AUS,33,1,12,6,4
-timof,Maria Timofeeva,Maria,Timofeeva,95,2,0.67,0.86,0.49,0.51,0.41,0.03,UZB,22,93,10,3,7
+timof,Maria Timofeeva,Maria,Timofeeva,95,2,0.67,0.86,0.49,0.51,0.41,0.03,UZB,22,93,10,4,6
 maria,Tatjana Maria,Tatjana,Maria,96,2,0.58,0.95,0.37,0.47,0.37,0.10,GER,39,7,7,4,6
 arang,Emiliana Arango,Emiliana,Arango,97,2,0.70,0.85,0.43,0.46,0.37,0.03,COL,25,23,33,4,6
 korne,Alina Korneeva,Alina,Korneeva,98,2,0.64,0.82,0.42,0.49,0.37,0.03,RUS,19,13,20,8,2
-tarar,Lanlana Tararudee,Lanlana,Tararudee,99,2,0.60,0.90,0.41,0.49,0.38,0.05,THA,22,0,1,8,2
+tarar,Lanlana Tararudee,Lanlana,Tararudee,99,2,0.60,0.90,0.41,0.49,0.38,0.05,THA,22,0,1,7,3
 seide,Ella Seidel,Ella,Seidel,100,2,0.61,0.83,0.47,0.47,0.40,0.04,GER,21,36,29,3,7
 volyn,Katie Volynets,Katie,Volynets,101,2,0.77,0.92,0.46,0.53,0.36,0.02,USA,24,19,12,6,4
 volyn1,Katie Volynets,Katie,Volynets,101,2,0.77,0.92,0.46,0.53,0.36,0.02,USA,24,19,12,6,4

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T09:19:44.962Z",
+  "generatedAt": "2026-08-23T09:26:51.305Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -8,22 +8,22 @@
       "surface": "hard",
       "label": "ATP hard",
       "engine": "smash",
-      "status": "watch",
-      "n": 457,
-      "seasonAcc": 67,
+      "status": "ok",
+      "n": 326,
+      "seasonAcc": 72,
       "recentN": 40,
-      "recentAcc": 57,
-      "rankRecentAcc": 57,
+      "recentAcc": 70,
+      "rankRecentAcc": 70,
       "recentEngines": {
-        "smash": 57,
-        "sim": 57,
-        "elo": 63,
-        "rank": 57,
-        "upset": 83
+        "smash": 70,
+        "sim": 63,
+        "elo": 73,
+        "rank": 70,
+        "upset": 78
       },
       "bestRecent": {
         "engine": "upset",
-        "acc": 83
+        "acc": 78
       },
       "reasons": []
     },
@@ -33,21 +33,21 @@
       "label": "ATP clay",
       "engine": "smash",
       "status": "ok",
-      "n": 261,
-      "seasonAcc": 68,
+      "n": 178,
+      "seasonAcc": 74,
       "recentN": 40,
-      "recentAcc": 65,
-      "rankRecentAcc": 63,
+      "recentAcc": 73,
+      "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 65,
-        "sim": 63,
-        "elo": 60,
-        "rank": 63,
-        "upset": 60
+        "smash": 73,
+        "sim": 68,
+        "elo": 70,
+        "rank": 73,
+        "upset": 65
       },
       "bestRecent": {
         "engine": "smash",
-        "acc": 65
+        "acc": 73
       },
       "reasons": []
     },
@@ -57,17 +57,17 @@
       "label": "ATP grass",
       "engine": "smash",
       "status": "ok",
-      "n": 87,
-      "seasonAcc": 72,
+      "n": 71,
+      "seasonAcc": 77,
       "recentN": 40,
       "recentAcc": 78,
       "rankRecentAcc": 78,
       "recentEngines": {
         "smash": 78,
-        "sim": 75,
+        "sim": 78,
         "elo": 78,
         "rank": 78,
-        "upset": 75
+        "upset": 78
       },
       "bestRecent": {
         "engine": "smash",
@@ -81,17 +81,17 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 426,
-      "seasonAcc": 71,
+      "n": 344,
+      "seasonAcc": 77,
       "recentN": 40,
       "recentAcc": 80,
       "rankRecentAcc": 80,
       "recentEngines": {
         "smash": 80,
-        "sim": 68,
-        "elo": 73,
+        "sim": 63,
+        "elo": 75,
         "rank": 80,
-        "upset": 65
+        "upset": 68
       },
       "bestRecent": {
         "engine": "smash",
@@ -105,21 +105,21 @@
       "label": "WTA clay",
       "engine": "smash",
       "status": "ok",
-      "n": 261,
-      "seasonAcc": 68,
+      "n": 199,
+      "seasonAcc": 72,
       "recentN": 40,
-      "recentAcc": 73,
+      "recentAcc": 78,
       "rankRecentAcc": 75,
       "recentEngines": {
-        "smash": 73,
-        "sim": 57,
-        "elo": 70,
+        "smash": 78,
+        "sim": 63,
+        "elo": 75,
         "rank": 75,
-        "upset": 63
+        "upset": 65
       },
       "bestRecent": {
-        "engine": "rank",
-        "acc": 75
+        "engine": "smash",
+        "acc": 78
       },
       "reasons": []
     },
@@ -129,29 +129,29 @@
       "label": "WTA grass",
       "engine": "smash",
       "status": "ok",
-      "n": 90,
-      "seasonAcc": 72,
+      "n": 58,
+      "seasonAcc": 83,
       "recentN": 40,
-      "recentAcc": 75,
-      "rankRecentAcc": 75,
+      "recentAcc": 78,
+      "rankRecentAcc": 80,
       "recentEngines": {
-        "smash": 75,
-        "sim": 73,
+        "smash": 78,
+        "sim": 83,
         "elo": 78,
-        "rank": 75,
-        "upset": 73
+        "rank": 80,
+        "upset": 83
       },
       "bestRecent": {
-        "engine": "elo",
-        "acc": 78
+        "engine": "sim",
+        "acc": 83
       },
       "reasons": []
     }
   ],
   "forward": {
-    "n": 278,
+    "n": 282,
     "recentN": 40,
-    "recentAcc": 60,
+    "recentAcc": 55,
     "status": "ok"
   },
   "alerts": []
