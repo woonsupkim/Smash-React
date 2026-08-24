@@ -35,7 +35,6 @@ const Parlay = lazy(() => import('./pages/Parlay'));
 const DrawPage = lazy(() => import('./pages/DrawPage'));
 const ModelCard = lazy(() => import('./pages/ModelCard'));
 const Rivalry = lazy(() => import('./pages/Rivalry'));
-const Rivalries = lazy(() => import('./pages/Rivalries'));
 const EdgeBoard = lazy(() => import('./pages/EdgeBoard'));
 const Compare = lazy(() => import('./pages/Compare'));
 const CompareHub = lazy(() => import('./pages/Compare').then((m) => ({ default: m.CompareHub })));
@@ -79,12 +78,11 @@ const NAV_GROUPS = [
   {
     // Three surfaces here take two players. The labels have to say what each
     // one is FOR, or they read as three doors to the same room: the studio
-    // prices a matchup, Compare lines the numbers up, Rivalries is history.
+    // prices a matchup, Compare lines the numbers up (rivalries included).
     label: 'H2H',
     items: [
       { to: '/h2h', label: 'H2H Studio · Price Any Matchup' },
-      { to: '/compare', label: 'Compare Players · Stat by Stat', tourAgnostic: true },
-      { to: '/rivalries', label: 'Rivalries · The Long Stories', tourAgnostic: true },
+      { to: '/compare', label: 'Compare Players & Rivalries', tourAgnostic: true },
     ],
   },
   {
@@ -311,7 +309,10 @@ function App() {
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
           <Route path="/parlay" element={<Parlay />} />
-          <Route path="/rivalries" element={<Rivalries />} />
+          {/* Merged into /compare: a rivalry is a comparison with history,
+              and two hubs for that job was one too many. Redirect keeps every
+              existing link and search result working. */}
+          <Route path="/rivalries" element={<Navigate to="/compare" replace />} />
           <Route path="/rivalry/:tour/:slug" element={<Rivalry />} />
 
           {/* v3.5: the Edge board, the daily game, the gym, comparisons,

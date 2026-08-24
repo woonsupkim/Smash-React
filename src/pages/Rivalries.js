@@ -1,9 +1,11 @@
 // src/pages/Rivalries.js
 //
-// The rivalries board: the top matchups on each tour, ranked by career
-// meetings and combined ranking. Every entry links to its own rivalry page
+// The rivalries board: the top matchups on a tour, ranked by career meetings
+// and combined ranking. Every entry links to its own rivalry page
 // (/rivalry/:tour/:slug) - the crawlable hub behind the programmatic SEO
 // pages. Built entirely from data files the pipeline already publishes.
+//
+// Rendered by CompareHub (src/pages/Compare.js), not by a page of its own.
 import React, { useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
@@ -51,7 +53,7 @@ function useTourRivalries(tour) {
   }, [roster, h2h]);
 }
 
-function RivalryList({ tour, title }) {
+export function RivalryList({ tour, title }) {
   const list = useTourRivalries(tour);
   return (
     <div className="rivalries-tour">
@@ -80,23 +82,9 @@ function RivalryList({ tour, title }) {
   );
 }
 
-export default function Rivalries() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Tennis Rivalries: H2H Records & Predictions | Smash';
-    return () => { document.title = prev; };
-  }, []);
-
-  return (
-    <div className="rivalry-page">
-      <div className="eyebrow">THE RIVALRIES</div>
-      <h1 className="rivalry-title">Every big matchup, on the record</h1>
-      <p className="rivalry-sub">
-        Career head-to-heads, live form curves, and a model read for every surface -
-        each rivalry graded in public whenever the two actually meet.
-      </p>
-      <RivalryList tour="atp" title="ATP" />
-      <RivalryList tour="wta" title="WTA" />
-    </div>
-  );
-}
+// The standalone /rivalries page is gone: the board now lives on /compare,
+// under the player picker. Two hubs for "put these two players side by side"
+// was one hub too many - a rivalry IS a comparison with history attached, and
+// the split meant the curated matchups were invisible to anyone who started
+// from the compare page. /rivalries redirects there; the per-rivalry pages
+// (/rivalry/:tour/:slug) are unchanged and still the crawlable product.

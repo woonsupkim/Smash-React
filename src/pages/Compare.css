@@ -123,3 +123,29 @@
 
 .compare-foot { font-size: 0.78rem; color: var(--text-3); margin-top: 1.5rem; }
 .compare-foot a { color: var(--accent-brand); }
+
+/* The rivalries board, merged in from the retired /rivalries page. Separated
+   from the picker above it by a rule rather than a card, so it reads as a
+   second way into the same thing rather than a different feature. */
+.compare-rivalries {
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.14));
+}
+.compare-section-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.3rem;
+}
+.compare-section-sub {
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-2, #b6bcc5);
+  max-width: 60ch;
+}
+/* The list no longer needs its own per-tour heading: the hub's tour toggle
+   owns that, and the label would repeat what the subhead already says. */
+.compare-rivalries .rivalry-section-label { display: none; }
+.compare-rivalries .rivalries-tour + .rivalries-tour { margin-top: 1.5rem; }

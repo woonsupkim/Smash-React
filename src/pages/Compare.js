@@ -16,7 +16,9 @@ import { pickCorrect } from '../utils/deployedPick';
 import { matchProb } from '../analyticProb';
 import EloChart from '../components/EloChart';
 import useDocMeta from '../utils/useDocMeta';
+import { RivalryList } from './Rivalries';
 import './Compare.css';
+import './Rivalry.css';
 
 const SURFACE_CSV = [
   ['hard', 'smash_us.csv', 'Hard'],
@@ -29,8 +31,8 @@ const hasStats = (r) => r && ['p1', 'p2', 'p3', 'p4', 'p5'].every((k) => Number(
 
 export function CompareHub() {
   useDocMeta(
-    'Compare Any Players | Smash',
-    'Pick two to four players and compare form curves, season records, and the model\'s read on every surface.'
+    'Compare Any Players & Tennis Rivalries | Smash',
+    'Pick two to four players and compare form curves, season records, and the model\'s read on every surface - or start from one of the tour\'s big rivalries.'
   );
   const [tour, setTour] = useState('atp');
   const [roster, setRoster] = useState([]);
@@ -58,7 +60,8 @@ export function CompareHub() {
       <h1 className="compare-title">Compare any players</h1>
       <p className="compare-sub">
         Two, three, or four players side by side: form curves, season records, and the
-        model's read on every surface.
+        model's read on every surface. Or skip the picker and start from a rivalry
+        that already has history behind it.
       </p>
       <div className="compare-hub-controls">
         <div className="compare-seg" role="group" aria-label="Tour">
@@ -80,6 +83,21 @@ export function CompareHub() {
         ))}
         {picks.length < 4 && <button type="button" className="compare-add" onClick={() => setPicks((ps) => [...ps, ''])}>+ add a fourth</button>}
         <button type="button" className="compare-go" disabled={chosen.length < 2} onClick={go}>Compare →</button>
+      </div>
+
+      {/* The rivalries board, formerly its own page at /rivalries. A rivalry
+          is a comparison with history attached, so two hubs for the same job
+          was one too many - and the split hid the curated matchups from
+          anyone who arrived at the picker. It follows the tour toggle above
+          rather than listing both tours, which is what the standalone page
+          had to do without one. */}
+      <div className="compare-rivalries">
+        <h2 className="compare-section-title">Or start from a rivalry</h2>
+        <p className="compare-section-sub">
+          The {tour.toUpperCase()} matchups with the most history, career head-to-head first.
+          Each one carries live form curves and a model read for every surface.
+        </p>
+        <RivalryList tour={tour} />
       </div>
     </div>
   );
