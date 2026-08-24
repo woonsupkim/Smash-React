@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T04:30:14.626Z",
+  "generatedAt": "2026-08-24T04:38:35.357Z",
   "seasonN": 2195,
   "lastStreak": {
     "key": "wta|grass",
@@ -76,8 +76,8 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 32 of 43 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 32 of 43 winners called."
+      "caption": "The week in calls: 31 of 42 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 31 of 42 winners called."
     },
     {
       "file": "weekly-plan.png",
@@ -140,8 +140,8 @@
       "type": "edge-live-plan",
       "format": "square",
       "category": "edge",
-      "caption": "Cincinnati, following the recommended plan across 8 settled days: +$8.84 on $186.60 staked, +4.7%, 5 of 8 days in front. Flat-staking the bookmakers' favourite over the same matches returned +1.7% on $650 - more money made, on three times the money risked. Less risked, more of it kept. Hypothetical, not betting advice. https://smash-react.vercel.app/parlay #tennis #atp #wta #tennisprediction",
-      "alt": "Cincinnati: the recommended plan returned +4.7% against the market's +1.7%."
+      "caption": "Cincinnati, following the recommended plan across 8 settled days: +$8.84 on $186.60 staked, +4.7%, 5 of 8 days in front. Put that identical $187 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back +$3.25 - +1.7%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/parlay #tennis #atp #wta #tennisprediction",
+      "alt": "Cincinnati: the recommended plan returned +4.7% against +1.7% for the market's favourite on the same money."
     },
     {
       "file": "proof.png",

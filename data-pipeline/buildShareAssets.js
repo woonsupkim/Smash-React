@@ -1293,10 +1293,21 @@ async function upsetCallCard(p, file) {
   });
 }
 
-// EDGE: the live tournament, plan against market. Both framings on the card on
-// purpose - the plan wins on RETURN while staking a fraction of the money, so
-// quoting either number alone is a half-truth.
-async function livePlanCard({ event, days, profit, staked, roi, up, mktProfit, mktStaked, mktRoi }, file) {
+// EDGE: the live tournament, plan against market, on THE SAME MONEY.
+//
+// The first version of this card compared the plan's profit to flat-betting
+// the market's favourite at a fixed stake per match - and the market staked
+// $650 where the plan staked $187, so it "won" on absolute profit purely by
+// risking three and a half times as much. Two numbers measuring different
+// amounts of money is not a comparison, and putting both on a card just moved
+// the problem to the reader.
+//
+// The baseline is now scaled to the plan's own total stake: the same $187,
+// spread evenly over every match those days. ROI is unchanged by scaling, so
+// the percentages mean what they always did, and the dollar figures finally
+// answer the question a reader is actually asking - same money in, which came
+// out ahead.
+async function livePlanCard({ event, days, profit, staked, roi, up, mktProfit, mktRoi }, file) {
   await reportCard({
     eyebrowText: `${event} · following the recommended plan`,
     headline1: pctOf(roi),
@@ -1304,9 +1315,9 @@ async function livePlanCard({ event, days, profit, staked, roi, up, mktProfit, m
     stats: [
       { value: money(profit), label: `profit on $${staked.toFixed(0)} staked, ${days} days` },
       { value: `${up}/${days}`, label: 'days in front' },
-      { value: pctOf(mktRoi), label: `backing the market favourite instead ($${mktStaked.toFixed(0)})` },
+      { value: money(mktProfit), label: `the same $${staked.toFixed(0)} flat on the market's favourite (${pctOf(mktRoi)})` },
     ],
-    footNote: 'less money risked, more of it kept · not betting advice',
+    footNote: 'same money in, both ways · not betting advice',
     file,
     accent: roi >= 0 ? PAL.edge.key : '#ff5c5c',
     cta: 'SIZE TODAY\'S CARD  →',
@@ -2540,15 +2551,20 @@ async function run() {
     const days = liveEvent ? planSettle.eventDays(preds.predictions || [], liveEvent) : [];
     const run = days.length ? planSettle.planRun(preds.predictions || [], days) : null;
     if (run && run.days >= 3 && run.staked > 0) {
-      // Same days, same matches: flat stake on the bookmakers' own favourite.
+      // Same days, same matches, and crucially THE SAME TOTAL STAKE as the
+      // plan: the plan's budget spread evenly over every match on those days.
+      // A fixed per-match stake would have the baseline risking several times
+      // the plan's money, which makes its absolute profit meaningless next to
+      // the plan's. Per-match stake is derived, not assumed.
       const rows = ledger.filter((m) => days.includes(String(m.date).slice(0, 10)) && m.lockOdd1 > 1 && m.lockOdd2 > 1);
+      const perMatch = rows.length ? run.staked / rows.length : 0;
       let mktStaked = 0, mktProfit = 0;
       for (const m of rows) {
         const q1 = 1 / m.lockOdd1, q2 = 1 / m.lockOdd2;
         const fav = q1 > q2 ? m.p1 : m.p2;
         const o = fav === m.p1 ? m.lockOdd1 : m.lockOdd2;
-        mktStaked += STAKE;
-        mktProfit += m.winner === fav ? STAKE * (o - 1) : -STAKE;
+        mktStaked += perMatch;
+        mktProfit += m.winner === fav ? perMatch * (o - 1) : -perMatch;
       }
       const roi = (run.profit / run.staked) * 100;
       const mktRoi = mktStaked ? (mktProfit / mktStaked) * 100 : 0;
@@ -2557,8 +2573,8 @@ async function run() {
         staked: run.staked, roi, up: run.up, mktProfit, mktStaked, mktRoi,
       }, 'edge-live-plan.png');
       add('edge-live-plan.png', 'edge-live-plan', 'square', 'edge',
-        `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Flat-staking the bookmakers' favourite over the same matches returned ${pctOf(mktRoi)} on $${mktStaked.toFixed(0)} - more money made, on three times the money risked. Less risked, more of it kept. Hypothetical, not betting advice. ${SITE}/parlay ${tags}`,
-        `${liveEvent}: the recommended plan returned ${pctOf(roi)} against the market's ${pctOf(mktRoi)}.`);
+        `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Put that identical $${run.staked.toFixed(0)} flat across every match on the same days, backing the bookmakers' own favourite, and it comes back ${money(mktProfit)} - ${pctOf(mktRoi)}. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. ${SITE}/parlay ${tags}`,
+        `${liveEvent}: the recommended plan returned ${pctOf(roi)} against ${pctOf(mktRoi)} for the market's favourite on the same money.`);
     }
   }
 
