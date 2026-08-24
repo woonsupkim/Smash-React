@@ -32,6 +32,15 @@ function loadMatches(ourId) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+// Names a fixture independently of whatever id the feed last gave it.
+// Returns null when the row lacks what it takes to identify a match, so the
+// caller skips it rather than lumping every malformed row under one key.
+function fixtureKey(m) {
+  if (!m || !m.player1Id || !m.player2Id || !m.date) return null;
+  const pair = [String(m.player1Id), String(m.player2Id)].sort().join('_');
+  return `${pair}@${String(m.date).slice(0, 10)}`;
+}
+
 function didWin(match, apiId) {
   return String(match.match_winner) === String(apiId);
 }
@@ -110,15 +119,44 @@ function main() {
 
   // --- pairwise head-to-head ---
   const h2h = {}; // "id1_id2" (sorted) -> { winsA, winsB, recentFormA, recentFormB } where A=id1, B=id2 alphabetically
-  const seenMatchIds = new Set();
+  const seenMatchIds = new Set(); // fixture keys, not feed ids
+  let dupFixtures = 0; // same fixture seen again under a different feed id
+  let unkeyable = 0;   // rows too malformed to name a fixture
+  let rowsRead = 0;
 
   for (const [ourId, apiId] of Object.entries(idMap)) {
     for (const m of loadMatches(ourId)) {
-      if (!m.id || seenMatchIds.has(m.id) || !m.match_winner) continue;
+      rowsRead++;
+      // Deduped by FIXTURE, not by match id.
+      //
+      // The id is not a stable name for a match. fetch.js keeps history
+      // forever ("history ACCUMULATES across runs") and merges on match id,
+      // so when the API re-issues a fixture under a new id, the cache keeps
+      // both copies and a Set of ids cannot tell them apart. That is how
+      // Collignon vs Van Assche came to read 22-0 against a true 3-0, and
+      // Bonzi vs Riedi 14-0 against 2-0: every extra copy names the same
+      // winner, so the record stays lopsided while the count inflates.
+      // Re-fetching the same four players fresh reproduced the correct
+      // numbers from this identical code, which is what pinned it on the
+      // cache rather than the arithmetic.
+      //
+      // Only pairs whose meetings are RECENT were affected - those are the
+      // fixtures that sit inside the fetch window run after run and so get
+      // re-issued. Alcaraz vs Sinner, mostly older meetings, was already
+      // right, which is why this survived so long.
+      //
+      // Two singles players do not meet twice on one calendar day, so
+      // pair+day names a fixture exactly. Same shape as the match-identity
+      // key buildTrackRecord already uses. Verified against 1,165 fetched
+      // rows: no legitimate match collapses.
+      const fixture = fixtureKey(m);
+      if (!fixture) { unkeyable++; continue; }
+      if (seenMatchIds.has(fixture)) { dupFixtures++; continue; }
+      if (!m.match_winner) continue;
       const oppApiId = String(m.player1Id) === String(apiId) ? m.player2Id : m.player1Id;
       const oppOurId = apiToOur.get(String(oppApiId));
       if (!oppOurId) continue; // opponent isn't in our roster - skip (can't label both sides)
-      seenMatchIds.add(m.id);
+      seenMatchIds.add(fixture);
 
       const [idA, idB] = [ourId, oppOurId].sort();
       const key = `${idA}_${idB}`;
@@ -135,6 +173,27 @@ function main() {
     const [idA, idB] = key.split('_');
     h2h[key].recentFormA = recentForm[idA] ? `${recentForm[idA].w}-${recentForm[idA].l}` : null;
     h2h[key].recentFormB = recentForm[idB] ? `${recentForm[idB].w}-${recentForm[idB].l}` : null;
+  }
+
+  // THE GUARD. Not a plausibility heuristic - those cannot work here. A
+  // 0-12 sweep is a real record (De Minaur has never beaten Sinner) and a
+  // 22-0 was a fabricated one, and no rule on the shape of the output can
+  // tell those apart. What CAN be measured is the cause: duplicate fixtures
+  // arriving under different feed ids. A healthy cache produces a handful,
+  // from a player's two files describing their shared matches. A churning
+  // one produces a flood, and that is the thing that inflated the records.
+  //
+  // Loud on purpose. The old failure was silent for months because nothing
+  // in the pipeline had an opinion about how much duplication is normal.
+  const half = rowsRead ? dupFixtures / rowsRead : 0;
+  const stats = `${rowsRead} rows read, ${dupFixtures} duplicate fixtures collapsed (${(100 * half).toFixed(1)}%), ${unkeyable} unkeyable`;
+  // Each pair is legitimately seen twice, once from each player's file, so a
+  // duplicate share near half is expected. Well past that means the feed is
+  // re-issuing ids and the merge in fetch.js is banking the copies.
+  if (half > 0.75) {
+    console.warn(`  WARNING: ${stats}. Above 75% means fixtures are arriving under changing ids faster than both-sides accounting explains - head-to-head counts may be inflated. Check mergeMatches in fetch.js.`);
+  } else {
+    console.log(`  ${stats}`);
   }
 
   const h2hPath = path.join(PUBLIC_DATA_DIR, 'h2h.json');
@@ -159,4 +218,9 @@ function main() {
   console.log(`Wrote ${refreshMetaPath} (refreshed now, most recent match ${mostRecentMatchDate}).`);
 }
 
-main();
+// Only run as the entry point, so the fixture key can be imported and pinned
+// by a test. It is the piece with one correct answer and a history of being
+// got wrong.
+if (require.main === module) main();
+
+module.exports = { fixtureKey };

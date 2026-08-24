@@ -94,8 +94,9 @@ export function CompareHub() {
       <div className="compare-rivalries">
         <h2 className="compare-section-title">Or start from a rivalry</h2>
         <p className="compare-section-sub">
-          The {tour.toUpperCase()} matchups with the most history, career head-to-head first.
-          Each one carries live form curves and a model read for every surface.
+          The {tour.toUpperCase()} matchups that have met most often this season, from the same
+          graded record behind every other number here. Each one carries live form curves and a
+          model read for every surface.
         </p>
         <RivalryList tour={tour} />
       </div>
