@@ -202,13 +202,28 @@ test('season rewind: headline, bold calls, engines', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('bracket challenge: renders bracket state and the model entry', async ({ page }) => {
+test('bracket challenge: renders the whole draw, whatever size it is', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/challenge');
   await expect(page.getByRole('heading', { name: /beat the model's bracket/i })).toBeVisible();
-  // With a 16-player draw on file (any status) the model's bracket shows;
-  // otherwise the honest empty state does.
-  await expect(page.locator('.challenge-model, .challenge-empty').first()).toBeVisible({ timeout: 15000 });
+  // Asserting on "one of these is visible" is what let a real regression
+  // through: the page used to require a field of exactly 16, so when the
+  // projection grew to a full 128 draw it silently fell back to the empty
+  // state and this test still passed. Now the draw on file decides the
+  // rounds, so when there IS a field the bracket must actually render.
+  const rounds = page.locator('.challenge-round');
+  const empty = page.locator('.challenge-empty');
+  await expect(rounds.first().or(empty.first())).toBeVisible({ timeout: 15000 });
+  if (await rounds.count() > 0) {
+    // Rounds must halve down to a single champion pick, so the count is
+    // log2(field) and the last round has exactly one match.
+    const n = await rounds.count();
+    expect(n).toBeGreaterThanOrEqual(2);
+    await expect(rounds.last().locator('.challenge-match')).toHaveCount(1);
+    // First round must be the biggest; a fixed table would flatten this.
+    const first = await rounds.first().locator('.challenge-match').count();
+    expect(first).toBe(2 ** (n - 1));
+  }
   expect(errors).toEqual([]);
 });
 
