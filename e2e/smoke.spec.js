@@ -254,3 +254,38 @@ test('today page renders calls or the honest empty state', async ({ page }) => {
   await expect(page.locator('.today-list, .today-empty').first()).toBeVisible({ timeout: 15000 });
   expect(errors).toEqual([]);
 });
+
+test('dream brackets: a full draw renders a quarter at a time', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/dream-brackets');
+
+  // Small draws must be untouched by segmentation: no tabs, and the columns
+  // run straight from the starting round to the champion.
+  await expect(page.locator('.bracket-col h6').first()).toBeVisible({ timeout: 20000 });
+  expect(await page.locator('.bracket-view-tab').count()).toBe(0);
+
+  // Switch to the full draw. Found by its options rather than by position, so
+  // reordering the stage list cannot silently retarget this (the same
+  // index-based assumption already moved the page's default once).
+  const selects = page.locator('select.dark-select');
+  let stage = null;
+  for (let i = 0; i < await selects.count(); i++) {
+    const values = await selects.nth(i).locator('option').evaluateAll((os) => os.map((o) => o.value));
+    if (values.includes('r64')) { stage = selects.nth(i); break; }
+  }
+  expect(stage).not.toBeNull();
+  await stage.selectOption('r64');
+
+  // Four quarters and a finals view, not one 4,200px column.
+  await expect(page.locator('.bracket-view-tab')).toHaveCount(5);
+  // A quarter is a 16-slot bracket: 8 opening matches, five columns ending on
+  // the semi-finalist rather than a champion (only one view may crown anyone).
+  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(8);
+  await expect(page.locator('.bracket-col h6').last()).toHaveText(/INTO THE SEMIS/i);
+
+  // The finals view picks up the four quarter winners and ends on the champion.
+  await page.locator('.bracket-view-tab').last().click();
+  await expect(page.locator('.bracket-col h6').last()).toHaveText(/CHAMPION/i);
+  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(2);
+  expect(errors).toEqual([]);
+});

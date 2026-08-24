@@ -537,3 +537,43 @@
   padding: 1rem 0;
 }
 .bracket-skel-row { height: 96px; border-radius: var(--radius-md); }
+
+/* Which part of the draw is on screen. Shown only when the draw is big
+   enough to be split, so small brackets look exactly as they did. */
+.bracket-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+.bracket-view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2, #b6bcc5);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.bracket-view-tab:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.bracket-view-tab.active {
+  background: var(--accent-brand, #c8f560);
+  border-color: var(--accent-brand, #c8f560);
+  color: #10120c;
+}
+/* A filled quarter reads as done at a glance; the active tab keeps its own
+   colour so "selected" never competes with "complete". */
+.bracket-view-tab.complete:not(.active) { border-color: rgba(200, 245, 96, 0.55); color: #dff3b0; }
+.bracket-view-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74rem;
+  opacity: 0.75;
+}
+/* The winner of a quarter is a semi-finalist, not a champion. */
+.champion-winner.semifinalist { opacity: 0.95; }
+.champion-winner.semifinalist .champion-name { font-size: 0.95rem; }

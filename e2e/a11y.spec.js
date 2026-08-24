@@ -19,6 +19,7 @@ const PAGES = [
   ['/compare/atp/jannik-sinner-vs-carlos-alcaraz', 'compare page'],
   ['/season', 'season rewind'],
   ['/challenge', 'bracket challenge'],
+  ['/dream-brackets', 'dream brackets'],
   ['/form', 'form chart'],
   ['/event/wimbledon', 'event page'],
 ];
