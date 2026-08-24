@@ -577,3 +577,53 @@
 /* The winner of a quarter is a semi-finalist, not a champion. */
 .champion-winner.semifinalist { opacity: 0.95; }
 .champion-winner.semifinalist .champion-name { font-size: 0.95rem; }
+
+/* A matchup the model would not call: the win probability came in under the
+   tour-and-surface cutoff the published record uses. The result still stands -
+   the bracket resolves - so this is a confidence marker, not a warning, and it
+   is deliberately quieter than the winner highlight it sits next to. */
+.bracket-match.coinflip {
+  outline: 1px dashed rgba(255, 209, 102, 0.55);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+.bracket-coinflip-chip {
+  position: absolute;
+  top: -9px;
+  right: 6px;
+  z-index: 3;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: #2a2418;
+  border: 1px solid rgba(255, 209, 102, 0.6);
+  color: #ffd166;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+
+/* The bracket-wide confidence line. Sits above the view tabs so it is read
+   before the bracket rather than discovered inside it. */
+.bracket-confidence {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  background: rgba(255, 209, 102, 0.07);
+  color: var(--text-2, #b6bcc5);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.bracket-confidence strong { color: #ffd166; }
+.bracket-confidence.clean {
+  border-color: rgba(200, 245, 96, 0.3);
+  background: rgba(200, 245, 96, 0.06);
+}
+/* Inline in prose the chip must not be absolutely positioned. */
+.bracket-coinflip-chip.inline {
+  position: static;
+  cursor: default;
+}

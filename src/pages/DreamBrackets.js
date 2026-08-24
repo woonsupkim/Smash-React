@@ -14,6 +14,7 @@ import {
 } from 'react-bootstrap';
 import useDocMeta from '../utils/useDocMeta';
 import { bracketViews } from '../utils/bracketViews';
+import { thresholdFor } from '../utils/deployedPick';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
 import { pickEngineProb, eloProb as eloProbFn } from '../engines';
@@ -290,6 +291,14 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [eloData, setEloData] = useState(null);
   const upsetMode = engine === 'upset';
   const surfaceKey = tournamentConfig.surfaceKey;
+  // The same cutoff the site uses to decide whether a real match is a CALL,
+  // per tour and surface (src/data/callThresholds.json). A simulated matchup
+  // that lands under it is one the model would decline to call in public, so
+  // the bracket says so rather than presenting every winner with equal
+  // confidence. The simulation is unaffected - somebody has to advance, and a
+  // 53% edge is still an edge - this only marks how thin it was.
+  const callCut = thresholdFor(tour, surfaceKey);
+  const isCoinFlip = (p) => !!p && typeof p._winProb === 'number' && p._winProb < callCut;
   // ids with real upset stats on this tournament's surface (upset_ok=1) -
   // the Hot Streak engine is disabled when any picked player lacks recent data.
   const [upsetOkIds, setUpsetOkIds] = useState(null);
@@ -299,6 +308,21 @@ export default function DreamBrackets({ tour = 'atp' }) {
   // rounds[0] is always the user's slot picks; each subsequent entry is that
   // round's winners, ending with a single champion in the last round.
   const [rounds, setRounds] = useState([]);
+
+  // Counted over the WHOLE bracket, not the visible view, and over `rounds`
+  // rather than userRounds: hand-made picks carry no probability, so there is
+  // nothing to judge them against.
+  const coinFlipTally = useMemo(() => {
+    let total = 0, flagged = 0;
+    for (let r = 1; r < rounds.length; r++) {
+      for (const w of rounds[r] || []) {
+        if (!w || typeof w._winProb !== 'number') continue;
+        total++;
+        if (w._winProb < callCut) flagged++;
+      }
+    }
+    return { total, flagged };
+  }, [rounds, callCut]);
 
   const [shareUrl, setShareUrl] = useState(null);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
@@ -1248,6 +1272,24 @@ export default function DreamBrackets({ tour = 'atp' }) {
           </div>
         ) : (
         <>
+        {/* How much of this bracket the model would not stand behind. Per-match
+            chips answer "is THIS one thin"; a follower also needs "how much of
+            the whole run was thin", and with the draw split across tabs that
+            is otherwise uncountable. */}
+        {coinFlipTally.total > 0 && (
+          <div className={`bracket-confidence${coinFlipTally.flagged === 0 ? ' clean' : ''}`}>
+            {coinFlipTally.flagged === 0 ? (
+              <>Every one of the {coinFlipTally.total} simulated matchups cleared our {Math.round(callCut * 100)}% cutoff for {tour.toUpperCase()} {surfaceKey}.</>
+            ) : (
+              <>
+                <strong>{coinFlipTally.flagged} of {coinFlipTally.total}</strong> simulated matchups came in under our{' '}
+                {Math.round(callCut * 100)}% cutoff for {tour.toUpperCase()} {surfaceKey} - marked{' '}
+                <span className="bracket-coinflip-chip inline">too close to call</span>. They still advance a
+                player, but they are the ones we would not call in public.
+              </>
+            )}
+          </div>
+        )}
         {views.length > 1 && (
           <div className="bracket-views" role="tablist" aria-label="Part of the draw">
             {views.map((v) => {
@@ -1329,10 +1371,24 @@ export default function DreamBrackets({ tour = 'atp' }) {
                       const center = matchCenters[pairIdx];
                       return (
                         <div
-                          className="bracket-match"
+                          className={`bracket-match${isCoinFlip(winner) ? ' coinflip' : ''}`}
                           key={pairIdx}
                           style={{ position: 'absolute', top: center - MATCH_BOX_H / 2, left: 0, right: 0, height: MATCH_BOX_H }}
                         >
+                          {/* Flagged, not withheld. The winner still advances -
+                              a bracket has to resolve - but a matchup this
+                              close is one the model would not call in public,
+                              and presenting it with the same confidence as an
+                              80% call would be the misleading choice. */}
+                          {isCoinFlip(winner) && (
+                            <span
+                              className="bracket-coinflip-chip has-tip"
+                              tabIndex={0}
+                              data-tip={`${Math.round(winner._winProb * 100)}% is under our ${Math.round(callCut * 100)}% cutoff for ${tour.toUpperCase()} ${surfaceKey}, so we would not call this one. The winner still advances here.`}
+                            >
+                              too close to call
+                            </span>
+                          )}
                           {pair.map((p, slotIdx) => {
                             const globalSlotIdx = sliceStart + pairIdx * 2 + slotIdx;
                             const isWinner = !!(winner && p && winner.id === p.id);
