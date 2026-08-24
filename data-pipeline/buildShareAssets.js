@@ -1,23 +1,56 @@
 /**
  * Shareable social assets - public/data/share/*.png + manifest.json.
  *
- * Two layers, regenerated after every data refresh:
+ * Categories, regenerated after every data refresh. This list was two layers
+ * long and named files that no longer exist for years - it is now the whole
+ * set, because the top of this file is where anyone looks for the map.
  *
- * DAILY (category 'daily') - built from today's data:
- *   cover.png             1080x1080  carousel opener: today's slate teaser
- *   match-N.png           1080x1080  one card per locked upcoming pick
- *   parlay.png            1080x1080  carousel closer: "$10 if every call hits"
- *   slate-story.png       1080x1920  story format: the whole slate + payout
- *   title-odds-{tour}.png 1080x1080  championship race / champion card
- *   poll.png              1080x1080  engagement bait: WHO WINS? (no % shown)
- *   results.png           1080x1080  yesterday's receipts, misses included
+ * ONE MESSAGE PER CARD is the rule. A card carrying two numbers buries one of
+ * them, and the pairs that matter most point opposite ways: a day's record
+ * against its money, and a week's hit rate against its return. This week
+ * called 75% of winners and lost 8.7% - on one card that reads as a
+ * contradiction, on two it reads as the lesson.
  *
- * PROMO (category 'promo') - evergreen brand/marketing content:
- *   proof.png             1080x1080  the season receipts vs the bookies
- *   how-it-works-N.png    1080x1080  3-slide explainer carousel (live numbers)
- *   pool-promo.png        1080x1080  Dream Brackets pool play CTA
- *   hot-streak-{tour}.png 1080x1080  hottest player on tour right now
- *   countdown.png         1080x1080  days until the next slam (between slams)
+ * DAILY - today's data:
+ *   title-odds-{tour}.png  championship race / champion card
+ *   results.png            yesterday's record, misses included, no-calls out
+ *   day-money.png          what $10 a call did to a wallet yesterday
+ *   todays-calls.png       the day's locked calls (absent when we call none)
+ *   match-N.png            one card per locked upcoming pick
+ *
+ * MOMENTS - the disagreement, which is what an upset actually is:
+ *   upset-call.png         our pick is NOT the market's favourite
+ *   milestone / perfect-day / streak
+ *
+ * MISSES - owning the ones we got wrong:
+ *   autopsy.png            a seed we had, and lost
+ *
+ * WEEKLY:
+ *   weekly.png             the week's record
+ *   week-money.png         the week's return, stated separately
+ *   week-best.png          the five calls that paid best
+ *   weekly-plan.png        the recommended plan, settled
+ *
+ * EDGE - us against the market:
+ *   edge-dollar.png        the $10 test across every graded split
+ *   edge-split.png         the split record
+ *   edge-forward.png       a pending split (needs a future disagreement)
+ *   edge-live-plan.png     the live tournament, plan vs market favourite
+ *
+ * DRAW:
+ *   draw-road-{tour}.png   the road to the title
+ *   draw-path-{tour}.png   round-by-round survival
+ *   pool-promo.png         simulate the whole draw
+ *
+ * PROMO - evergreen brand:
+ *   proof.png (+45/banner) the season receipts vs the bookies
+ *   how-it-works-N.png     3-slide explainer carousel (live numbers)
+ *   no-call.png            the restraint: the matches we decline
+ *   hot-streak-{tour}.png  hottest player on tour right now
+ *
+ * HYPE - pre-slam build-up:
+ *   hype-countdown / hype-surface / hype-favorites-{tour} / hype-story
+ *   hype-cutoff.png        the surface where we call the least
  *
  * Photo cards use the "big-league promo" treatment: a darkened stadium shot
  * as the background, player cutouts with offset sticker outlines, stacked
@@ -39,7 +72,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { nextSlam } = require('./lib/slamCalendar');
 const planSettle = require('./lib/planSettle');
-const { rowNoCall, ledgerNoCall } = require('./lib/noCall');
+const { rowNoCall, ledgerNoCall, thresholdFor, TABLE: CUTOFFS } = require('./lib/noCall');
 
 let sharp;
 try {
@@ -68,6 +101,35 @@ const pickFavProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
 const UPSET_RATIO = 2, UPSET_MIN_GAP = 10;
 const isUpsetPick = (favRank, oppRank) =>
   !!favRank && !!oppRank && favRank >= oppRank * UPSET_RATIO && favRank - oppRank >= UPSET_MIN_GAP;
+
+// An UPSET is a disagreement with the market, not a gap in the rankings.
+//
+// Ranking distance says a lower-ranked player is expected to lose, which the
+// market already knows and has already priced. It carries no information about
+// us. What makes a call an upset in the sense that matters here is that OUR
+// pick is not the bookmakers' favourite: we are on the longer ticket, so if we
+// are right about the match we get paid more than the risk we actually took.
+// That gap is the entire thesis, and it is the only version of "upset" worth
+// putting on a card.
+//
+// Takes a ledger row (lockOdd1/lockOdd2 + favorite) and vig-strips both sides,
+// so the comparison is like-for-like rather than against a padded price.
+function marketDisagrees(p) {
+  if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1) || !p.favorite) return false;
+  const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
+  const ourShare = (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
+  return ourShare < 0.5;
+}
+// The price we are on, and what the market implies for that same player.
+const ourPrice = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
+function marketProbOfOurPick(p) {
+  const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
+  return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
+}
+// The flat stake every money card uses. $10 rather than $1: a dollar reads as
+// a toy and makes the exercise look hypothetical, where ten is a stake a
+// reader recognises and the numbers are ones they would actually feel.
+const STAKE = 10;
 const SQ = 1080;
 const ST_W = 1080, ST_H = 1920;
 const MAX_MATCH_CARDS = 8;
@@ -1131,6 +1193,212 @@ async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, 
   await render(file, base);
 }
 
+// ── One message per card ───────────────────────────────────────────────────
+// Every card below exists because a card carrying two messages buries one of
+// them. The pairs that matter most: a day's RECORD and its MONEY, and a
+// week's HIT RATE and its RETURN. Those routinely point opposite ways - this
+// week called 75% of winners and still lost 8.7% - and a single card showing
+// both reads as a contradiction rather than as the lesson.
+
+const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
+const pctOf = (v) => `${v >= 0 ? '+' : '-'}${Math.abs(v).toFixed(1)}%`;
+
+// What a flat stake on every graded call would have returned. Priced rows
+// only, because an unpriced call cannot be settled.
+// `n` is the PRICED count, not the row count, and `hits` counts only among
+// those. Mixing them is the fault this whole session keeps turning up: an
+// unpriced call cannot be staked or settled, so counting it in the denominator
+// of a money figure understates the return, and counting correct-among-priced
+// over all-rows understated the week's record as 47% when it was 75%. Every
+// figure here shares one denominator; the record over ALL calls is returned
+// separately as `acc` so a card never has to divide across populations.
+function stakeRun(rows) {
+  let staked = 0, ret = 0, hits = 0, priced = 0, correctAll = 0;
+  for (const r of rows) {
+    if (r.correct) correctAll++;
+    const o = ourPrice(r);
+    if (!(o > 1)) continue;
+    priced++;
+    staked += STAKE;
+    if (r.correct) { ret += STAKE * o; hits++; }
+  }
+  return {
+    n: priced,
+    total: rows.length,
+    staked,
+    hits,
+    acc: rows.length ? Math.round((correctAll / rows.length) * 100) : 0,
+    profit: ret - staked,
+    roi: staked ? ((ret - staked) / staked) * 100 : 0,
+  };
+}
+
+// DAILY: what yesterday's calls did to a wallet. Deliberately separate from
+// the record card - "did we call it right" and "what did it pay" are two
+// questions and the money is the one that gets buried.
+async function dayMoneyCard(run, dayISO, file) {
+  const up = run.profit >= 0;
+  await reportCard({
+    eyebrowText: `Yesterday's calls · ${dayISO}`,
+    headline1: money(run.profit),
+    headline2: up ? 'ON THE DAY' : 'ON THE DAY',
+    stats: [
+      { value: pctOf(run.roi), label: `return on $${run.staked} staked` },
+      { value: `${run.hits}/${run.n}`, label: 'calls that landed' },
+      { value: `$${STAKE}`, label: 'flat stake, every call, no no-calls' },
+    ],
+    footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
+    file,
+    accent: up ? PAL.calls.key : '#ff5c5c',
+    cta: "SEE TODAY'S CARD  →",
+  });
+}
+
+// DAILY: the day's calls, named. One card, because a follower wants the slate
+// in a glance; the per-match cards already exist for depth.
+async function todaysCallsCard(calls, file) {
+  await reportCard({
+    eyebrowText: "On court today · locked before play",
+    headline1: `${calls.length} CALL${calls.length === 1 ? '' : 'S'}`,
+    headline2: 'LOCKED',
+    stats: calls.slice(0, 4).map((p) => ({
+      value: `${Math.round(p.favProb * 100)}%`,
+      label: `${last(p.favName)} over ${last(p.favorite === p.p1 ? p.name2 : p.name1)}`,
+    })),
+    footNote: 'timestamped before play · graded automatically after',
+    file,
+    accent: PAL.calls.key,
+    cta: 'EVERY CALL, GRADED  →',
+  });
+}
+
+// MOMENTS: the upset, on the definition that carries information - our pick is
+// not the market's favourite, so the ticket is longer than the risk.
+async function upsetCallCard(p, file) {
+  const o = ourPrice(p);
+  const mkt = marketProbOfOurPick(p);
+  await reportCard({
+    eyebrowText: 'Upset watch · we disagree with the market',
+    headline1: 'WE TAKE THE',
+    headline2: 'UNDERDOG',
+    stats: [
+      { value: `${Math.round(p.favProb * 100)}%`, label: `we say ${last(p.favName)}` },
+      { value: `${Math.round(mkt * 100)}%`, label: 'the market says the same player' },
+      { value: `$${(STAKE * o).toFixed(2)}`, label: `what $${STAKE} returns if it lands` },
+    ],
+    footNote: 'our pick is not the favourite · longer ticket, same conviction',
+    file,
+    accent: PAL.edge.key,
+    cta: 'EVERY DISAGREEMENT  →',
+  });
+}
+
+// EDGE: the live tournament, plan against market, on THE SAME MONEY.
+//
+// The first version of this card compared the plan's profit to flat-betting
+// the market's favourite at a fixed stake per match - and the market staked
+// $650 where the plan staked $187, so it "won" on absolute profit purely by
+// risking three and a half times as much. Two numbers measuring different
+// amounts of money is not a comparison, and putting both on a card just moved
+// the problem to the reader.
+//
+// The baseline is now scaled to the plan's own total stake: the same $187,
+// spread evenly over every match those days. ROI is unchanged by scaling, so
+// the percentages mean what they always did, and the dollar figures finally
+// answer the question a reader is actually asking - same money in, which came
+// out ahead.
+async function livePlanCard({ event, days, profit, staked, roi, up, mktProfit, mktRoi }, file) {
+  await reportCard({
+    eyebrowText: `${event} · following the recommended plan`,
+    headline1: pctOf(roi),
+    headline2: 'ON THE MONEY',
+    stats: [
+      { value: money(profit), label: `profit on $${staked.toFixed(0)} staked, ${days} days` },
+      { value: `${up}/${days}`, label: 'days in front' },
+      { value: money(mktProfit), label: `the same $${staked.toFixed(0)} flat on the market's favourite (${pctOf(mktRoi)})` },
+    ],
+    footNote: 'same money in, both ways · not betting advice',
+    file,
+    accent: roi >= 0 ? PAL.edge.key : '#ff5c5c',
+    cta: 'SIZE TODAY\'S CARD  →',
+  });
+}
+
+// WEEKLY: the week's money, separate from the week's record.
+async function weekMoneyCard(run, file) {
+  const up = run.profit >= 0;
+  await reportCard({
+    eyebrowText: 'The week · if you had followed every call',
+    headline1: money(run.profit),
+    headline2: 'ON THE WEEK',
+    stats: [
+      { value: pctOf(run.roi), label: `return on $${run.staked} staked` },
+      { value: `${run.hits}/${run.n}`, label: 'calls that landed' },
+      { value: `${run.acc}%`, label: `of winners called across all ${run.total} - a different question` },
+    ],
+    footNote: 'hypothetical · every call priced before play · not betting advice',
+    file,
+    accent: up ? PAL.calls.key : '#ff5c5c',
+    cta: 'THE FULL LEDGER  →',
+  });
+}
+
+// WEEKLY: the five calls that paid best. Ranked by PRICE, not by confidence -
+// the point of the card is what the week actually returned.
+async function weekBestCard(rows, file) {
+  await reportCard({
+    eyebrowText: 'The week · the five that paid best',
+    headline1: 'THE FIVE',
+    headline2: 'THAT PAID',
+    stats: rows.slice(0, 5).map((r) => ({
+      value: `$${(STAKE * ourPrice(r)).toFixed(2)}`,
+      label: `${last(r.favName)} over ${last(r.favorite === r.p1 ? r.name2 : r.name1)}`,
+    })),
+    footNote: `$${STAKE} a call · every one locked before play`,
+    file,
+    accent: PAL.calls.key,
+    cta: 'EVERY CALL, GRADED  →',
+  });
+}
+
+// PROMO: the restraint. Nobody else in this space advertises the matches they
+// decline, and it is the honest explanation for a card with nothing on it.
+async function noCallCard({ passed, total, leanAcc, cuts }, file) {
+  await reportCard({
+    eyebrowText: 'How it works · sometimes we pass',
+    headline1: 'WE DO NOT',
+    headline2: 'CALL EVERYTHING',
+    stats: [
+      { value: `${passed.toLocaleString()}`, label: `matches passed on, of ${total.toLocaleString()} graded` },
+      { value: `${leanAcc}%`, label: 'of those leans landed - a coin flip, which is the point' },
+      { value: cuts, label: 'confidence cutoff, set per tour and surface' },
+    ],
+    footNote: 'a model with an opinion about everything has one about nothing',
+    file,
+    accent: PAL.calls.key,
+    cta: 'HOW WE GRADE  →',
+  });
+}
+
+// HYPE: a build-up card that says we are LESS confident here. Unusual for the
+// format and true, which is why it earns attention.
+async function surfaceCutoffCard({ surface, cut, tour, calls, acc }, file) {
+  await reportCard({
+    eyebrowText: `${surface} court · where we call the least`,
+    headline1: `${Math.round(cut * 100)}% TO`,
+    headline2: 'MAKE A CALL',
+    stats: [
+      { value: `${Math.round(cut * 100)}%`, label: `our ${tour.toUpperCase()} ${surface} cutoff - the highest we set` },
+      { value: calls.toLocaleString(), label: 'matches that cleared it this season' },
+      { value: `${acc}%`, label: 'of those we called right' },
+    ],
+    footNote: 'fewer calls where the model is least reliable',
+    file,
+    accent: PAL.calls.key,
+    cta: 'THE PROJECTED DRAW  →',
+  });
+}
+
 // Rivalry card: an upcoming pick where the pair has real history.
 async function rivalryCard(p, h2hRec, ourRecord, file) {
   const a = paletteFor(p.event, 'calls');
@@ -1401,22 +1669,23 @@ async function edgeSplitCard(m, tour, file) {
   await render(file, base, comps);
 }
 
-// The $1 test: flat-stake payout of our picks vs the market's own favorites
-// across every graded split, settled at the closing odds. The honesty
-// footnote is non-negotiable - this card flirts with betting language.
+// The $10 test: flat-stake payout of our picks vs the market's own favorites
+// across every graded split, settled at the price stamped before play. The
+// honesty footnote is non-negotiable - this card flirts with betting language.
+//
 async function dollarTestCard(edge, file) {
   const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(0)}`;
   await reportCard({
-    eyebrowText: 'The Edge · The $1 Test',
-    headline1: '$1 ON EVERY',
+    eyebrowText: `The Edge · The $${STAKE} Test`,
+    headline1: `$${STAKE} ON EVERY`,
     headline2: 'SPLIT',
     // BOTH sides. The two HIT RATES are forced to sum to 100% on a split, so
     // only one of those is worth printing - but the returns are not forced,
     // because the sides are paid at different prices, and the gap between
     // them is the whole point of the card.
     stats: [
-      { value: money(edge.usNet), label: `our picks, net of $${edge.n} staked` },
-      { value: money(edge.mktNet), label: "the market's own favorites, same stakes" },
+      { value: money(edge.usNet * STAKE), label: `our picks, net of $${edge.n * STAKE} staked` },
+      { value: money(edge.mktNet * STAKE), label: "the market's own favorites, same stakes" },
       { value: `${edge.usAcc}%`, label: `winners called on the ${edge.n} splits` },
     ],
     footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
@@ -1679,7 +1948,12 @@ async function run() {
   const track = JSON.parse(fs.readFileSync(path.join(DATA, 'track_record.json'), 'utf8'));
   // Retrospective no-call rule (mirrors src/utils/deployedPick.pickNoCall,
   // pinned by noCall.test.js): every published claim on a card grades calls.
-  track.matches = (track.matches || []).filter((m) => !rowNoCall(m));
+  //
+  // The PASSED rows are kept before filtering, because the restraint card is
+  // a claim about them and this is the only place they still exist.
+  const trackAll = track.matches || [];
+  const passedRows = trackAll.filter((m) => rowNoCall(m));
+  track.matches = trackAll.filter((m) => !rowNoCall(m));
   const preds = fs.existsSync(path.join(DATA, 'predictions.json'))
     ? JSON.parse(fs.readFileSync(path.join(DATA, 'predictions.json'), 'utf8'))
     : { predictions: [] };
@@ -1883,6 +2157,48 @@ async function run() {
     add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
 
+  // ── DAILY: the money, the day's calls, and the disagreements ────────────
+  // Split out of the results card on purpose: "did we call it right" and
+  // "what did it pay" are different questions, and a single card answering
+  // both buries the second one.
+  {
+    const ledger = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
+    const settled = [...new Set(ledger.map((p) => String(p.date).slice(0, 10)))].sort();
+    const lastDay = settled[settled.length - 1];
+    const dayRows = lastDay ? ledger.filter((p) => String(p.date).slice(0, 10) === lastDay) : [];
+    const run = stakeRun(dayRows);
+    if (run.staked > 0) {
+      await dayMoneyCard(run, lastDay, 'day-money.png');
+      add('day-money.png', 'day-money', 'square', 'daily',
+        `$${STAKE} on every priced call we made on ${lastDay}: ${money(run.profit)}, ${pctOf(run.roi)} on $${run.staked} staked, ${run.hits} of ${run.n} landed. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
+        `Yesterday's calls returned ${money(run.profit)} on a $${STAKE} flat stake.`);
+    }
+
+    // Today's calls, and the ones where we take the underdog. Both can be
+    // legitimately empty - a card with nothing on it is not shipped, and the
+    // restraint card in promo is the honest thing to post instead.
+    const NOW = Date.now();
+    const todays = (preds.predictions || []).filter((p) => p.status === 'pending'
+      && !ledgerNoCall(p) && new Date(p.date).getTime() >= NOW - 6 * 3600e3);
+    if (todays.length) {
+      const byConf = [...todays].sort((a, b) => b.favProb - a.favProb);
+      await todaysCallsCard(byConf, 'todays-calls.png');
+      add('todays-calls.png', 'todays-calls', 'square', 'daily',
+        `${todays.length} call${todays.length === 1 ? '' : 's'} locked before play today, top of the card ${last(byConf[0].favName)} at ${Math.round(byConf[0].favProb * 100)}%. Every one timestamped now and graded automatically when the result lands. ${SITE}/today ${tags}`,
+        `Today's ${todays.length} locked calls with their stated probabilities.`);
+
+      const splits = todays.filter(marketDisagrees)
+        .sort((a, b) => marketProbOfOurPick(a) - marketProbOfOurPick(b));
+      if (splits.length) {
+        const u = splits[0];
+        await upsetCallCard(u, 'upset-call.png');
+        add('upset-call.png', 'upset-call', 'square', 'moments',
+          `Upset watch: we have ${last(u.favName)} at ${Math.round(u.favProb * 100)}% where the market has them at ${Math.round(marketProbOfOurPick(u) * 100)}%. Our pick is not the favourite, so we are on the longer ticket - $${STAKE} returns $${(STAKE * ourPrice(u)).toFixed(2)} if it lands. An upset is a disagreement, not a surprise. ${SITE}/edge ${tags}`,
+          `Upset call: our pick is the market's underdog at ${ourPrice(u).toFixed(2)}.`);
+      }
+    }
+  }
+
   // ── WRAP: tournament report card (a few days after a slam ends) ─────────
   for (const tour of ['atp', 'wta']) {
     const o = titleOdds.events?.[tour];
@@ -2026,6 +2342,32 @@ async function run() {
           accent: recTotal >= 0 ? PAL.calls.key : '#ff5c5c',
         });
         add('weekly-plan.png', 'weekly-plan', 'square', 'weekly', `The plan, settled: $${planSettle.PLAN_BUDGET} a day into the builder's recommended plan came out ${money(recTotal)} this week${best.profit !== recTotal ? ` (best of the menu: ${best.label.toLowerCase()} at ${money(best.profit)})` : ''}. Every stake settled at locked odds, ${recDays} days. A ${recTotal >= 0 ? 'good' : 'bad'} week proves nothing on its own - the point is we publish it either way. ${SITE}/parlay ${tags}`);
+
+    // ── WEEKLY: the money and the five that paid ──────────────────────────
+    // Separate cards from the record, and this week shows why: 75% of winners
+    // called and still down on the money. One card carrying both reads as a
+    // contradiction rather than as the point.
+    {
+      const ledger = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
+      const days = [...new Set(ledger.map((p) => String(p.date).slice(0, 10)))].sort().slice(-7);
+      const wkRows = ledger.filter((p) => days.includes(String(p.date).slice(0, 10)));
+      const wk = stakeRun(wkRows);
+      if (wk.staked > 0) {
+        await weekMoneyCard(wk, 'week-money.png');
+        add('week-money.png', 'week-money', 'square', 'weekly',
+          `The week, on the money: $${STAKE} on the ${wk.n} priced calls came back ${money(wk.profit)}, ${pctOf(wk.roi)} on $${wk.staked} staked. We called ${wk.acc}% of winners across all ${wk.total} calls over the same week. Both numbers are true and they are not the same question - hit rate and profit come apart when the calls that land are short-priced. Hypothetical, not betting advice. ${SITE}/track-record ${tags}`,
+          `The week returned ${money(wk.profit)} on a $${STAKE} flat stake.`);
+
+        // Ranked by PRICE, not confidence: the card is about what it returned.
+        const best = wkRows.filter((r) => r.correct && ourPrice(r) > 1).sort((a, b) => ourPrice(b) - ourPrice(a));
+        if (best.length >= 3) {
+          await weekBestCard(best, 'week-best.png');
+          add('week-best.png', 'week-best', 'square', 'weekly',
+            `The five calls that paid best this week, top of the list ${last(best[0].favName)} over ${last(best[0].favorite === best[0].p1 ? best[0].name2 : best[0].name1)} - $${STAKE} back as $${(STAKE * ourPrice(best[0])).toFixed(2)}. Every one locked before play. The week's losses are on the money card beside this one, same size. ${SITE}/track-record ${tags}`,
+            `The five best-paying calls of the week.`);
+        }
+      }
+    }
       }
     }
 
@@ -2140,8 +2482,12 @@ async function run() {
     await upsetAutopsyCard(biggestUpset.m, biggestUpset.wR, biggestUpset.lR, biggestUpset.m.tour, 'autopsy.png');
     const bu = biggestUpset;
     const wName = bu.m.winner === bu.m.p1 ? bu.m.name1 : bu.m.name2;
-    add('autopsy.png', 'upset-autopsy', 'square', 'moments', `Upset autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
-      `Upset autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
+    // Category 'misses', not 'moments'. This card is a MISS - a seed we had
+    // and lost - and an upset in the sense this account uses the word is a
+    // disagreement with the market, which is a different card entirely
+    // (upset-call.png). Filing them together made "upset" mean two things.
+    add('autopsy.png', 'seed-autopsy', 'square', 'misses', `Seed autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
+      `Seed autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
   }
 
   // ── EDGE: us vs the betting market (new collection) ─────────────────────
@@ -2168,7 +2514,7 @@ async function run() {
     };
     await dollarTestCard(edge, 'edge-dollar.png');
     add('edge-dollar.png', 'edge-dollar-test', 'square', 'edge',
-      `The $1 test: $1 on each side of every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet).toFixed(0)}. Their own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet).toFixed(0)}. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
+      `The $${STAKE} test: $${STAKE} on each side of every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet * STAKE).toFixed(0)}. Their own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet * STAKE).toFixed(0)}. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
       `The $1 test card: flat-stake payout of our picks versus the market's on ${edge.n} disagreements.`);
 
     // The freshest big split (last 7 days), else the season's biggest gap -
@@ -2188,6 +2534,50 @@ async function run() {
         `Edge split card: our call versus the market's on ${split.name1} vs ${split.name2}, graded.`);
     }
   }
+  // ── EDGE: the live tournament, plan against market ─────────────────────
+  // The one card here that can mislead if trimmed. The plan wins on RETURN
+  // while risking a fraction of the money, so it makes LESS profit than
+  // flat-betting the field. Quoting either number alone is a half-truth, so
+  // both go on.
+  {
+    const { liveEventLabel } = (() => {
+      try { return require('./lib/events'); } catch { return {}; }
+    })();
+    const ledger = planSettle.ledgerGraded(preds.predictions || []);
+    const recent = ledger.filter((m) => (Date.now() - new Date(m.date).getTime()) < 21 * 864e5);
+    const counts = new Map();
+    for (const m of recent) if (m.event) counts.set(m.event, (counts.get(m.event) || 0) + 1);
+    const liveEvent = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    const days = liveEvent ? planSettle.eventDays(preds.predictions || [], liveEvent) : [];
+    const run = days.length ? planSettle.planRun(preds.predictions || [], days) : null;
+    if (run && run.days >= 3 && run.staked > 0) {
+      // Same days, same matches, and crucially THE SAME TOTAL STAKE as the
+      // plan: the plan's budget spread evenly over every match on those days.
+      // A fixed per-match stake would have the baseline risking several times
+      // the plan's money, which makes its absolute profit meaningless next to
+      // the plan's. Per-match stake is derived, not assumed.
+      const rows = ledger.filter((m) => days.includes(String(m.date).slice(0, 10)) && m.lockOdd1 > 1 && m.lockOdd2 > 1);
+      const perMatch = rows.length ? run.staked / rows.length : 0;
+      let mktStaked = 0, mktProfit = 0;
+      for (const m of rows) {
+        const q1 = 1 / m.lockOdd1, q2 = 1 / m.lockOdd2;
+        const fav = q1 > q2 ? m.p1 : m.p2;
+        const o = fav === m.p1 ? m.lockOdd1 : m.lockOdd2;
+        mktStaked += perMatch;
+        mktProfit += m.winner === fav ? perMatch * (o - 1) : -perMatch;
+      }
+      const roi = (run.profit / run.staked) * 100;
+      const mktRoi = mktStaked ? (mktProfit / mktStaked) * 100 : 0;
+      await livePlanCard({
+        event: String(liveEvent).toUpperCase(), days: run.days, profit: run.profit,
+        staked: run.staked, roi, up: run.up, mktProfit, mktStaked, mktRoi,
+      }, 'edge-live-plan.png');
+      add('edge-live-plan.png', 'edge-live-plan', 'square', 'edge',
+        `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Put that identical $${run.staked.toFixed(0)} flat across every match on the same days, backing the bookmakers' own favourite, and it comes back ${money(mktProfit)} - ${pctOf(mktRoi)}. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. ${SITE}/parlay ${tags}`,
+        `${liveEvent}: the recommended plan returned ${pctOf(roi)} against ${pctOf(mktRoi)} for the market's favourite on the same money.`);
+    }
+  }
+
   // Forward split: a pending pick where we hold the underdog ticket per the
   // lock-time odds (Phase 1 capture). Rendered only when one exists.
   const fwdSplit = (preds.predictions || [])
@@ -2230,6 +2620,23 @@ async function run() {
   add('how-it-works-2.png', 'explainer', 'square', 'promo', `How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. ${tags}`);
   add('how-it-works-3.png', 'explainer', 'square', 'promo', `How Smash works, 3 of 3: then the results grade us. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${tags}`);
 
+  // PROMO: the restraint. The strongest brand asset available, because nobody
+  // else in this space advertises the matches they decline - and it is the
+  // honest thing to post on a day when the card is all coin flips.
+  if (passedRows.length >= 100) {
+    const leanRight = passedRows.filter((m) => pickCorrect(m)).length;
+    const leanAcc = Math.round((leanRight / passedRows.length) * 100);
+    const cells = Object.values((CUTOFFS && CUTOFFS.cells) || {});
+    const cuts = cells.length
+      ? `${Math.round(Math.min(...cells) * 100)}-${Math.round(Math.max(...cells) * 100)}%`
+      : `${Math.round((CUTOFFS.fallback || 0.58) * 100)}%`;
+    const total = passedRows.length + (track.matches || []).length;
+    await noCallCard({ passed: passedRows.length, total, leanAcc, cuts }, 'no-call.png');
+    add('no-call.png', 'no-call', 'square', 'promo',
+      `We passed on ${passedRows.length.toLocaleString()} of ${total.toLocaleString()} graded matches this season, because they sat under our confidence cutoff - ${cuts}, set per tour and surface from the record. Those leans landed ${leanAcc}% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. ${SITE}/methodology ${tags}`,
+      `We passed on ${passedRows.length} matches; those leans landed ${leanAcc}% of the time.`);
+  }
+
   await poolPromoCard('pool-promo.png');
   add('pool-promo.png', 'feature', 'square', 'draw', `Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. ${tags}`);
 
@@ -2265,6 +2672,25 @@ async function run() {
         file: 'hype-surface.png',
       });
       add('hype-surface.png', 'surface-record', 'square', 'hype', `The ${nextMajor.label} is played on ${nextMajor.surface} - and ${nextMajor.surface} is where we've graded ${surfRecs.reduce((s, r) => s + r.n, 0)} matches this season. ${surfRecs.map((r) => `${r.tour.toUpperCase()} ${r.acc}%`).join(' · ')} (season benchmark). ${SITE}/track-record ${tags}`);
+
+      // A build-up card that says we are LESS confident here. Unusual for the
+      // format, and true, which is why it earns the attention it asks for.
+      {
+        const cells = (CUTOFFS && CUTOFFS.cells) || {};
+        const onSurface = Object.entries(cells).filter(([k]) => k.endsWith(`|${nextMajor.surface}`));
+        const [topKey, topCut] = onSurface.sort((a, b) => b[1] - a[1])[0] || [];
+        if (topKey) {
+          const [tourKey] = topKey.split('|');
+          const rows = (track.matches || []).filter((m) => m.tour === tourKey && m.surface === nextMajor.surface);
+          if (rows.length >= 100) {
+            const acc = Math.round((rows.filter((m) => pickCorrect(m)).length / rows.length) * 100);
+            await surfaceCutoffCard({ surface: nextMajor.surface, cut: topCut, tour: tourKey, calls: rows.length, acc }, 'hype-cutoff.png');
+            add('hype-cutoff.png', 'surface-cutoff', 'square', 'hype',
+              `The ${nextMajor.label} is on ${nextMajor.surface}, and ${nextMajor.surface} is where we call the least. Our ${tourKey.toUpperCase()} ${nextMajor.surface} cutoff is ${Math.round(topCut * 100)}% - the highest we set - because that is where the model has been least reliable. ${rows.length.toLocaleString()} matches cleared it this season and we called ${acc}% of them right. Fewer calls, better ones. ${SITE}/methodology ${tags}`,
+              `Our ${tourKey.toUpperCase()} ${nextMajor.surface} cutoff is ${Math.round(topCut * 100)}%, the highest of any surface.`);
+          }
+        }
+      }
     }
 
     // Projected favorites, one card per tour, once the off-season projection
