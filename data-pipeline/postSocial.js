@@ -9,7 +9,9 @@
  * Pick order, max 3 assets per run:
  *   1. Today's carousel cover (category 'daily', type 'carousel-cover')
  *   2. Yesterday's results card (category 'daily', type 'results')
- *   3. Any 'moments' card (milestone / perfect day / streak / autopsy)
+ *   3. The day's money, then an upset (our pick vs the market's favourite),
+ *      then 'moments'/'misses' (milestone / perfect day / streak / seed autopsy),
+ *      falling back to the restraint card so a quiet day still posts.
  *
  * For each picked asset it POSTs:
  *   { text, alt, imageUrl, category, format }
@@ -52,7 +54,20 @@ function pickAssets(assets) {
   take((a) => a.category === 'daily' && a.type === 'carousel-cover' && a.format === 'square');
   take((a) => a.category === 'daily' && a.type === 'carousel-cover');
   take((a) => a.category === 'daily' && a.type === 'results');
+  // The day's money, which is the post people actually engage with and the
+  // one the results card deliberately does not carry.
+  take((a) => a.category === 'daily' && a.type === 'day-money');
+  // An upset - our pick against the market's favourite - then the seed
+  // autopsies and milestones. 'misses' is listed explicitly because the
+  // autopsy card moved out of 'moments' when "upset" was redefined as a
+  // market disagreement, and a category filter alone would have silently
+  // stopped queueing it.
+  take((a) => a.category === 'moments' && a.type === 'upset-call');
   take((a) => a.category === 'moments');
+  take((a) => a.category === 'misses');
+  // Nothing above fired (a no-call day with no graded drama): post the
+  // restraint rather than nothing.
+  take((a) => a.type === 'no-call');
   return picked.slice(0, MAX_POSTS);
 }
 
