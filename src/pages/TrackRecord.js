@@ -680,7 +680,7 @@ export default function TrackRecord() {
                       <div className="track-hero-sub">
                         {forwardAll.correct} of {forwardAll.n.toLocaleString()} verified calls · every one timestamped
                         before play and graded automatically when the result lands. We lock calls at the slams
-                        and the combined 1000s, so that is the scope of this number — a different, smaller
+                        and the combined 1000s, so that is the scope of this number: a different, smaller
                         population than the season benchmark below.
                       </div>
                       <div className="track-hero-marks">
@@ -951,7 +951,7 @@ export default function TrackRecord() {
                     <span className="track-shadow-val">{stats.shadow.right}–{stats.shadow.wrong}</span>
                     <span className="track-shadow-text">
                       is how the leans went on the {stats.shadow.n.toLocaleString()} matches we declined to
-                      call — <strong>{stats.shadow.rate}% right</strong>. We claim none of them either way, in
+                      call, <strong>{stats.shadow.rate}% right</strong>. We claim none of them either way, in
                       either direction. A cutoff set correctly leaves this near a coin flip; drifting well
                       above it means we are passing on matches we could be calling, and that is the signal to
                       lower it at the next retune.

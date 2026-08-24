@@ -207,12 +207,18 @@ export default function Parlay() {
       // to p1; there is no favourite to speak of at identical odds.
       const bets = card.map((m) => {
         const mFav = Number(m.lockOdd1) <= Number(m.lockOdd2) ? m.p1 : m.p2;
+        const isP1 = mFav === m.p1;
+        const q1 = 1 / Number(m.lockOdd1), q2 = 1 / Number(m.lockOdd2);
         return {
           key: String(m.id), p: m.favProb,
           o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
           won: !!m.correct,
-          mo: Number(mFav === m.p1 ? m.lockOdd1 : m.lockOdd2),
+          mo: Number(isP1 ? m.lockOdd1 : m.lockOdd2),
           mWon: m.winner === mFav,
+          // The market's own vig-free chance for its own pick. Kept so the
+          // baseline can be judged against its own prices instead of being
+          // reported as though any return it posts were repeatable.
+          mP: (isP1 ? q1 : q2) / (q1 + q2),
         };
       });
       // Reliability history is EVERY graded call before this day, priced or
@@ -231,13 +237,14 @@ export default function Parlay() {
       // The same money, on the market's favourites. Tracked alongside rather
       // than as a separate pass so it can never drift onto a different set of
       // matches or a different stake.
-      let mktProfit = 0;
+      let mktProfit = 0, mktExp = 0, mktHits = 0, mktN = 0;
       for (const [key, stake] of Object.entries(plan.singles || {})) {
         if (!(stake > 0.005)) continue;
         const b = byKey.get(key); if (!b) continue;
         backed++; staked += stake;
         if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
         mktProfit += b.mWon ? stake * (b.mo - 1) : -stake;
+        mktExp += b.mP; mktHits += b.mWon ? 1 : 0; mktN++;
       }
       let parlayWon = null;
       if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => byKey.has(k))) {
@@ -251,9 +258,11 @@ export default function Parlay() {
         const mWonAll = plan.parlayLegs.every((k) => byKey.get(k).mWon);
         const mOdds = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).mo, 1);
         mktProfit += mWonAll ? plan.parlayStake * (mOdds - 1) : -plan.parlayStake;
+        mktExp += plan.parlayLegs.reduce((m, k) => m * byKey.get(k).mP, 1);
+        mktHits += mWonAll ? 1 : 0; mktN++;
       }
       if (staked < 0.01) continue;
-      out.push({ day, staked, profit, hits, backed, parlayWon, mktProfit });
+      out.push({ day, staked, profit, hits, backed, parlayWon, mktProfit, mktExp, mktHits, mktN });
     }
     if (!out.length) return null;
     // Summarise any run of days the same way, so the whole record and one
@@ -273,6 +282,12 @@ export default function Parlay() {
         staked,
         roi: staked > 0 ? run / staked : 0,
         mktRoi: staked > 0 ? mktRun / staked : 0,
+        // The baseline against its OWN prices. Reporting a return without it
+        // lets a hot streak read as an edge, and this cuts both ways: it is
+        // the same test our own calibration gets on the ledger page.
+        mktExp: list.reduce((t, d) => t + (d.mktExp || 0), 0),
+        mktHits: list.reduce((t, d) => t + (d.mktHits || 0), 0),
+        mktN: list.reduce((t, d) => t + (d.mktN || 0), 0),
         up: list.filter((d) => d.profit > 0).length,
         last: list[list.length - 1],
       };
@@ -378,6 +393,12 @@ export default function Parlay() {
               {planHistory.all.days.length} days · {planHistory.all.up} up, {planHistory.all.days.length - planHistory.all.up} down
               {' '}· the dashed line is the same money on the bookmakers&apos; favourites:{' '}
               <strong>{signedPct(planHistory.all.mktRoi)}</strong>
+              {planHistory.all.mktN >= 8 && (
+                <>
+                  , landing {planHistory.all.mktHits} of {planHistory.all.mktN} where their own prices
+                  expected {planHistory.all.mktExp.toFixed(1)}
+                </>
+              )}
             </span>
           </div>
           <PlanCurve values={planHistory.all.curve} market={planHistory.all.mktCurve} />
@@ -399,6 +420,12 @@ export default function Parlay() {
               bookmakers&apos; favourites, same matches and same parlay, returned{' '}
               <strong>{signedPct(planHistory.event.mktRoi)}</strong>{' '}
               ({planHistory.event.mktTotal >= 0 ? '+' : '-'}${Math.abs(planHistory.event.mktTotal).toFixed(2)})
+              {planHistory.event.mktN >= 8 && (
+                <>
+                  {', '}landing {planHistory.event.mktHits} of {planHistory.event.mktN} where their own
+                  prices expected {planHistory.event.mktExp.toFixed(1)}
+                </>
+              )}
             </span>
           </div>
           <PlanCurve values={planHistory.event.curve} market={planHistory.event.mktCurve} />

@@ -517,7 +517,7 @@ export default function Home() {
               <strong className={livePlan.roi >= 0 ? 'pos' : 'neg'}>
                 {livePlan.roi >= 0 ? '+' : '-'}{Math.abs(livePlan.roi * 100).toFixed(1)}%
               </strong>
-              {' '}following the plan at {livePlan.event} so far &mdash; {livePlan.days} days,{' '}
+              {' '}following the plan at {livePlan.event} so far, {livePlan.days} days,{' '}
               {livePlan.profit >= 0 ? '+' : '-'}${Math.abs(livePlan.profit).toFixed(0)} on ${livePlan.staked.toFixed(0)} staked
             </p>
           )}
