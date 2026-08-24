@@ -42,6 +42,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const TRACK = path.join(ROOT, 'public', 'data', 'track_record.json');
+const LEDGER = path.join(ROOT, 'public', 'data', 'predictions.json');
 const OUT = path.join(ROOT, 'src', 'data', 'callThresholds.json');
 
 const BAND = 0.05;        // width of the marginal band under test
@@ -161,6 +162,39 @@ function cellThreshold(rows) {
   return best;
 }
 
+// The FORWARD ledger, normalised into the same shape the resimulated rows
+// use. These probabilities were written before the match, so nothing about
+// them can know the result - which makes them the only data this tuner can
+// trust without a guard.
+//
+// This is what makes "re-derive as we collect more" true rather than merely
+// scheduled. The tuner already ran on every retune, but it only ever read the
+// resimulated record, and that file is resimulated BY CONSTRUCTION: more
+// tennis makes it bigger, never cleaner. Each cell now graduates to its own
+// clean data the moment it has enough, independently of the others - hard
+// courts first, since that is where the ledger started.
+function forwardRows() {
+  if (!fs.existsSync(LEDGER)) return [];
+  const preds = JSON.parse(fs.readFileSync(LEDGER, 'utf8')).predictions || [];
+  return preds
+    .filter((p) => (p.status === 'won' || p.status === 'lost') && typeof p.favProb === 'number')
+    .map((p) => {
+      const o1 = Number(p.lockOdd1), o2 = Number(p.lockOdd2);
+      const priced = o1 > 1 && o2 > 1;
+      const mFav = priced ? (o1 <= o2 ? p.p1 : p.p2) : null;
+      return {
+        tour: p.tour,
+        surface: p.surface,
+        // Oriented to p1 so favProb() reads it the same way as a track row.
+        pickProbP1: p.favorite === p.p1 ? p.favProb : 1 - p.favProb,
+        pickCorrect: !!p.correct,
+        od1: priced ? o1 : null,
+        od2: priced ? o2 : null,
+        oddCorrect: mFav ? p.winner === mFav : null,
+      };
+    });
+}
+
 function build() {
   if (!fs.existsSync(TRACK)) {
     console.error('tuneCallThreshold: no track_record.json; refusing to write.');
@@ -170,25 +204,36 @@ function build() {
   const fallback = ENGINE.callThreshold || 0.58;
   const all = (JSON.parse(fs.readFileSync(TRACK, 'utf8')).matches || [])
     .filter((m) => favProb(m) != null && typeof correct(m) === 'boolean');
+  const clean = forwardRows().filter((m) => favProb(m) != null && typeof correct(m) === 'boolean');
 
   const cells = {};
   const report = [];
+  const source = {};       // cell -> 'forward' | 'resimulated'
+  const cleanCounts = {};  // cell -> clean rows available, so the gap is visible
   for (const tour of TOURS) {
     for (const surface of SURFACES) {
-      const rows = all.filter((m) => m.tour === tour && m.surface === surface);
       const key = `${tour}|${surface}`;
+      const cellAll = all.filter((m) => m.tour === tour && m.surface === surface);
+      const cellClean = clean.filter((m) => m.tour === tour && m.surface === surface);
+      // Clean data wins outright when there is enough of it: no guard needed,
+      // no floor needed, because nothing in it knows a result.
+      const useClean = cellClean.length >= MIN_CELL;
+      const rows = useClean ? cellClean : cellAll;
+      const from = useClean ? 'forward' : 'resimulated';
+      cleanCounts[key] = cellClean.length;
+      source[key] = from;
       if (rows.length < MIN_CELL) {
-        report.push({ key, n: rows.length, chosen: null, used: fallback, why: 'too few graded rows' });
+        report.push({ key, n: rows.length, from, clean: cellClean.length, chosen: null, used: fallback, why: 'too few graded rows' });
         continue;
       }
       const raw = cellThreshold(rows);
       if (raw == null) {
-        report.push({ key, n: rows.length, chosen: null, used: fallback, why: 'no cutoff clears a coin flip' });
+        report.push({ key, n: rows.length, from, clean: cellClean.length, chosen: null, used: fallback, why: 'no cutoff clears a coin flip' });
         continue;
       }
       const used = Math.min(CLAMP_HI, Math.max(CLAMP_LO, raw));
       cells[key] = used;
-      report.push({ key, n: rows.length, chosen: raw, used, why: used !== raw ? 'clamped' : '' });
+      report.push({ key, n: rows.length, from, clean: cellClean.length, chosen: raw, used, why: used !== raw ? 'clamped' : '' });
     }
   }
 
@@ -201,18 +246,23 @@ function build() {
   const check = marketSplitCheck(all, thresholdOf);
   let floored = [];
   if (!check.ok) {
+    // Only cells still reading the resimulated record. A cell on the forward
+    // ledger derived its cutoff from outcome-blind data, so the contamination
+    // this guard detects does not apply to it and flooring it would be
+    // punishing the clean cells for the dirty ones.
     // Bias direction: contaminated marginal bands look BETTER than they are,
     // so the sweep stops too low. Never let a cutoff sit under the global
     // default on evidence that failed this test - the default was not derived
     // from the boundary and so is not exposed to the same fault.
     for (const [key, v] of Object.entries(cells)) {
+      if (source[key] === 'forward') continue;
       if (v < fallback) { cells[key] = fallback; floored.push(`${key} ${v}->${fallback}`); }
     }
   }
 
   // What the choice costs and buys, per cell, so the table is auditable
   // rather than a list of magic numbers.
-  console.log('cell        graded   T     calls  call acc   passed  lean acc');
+  console.log('cell        source        graded   T     calls  call acc   passed  lean acc   clean rows');
   for (const r of report) {
     const [tour, surface] = r.key.split('|');
     const rows = all.filter((m) => m.tour === tour && m.surface === surface);
@@ -222,12 +272,14 @@ function build() {
     const pctOf = (l) => (l.length ? `${Math.round((l.filter(correct).length / l.length) * 100)}%` : '   -');
     console.log(
       r.key.padEnd(11),
+      (r.from || '').padEnd(13),
       String(r.n).padStart(5),
       T.toFixed(2).padStart(6),
       String(calls.length).padStart(6),
       pctOf(calls).padStart(9),
       String(passes.length).padStart(8),
       pctOf(passes).padStart(9),
+      `   ${r.clean || 0}/${MIN_CELL}`.padStart(11),
       r.why ? `  (${r.why}${r.chosen != null && r.chosen !== T ? `, raw ${r.chosen}` : ''})` : ''
     );
   }
@@ -254,7 +306,12 @@ function build() {
     measuredAt: new Date().toISOString().slice(0, 10),
     // Provenance. These are derived from the RESIMULATED record, and the
     // guard says whether that record was fit to derive them from.
-    source: 'track_record.json (resimulated, end-of-season stats)',
+    // Per cell, so it is visible which cutoffs are already derived from
+    // outcome-blind data and which are still waiting on enough of it.
+    perCellSource: source,
+    cleanRowsAvailable: cleanCounts,
+    cleanRowsNeeded: MIN_CELL,
+    source: 'per cell: forward ledger where thick enough, otherwise track_record.json (resimulated)',
     hindsightGuard: check.calls && check.passes ? {
       passed: check.ok,
       callsGapPt: Number((100 * check.calls.gap).toFixed(2)),

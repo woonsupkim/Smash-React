@@ -60,6 +60,26 @@ describe('the hindsight guard', () => {
     expect(src).toMatch(/const spread = calls\.gap - passes\.gap/);
   });
 
+  it('can graduate a cell to clean data, and shows how far off each one is', () => {
+    // The point of the guard is not to sit there forever. The tuner reads the
+    // forward ledger per cell and uses it the moment that cell has enough
+    // outcome-blind rows, which is what makes "re-derive as we collect more"
+    // actually true - the resimulated record only ever gets bigger, never
+    // cleaner. Hard courts are closest; clay and grass wait for next season's
+    // swings, since the ledger began mid-season.
+    expect(CUTOFFS.perCellSource).toBeTruthy();
+    expect(CUTOFFS.cleanRowsNeeded).toBeGreaterThan(0);
+    for (const cell of Object.keys(CUTOFFS.perCellSource)) {
+      expect(['forward', 'resimulated']).toContain(CUTOFFS.perCellSource[cell]);
+      expect(typeof CUTOFFS.cleanRowsAvailable[cell]).toBe('number');
+    }
+    const src = read('data-pipeline/tuneCallThreshold.js');
+    expect(src).toMatch(/const useClean = cellClean\.length >= MIN_CELL/);
+    // A cell already on clean data must not be floored by a guard that is
+    // detecting contamination in a source it does not read.
+    expect(src).toMatch(/if \(source\[key\] === 'forward'\) continue;/);
+  });
+
   it('says the backtest is an upper bound wherever it is published', () => {
     // The plan backtest reads the same resimulated record and currently
     // reports roughly three times the forward return, so the number cannot
