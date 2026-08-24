@@ -32,18 +32,37 @@ describe('bracketViews', () => {
     }
   });
 
-  it('starts the finals view at the round holding the four quarter winners', () => {
-    // rounds[r] has slots/2^r entries, so the round with exactly 4 players is
-    // log2(quarterSize). Off by one here and the finals view reads the
-    // quarter-finalists (8) or the finalists (2) instead of the semis.
+  it('starts the closing view at the last EIGHT, not the last four', () => {
+    // rounds[r] holds slots/2^r players, so the round with exactly 8 is
+    // log2(quarterSize) - 1. It used to start a round later, at the semis,
+    // which meant the four quarter-final matches existed only as the last box
+    // of their own quarter tab and no view ever showed the last eight as one
+    // bracket. Off by one in the other direction and this reads the round of
+    // 16 instead.
     for (const slots of [32, 64, 128]) {
       const finals = bracketViews(slots).at(-1);
-      const quarterSize = slots / 4;
-      expect(finals.roundFrom).toBe(Math.log2(quarterSize));
-      expect(slots / 2 ** finals.roundFrom).toBe(4);
-      expect(finals.slotCount).toBe(4);
+      expect(finals.roundFrom).toBe(Math.log2(slots / 4) - 1);
+      expect(slots / 2 ** finals.roundFrom).toBe(8);
+      expect(finals.slotCount).toBe(8);
       expect(finals.terminal).toBe('champion');
     }
+  });
+
+  it('gives the closing view four columns: quarters, semis, final, champion', () => {
+    // The render slices roundLabels from roundFrom for log2(slotCount)+1
+    // columns, so this is the column count the page will draw.
+    for (const slots of [32, 64, 128]) {
+      const finals = bracketViews(slots).at(-1);
+      expect(Math.log2(finals.slotCount) + 1).toBe(4);
+    }
+  });
+
+  it('does not name the closing view after a round the quarter tabs also use', () => {
+    // Four tabs are quarters OF THE DRAW. Calling the fifth "Quarter-finals"
+    // would make five tabs read as five quarters of the same thing.
+    const labels = bracketViews(64).map((v) => v.label);
+    expect(labels.filter((l) => /quarter/i.test(l))).toHaveLength(4);
+    expect(labels.at(-1)).toBe('Last 8');
   });
 
   it('covers the whole draw exactly once, with no gap or overlap', () => {

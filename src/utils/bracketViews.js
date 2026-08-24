@@ -23,7 +23,18 @@ export function bracketViews(slots) {
     return [{ id: 'all', label: 'Whole bracket', roundFrom: 0, slotStart: 0, slotCount: slots, terminal: 'champion' }];
   }
   const quarterSize = slots / 4;
-  const finalsFrom = Math.log2(quarterSize);
+  // The closing view starts at the QUARTER-FINALS, not the semis. Starting at
+  // the semis meant the four quarter-final matches only ever appeared as the
+  // last box of their own quarter tab, so nothing on the page ever showed the
+  // last eight as one bracket - you had to hold four tabs in your head to see
+  // how the semis were arrived at. One round earlier is 8 players instead of
+  // 4, which is still a small, readable bracket.
+  //
+  // Each quarter tab therefore shows its own quarter-final again as its last
+  // match. That overlap is the point rather than a cost: the quarter tab
+  // answers "how does this eighth of the draw resolve", and this one answers
+  // "how do the last eight play out".
+  const finalsFrom = Math.log2(quarterSize) - 1;
   const views = [];
   for (let q = 0; q < 4; q++) {
     views.push({
@@ -39,10 +50,13 @@ export function bracketViews(slots) {
   }
   views.push({
     id: 'finals',
-    label: 'Semis & Final',
+    // Not "Quarter-finals ...": the tabs beside it are quarters OF THE DRAW,
+    // and using the same word for a round would make five tabs read as five
+    // quarters. "Last 8" says how many players without colliding.
+    label: 'Last 8',
     roundFrom: finalsFrom,
     slotStart: 0,
-    slotCount: 4,
+    slotCount: 8,
     terminal: 'champion',
   });
   return views;

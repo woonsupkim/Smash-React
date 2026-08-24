@@ -283,9 +283,13 @@ test('dream brackets: a full draw renders a quarter at a time', async ({ page })
   await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(8);
   await expect(page.locator('.bracket-col h6').last()).toHaveText(/INTO THE SEMIS/i);
 
-  // The finals view picks up the four quarter winners and ends on the champion.
+  // The closing view is the last EIGHT: four quarter-final matches resolving
+  // into the semis, the final and the champion, so it stands as a bracket on
+  // its own rather than starting from four names with no visible source.
   await page.locator('.bracket-view-tab').last().click();
+  await expect(page.locator('.bracket-col h6').first()).toHaveText(/QUARTER-FINALS/i);
   await expect(page.locator('.bracket-col h6').last()).toHaveText(/CHAMPION/i);
-  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(2);
+  await expect(page.locator('.bracket-col h6')).toHaveCount(4);
+  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(4);
   expect(errors).toEqual([]);
 });
