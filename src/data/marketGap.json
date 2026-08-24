@@ -5,15 +5,15 @@
   "gapCeil": 0.2,
   "gapCallThreshold": 0.58,
   "band": {
-    "pricedGraded": 1652,
-    "n": 131,
-    "hitRate": 0.5573,
-    "marketImplied": 0.4612,
-    "stated": 0.611
+    "pricedGraded": 1657,
+    "n": 121,
+    "hitRate": 0.562,
+    "marketImplied": 0.4594,
+    "stated": 0.6109
   },
   "beyondCeil": {
-    "n": 130,
-    "hitRate": 0.3769,
-    "stated": 0.6058
+    "n": 132,
+    "hitRate": 0.3712,
+    "stated": 0.6046
   }
 }
