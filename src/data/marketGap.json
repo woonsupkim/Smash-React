@@ -15,5 +15,13 @@
     "n": 130,
     "hitRate": 0.3769,
     "stated": 0.6058
+  },
+  "source": "track_record.json (resimulated, end-of-season stats)",
+  "forwardCheck": {
+    "n": 26,
+    "hitRate": 0.6538,
+    "marketImplied": 0.6159,
+    "edgePt": 3.8,
+    "note": "clean but thin; the published band is measured on the resimulated record and runs larger"
   }
 }

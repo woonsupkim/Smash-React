@@ -24,6 +24,7 @@ import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
+import FIGURES from '../data/marketGap.json';
 import { planFrontier, reliability } from '../utils/staking';
 import { ledgerNoCall } from '../utils/deployedPick';
 import { surfaceBgClass } from '../utils/surfaceBg';
@@ -175,7 +176,14 @@ export default function Parlay() {
       out.push({
         id: 'value',
         title: `Against the market (${set.length})`,
-        sub: `lands ${pct(prob)}; calls like these have landed ${pct(BAND.hitRate)} of the time against a market that gave them ${pct(BAND.marketImplied)}`,
+        // The band figures come from the resimulated record, which is
+        // contaminated exactly at the margin a gap band lives on. The same
+        // band on locked pre-match calls is roughly a third of the size
+        // (+3.8pt against +9.6pt), so the headline is stated with the clean
+        // number beside it rather than on its own.
+        sub: FIGURES.forwardCheck
+          ? `lands ${pct(prob)}; calls like these have landed ${pct(BAND.hitRate)} of the time against a market that gave them ${pct(BAND.marketImplied)}, though on the ${FIGURES.forwardCheck.n} locked before play the edge is a smaller ${FIGURES.forwardCheck.edgePt}pt`
+          : `lands ${pct(prob)}; calls like these have landed ${pct(BAND.hitRate)} of the time against a market that gave them ${pct(BAND.marketImplied)}`,
         keys: set.map(legKey),
       });
     }

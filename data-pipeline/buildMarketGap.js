@@ -64,6 +64,33 @@ function bandStats(rows, lo, hi) {
   };
 }
 
+// The same band measured on the FORWARD ledger, whose probabilities were
+// written before the match. The published figures come from the resimulated
+// record, which is contaminated at exactly the margin a gap band lives on, and
+// on this data the clean estimate is roughly a third of the published one
+// (+3.8pt against +9.6pt). Too thin to publish on its own; not too thin to
+// stop the headline being stated as though it were the whole truth.
+function forwardBand(lo, hi) {
+  const LEDGER = path.join(ROOT, 'public', 'data', 'predictions.json');
+  if (!fs.existsSync(LEDGER)) return null;
+  const { ledgerNoCall } = require('./lib/noCall');
+  const rows = (JSON.parse(fs.readFileSync(LEDGER, 'utf8')).predictions || [])
+    .filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p)
+      && p.lockOdd1 > 1 && p.lockOdd2 > 1 && typeof p.favProb === 'number');
+  const mkt = (p) => {
+    const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
+    return (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
+  };
+  const inBand = rows.filter((p) => {
+    const g = p.favProb - mkt(p);
+    return g >= lo && g < hi;
+  });
+  if (inBand.length < 10) return null;
+  const hitRate = inBand.filter((p) => p.correct).length / inBand.length;
+  const marketImplied = inBand.reduce((s, p) => s + mkt(p), 0) / inBand.length;
+  return { n: inBand.length, hitRate, marketImplied, edgePt: (hitRate - marketImplied) * 100 };
+}
+
 function build() {
   if (!fs.existsSync(TRACK)) {
     // Refusing beats writing zeros: a figure of 0% would read as a real
@@ -101,6 +128,20 @@ function build() {
       hitRate: round(beyond.hitRate),
       stated: round(beyond.stated),
     },
+    // Provenance, and the clean cross-check. The band figures above are
+    // derived from the resimulated record; this is the same band measured on
+    // locked pre-match probabilities.
+    source: 'track_record.json (resimulated, end-of-season stats)',
+    forwardCheck: (() => {
+      const f = forwardBand(GAP_FLOOR, GAP_CEIL);
+      return f ? {
+        n: f.n,
+        hitRate: round(f.hitRate),
+        marketImplied: round(f.marketImplied),
+        edgePt: round(f.edgePt, 1),
+        note: 'clean but thin; the published band is measured on the resimulated record and runs larger',
+      } : null;
+    })(),
   };
 
   // Only rewrite when something other than the date moved, so a build does not
