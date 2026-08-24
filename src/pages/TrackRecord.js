@@ -45,13 +45,8 @@ const MAJOR_EVENT_TIERS = [
 ];
 const eventTier = (name) => MAJOR_EVENT_TIERS.find(({ re }) => re.test(name))?.tier || null;
 
-// The forward record ("The Receipts") only counts calls at the events a fan
-// treats as real tests: Grand Slams and the Masters/1000 stops. Lower-tier
-// 250/500 calls are noise for a public scoreboard. Two independent signals,
-// since neither is complete in the data: the event-name regex catches the
-// slams (which carry no tier code), and the native `tier` field catches
-// Masters even when the event name is a sponsor string the regex misses.
-// The forward record counts EVERY locked call, at whatever event.
+// The forward record ("The Receipts") counts EVERY locked call, at whatever
+// event.
 //
 // It used to be filtered to slams and 1000s here on the reasoning that
 // lower-tier calls are noise for a public scoreboard. Two problems. It was a
@@ -186,7 +181,13 @@ export default function TrackRecord() {
     // of ungraded stragglers can't bury tonight's picks out of the top 8.
     const now = Date.now();
     const isUpcoming = (p) => new Date(p.date).getTime() >= now;
-    const pending = list.filter((p) => p.status === 'pending').sort((a, b) => {
+    // Calls only. A no-call used to sit in this panel too, on the reasoning
+    // that restraint is itself a receipt - but the panel is headed "called
+    // before the match", and a row saying we did not call it does not belong
+    // under that heading. The passes are still fully accounted for: the
+    // by-confidence table has its own row for them, the match log tags them,
+    // and the shadow tally above the log grades every one.
+    const pending = list.filter((p) => p.status === 'pending' && !ledgerNoCall(p)).sort((a, b) => {
       const ua = isUpcoming(a), ub = isUpcoming(b);
       if (ua !== ub) return ua ? -1 : 1;
       return ua ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
@@ -584,19 +585,6 @@ export default function TrackRecord() {
                 // hasn't been fetched yet reads "Awaiting result", not
                 // "Upcoming" - honest when the data refresh is lagging.
                 const awaiting = new Date(p.date).getTime() < Date.now();
-                // A no-call shows here too: restraint IS a receipt. The lean
-                // is on the record; it just is not a claim.
-                if (ledgerNoCall(p)) {
-                  return (
-                    <Link className="track-forward-row pending nocall" to={`/match/${matchSlug(p)}`} key={p.id}>
-                      <span className="track-forward-status">
-                        <span aria-hidden="true">✋ </span>No call
-                      </span>
-                      <span className="track-forward-match">{p.name1} vs {p.name2}</span>
-                      <span className="track-forward-call">too close - we lean {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
-                    </Link>
-                  );
-                }
                 return (
                   <Link className={`track-forward-row pending${awaiting ? ' awaiting' : ''}`} to={`/match/${matchSlug(p)}`} key={p.id}>
                     <span className="track-forward-status">

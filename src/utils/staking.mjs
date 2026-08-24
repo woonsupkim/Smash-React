@@ -486,6 +486,31 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   const EDGE_FRACTION = 0.25;   // of budget, per Kelly unit
   const EDGE_BET_CAP = 0.20;    // of budget, per single
   const EDGE_PARLAY_CAP = 0.10; // of budget
+  // The smallest stake worth printing, as a SHARE of the budget rather than
+  // a flat dollar amount. Every other quantity here is a fraction of B, so a
+  // flat floor was the one scale-dependent term in a scale-free policy - and
+  // it silently changed which bets the plan contained as the budget moved.
+  // On a two-bet card sized at 4.6% and 3.3% of budget, a $0.50 floor funded
+  // nothing under $11, one bet from $11 to $15, and both from $16 up. The
+  // recommendation therefore inverted across a $1 change: at $10 it staked
+  // the whole budget, at $11 it staked fifty cents and pocketed the rest,
+  // for an expected profit fifteen times smaller on MORE money. A larger
+  // budget can always replicate a smaller plan and hold the difference, so
+  // that direction is never correct.
+  //
+  // 0.5% of budget reproduces the old $0.50 exactly at the $100 default, so
+  // the shipped plan and every backtest number above are unchanged.
+  //
+  // Purely proportional, with no absolute floor alongside it. Any absolute
+  // term reintroduces the same fault in miniature - it was still reshuffling
+  // the plan between $2 and $4 - and it also makes plan EXISTENCE depend on
+  // budget. With a pure fraction, a bet is funded exactly when its Kelly
+  // fraction clears 2%, which is a property of the bet and not of the wallet:
+  // the plan a follower is shown has the same shape at every budget, and
+  // scaling the budget scales the stakes and the expected profit with it.
+  // Whether the resulting stakes clear a particular book's minimum is a
+  // question about that book, not about which bets are worth making.
+  const EDGE_MIN_STAKE = B * 0.005;
   const edgePlan = (() => {
     if (!(B > 0)) return null;
     const singles = {};
@@ -493,7 +518,7 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
       const f = kellyFraction(b.p, b.o);
       if (!(f > 0)) continue;
       const stake = Math.min(B * EDGE_BET_CAP, B * EDGE_FRACTION * f);
-      if (stake >= 0.5) singles[b.key] = stake;
+      if (stake >= EDGE_MIN_STAKE) singles[b.key] = stake;
     }
     // One 2-leg parlay from the best-edge +EV legs, only when the pair is
     // itself +EV - same construction the backtest scored.
@@ -509,8 +534,8 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
     }
     const spent = Object.values(singles).reduce((t, v) => t + v, 0);
     const parStake = combo ? Math.min(B * EDGE_PARLAY_CAP, B * EDGE_FRACTION * combo.f, Math.max(0, B - spent)) : 0;
-    if (!Object.keys(singles).length && !(parStake > 0.5)) return null;
-    return shape(singles, combo, parStake > 0.5 ? parStake : 0);
+    if (!Object.keys(singles).length && !(parStake >= EDGE_MIN_STAKE)) return null;
+    return shape(singles, combo, parStake >= EDGE_MIN_STAKE ? parStake : 0);
   })();
 
   const plans = [];
