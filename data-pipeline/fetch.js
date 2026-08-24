@@ -100,17 +100,36 @@ async function resolveApiIds(players) {
   return cached;
 }
 
-// Merge freshly fetched matches into the cached history, keyed by match id.
-// Fresh data wins for ids present in both (recent matches change: a live
+// Merge freshly fetched matches into the cached history, keyed by FIXTURE.
+// Fresh data wins for fixtures present in both (recent matches change: a live
 // match completes, a score gets corrected); everything older that the fetch
 // didn't reach is preserved forever - history ACCUMULATES across runs
 // instead of rolling off at the newest-300 window like the old full
 // overwrite did.
+//
+// Keyed by fixture and not by match id, because accumulating forever while
+// trusting the feed's id is what corrupted the head-to-head records. The id
+// is not a stable name for a match: when the API re-issues a fixture under a
+// new one, an id-keyed merge stores it a second time, and no consumer
+// downstream can tell the copies apart. Every extra copy names the same
+// winner, so records stayed lopsided while counts climbed - Collignon vs Van
+// Assche reached 22-0 against a true 3-0. Only recent meetings were hit,
+// since those are the fixtures inside the fetch window run after run.
+//
+// Two singles players do not meet twice on one calendar day, so pair+day
+// names a fixture exactly. Rows too malformed to key fall back to their id
+// so nothing is silently dropped.
+function fixtureKey(m) {
+  if (!m || !m.player1Id || !m.player2Id || !m.date) return `id:${String(m && m.id)}`;
+  const pair = [String(m.player1Id), String(m.player2Id)].sort().join('_');
+  return `${pair}@${String(m.date).slice(0, 10)}`;
+}
+
 function mergeMatches(existing, fetched) {
-  const byId = new Map();
-  for (const m of existing) byId.set(String(m.id), m);
-  for (const m of fetched) byId.set(String(m.id), m);
-  return [...byId.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  const byFixture = new Map();
+  for (const m of existing) byFixture.set(fixtureKey(m), m);
+  for (const m of fetched) byFixture.set(fixtureKey(m), m);
+  return [...byFixture.values()].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
 // Incremental fetch: page through the API newest-first and STOP as soon as
@@ -131,7 +150,10 @@ async function fetchPlayerMatches(ourId, apiId) {
       console.warn(`  corrupt cache for ${ourId}; re-bootstrapping`);
     }
   }
-  const knownIds = new Set(existing.map((m) => String(m.id)));
+  // Fixture keys, matching mergeMatches. Keyed by id, a re-issued fixture
+  // looks brand new every run, so the "entire page is already known" stop
+  // never fires and each run pages the full window again.
+  const knownIds = new Set(existing.map((m) => fixtureKey(m)));
   const isBootstrap = existing.length === 0;
 
   const fetched = [];
@@ -143,13 +165,13 @@ async function fetchPlayerMatches(ourId, apiId) {
     const page = data || [];
     fetched.push(...page);
     pages = pageNo;
-    if (!isBootstrap && page.length > 0 && page.every((m) => knownIds.has(String(m.id)))) break;
+    if (!isBootstrap && page.length > 0 && page.every((m) => knownIds.has(fixtureKey(m)))) break;
     if (!hasNextPage) break;
   }
 
   const merged = mergeMatches(existing, fetched);
   fs.writeFileSync(dest, JSON.stringify(merged));
-  const newCount = fetched.filter((m) => !knownIds.has(String(m.id))).length;
+  const newCount = fetched.filter((m) => !knownIds.has(fixtureKey(m))).length;
   return { pages, newCount, total: merged.length };
 }
 

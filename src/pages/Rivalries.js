@@ -1,9 +1,11 @@
 // src/pages/Rivalries.js
 //
-// The rivalries board: the top matchups on each tour, ranked by career
-// meetings and combined ranking. Every entry links to its own rivalry page
+// The rivalries board: the top matchups on a tour, ranked by career meetings
+// and combined ranking. Every entry links to its own rivalry page
 // (/rivalry/:tour/:slug) - the crawlable hub behind the programmatic SEO
 // pages. Built entirely from data files the pipeline already publishes.
+//
+// Rendered by CompareHub (src/pages/Compare.js), not by a page of its own.
 import React, { useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
@@ -18,6 +20,7 @@ function useTourRivalries(tour) {
   const dataDir = tour === 'wta' ? '/data/women' : '/data';
   const [roster, setRoster] = useState(null);
   const [h2h, setH2h] = useState(null);
+  const [graded, setGraded] = useState(null);
   useEffect(() => {
     Papa.parse(process.env.PUBLIC_URL + `${dataDir}/smash_us.csv`, {
       header: true,
@@ -26,32 +29,62 @@ function useTourRivalries(tour) {
       error: () => setRoster([]),
     });
     fetch(process.env.PUBLIC_URL + `${dataDir}/h2h.json`).then((r) => r.json()).then(setH2h).catch(() => setH2h({}));
+    // The graded record, used to RANK the board. Career H2H comes from the
+    // feed; how much a pair has met THIS SEASON comes from the same graded
+    // rows behind every other number on the site.
+    fetch(process.env.PUBLIC_URL + '/data/track_record.json')
+      .then((r) => r.json()).then((d) => setGraded(d.matches || [])).catch(() => setGraded([]));
   }, [dataDir]);
 
+  // Meetings this season, straight off the graded record. Independent of the
+  // feed, so it is a check on it as well as a ranking key.
+  const seasonPairs = useMemo(() => {
+    const out = new Map();
+    for (const m of graded || []) {
+      if (!m.p1 || !m.p2 || !m.winner) continue;
+      if (m.winner !== m.p1 && m.winner !== m.p2) continue;
+      if (m.tour !== tour) continue;
+      const [a, b] = [m.p1, m.p2].sort();
+      const e = out.get(`${a}_${b}`) || { a: 0, b: 0 };
+      if (m.winner === a) e.a++; else e.b++;
+      out.set(`${a}_${b}`, e);
+    }
+    return out;
+  }, [graded, tour]);
+
   return useMemo(() => {
-    if (!roster || !h2h) return null;
+    if (!roster || !h2h || !graded) return null;
     const byId = new Map(roster.map((r) => [r.id, r]));
     const out = [];
-    for (const [key, rec] of Object.entries(h2h)) {
+    // Ranked by meetings THIS SEASON, then by ranking. Career meeting count
+    // used to drive this, which put the feed's worst rows on top: the
+    // published H2H was inflated for pairs whose meetings were all recent,
+    // so sorting by it surfaced exactly the corrupted records first - a
+    // 22-0 that was really 3-0 led the board. Season meetings come from the
+    // graded record instead, which is verified, and the career record is
+    // shown beside it rather than used to order anything.
+    for (const [key, season] of seasonPairs.entries()) {
       const [ia, ib] = key.split('_');
       const a = byId.get(ia), b = byId.get(ib);
       if (!a || !b) continue;
-      const meetings = (rec.winsA || 0) + (rec.winsB || 0);
-      if (meetings < 3) continue;
+      const meetings = season.a + season.b;
+      if (meetings < 2) continue;
+      const rec = h2h[key] || {};
+      const career = (rec.winsA || 0) + (rec.winsB || 0);
       const rankSum = (Number(a.us_seed) || 200) + (Number(b.us_seed) || 200);
       out.push({
         a, b, meetings,
-        winsA: rec.winsA, winsB: rec.winsB,
-        // More meetings and better-ranked players float up.
+        winsA: season.a, winsB: season.b,
+        career: career >= meetings ? career : null,
         score: meetings * 10 - rankSum * 0.5,
         slug: `${slugify(a.name)}-vs-${slugify(b.name)}`,
       });
     }
     return out.sort((x, y) => y.score - x.score).slice(0, TOP_N);
-  }, [roster, h2h]);
+  }, [roster, h2h, graded, seasonPairs]);
 }
 
-function RivalryList({ tour, title }) {
+export function RivalryList({ tour, title }) {
   const list = useTourRivalries(tour);
   return (
     <div className="rivalries-tour">
@@ -71,7 +104,7 @@ function RivalryList({ tour, title }) {
               <span className="rivalries-names">
                 {lastName(r.a.name)} <em>vs</em> {lastName(r.b.name)}
               </span>
-              <span className="rivalries-meta">{r.winsA}–{r.winsB} · {r.meetings} meetings</span>
+              <span className="rivalries-meta">{r.winsA}–{r.winsB} · {r.meetings} this season</span>
             </Link>
           ))}
         </div>
@@ -80,23 +113,9 @@ function RivalryList({ tour, title }) {
   );
 }
 
-export default function Rivalries() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Tennis Rivalries: H2H Records & Predictions | Smash';
-    return () => { document.title = prev; };
-  }, []);
-
-  return (
-    <div className="rivalry-page">
-      <div className="eyebrow">THE RIVALRIES</div>
-      <h1 className="rivalry-title">Every big matchup, on the record</h1>
-      <p className="rivalry-sub">
-        Career head-to-heads, live form curves, and a model read for every surface -
-        each rivalry graded in public whenever the two actually meet.
-      </p>
-      <RivalryList tour="atp" title="ATP" />
-      <RivalryList tour="wta" title="WTA" />
-    </div>
-  );
-}
+// The standalone /rivalries page is gone: the board now lives on /compare,
+// under the player picker. Two hubs for "put these two players side by side"
+// was one hub too many - a rivalry IS a comparison with history attached, and
+// the split meant the curated matchups were invisible to anyone who started
+// from the compare page. /rivalries redirects there; the per-rivalry pages
+// (/rivalry/:tour/:slug) are unchanged and still the crawlable product.

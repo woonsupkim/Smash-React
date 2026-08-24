@@ -202,13 +202,28 @@ test('season rewind: headline, bold calls, engines', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('bracket challenge: renders bracket state and the model entry', async ({ page }) => {
+test('bracket challenge: renders the whole draw, whatever size it is', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/challenge');
   await expect(page.getByRole('heading', { name: /beat the model's bracket/i })).toBeVisible();
-  // With a 16-player draw on file (any status) the model's bracket shows;
-  // otherwise the honest empty state does.
-  await expect(page.locator('.challenge-model, .challenge-empty').first()).toBeVisible({ timeout: 15000 });
+  // Asserting on "one of these is visible" is what let a real regression
+  // through: the page used to require a field of exactly 16, so when the
+  // projection grew to a full 128 draw it silently fell back to the empty
+  // state and this test still passed. Now the draw on file decides the
+  // rounds, so when there IS a field the bracket must actually render.
+  const rounds = page.locator('.challenge-round');
+  const empty = page.locator('.challenge-empty');
+  await expect(rounds.first().or(empty.first())).toBeVisible({ timeout: 15000 });
+  if (await rounds.count() > 0) {
+    // Rounds must halve down to a single champion pick, so the count is
+    // log2(field) and the last round has exactly one match.
+    const n = await rounds.count();
+    expect(n).toBeGreaterThanOrEqual(2);
+    await expect(rounds.last().locator('.challenge-match')).toHaveCount(1);
+    // First round must be the biggest; a fixed table would flatten this.
+    const first = await rounds.first().locator('.challenge-match').count();
+    expect(first).toBe(2 ** (n - 1));
+  }
   expect(errors).toEqual([]);
 });
 
@@ -237,5 +252,44 @@ test('today page renders calls or the honest empty state', async ({ page }) => {
   await page.goto('/today');
   await expect(page.getByRole('heading', { name: /locked before play/i })).toBeVisible();
   await expect(page.locator('.today-list, .today-empty').first()).toBeVisible({ timeout: 15000 });
+  expect(errors).toEqual([]);
+});
+
+test('dream brackets: a full draw renders a quarter at a time', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/dream-brackets');
+
+  // Small draws must be untouched by segmentation: no tabs, and the columns
+  // run straight from the starting round to the champion.
+  await expect(page.locator('.bracket-col h6').first()).toBeVisible({ timeout: 20000 });
+  expect(await page.locator('.bracket-view-tab').count()).toBe(0);
+
+  // Switch to the full draw. Found by its options rather than by position, so
+  // reordering the stage list cannot silently retarget this (the same
+  // index-based assumption already moved the page's default once).
+  const selects = page.locator('select.dark-select');
+  let stage = null;
+  for (let i = 0; i < await selects.count(); i++) {
+    const values = await selects.nth(i).locator('option').evaluateAll((os) => os.map((o) => o.value));
+    if (values.includes('r64')) { stage = selects.nth(i); break; }
+  }
+  expect(stage).not.toBeNull();
+  await stage.selectOption('r64');
+
+  // Four quarters and a finals view, not one 4,200px column.
+  await expect(page.locator('.bracket-view-tab')).toHaveCount(5);
+  // A quarter is a 16-slot bracket: 8 opening matches, five columns ending on
+  // the semi-finalist rather than a champion (only one view may crown anyone).
+  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(8);
+  await expect(page.locator('.bracket-col h6').last()).toHaveText(/INTO THE SEMIS/i);
+
+  // The closing view is the last EIGHT: four quarter-final matches resolving
+  // into the semis, the final and the champion, so it stands as a bracket on
+  // its own rather than starting from four names with no visible source.
+  await page.locator('.bracket-view-tab').last().click();
+  await expect(page.locator('.bracket-col h6').first()).toHaveText(/QUARTER-FINALS/i);
+  await expect(page.locator('.bracket-col h6').last()).toHaveText(/CHAMPION/i);
+  await expect(page.locator('.bracket-col h6')).toHaveCount(4);
+  await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(4);
   expect(errors).toEqual([]);
 });

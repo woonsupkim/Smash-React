@@ -209,4 +209,66 @@ describe('the parlay length is chosen by the plan, not by the parlay alone', () 
       }
     }
   });
+
+  it('never recommends a worse plan on a bigger budget', () => {
+    // A larger budget can always replicate a smaller plan and hold the
+    // difference in cash, so the recommendation's expected profit must never
+    // fall as the budget grows. It did, badly: the edge plan's per-bet
+    // minimum was a flat $0.50 while every other quantity in it was a
+    // fraction of the budget, so the flat term decided WHICH bets the plan
+    // contained. On a two-bet card sized at 4.6% and 3.3% of budget it
+    // funded nothing under $11, one bet to $15, and both from $16 - and the
+    // recommendation inverted across a single dollar: $10 staked the whole
+    // budget for an expected +1.91, $11 staked fifty cents for +0.13.
+    //
+    // Asserted on the CARD, not on one budget, because the fault was
+    // invisible at the $100 default and only appeared at small budgets a
+    // user is free to type in.
+    const card = [
+      { key: 'a', p: 0.525, o: 2.39 },
+      { key: 'b', p: 0.715, o: 1.49 },
+      { key: 'c', p: 0.61, o: 1.95 },
+    ];
+    for (const lambda of [0.8, 1, 1.2]) {
+      let prev = null;
+      for (const budget of [2, 5, 8, 9, 10, 11, 16, 25, 50, 100, 250]) {
+        const f = planFrontier(card, budget, { lambda });
+        if (!f.plans.length) continue;
+        const rec = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+        const ev = rec.metrics.ev;
+        if (prev) {
+          expect(
+            `lambda ${lambda}, $${prev.budget} -> $${budget}: ${prev.ev.toFixed(4)} -> ${ev.toFixed(4)}`
+          ).toBe(
+            `lambda ${lambda}, $${prev.budget} -> $${budget}: ${prev.ev.toFixed(4)} -> ${Math.max(ev, prev.ev).toFixed(4)}`
+          );
+        }
+        prev = { budget, ev };
+      }
+    }
+  });
+
+  it('recommends the same plan SHAPE at every budget', () => {
+    // The sizing policy is entirely fractions of budget, so which bets are
+    // funded is a property of the bets. If this ever fails, some absolute
+    // dollar term has crept back into the sizing.
+    const card = [
+      { key: 'a', p: 0.525, o: 2.39 },
+      { key: 'b', p: 0.715, o: 1.49 },
+      { key: 'c', p: 0.61, o: 1.95 },
+    ];
+    const shapeAt = (budget) => {
+      const f = planFrontier(card, budget, { lambda: 1 });
+      const rec = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+      return [
+        rec.id,
+        Object.keys(rec.singles || {}).filter((k) => rec.singles[k] > 0).sort().join(','),
+        (rec.parlayLegs || []).length,
+      ].join('|');
+    };
+    const base = shapeAt(100);
+    for (const budget of [5, 8, 9, 11, 20, 50, 250, 1000]) {
+      expect(`$${budget}: ${shapeAt(budget)}`).toBe(`$${budget}: ${base}`);
+    }
+  });
 });

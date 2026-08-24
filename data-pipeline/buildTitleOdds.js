@@ -175,32 +175,58 @@ async function buildTour(tour) {
   };
 }
 
-// Off-season projection: no live draw, so seed a hypothetical 16-player
-// field from the current rankings on the NEXT slam's surface and simulate
-// that instead ("road to the US Open"). Standard seeding order (1v16, 8v9,
-// ...) so the bracket shape is realistic.
-const SEED_ORDER_16 = [1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11];
+// Off-season projection: no live draw, so seed a hypothetical field from the
+// current rankings on the NEXT slam's surface and simulate that instead
+// ("road to the US Open"). Standard seeding order, so the bracket shape is
+// realistic - the top two can only meet in the final.
+//
+// PROJECT_SIZE is the full slam draw. The projection used to be 16 players,
+// which made the bracket pages start at the round of 16 and quietly turned a
+// tournament into its last four rounds. Our roster carries about 119 players
+// per tour, so a 128 draw is short by single digits; buildSeededField pads
+// the gap with neutral Qualifier entries at the weakest seed positions,
+// exactly where real qualifiers land. They carry no roster id, so every
+// surface can label them as unknown instead of inventing a name.
+const { buildSeededField, largestPowerOfTwo } = require('./lib/seedOrder');
 const NEXT_SLAM = require('./lib/slamCalendar');
+
+const PROJECT_SIZE = 128;
+// Below this much of the draw we would be simulating mostly placeholders, so
+// fall back to the largest full round the roster can actually fill.
+const MIN_REAL_SHARE = 0.75;
 
 function buildProjection(tour) {
   const ctx = loadTour(tour);
   const next = NEXT_SLAM.nextSlam(new Date());
   if (!next) return null;
-  const rows = [...ctx.statsBySurface[next.surface].values()]
+  const ranked = [...ctx.statsBySurface[next.surface].values()]
     .map((r) => ({ id: r.id, name: r.name, rank: Number(r.us_seed) || 999 }))
-    .sort((a, b) => a.rank - b.rank)
-    .slice(0, 16);
-  if (rows.length < 16) return null;
-  const field = SEED_ORDER_16.map((seed) => ({ ...rows[seed - 1], rostered: true }));
+    .sort((a, b) => a.rank - b.rank);
+  if (ranked.length < 8) return null;
+  const size = ranked.length >= PROJECT_SIZE * MIN_REAL_SHARE
+    ? PROJECT_SIZE
+    : largestPowerOfTwo(ranked.length);
+  if (size < 8) return null;
+  const seeded = buildSeededField(ranked.slice(0, size), size);
+  // `rostered` gates whether the odds row carries a linkable player id, so a
+  // qualifier is explicitly not rostered rather than an id that 404s.
+  const field = seeded.map((p) => ({ ...p, rostered: !p.qualifier }));
   const { odds, survival } = simulateTitles(ctx, field, next.surface);
   return {
     event: next.label, tour, surface: next.surface, status: 'projection',
     startsAt: next.startsAt,
     updatedAt: new Date().toISOString(),
-    fieldSize: 16,
+    fieldSize: size,
+    qualifierSlots: field.filter((p) => p.qualifier).length,
     odds: odds.map((o) => ({ ...o, prob: Math.round(o.prob * 1000) / 1000 })),
     draw: {
-      field: field.map((p) => ({ id: p.id, name: p.name, rank: p.rank })),
+      field: field.map((p) => ({
+        id: p.qualifier ? null : p.id,
+        name: p.name,
+        rank: p.rank,
+        seed: p.seed,
+        ...(p.qualifier ? { qualifier: true } : {}),
+      })),
       survival,
     },
   };

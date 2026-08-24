@@ -1,0 +1,63 @@
+// src/utils/bracketViews.js
+//
+// Splits a bracket into the sub-brackets a page can actually render.
+//
+// Above this many slots the bracket is shown a quarter at a time. A 64-slot
+// draw is 32 first-round boxes stacked - about 4,200px of column - and at 128
+// it is twice that again: legible only if you scroll past the thing you are
+// comparing. Splitting on the draw's own quarters is not an arbitrary page
+// size, it is how the structure already divides, and it is how people fill a
+// bracket in the first place. The fifth view picks the four quarter winners up
+// and plays the semis and final between them.
+export const SEGMENT_ABOVE = 16;
+
+// Sub-brackets to render for a draw of `slots`, each one a self-contained
+// bracket described by where it starts in the tree.
+//   roundFrom  - global round index this view's first column shows
+//   slotStart  - index into that round's array where the view begins
+//   slotCount  - how many players the view's first column holds
+// A single unsegmented view is exactly the old behaviour, so small draws
+// render byte-for-byte as before.
+export function bracketViews(slots) {
+  if (slots <= SEGMENT_ABOVE) {
+    return [{ id: 'all', label: 'Whole bracket', roundFrom: 0, slotStart: 0, slotCount: slots, terminal: 'champion' }];
+  }
+  const quarterSize = slots / 4;
+  // The closing view starts at the QUARTER-FINALS, not the semis. Starting at
+  // the semis meant the four quarter-final matches only ever appeared as the
+  // last box of their own quarter tab, so nothing on the page ever showed the
+  // last eight as one bracket - you had to hold four tabs in your head to see
+  // how the semis were arrived at. One round earlier is 8 players instead of
+  // 4, which is still a small, readable bracket.
+  //
+  // Each quarter tab therefore shows its own quarter-final again as its last
+  // match. That overlap is the point rather than a cost: the quarter tab
+  // answers "how does this eighth of the draw resolve", and this one answers
+  // "how do the last eight play out".
+  const finalsFrom = Math.log2(quarterSize) - 1;
+  const views = [];
+  for (let q = 0; q < 4; q++) {
+    views.push({
+      id: `q${q}`,
+      label: `Quarter ${q + 1}`,
+      roundFrom: 0,
+      slotStart: q * quarterSize,
+      slotCount: quarterSize,
+      // The winner of a quarter is a semi-finalist, not a champion, so the
+      // terminal column says so instead of crowning four people.
+      terminal: 'semifinalist',
+    });
+  }
+  views.push({
+    id: 'finals',
+    // Not "Quarter-finals ...": the tabs beside it are quarters OF THE DRAW,
+    // and using the same word for a round would make five tabs read as five
+    // quarters. "Last 8" says how many players without colliding.
+    label: 'Last 8',
+    roundFrom: finalsFrom,
+    slotStart: 0,
+    slotCount: 8,
+    terminal: 'champion',
+  });
+  return views;
+}

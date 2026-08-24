@@ -111,12 +111,30 @@ export default function H2H({ tour = 'atp' }) {
   const config = TOURNAMENT_CONFIGS[surface];
 
   const isWta = tour === 'wta';
-  const bestOf = isWta ? 3 : 5;
+  // Format is a CHOICE on the men's tour, not a property of the surface.
+  // The ATP plays best-of-five at the four slams and best-of-three
+  // everywhere else, so a studio fixed at five could only ever price slam
+  // matches - and the same two players have materially different win
+  // probabilities over three sets, because the shorter format gives the
+  // weaker player more variance to hide in. The WTA plays best-of-three at
+  // every event including the slams, so there is nothing to choose there and
+  // no toggle is offered.
+  //
+  // In the URL (?bo=3) like the surface, because a deep-linked matchup is
+  // this page's shareable product and the format changes the answer.
+  const boParam = Number(searchParams.get('bo'));
+  const bestOf = isWta ? 3 : ([3, 5].includes(boParam) ? boParam : 5);
   const dataDir = isWta ? '/data/women' : '/data';
 
   const handleSurfaceChange = (value) => {
     const next = new URLSearchParams(searchParams);
     next.set('surface', value);
+    setSearchParams(next);
+  };
+
+  const handleBestOfChange = (value) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('bo', String(value));
     setSearchParams(next);
   };
 
@@ -392,6 +410,7 @@ export default function H2H({ tour = 'atp' }) {
     // there is no need to chunk for progress. The seed folds in the stats so
     // slider what-ifs still change the result deterministically.
     const key = [playerA?.id, playerB?.id].sort().join('_') + '|' + config.surfaceKey + '|' + tour
+      + '|bo' + bestOf
       + '|' + pA.map((v) => Math.round(v * 1000)).join(',') + '|' + pB.map((v) => Math.round(v * 1000)).join(',');
     const res = simulateBatch(pA, pB, n, bestOf, seedFromString(key));
     setProgress(100);
@@ -466,12 +485,15 @@ export default function H2H({ tour = 'atp' }) {
     const readyB = STAT_KEYS.some(([k]) => (statsB[k] || 0) > 0);
     if (!readyA || !readyB) return;
     const statsSig = STAT_KEYS.map(([k]) => `${Math.round(statsA[k] || 0)}-${Math.round(statsB[k] || 0)}`).join(',');
-    const key = `${playerA.id}|${playerB.id}|${engine}|${config.csvFile}|${statsSig}`;
+    // bestOf is part of the key. Without it, switching the format relabelled
+    // the page ("Best of 3") while the verdict kept the five-set number - the
+    // batch never re-ran, because nothing it keyed on had changed.
+    const key = `${playerA.id}|${playerB.id}|${engine}|${config.csvFile}|${statsSig}|bo${bestOf}`;
     if (autoRunKeyRef.current === key) return;
     autoRunKeyRef.current = key;
     handleSimulate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerA, playerB, statsA, statsB, engine, config.csvFile, isWatching]);
+  }, [playerA, playerB, statsA, statsB, engine, config.csvFile, isWatching, bestOf]);
 
   // All engine probabilities for this matchup, driven by the shared batch.
   // The Verdict headline uses probs.smash (the flagship Smart Blend), and the
@@ -724,6 +746,23 @@ export default function H2H({ tour = 'atp' }) {
                   <button key={v} type="button" className={`studio-seg-btn${surface === v ? ' active' : ''}`} onClick={() => handleSurfaceChange(v)}>{l}</button>
                 ))}
               </div>
+              {/* Men only: the WTA plays best-of-three everywhere, so a
+                  toggle there would offer a choice that does not exist. */}
+              {!isWta && (
+                <div className="studio-surface-seg" role="group" aria-label="Match format">
+                  {[[3, 'Best of 3'], [5, 'Best of 5']].map(([v, l]) => (
+                    <button
+                      key={v}
+                      type="button"
+                      className={`studio-seg-btn${bestOf === v ? ' active' : ''}`}
+                      aria-pressed={bestOf === v}
+                      onClick={() => handleBestOfChange(v)}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

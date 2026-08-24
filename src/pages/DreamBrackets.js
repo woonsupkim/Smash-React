@@ -1,5 +1,5 @@
 // src/pages/DreamBrackets.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
@@ -13,6 +13,7 @@ import {
   ProgressBar
 } from 'react-bootstrap';
 import useDocMeta from '../utils/useDocMeta';
+import { bracketViews } from '../utils/bracketViews';
 import './DreamBrackets.css';
 import { simulateBatch } from '../simulator';
 import { pickEngineProb, eloProb as eloProbFn } from '../engines';
@@ -54,6 +55,13 @@ const TOURNAMENTS = [
 // Each stage's slot count, plus the round labels from that starting point
 // all the way through to the champion.
 const STAGES = [
+  // A full draw tops out at 64 because the pool is one tournament's roster,
+  // 120 players. 128 would need eight invented entrants, and inventing
+  // players in a bracket whose whole point is choosing them is worse than
+  // capping it - the projected draw on /draw and /challenge pads with
+  // qualifiers because it is describing a real tournament, which this is not.
+  { value: 'r64', label: 'Full Draw (64)', slots: 64, roundLabels: ['ROUND OF 64', 'ROUND OF 32', 'ROUND OF 16', 'QUARTER-FINALS', 'SEMI-FINALS', 'FINAL', 'CHAMPION'] },
+  { value: 'r32', label: 'Round of 32', slots: 32, roundLabels: ['ROUND OF 32', 'ROUND OF 16', 'QUARTER-FINALS', 'SEMI-FINALS', 'FINAL', 'CHAMPION'] },
   { value: 'r16', label: 'Round of 16', slots: 16, roundLabels: ['ROUND OF 16', 'QUARTER-FINALS', 'SEMI-FINALS', 'FINAL', 'CHAMPION'] },
   { value: 'qf', label: 'Quarter-Finals', slots: 8, roundLabels: ['QUARTER-FINALS', 'SEMI-FINALS', 'FINAL', 'CHAMPION'] },
   { value: 'sf', label: 'Semi-Finals', slots: 4, roundLabels: ['SEMI-FINALS', 'FINAL', 'CHAMPION'] },
@@ -248,10 +256,28 @@ export default function DreamBrackets({ tour = 'atp' }) {
   };
 
   const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);
-  const [stage, setStage] = useState(STAGES[1].value); // default to Quarter-Finals, as before
+  // Named, not indexed. This was STAGES[1] with a comment saying "default to
+  // Quarter-Finals", which stopped being true the moment the full-draw stages
+  // were added to the front of the list - the page silently began opening on a
+  // 32-slot bracket. Defaulting to the quick one is deliberate: a full draw is
+  // 64 picks, which is a choice to opt into rather than a landing state.
+  const [stage, setStage] = useState('qf');
   const stageConfig = STAGES.find(s => s.value === stage);
   const tournamentConfig = TOURNAMENTS.find(t => t.value === tournament);
-  const geometry = buildBracketGeometry(stageConfig.slots);
+  // Views are the sub-brackets on offer; `view` is the one on screen. The
+  // geometry is built for the VIEW, not the whole draw, which is what keeps a
+  // 64-slot bracket to a readable column.
+  const views = useMemo(() => bracketViews(stageConfig.slots), [stageConfig.slots]);
+  const [viewId, setViewId] = useState(views[0].id);
+  const view = views.find((v) => v.id === viewId) || views[0];
+  const geometry = buildBracketGeometry(view.slotCount);
+  // Columns in this view: one per round it spans, plus the terminal column.
+  const viewMatchCols = Math.log2(view.slotCount);
+  const viewLabels = useMemo(() => {
+    const out = stageConfig.roundLabels.slice(view.roundFrom, view.roundFrom + viewMatchCols + 1);
+    if (view.terminal === 'semifinalist') out[out.length - 1] = 'INTO THE SEMIS';
+    return out;
+  }, [stageConfig.roundLabels, view.roundFrom, viewMatchCols, view.terminal]);
 
   const [slots, setSlots] = useState(Array(stageConfig.slots).fill(null));
   const [playersPool, setPlayersPool] = useState([]);
@@ -452,6 +478,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const handleStageChange = (value) => {
     setStage(value);
     const next = STAGES.find(s => s.value === value);
+    setViewId(bracketViews(next.slots)[0].id);
     resetBracketState(next.slots);
   };
 
@@ -932,6 +959,11 @@ export default function DreamBrackets({ tour = 'atp' }) {
             styles={selectStyles}
             formatOptionLabel={formatPlayerOption}
             placeholder={`Slot ${globalSlotIdx + 1}`}
+            // A placeholder is not a label: it disappears on focus and axe
+            // reports these as unlabelled form elements. Harmless-looking on
+            // an eight-slot bracket, but a full draw is 64 of them, and a
+            // screen reader had nothing to distinguish one from the next.
+            aria-label={`Slot ${globalSlotIdx + 1} of ${slots.length}`}
           />
           {isWinner || isLoser ? <span className="bracket-result-tag">{isWinner ? '✓' : '✗'}</span> : null}
         </div>
@@ -1215,12 +1247,58 @@ export default function DreamBrackets({ tour = 'atp' }) {
             {[0, 1, 2].map((i) => <div key={i} className="skeleton bracket-skel-row" />)}
           </div>
         ) : (
+        <>
+        {views.length > 1 && (
+          <div className="bracket-views" role="tablist" aria-label="Part of the draw">
+            {views.map((v) => {
+              // Progress per view, so the tabs answer "where am I still
+              // missing players" without opening each one. Counted on the
+              // view's own first column, which for a quarter is its 16 slots.
+              const from = v.roundFrom === 0 ? slots : ((mode === 'picks' ? userRounds : rounds)[v.roundFrom] || []);
+              const seg = from.slice(v.slotStart, v.slotStart + v.slotCount);
+              const filled = seg.filter(Boolean).length;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={v.id === view.id}
+                  className={`bracket-view-tab${v.id === view.id ? ' active' : ''}${filled === v.slotCount ? ' complete' : ''}`}
+                  onClick={() => setViewId(v.id)}
+                >
+                  {v.label}
+                  <span className="bracket-view-count">{filled}/{v.slotCount}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="bracket-row">
-          {stageConfig.roundLabels.map((label, colIdx) => {
+          {viewLabels.map((label, colIdx) => {
             const isChampionCol = colIdx === geometry.numMatchCols;
             const activeRounds = mode === 'picks' ? userRounds : rounds;
-            const colPlayers = colIdx === 0 ? slots : (activeRounds[colIdx] || []);
-            const nextRoundWinners = activeRounds[colIdx + 1] || [];
+            // Map this view's column onto the draw. `globalCol` is the real
+            // round index (so picks, slot selects and setUserPick all keep
+            // addressing the whole bracket), and sliceStart is where this
+            // view's window begins inside that round's array. Halving with
+            // the round is what keeps a quarter aligned to its own subtree:
+            // quarter 2 of a 64 draw reads slots 16-31, then winners 8-15,
+            // then 4-7, and so on down to the single semi-finalist.
+            const globalCol = view.roundFrom + colIdx;
+            const sliceLen = view.slotCount / (2 ** colIdx);
+            const sliceStart = view.slotStart / (2 ** colIdx);
+            const sourceArr = globalCol === 0 ? slots : (activeRounds[globalCol] || []);
+            // Padded to the column's real width, so a round that has not been
+            // played yet still draws its boxes as "-" rather than collapsing.
+            // Matters most on the Semis & Final view, whose every column is
+            // unplayed until the quarters have been run - unpadded it rendered
+            // as a blank tab that looked broken.
+            const colPlayers = Array.from(
+              { length: sliceLen },
+              (_, i) => sourceArr[sliceStart + i] ?? null
+            );
+            const nextArr = activeRounds[globalCol + 1] || [];
+            const nextRoundWinners = nextArr.slice(sliceStart / 2, sliceStart / 2 + Math.max(1, sliceLen / 2));
             const matchCenters = isChampionCol
               ? null
               : geometry.matchCentersByCol[colIdx];
@@ -1236,8 +1314,8 @@ export default function DreamBrackets({ tour = 'atp' }) {
                       style={{ position: 'absolute', top: championCenter - CHAMPION_BOX_H / 2, left: 0, right: 0, height: CHAMPION_BOX_H }}
                     >
                       {colPlayers[0] ? (
-                        <div className="competitor winner champion-winner">
-                          <span className="champion-crown" aria-hidden="true">👑</span>
+                        <div className={`competitor winner champion-winner${view.terminal === 'semifinalist' ? ' semifinalist' : ''}`}>
+                          <span className="champion-crown" aria-hidden="true">{view.terminal === 'semifinalist' ? '🎾' : '👑'}</span>
                           <img className="player-avatar" src={getPlayerImageSrc(colPlayers[0])} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = defaultAvatar; }} />
                           <span className="champion-name">{colPlayers[0].name}</span>
                         </div>
@@ -1256,13 +1334,13 @@ export default function DreamBrackets({ tour = 'atp' }) {
                           style={{ position: 'absolute', top: center - MATCH_BOX_H / 2, left: 0, right: 0, height: MATCH_BOX_H }}
                         >
                           {pair.map((p, slotIdx) => {
-                            const globalSlotIdx = pairIdx * 2 + slotIdx;
+                            const globalSlotIdx = sliceStart + pairIdx * 2 + slotIdx;
                             const isWinner = !!(winner && p && winner.id === p.id);
                             const isLoser = !!(winner && p && winner.id !== p.id);
                             const pairReady = !!(pair[0] && pair[1]);
                             return (
                               <React.Fragment key={slotIdx}>
-                                {renderCompetitor(p, { colIdx, globalSlotIdx, isWinner, isLoser, winner, pairReady })}
+                                {renderCompetitor(p, { colIdx: globalCol, globalSlotIdx, isWinner, isLoser, winner, pairReady })}
                                 {slotIdx === 0 && <div className="bracket-vs">vs</div>}
                               </React.Fragment>
                             );
@@ -1275,7 +1353,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
               </div>
             );
 
-            if (colIdx >= stageConfig.roundLabels.length - 1) return column;
+            if (colIdx >= viewLabels.length - 1) return column;
 
             // connector gap between this column and the next
             const feeders = geometry.matchCentersByCol[colIdx];
@@ -1298,6 +1376,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
             );
           })}
         </div>
+        </>
         )}
         </div>
       </div>
