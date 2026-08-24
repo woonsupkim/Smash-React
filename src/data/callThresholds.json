@@ -10,10 +10,10 @@
     "wta|grass": "resimulated"
   },
   "cleanRowsAvailable": {
-    "atp|hard": 148,
+    "atp|hard": 149,
     "atp|clay": 0,
     "atp|grass": 2,
-    "wta|hard": 131,
+    "wta|hard": 132,
     "wta|clay": 0,
     "wta|grass": 1
   },
@@ -21,12 +21,12 @@
   "source": "per cell: forward ledger where thick enough, otherwise track_record.json (resimulated)",
   "hindsightGuard": {
     "passed": false,
-    "callsGapPt": 7.19,
-    "passesGapPt": -6.82,
-    "spreadSigma": 5.37,
+    "callsGapPt": 6.72,
+    "passesGapPt": -5.7,
+    "spreadSigma": 4.83,
     "note": "market prices split across our own classification, so cutoffs are floored at the global default rather than taken as measured",
     "floored": [
-      "atp|clay 0.54->0.58"
+      "atp|clay 0.55->0.58"
     ]
   },
   "method": "lowest cutoff from which every marginal 0.05-wide band above it clears a coin flip at 95% confidence",
@@ -40,8 +40,8 @@
   "cells": {
     "atp|hard": 0.61,
     "atp|clay": 0.58,
-    "wta|hard": 0.62,
-    "wta|clay": 0.64,
-    "wta|grass": 0.63
+    "wta|hard": 0.61,
+    "wta|clay": 0.65,
+    "wta|grass": 0.62
   }
 }
