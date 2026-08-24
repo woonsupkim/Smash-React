@@ -311,3 +311,95 @@
   gap: 0.5rem 0.7rem;
   margin-top: 0.6rem;
 }
+
+/* ── Same money, two ways ──────────────────────────────────────────────────
+   The comparison the page leads with. Deliberately NOT a return table: on
+   clean data no strategy out-returns another to significance, and the honest
+   difference is how often the day ends with nothing. Two columns, the naive
+   one first because that is the bet the reader arrived intending to make. */
+.stake-swing {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem 0.9rem;
+  border: 1px solid var(--border-2, rgba(255, 255, 255, 0.16));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-1, rgba(255, 255, 255, 0.04));
+}
+.stake-swing-head h4 {
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.stake-swing-head span {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 0.84rem;
+  color: var(--text-3, #9aa1ab);
+}
+.stake-swing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.stake-swing-col {
+  padding: 0.8rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+/* Amber, not red: this is the reader's own plan, not a mistake to scold. */
+.stake-swing-col.naive {
+  background: rgba(255, 209, 102, 0.07);
+  border-color: rgba(255, 209, 102, 0.32);
+}
+.stake-swing-col.plan {
+  background: rgba(200, 245, 96, 0.07);
+  border-color: rgba(200, 245, 96, 0.32);
+}
+.stake-swing-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--text-3, #9aa1ab);
+  margin-bottom: 0.5rem;
+}
+.stake-swing-bust {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.stake-swing-bust strong {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stake-swing-col.naive .stake-swing-bust strong { color: #ffd166; }
+.stake-swing-col.plan .stake-swing-bust strong { color: var(--accent-brand, #c8f560); }
+.stake-swing-bust span {
+  font-size: 0.78rem;
+  color: var(--text-2, #b6bcc5);
+  max-width: 16ch;
+  line-height: 1.3;
+}
+.stake-swing-facts {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.79rem;
+  line-height: 1.55;
+  color: var(--text-2, #b6bcc5);
+}
+.stake-swing-facts strong { color: #fff; }
+.stake-swing-note {
+  margin: 0.85rem 0 0;
+  font-size: 0.77rem;
+  line-height: 1.55;
+  color: var(--text-3, #9aa1ab);
+}
+@media (max-width: 640px) {
+  .stake-swing-grid { grid-template-columns: 1fr; }
+  .stake-swing-bust strong { font-size: 1.6rem; }
+}

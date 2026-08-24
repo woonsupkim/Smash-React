@@ -23,6 +23,7 @@ import { lastName } from '../utils/names';
 import { matchSlug } from '../utils/matchTime';
 import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb } from '../utils/staking';
 import BACKTEST from '../data/planBacktest.json';
+import RISK from '../data/riskBacktest.json';
 import './StakingPlan.css';
 
 const money = (v) => `${v < 0 ? '-' : ''}$${Math.abs(v || 0).toFixed(2)}`;
@@ -123,6 +124,48 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     () => (mode === 'budget' ? (rec?.parlayLegs || []) : parlayLegIds),
     [mode, rec, parlayLegIds]
   );
+  // ── THE COMPARISON THAT MATTERS ────────────────────────────────────────
+  //
+  // Not "our plan versus a better plan" - versus what the same person would
+  // most likely do with the same money and the same card. That is a parlay of
+  // the shortest prices on the board, which is the single most common way a
+  // recreational slip gets built.
+  //
+  // Priced on TODAY's card with the same maths as the plan, so it is this
+  // day's comparison rather than a general claim. The season figures beside it
+  // come from riskBacktest.json, walk-forward on held-out data.
+  //
+  // Return is deliberately NOT the headline. On clean data no strategy here
+  // out-returns another to significance - the intervals all overlap - and
+  // saying otherwise is exactly what the contaminated backtests did. What IS
+  // structural is that a bet needing four things to happen busts more often
+  // than the same money spread out. That holds in any sample, because it is
+  // arithmetic and not an edge.
+  const NAIVE_LEGS = 4;
+  const naive = useMemo(() => {
+    const priced = legs.filter((l) => oddsOf(l) > 1);
+    if (priced.length < 2) return null;
+    // Shortest prices first: the "safe-looking" accumulator.
+    const picked = [...priced].sort((a, b) => oddsOf(a) - oddsOf(b)).slice(0, Math.min(NAIVE_LEGS, priced.length));
+    const asBets = priced.map((l) => ({ key: l.id, p: l.favProb, o: oddsOf(l), single: 0 }));
+    const slip = analyzeSlip(asBets, { stake: budget, legs: picked.map((l) => l.id) });
+    // Chance the day ends with nothing: every leg has to land, so it is one
+    // minus the parlay's own probability.
+    const pAll = picked.reduce((m, l) => m * adjustProb(l.favProb, rel.lambda), 1);
+    return { n: picked.length, legs: picked, slip, pBust: 1 - pAll };
+  }, // eslint-disable-next-line react-hooks/exhaustive-deps
+  [legs, oddsOverride, budget, rel.lambda]);
+
+  // The plan's own chance of losing everything: every match carrying money has
+  // to lose. A parlay leg is a subset of those, so it cannot rescue the day.
+  const planBust = useMemo(() => {
+    if (!rec) return null;
+    const carrying = legs.filter((l) => (rec.singles?.[l.id] || 0) > 0.005 || (rec.parlayLegs || []).includes(l.id));
+    if (!carrying.length) return null;
+    return carrying.reduce((m, l) => m * (1 - adjustProb(l.favProb, rel.lambda)), 1);
+  }, // eslint-disable-next-line react-hooks/exhaustive-deps
+  [rec, legs, rel.lambda]);
+
   // The headline numbers are derived from whatever is currently on the table,
   // recommendation or custom, so editing anything moves them immediately.
   const analysis = useMemo(
@@ -517,6 +560,53 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
       {!anyPriced && (
         <p className="stake-note muted">None of these carry a market price, so there's no edge to size against. Enter the odds you're offered above.</p>
+      )}
+
+      {/* Same money, same card, two ways of betting it. Placed above the
+          plan's own distribution because "what does this cost me in swing"
+          is the question the plan is actually answering, and the one nobody
+          building a four-leg slip has been shown. */}
+      {naive && planBust != null && rec && (
+        <div className="stake-swing">
+          <div className="stake-swing-head">
+            <h4>Same ${Number(budget) || 0}, same {legs.length} matches, two ways to bet it</h4>
+            <span>What changes is the swing, not the expected return.</span>
+          </div>
+          <div className="stake-swing-grid">
+            <div className="stake-swing-col naive">
+              <div className="stake-swing-label">A {naive.n}-leg parlay of the shortest prices</div>
+              <div className="stake-swing-bust">
+                <strong>{pct(naive.pBust)}</strong>
+                <span>chance you end today with nothing</span>
+              </div>
+              <ul className="stake-swing-facts">
+                <li>All {naive.n} have to land</li>
+                <li>Worst day {money(-(Number(budget) || 0))}, and it is the likeliest single outcome</li>
+                <li>Last season: lost the lot on <strong>{RISK.strategies.par4.wipeoutPct}%</strong> of days,
+                  deepest hole {money(RISK.strategies.par4.maxDrawdown)}</li>
+              </ul>
+            </div>
+            <div className="stake-swing-col plan">
+              <div className="stake-swing-label">The recommended plan</div>
+              <div className="stake-swing-bust">
+                <strong>{pct(planBust)}</strong>
+                <span>chance you end today with nothing</span>
+              </div>
+              <ul className="stake-swing-facts">
+                <li>Spread across {Object.values(rec.singles || {}).filter((v) => v > 0.005).length} bets
+                  {rec.parlayStake > 0.005 ? ` plus a ${(rec.parlayLegs || []).length}-leg parlay` : ''}</li>
+                <li>Worst day {money(analysis.worst)}</li>
+                <li>Last season: lost the lot on <strong>{RISK.strategies.plan.wipeoutPct}%</strong> of days,
+                  deepest hole {money(RISK.strategies.plan.maxDrawdown)}</li>
+              </ul>
+            </div>
+          </div>
+          <p className="stake-swing-note">
+            Measured over {RISK.strategies.plan.days} days of held-out results, nothing scored on data it
+            had already seen. {RISK.caveat} We are not claiming to make you more; we are claiming to lose
+            you the lot far less often, on the same money.
+          </p>
+        </div>
       )}
 
       {analysis.staked > 0 ? (
