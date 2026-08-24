@@ -222,6 +222,63 @@ export default function Home() {
     };
   }, [picks.card, picks.graded]);
 
+  // The live tournament, following the recommended plan. The hero's other two
+  // numbers are season-scale; this one answers "is it working right now",
+  // which is the question a first-time visitor actually has. Same maths as
+  // /parlay - the day is replayed with reliability measured only on rows
+  // graded before it - and the event is the one owning the most recent
+  // settled days, so it can never be a window chosen after seeing the result.
+  const livePlan = useMemo(() => {
+    const rows = (picks.graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1 && typeof m.favProb === 'number');
+    if (rows.length < 4) return null;
+    const dayOf = (m) => String(m.date).slice(0, 10);
+    // A day belongs to whichever event most of its calls belong to.
+    const tally = new Map();
+    for (const m of rows) {
+      if (!m.event) continue;
+      if (!tally.has(dayOf(m))) tally.set(dayOf(m), new Map());
+      const t = tally.get(dayOf(m));
+      t.set(m.event, (t.get(m.event) || 0) + 1);
+    }
+    const owner = new Map();
+    for (const [day, t] of tally) owner.set(day, [...t.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
+    const days = [...new Set(rows.map(dayOf))].sort();
+    const latest = owner.get(days[days.length - 1]);
+    if (!latest) return null;
+    const mine = days.filter((d) => owner.get(d) === latest);
+    let profit = 0, staked = 0, up = 0, n = 0;
+    for (const day of mine) {
+      const card = rows.filter((m) => dayOf(m) === day);
+      if (card.length < 2) continue;
+      const bets = card.map((m) => ({
+        key: String(m.id), p: m.favProb,
+        o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2), won: !!m.correct,
+      }));
+      const rel = reliability((picks.graded || []).filter((m) => dayOf(m) < day));
+      const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
+      const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+      if (!plan) continue;
+      const by = new Map(bets.map((b) => [b.key, b]));
+      let dayP = 0, dayS = 0;
+      for (const [key, stake] of Object.entries(plan.singles || {})) {
+        if (!(stake > 0.005)) continue;
+        const b = by.get(key); if (!b) continue;
+        dayS += stake;
+        dayP += b.won ? stake * (b.o - 1) : -stake;
+      }
+      if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => by.has(k))) {
+        dayS += plan.parlayStake;
+        const won = plan.parlayLegs.every((k) => by.get(k).won);
+        const o = plan.parlayLegs.reduce((m, k) => m * by.get(k).o, 1);
+        dayP += won ? plan.parlayStake * (o - 1) : -plan.parlayStake;
+      }
+      if (dayS < 0.01) continue;
+      profit += dayP; staked += dayS; n++; if (dayP > 0) up++;
+    }
+    if (n < 3 || staked <= 0) return null;
+    return { event: latest, profit, staked, roi: profit / staked, up, days: n };
+  }, [picks.graded]);
+
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
   useEffect(() => {
@@ -448,16 +505,33 @@ export default function Home() {
               ? <>Every Call,<br />Graded in Public</>
               : <>We Beat the<br />Market on Price</>}
           </h1>
+          {/* ONE number here, not a rail of them. The first version of this
+              put the season return and the forward record in the hero too -
+              and both already sit in the stat rail six inches below, so the
+              hero repeated itself and the page got busier while I was
+              supposedly condensing it. What the rail does NOT carry is how
+              the plan is doing right now, at the tournament on screen, which
+              is the question a first-time visitor actually has. */}
+          {livePlan && (
+            <p className="hero-live">
+              <strong className={livePlan.roi >= 0 ? 'pos' : 'neg'}>
+                {livePlan.roi >= 0 ? '+' : '-'}{Math.abs(livePlan.roi * 100).toFixed(1)}%
+              </strong>
+              {' '}following the plan at {livePlan.event} so far &mdash; {livePlan.days} days,{' '}
+              {livePlan.profit >= 0 ? '+' : '-'}${Math.abs(livePlan.profit).toFixed(0)} on ${livePlan.staked.toFixed(0)} staked
+            </p>
+          )}
+          {/* Two sentences. This ran to four, explaining the grading policy,
+              the split record, the dollar comparison and the page layout
+              before it had said what the product does - and a hero that
+              describes its own methodology is a hero nobody finishes. The
+              claim goes first, the proof is the numbers immediately below,
+              and the mechanics moved to the pages that own them. */}
           <p className="sub-title">
-            Every ATP and WTA match gets a call locked before play and graded in
-            public after, wins and misses alike.
             {beatsMarket === false
-              ? ' On the matches where we split from the betting favorite, backing our side has not cleared break-even, and we are showing you that too.'
-              : ' We pick winners about as often as the bookmakers do. The difference is the price'}
-            {beatsMarket !== false && proof.state === 'ready' && proof.edge
-              ? `: across the ${proof.edge.n} matches where we split from the betting favorite, a flat $1 on our side returned +$${Math.abs(proof.edge.usNet)} where the same dollar on theirs returned ${proof.edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(proof.edge.mktNet)}.`
-              : ''}
-            {' '}Today&apos;s card is live below, with a staking plan you can follow.
+              ? 'A simulation engine that calls every ATP and WTA match before play. On the matches where we split from the betting favorite, our side has not cleared break-even yet - and we show you that too.'
+              : 'A simulation engine that calls every ATP and WTA match before play, and calls the long-priced ones better than the bookmakers do.'}
+            {' '}Same winners, better prices, higher return.
           </p>
           <div className="hero-ctas">
             <Button as={Link} to="/today" className="cta-primary">
@@ -569,21 +643,20 @@ export default function Home() {
                 </div>
               </div>
               <div className="home-edge-body">
-                <p className="home-edge-line">
-                  Anyone can agree with the favorite. These are the {proof.edge.n} matches this season
-                  where we named a different winner than the market did. Exactly one side can be right
-                  on each, so the bookmakers took the other {100 - proof.edge.usAcc}%.
-                </p>
+                {/* Was three paragraphs explaining why the hit rates are
+                    forced to complement and the prices are not. True, and it
+                    belongs on the Edge page, which this card links to. Here
+                    it only has to land the number. */}
                 <p className="home-edge-money">
-                  The part that is not forced is the price, and it is where the two sides come
-                  apart. A flat $1 on each: <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
+                  A flat $1 on each of the {proof.edge.n} splits:{' '}
+                  <strong className={proof.edge.usNet >= 0 ? 'pos' : 'neg'}>
                     {proof.edge.usNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.usNet)}
-                  </strong> backing our calls, <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
+                  </strong> on ours,{' '}
+                  <strong className={proof.edge.mktNet >= 0 ? 'pos' : 'neg'}>
                     {proof.edge.mktNet >= 0 ? '+' : '-'}${Math.abs(proof.edge.mktNet)}
-                  </strong> backing theirs. A split puts us on the longer ticket, so the same
-                  hit rate does not pay the same.
+                  </strong> on theirs. Same hit rate, longer ticket.
                 </p>
-                <span className="home-edge-note">Settled at the price we stamped before play, every split graded. Not betting advice.</span>
+                <span className="home-edge-note">Settled at the price stamped before play. Not betting advice.</span>
               </div>
               <span className="home-nav-go">See every split →</span>
             </Link>
@@ -819,43 +892,43 @@ export default function Home() {
         <section className="home-nav">
           <div className="home-section-head">
             <h2 className="home-section-title">Where to go next</h2>
-            <span className="home-section-sub">start with the proof, then put the model to work</span>
+            <span className="home-section-sub">the proof, then the tools</span>
           </div>
           <div className="home-nav-grid">
             <Link to="/edge" className="home-nav-card">
               <div className="home-nav-num">01</div>
               <div className="home-nav-name">The Edge</div>
-              <p className="home-nav-desc">Where we disagree with the betting market, and who turned out to be right. Both sides graded, misses included.</p>
+              <p className="home-nav-desc">Where we split from the market, and who was right.</p>
               <span className="home-nav-go">See the splits →</span>
             </Link>
             <Link to="/track-record" className="home-nav-card">
               <div className="home-nav-num">02</div>
               <div className="home-nav-name">The Ledger</div>
-              <p className="home-nav-desc">Every call made before the match and scored after it. No take-backs, no quiet deletions.</p>
+              <p className="home-nav-desc">Every call, locked before play and scored after.</p>
               <span className="home-nav-go">View the record →</span>
             </Link>
             <Link to="/h2h" className="home-nav-card">
               <div className="home-nav-num">03</div>
               <div className="home-nav-name">H2H Studio</div>
-              <p className="home-nav-desc">Any two players, any surface. We compute the match point by point, every path it can take, and show you who wins, how often, and by what score.</p>
+              <p className="home-nav-desc">Any two players, any surface, played out point by point.</p>
               <span className="home-nav-go">Open the studio →</span>
             </Link>
             <Link to="/draw" className="home-nav-card">
               <div className="home-nav-num">04</div>
               <div className="home-nav-name">The Draw</div>
-              <p className="home-nav-desc">The whole bracket played out 2,000 times before each day's play, so you can see who the draw actually favors.</p>
+              <p className="home-nav-desc">The bracket simulated 2,000 times, re-priced daily.</p>
               <span className="home-nav-go">Read the bracket →</span>
             </Link>
             <Link to="/dream-brackets" className="home-nav-card">
               <div className="home-nav-num">05</div>
               <div className="home-nav-name">Dream Brackets</div>
-              <p className="home-nav-desc">Seed your own fantasy slam and let the engine play out every round to a champion.</p>
+              <p className="home-nav-desc">Seed your own draw and simulate it to a champion.</p>
               <span className="home-nav-go">Build yours →</span>
             </Link>
             <Link to="/model" className="home-nav-card">
               <div className="home-nav-num">06</div>
               <div className="home-nav-name">The Engine Room</div>
-              <p className="home-nav-desc">Five engines, one deployed per surface, and the health board that says when one stops earning the job.</p>
+              <p className="home-nav-desc">Five engines, one deployed per surface, all monitored.</p>
               <span className="home-nav-go">Look under the hood →</span>
             </Link>
           </div>

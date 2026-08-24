@@ -26,6 +26,7 @@ import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
 import { ledgerNoCall } from '../utils/deployedPick';
+import { surfaceBgClass } from '../utils/surfaceBg';
 import './Parlay.css';
 
 // The budget the receipt below replays yesterday's plan on, matching the
@@ -38,21 +39,32 @@ const HISTORY_DAYS = 10;
 // line, one stroke, and the end point marked. It answers "is this thing
 // going up or down" at a glance, which the P&L distribution below cannot -
 // that chart describes one hypothetical day, this one describes the record.
-function PlanCurve({ values }) {
+function PlanCurve({ values, market }) {
   if (!values || values.length < 2) return null;
-  const w = 132, h = 40, pad = 3;
-  const lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+  const w = 168, h = 46, pad = 3;
+  // Both series share one scale, or the comparison is decoration.
+  const all = market && market.length === values.length ? [...values, ...market] : values;
+  const lo = Math.min(0, ...all), hi = Math.max(0, ...all);
   const span = Math.max(hi - lo, 1e-6);
   const x = (i) => pad + (i / (values.length - 1)) * (w - pad * 2);
   const y = (v) => h - pad - ((v - lo) / span) * (h - pad * 2);
-  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const line = (vals) => vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const end = values[values.length - 1];
   const up = end >= 0;
+  const mEnd = market && market.length ? market[market.length - 1] : null;
+  const money = (v) => `${v >= 0 ? 'up' : 'down'} $${Math.abs(v).toFixed(0)}`;
   return (
     <svg className="parlay-curve" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img"
-      aria-label={`Cumulative profit over the last ${values.length} settled days, ending ${up ? 'up' : 'down'}`}>
+      aria-label={`Cumulative profit over ${values.length} settled days: following the plan ends ${money(end)}${mEnd != null ? `, the same money on the bookmakers' favourites ends ${money(mEnd)}` : ''}.`}>
       <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeDasharray="3 3" />
-      <polyline points={pts} fill="none" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+      {mEnd != null && (
+        <>
+          <polyline points={line(market)} fill="none" strokeWidth="1.75" strokeLinejoin="round"
+            stroke="rgba(255,255,255,0.42)" strokeDasharray="4 3" />
+          <circle cx={x(market.length - 1)} cy={y(mEnd)} r="2.5" fill="rgba(255,255,255,0.55)" />
+        </>
+      )}
+      <polyline points={line(values)} fill="none" strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round"
         stroke={up ? 'var(--accent-positive, #4caf7d)' : '#ff8f8f'} />
       <circle cx={x(values.length - 1)} cy={y(end)} r="3" fill={up ? 'var(--accent-positive, #4caf7d)' : '#ff8f8f'} />
     </svg>
@@ -187,11 +199,22 @@ export default function Parlay() {
     for (const day of days) {
       const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
       if (card.length < 2) continue;
-      const bets = card.map((m) => ({
-        key: String(m.id), p: m.favProb,
-        o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
-        won: !!m.correct,
-      }));
+      // Each bet also carries the MARKET's side of the same match: the
+      // shorter of the two lock prices, and whether that player won. It is
+      // what lets the same stakes be replayed on the bookmakers' favourites
+      // without re-deriving anything - same matches, same money, same parlay
+      // shape, different picks. Ties on price are vanishingly rare and fall
+      // to p1; there is no favourite to speak of at identical odds.
+      const bets = card.map((m) => {
+        const mFav = Number(m.lockOdd1) <= Number(m.lockOdd2) ? m.p1 : m.p2;
+        return {
+          key: String(m.id), p: m.favProb,
+          o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2),
+          won: !!m.correct,
+          mo: Number(mFav === m.p1 ? m.lockOdd1 : m.lockOdd2),
+          mWon: m.winner === mFav,
+        };
+      });
       // Reliability history is EVERY graded call before this day, priced or
       // not - matching planSettle.planReturns exactly. It used to be measured
       // on the priced rows only, which is a different population and a
@@ -205,11 +228,16 @@ export default function Parlay() {
       if (!plan) continue;
       const byKey = new Map(bets.map((b) => [b.key, b]));
       let staked = 0, profit = 0, hits = 0, backed = 0;
+      // The same money, on the market's favourites. Tracked alongside rather
+      // than as a separate pass so it can never drift onto a different set of
+      // matches or a different stake.
+      let mktProfit = 0;
       for (const [key, stake] of Object.entries(plan.singles || {})) {
         if (!(stake > 0.005)) continue;
         const b = byKey.get(key); if (!b) continue;
         backed++; staked += stake;
         if (b.won) { profit += stake * (b.o - 1); hits++; } else { profit -= stake; }
+        mktProfit += b.mWon ? stake * (b.mo - 1) : -stake;
       }
       let parlayWon = null;
       if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => byKey.has(k))) {
@@ -217,24 +245,34 @@ export default function Parlay() {
         parlayWon = plan.parlayLegs.every((k) => byKey.get(k).won);
         const o = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).o, 1);
         profit += parlayWon ? plan.parlayStake * (o - 1) : -plan.parlayStake;
+        // Same legs, same stake, market's picks. A parlay on the favourites
+        // is short-priced and lands more often, which is exactly the trade
+        // this comparison is meant to expose.
+        const mWonAll = plan.parlayLegs.every((k) => byKey.get(k).mWon);
+        const mOdds = plan.parlayLegs.reduce((m, k) => m * byKey.get(k).mo, 1);
+        mktProfit += mWonAll ? plan.parlayStake * (mOdds - 1) : -plan.parlayStake;
       }
       if (staked < 0.01) continue;
-      out.push({ day, staked, profit, hits, backed, parlayWon });
+      out.push({ day, staked, profit, hits, backed, parlayWon, mktProfit });
     }
     if (!out.length) return null;
     // Summarise any run of days the same way, so the whole record and one
     // tournament are never accidentally computed differently.
     const summarise = (list) => {
       if (!list.length) return null;
-      let run = 0;
+      let run = 0, mktRun = 0;
       const curve = list.map((d) => { run += d.profit; return run; });
+      const mktCurve = list.map((d) => { mktRun += (d.mktProfit || 0); return mktRun; });
       const staked = list.reduce((t, d) => t + d.staked, 0);
       return {
         days: list,
         curve,
+        mktCurve,
         total: run,
+        mktTotal: mktRun,
         staked,
         roi: staked > 0 ? run / staked : 0,
+        mktRoi: staked > 0 ? mktRun / staked : 0,
         up: list.filter((d) => d.profit > 0).length,
         last: list[list.length - 1],
       };
@@ -300,7 +338,9 @@ export default function Parlay() {
   }, [legs, suggestions]);
 
   return (
-    <div className="parlay-page">
+    <div className={`page-background ${surfaceBgClass()}`}>
+      <div className="overlay">
+        <div className="parlay-page">
       <div className="eyebrow">THE PARLAY BUILDER</div>
       <h1 className="parlay-title">Today's staking plan</h1>
       {/* Two sentences. This was five, and the reader who came to place
@@ -336,10 +376,11 @@ export default function Parlay() {
             </span>
             <span className="parlay-receipt-sub">
               {planHistory.all.days.length} days · {planHistory.all.up} up, {planHistory.all.days.length - planHistory.all.up} down
-              {planHistory.all.last ? ` · latest ${planHistory.all.last.profit >= 0 ? '+' : '-'}$${Math.abs(planHistory.all.last.profit).toFixed(2)}` : ''}
+              {' '}· the dashed line is the same money on the bookmakers&apos; favourites:{' '}
+              <strong>{signedPct(planHistory.all.mktRoi)}</strong>
             </span>
           </div>
-          <PlanCurve values={planHistory.all.curve} />
+          <PlanCurve values={planHistory.all.curve} market={planHistory.all.mktCurve} />
         </div>
       )}
 
@@ -354,11 +395,13 @@ export default function Parlay() {
               </span>
             </span>
             <span className="parlay-receipt-sub">
-              {planHistory.event.up} of {planHistory.event.days.length} days up · one tournament is a
-              small sample, and it is shown whole rather than cropped
+              {planHistory.event.up} of {planHistory.event.days.length} days up · the same money on the
+              bookmakers&apos; favourites, same matches and same parlay, returned{' '}
+              <strong>{signedPct(planHistory.event.mktRoi)}</strong>{' '}
+              ({planHistory.event.mktTotal >= 0 ? '+' : '-'}${Math.abs(planHistory.event.mktTotal).toFixed(2)})
             </span>
           </div>
-          <PlanCurve values={planHistory.event.curve} />
+          <PlanCurve values={planHistory.event.curve} market={planHistory.event.mktCurve} />
         </div>
       )}
 
@@ -438,6 +481,8 @@ export default function Parlay() {
         <Link to="/today">Today's calls</Link>
         <Link to="/edge">The Edge</Link>
         <Link to="/track-record">The Ledger</Link>
+      </div>
+        </div>
       </div>
     </div>
   );

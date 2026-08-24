@@ -16,6 +16,7 @@ import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime
 import { ledgerNoCall } from '../utils/deployedPick';
 import PushToggle from '../components/PushToggle';
 import useDocMeta from '../utils/useDocMeta';
+import { surfaceBgClass } from '../utils/surfaceBg';
 import './Today.css';
 
 const SORTS = {
@@ -68,7 +69,9 @@ export default function Today() {
   const showFilters = !!all && all.length > 1 && (tours.length > 1 || events.length > 1);
 
   return (
-    <div className="today-page">
+    <div className={`page-background ${surfaceBgClass()}`}>
+      <div className="overlay">
+        <div className="today-page">
       <div className="eyebrow">TODAY'S CALLS</div>
       <h1 className="today-title">Locked before play</h1>
       <PushToggle />
@@ -182,6 +185,8 @@ export default function Today() {
         <Link to="/">Explore the engine</Link>
         <Link to="/parlay">Parlay builder</Link>
         <Link to="/track-record">The receipts</Link>
+      </div>
+        </div>
       </div>
     </div>
   );
