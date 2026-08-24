@@ -69,14 +69,24 @@ describe('the rule is DERIVED, never trusted from the stored flag', () => {
   it('every cell threshold is justified by the record it was fitted on', () => {
     // Re-derives each published cutoff from track_record.json with the
     // tuner's own rule. A hand-edit to callThresholds.json fails here.
+    //
+    // The sweep is not the last word any more. When the hindsight guard fails
+    // - the bookmakers' prices calibrating differently across our own
+    // call/no-call split, which they cannot do on outcome-blind data - no
+    // cutoff is allowed below the global default, because the contamination
+    // makes marginal bands look better than they are and so pushes the sweep
+    // DOWN. On the current record that lifts atp|clay from 0.54 to 0.58, and
+    // this test caught the divergence the moment the guard started firing.
     const { cellThreshold } = require('../data-pipeline/tuneCallThreshold');
     const rows = JSON.parse(read('public/data/track_record.json')).matches || [];
+    const guardFailed = CALL_THRESHOLDS.hindsightGuard?.passed === false;
     for (const [key, T] of Object.entries(CALL_THRESHOLDS.cells)) {
       const [tour, surface] = key.split('|');
       const cell = rows.filter((m) => m.tour === tour && m.surface === surface);
       const raw = cellThreshold(cell);
-      const clamped = Math.min(CALL_THRESHOLDS.clamp[1], Math.max(CALL_THRESHOLDS.clamp[0], raw));
-      expect(`${key}: ${clamped}`).toBe(`${key}: ${T}`);
+      let expected = Math.min(CALL_THRESHOLDS.clamp[1], Math.max(CALL_THRESHOLDS.clamp[0], raw));
+      if (guardFailed) expected = Math.max(expected, CONFIG.callThreshold);
+      expect(`${key}: ${expected}`).toBe(`${key}: ${T}`);
     }
   });
 

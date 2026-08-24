@@ -352,6 +352,21 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
                   money at risk and {(BACKTEST.spread.maxDD / BACKTEST.edge.maxDD).toFixed(1)}× the drawdown.
                 </p>
                 <p>
+                  {/* The backtest runs on the RESIMULATED record, whose
+                      probabilities are computed with end-of-season stats. On
+                      identical matches that costs only about 1.5 points of
+                      accuracy, but it reorders matches at the margin, which is
+                      exactly where a staking rule decides what to fund. The
+                      forward figure is a third of the backtested one, and a
+                      reader comparing the two deserves to be told why rather
+                      than left to assume one of them is a lie. */}
+                  Treat that as an upper bound. The replay uses season-end stats, so it knows a little
+                  about how each match turned out, and the effect lands hardest on the marginal calls a
+                  staking rule lives or dies on. The number that owes nobody an asterisk is the strip at
+                  the top of this page: every day actually locked before play, currently a third of the
+                  backtested return.
+                </p>
+                <p>
                   Picking a different plan each morning based on that morning&apos;s numbers would be
                   fitting to noise, so the recommendation does not move. You can still override it: the
                   menu above switches the plan and every number on this page follows.

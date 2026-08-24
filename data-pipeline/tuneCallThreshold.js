@@ -69,6 +69,74 @@ function wilsonLo(k, n) {
   return ((p + z2 / (2 * n)) / d) - (z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / d;
 }
 
+// ── HINDSIGHT GUARD ────────────────────────────────────────────────────────
+//
+// track_record.json is RESIMULATED: its probabilities are computed with
+// end-of-season stats, so they know something about how the season went. The
+// question is whether that knowledge leaks into the thing this tuner reads.
+//
+// It does, and the test uses the BOOKMAKERS as the referee. Their vig-free
+// price is a probability fixed before the match, so on any subset chosen
+// without knowledge of the outcome it should be roughly calibrated. Split the
+// record by our own call/no-call classification and check:
+//
+//   resimulated   calls +7.2pt (5.1 sigma)   no-calls -6.8pt (-3.1 sigma)
+//   forward ledger calls +4.6pt (1.2 sigma)  no-calls +4.2pt (0.8 sigma)
+//
+// On locked pre-match probabilities the two groups are indistinguishable, and
+// both show the same mild favourite-longshot bias that every price band shows.
+// On the resimulated record they pull 14 points apart. A market cannot be
+// wrong in two opposite directions at once, so what differs is our sorting.
+//
+// The mechanism is specific and it is worse than a general inflation. On the
+// same 209 matches the resimulated model is only 1.5 points more accurate and
+// no more confident, so the LEVEL is roughly honest. What hindsight moves is
+// the ordering near the boundary: probabilities nudge toward the eventual
+// winner, and matches sitting either side of a cutoff get sorted by result.
+// The average barely shifts. The boundary is corrupted. And this tuner reads
+// nothing BUT the boundary - its whole rule is about the marginal band - so it
+// is maximally exposed to the one thing the contamination touches.
+//
+// Hence a guard rather than a correction: there is no honest scalar haircut
+// for "the ordering at the edge is wrong". When the input fails this test the
+// tuner refuses to lower any cutoff below the global default, because the bias
+// makes marginal bands look better than they are and so pushes cutoffs DOWN -
+// the opposite of the safe direction.
+function marketSplitCheck(rows, thresholdOf) {
+  const impliedFav = (m) => {
+    const o1 = Number(m.od1), o2 = Number(m.od2);
+    if (!(o1 > 1) || !(o2 > 1)) return null;
+    const q1 = 1 / o1, q2 = 1 / o2;
+    return (o1 <= o2 ? q1 : q2) / (q1 + q2);
+  };
+  const favWon = (m) => (m.oddCorrect != null ? !!m.oddCorrect : null);
+  const usable = rows.filter((m) => impliedFav(m) != null && favWon(m) != null);
+  const group = (list) => {
+    if (list.length < 60) return null;
+    const e = list.reduce((s, m) => s + impliedFav(m), 0) / list.length;
+    const a = list.filter(favWon).length / list.length;
+    const sd = Math.sqrt((e * (1 - e)) / list.length);
+    return { n: list.length, implied: e, actual: a, gap: a - e, sigma: sd > 0 ? (a - e) / sd : 0 };
+  };
+  const calls = group(usable.filter((m) => {
+    const p = favProb(m);
+    return p != null && p >= thresholdOf(m);
+  }));
+  const passes = group(usable.filter((m) => {
+    const p = favProb(m);
+    return p != null && p < thresholdOf(m);
+  }));
+  if (!calls || !passes) return { ok: true, reason: 'too few rows to judge', calls, passes };
+  // The DIFFERENCE between the groups is the signal. A uniform bias across
+  // both is the market's own; a split is ours.
+  const spread = calls.gap - passes.gap;
+  const sd = Math.sqrt(
+    (calls.implied * (1 - calls.implied)) / calls.n + (passes.implied * (1 - passes.implied)) / passes.n
+  );
+  const sigma = sd > 0 ? spread / sd : 0;
+  return { ok: Math.abs(sigma) < 3, spread, sigma, calls, passes };
+}
+
 function cellThreshold(rows) {
   const steps = [];
   for (let T = SWEEP_LO; T <= SWEEP_HI + 1e-9; T += STEP) steps.push(Number(T.toFixed(2)));
@@ -124,6 +192,24 @@ function build() {
     }
   }
 
+  // Run the guard against the cutoffs we just derived, since it is those we
+  // are asking to be trusted.
+  const thresholdOf = (m) => {
+    const c = cells[`${m.tour}|${m.surface}`];
+    return typeof c === 'number' ? c : fallback;
+  };
+  const check = marketSplitCheck(all, thresholdOf);
+  let floored = [];
+  if (!check.ok) {
+    // Bias direction: contaminated marginal bands look BETTER than they are,
+    // so the sweep stops too low. Never let a cutoff sit under the global
+    // default on evidence that failed this test - the default was not derived
+    // from the boundary and so is not exposed to the same fault.
+    for (const [key, v] of Object.entries(cells)) {
+      if (v < fallback) { cells[key] = fallback; floored.push(`${key} ${v}->${fallback}`); }
+    }
+  }
+
   // What the choice costs and buys, per cell, so the table is auditable
   // rather than a list of magic numbers.
   console.log('cell        graded   T     calls  call acc   passed  lean acc');
@@ -146,9 +232,39 @@ function build() {
     );
   }
 
+  console.log();
+  if (check.calls && check.passes) {
+    const f = (g) => `implied ${(100 * g.implied).toFixed(1)}% / actual ${(100 * g.actual).toFixed(1)}% (${g.gap >= 0 ? '+' : ''}${(100 * g.gap).toFixed(1)}pt, ${g.sigma.toFixed(1)}s, n=${g.n})`;
+    console.log('hindsight guard, bookmakers as referee:');
+    console.log(`  calls    ${f(check.calls)}`);
+    console.log(`  no-calls ${f(check.passes)}`);
+    console.log(`  spread   ${(100 * check.spread).toFixed(1)}pt (${check.sigma.toFixed(1)} sigma)`);
+  }
+  if (check.ok) {
+    console.log('  VERDICT: input looks clean; cutoffs stand as derived.');
+  } else {
+    console.warn('  VERDICT: FAILED. The record sorts calls and no-calls into groups the market');
+    console.warn('  prices differently, which it cannot do on outcome-blind data. The marginal');
+    console.warn('  bands this tuner reads are the part hindsight corrupts, so cutoffs are held');
+    console.warn(`  at or above the ${fallback} default${floored.length ? `: ${floored.join(', ')}` : ' (none needed lifting)'}.`);
+  }
+
   const out = {
     _comment: 'GENERATED by data-pipeline/tuneCallThreshold.js. Do not edit; re-run the tuner.',
     measuredAt: new Date().toISOString().slice(0, 10),
+    // Provenance. These are derived from the RESIMULATED record, and the
+    // guard says whether that record was fit to derive them from.
+    source: 'track_record.json (resimulated, end-of-season stats)',
+    hindsightGuard: check.calls && check.passes ? {
+      passed: check.ok,
+      callsGapPt: Number((100 * check.calls.gap).toFixed(2)),
+      passesGapPt: Number((100 * check.passes.gap).toFixed(2)),
+      spreadSigma: Number(check.sigma.toFixed(2)),
+      note: check.ok
+        ? 'market prices calibrate alike on both groups; cutoffs derived directly'
+        : 'market prices split across our own classification, so cutoffs are floored at the global default rather than taken as measured',
+      floored,
+    } : { passed: null, note: 'too few priced rows to judge' },
     method: `lowest cutoff from which every marginal ${BAND}-wide band above it clears a coin flip at 95% confidence`,
     fallback,
     minCellRows: MIN_CELL,

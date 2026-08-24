@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-24T04:38:35.357Z",
-  "seasonN": 2195,
+  "generatedAt": "2026-08-24T06:07:41.431Z",
+  "seasonN": 2069,
   "lastStreak": {
     "key": "wta|grass",
     "len": 6
@@ -28,7 +28,7 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-08-23: called 2 of 2 winners. Season benchmark: 74%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "caption": "Receipts from 2026-08-23: called 2 of 2 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
       "alt": "Receipts from 2026-08-23: called 2 of 2 winners."
     },
     {
@@ -76,8 +76,8 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 31 of 42 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 31 of 42 winners called."
+      "caption": "The week in calls: 30 of 41 winners called. Season benchmark: 75%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The week in calls: 30 of 41 winners called."
     },
     {
       "file": "weekly-plan.png",
@@ -124,8 +124,8 @@
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $10 test: $10 on each side of every one of the 48 matches where we and the betting market picked different winners. Our picks: +$173. Their own favorites: -$165. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 48 disagreements."
+      "caption": "The $10 test: $10 on each side of every one of the 36 matches where we and the betting market picked different winners. Our picks: +$137. Their own favorites: -$129. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 36 disagreements."
     },
     {
       "file": "edge-split.png",
@@ -196,8 +196,8 @@
       "type": "no-call",
       "format": "square",
       "category": "promo",
-      "caption": "We passed on 1,184 of 3,379 graded matches this season, because they sat under our confidence cutoff - 54-64%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
-      "alt": "We passed on 1184 matches; those leans landed 52% of the time."
+      "caption": "We passed on 1,310 of 3,379 graded matches this season, because they sat under our confidence cutoff - 58-64%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
+      "alt": "We passed on 1310 matches; those leans landed 52% of the time."
     },
     {
       "file": "pool-promo.png",
