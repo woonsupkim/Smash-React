@@ -34,6 +34,9 @@ import './Parlay.css';
 const PLAN_BUDGET = 100;
 // How many settleable days the "how it has been going" strip replays.
 const HISTORY_DAYS = 10;
+// Legs in the naive slip the receipts compare against, matching the parlay
+// page's own comparison panel so the two never tell different stories.
+const NAIVE_LEGS = 4;
 
 // Cumulative profit across the replayed days. Deliberately plain: a zero
 // line, one stroke, and the end point marked. It answers "is this thing
@@ -261,17 +264,38 @@ export default function Parlay() {
         mktExp += plan.parlayLegs.reduce((m, k) => m * byKey.get(k).mP, 1);
         mktHits += mWonAll ? 1 : 0; mktN++;
       }
+      // THE NAIVE DAY: the whole budget on one parlay of the four shortest
+      // prices, which is the commonest shape a recreational slip takes. Staked
+      // at the full budget rather than the plan's amount on purpose - the
+      // point of the comparison is that the plan chooses to risk less, and
+      // pocketing the rest is the behaviour being measured.
+      const shortest = [...bets].sort((a, b) => a.mo - b.mo).slice(0, Math.min(NAIVE_LEGS, bets.length));
+      let naiveProfit = 0, naiveStaked = 0, naiveBust = 0;
+      if (shortest.length >= 2) {
+        naiveStaked = PLAN_BUDGET;
+        const landed = shortest.every((l) => l.mWon);
+        const odds = shortest.reduce((m, l) => m * l.mo, 1);
+        naiveProfit = landed ? PLAN_BUDGET * (odds - 1) : -PLAN_BUDGET;
+        if (!landed) naiveBust = 1;
+      }
       if (staked < 0.01) continue;
-      out.push({ day, staked, profit, hits, backed, parlayWon, mktProfit, mktExp, mktHits, mktN });
+      out.push({ day, staked, profit, hits, backed, parlayWon, mktProfit, mktExp, mktHits, mktN,
+        naiveProfit, naiveStaked, naiveBust });
     }
     if (!out.length) return null;
     // Summarise any run of days the same way, so the whole record and one
     // tournament are never accidentally computed differently.
     const summarise = (list) => {
       if (!list.length) return null;
-      let run = 0, mktRun = 0;
+      let run = 0, mktRun = 0, naiveRun = 0;
       const curve = list.map((d) => { run += d.profit; return run; });
       const mktCurve = list.map((d) => { mktRun += (d.mktProfit || 0); return mktRun; });
+      // Accumulated but deliberately NOT drawn on the curve. Staking the full
+      // budget on a parlay every day swings by hundreds where the plan swings
+      // by tens, so a shared scale flattens the plan and the market into one
+      // indistinguishable line. The number is stated in words instead, next to
+      // the count of days it left nothing, which is the half a bare total hides.
+      for (const d of list) naiveRun += (d.naiveProfit || 0);
       const staked = list.reduce((t, d) => t + d.staked, 0);
       return {
         days: list,
@@ -288,6 +312,11 @@ export default function Parlay() {
         mktExp: list.reduce((t, d) => t + (d.mktExp || 0), 0),
         mktHits: list.reduce((t, d) => t + (d.mktHits || 0), 0),
         mktN: list.reduce((t, d) => t + (d.mktN || 0), 0),
+        naiveTotal: naiveRun,
+        naiveStaked: list.reduce((t, d) => t + (d.naiveStaked || 0), 0),
+        naiveBustDays: list.reduce((t, d) => t + (d.naiveBust || 0), 0),
+        naiveDays: list.filter((d) => d.naiveStaked > 0).length,
+        naiveRoi: (() => { const st = list.reduce((t, d) => t + (d.naiveStaked || 0), 0); return st > 0 ? naiveRun / st : 0; })(),
         up: list.filter((d) => d.profit > 0).length,
         last: list[list.length - 1],
       };
@@ -400,6 +429,18 @@ export default function Parlay() {
                 </>
               )}
             </span>
+            {planHistory.all.naiveDays >= 5 && (
+              <span className="parlay-receipt-naive">
+                The same ${PLAN_BUDGET} a day put on one {NAIVE_LEGS}-leg parlay of the shortest
+                prices, the way most slips are built, would be{' '}
+                <strong>{signedPct(planHistory.all.naiveRoi)}</strong>
+                {' '}({planHistory.all.naiveTotal >= 0 ? '+' : '-'}${Math.abs(planHistory.all.naiveTotal).toFixed(2)} on ${planHistory.all.naiveStaked.toFixed(2)} staked),
+                and would have ended with nothing on {planHistory.all.naiveBustDays} of
+                those {planHistory.all.naiveDays} days. Over a stretch this short the parlay&apos;s
+                swing is many times wider than the gap between these returns, so which of them is
+                ahead today is luck. The count of days it left nothing is not.
+              </span>
+            )}
           </div>
           <PlanCurve values={planHistory.all.curve} market={planHistory.all.mktCurve} />
         </div>
@@ -427,6 +468,14 @@ export default function Parlay() {
                 </>
               )}
             </span>
+            {planHistory.event.naiveDays >= 3 && (
+              <span className="parlay-receipt-naive">
+                The same ${PLAN_BUDGET} a day on one {NAIVE_LEGS}-leg parlay of the shortest prices:{' '}
+                <strong>{signedPct(planHistory.event.naiveRoi)}</strong>
+                {' '}({planHistory.event.naiveTotal >= 0 ? '+' : '-'}${Math.abs(planHistory.event.naiveTotal).toFixed(2)} on ${planHistory.event.naiveStaked.toFixed(2)} staked),
+                nothing back on {planHistory.event.naiveBustDays} of {planHistory.event.naiveDays} days.
+              </span>
+            )}
           </div>
           <PlanCurve values={planHistory.event.curve} market={planHistory.event.mktCurve} />
         </div>

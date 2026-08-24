@@ -175,3 +175,21 @@
    per-tournament caption pushed the curve onto its own line, where it read
    as a stray graphic rather than as this row's chart. */
 .parlay-receipt-main { flex: 1 1 20rem; }
+
+/* The naive line on both receipts: what the same budget does when it is spent
+   the way a recreational slip usually is. Set apart from the market baseline
+   above it because it is a different question - not "could you have done
+   better" but "what does the habit this page replaces actually cost". */
+.parlay-receipt-naive {
+  display: block;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+}
+.parlay-receipt-naive strong {
+  color: rgba(255, 209, 102, 0.95);
+  font-weight: 600;
+}

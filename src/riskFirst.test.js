@@ -65,3 +65,33 @@ describe('the risk claim', () => {
     expect(parlayBust / singlesBust).toBeGreaterThan(90);
   });
 });
+
+// The two receipt strips on the parlay page now carry a naive-money line. The
+// live ledger currently has that naive parlay AHEAD of the plan on dollars,
+// because 17 days cannot separate returns. The strip is only honest if it
+// prints that number at full size and says out loud that it is noise, so both
+// halves are pinned here.
+describe('the receipts state the naive money honestly', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'src/pages/Parlay.js'), 'utf8');
+
+  it('reuses the comparison panel\'s leg count so the two never disagree', () => {
+    expect(src).toMatch(/const NAIVE_LEGS = 4;/);
+  });
+
+  it('reports the naive stake and its bust days, not just its return', () => {
+    expect(src).toMatch(/naiveStaked/);
+    expect(src).toMatch(/naiveBustDays/);
+  });
+
+  it('never hides the naive return behind a favourable framing', () => {
+    // No conditional that would show the naive figure only when it is losing.
+    expect(src).not.toMatch(/naiveTotal\s*<\s*0\s*&&/);
+    expect(src).not.toMatch(/naiveRoi\s*<\s*0\s*&&/);
+  });
+
+  it('says the return gap is luck and the bust count is not', () => {
+    expect(src).toMatch(/ahead today is luck/);
+    expect(src).toMatch(/left nothing is not/);
+  });
+});
+
