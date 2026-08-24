@@ -228,6 +228,14 @@ async function main() {
   };
   if (out.edge && out.spread) {
     const fs = require('fs');
+    // Provenance travels with the number. This replay reads the resimulated
+    // record, so its probabilities carry a little knowledge of how matches
+    // turned out - small in aggregate (about 1.5 points of accuracy on
+    // identical matches) but concentrated exactly at the margin, where a
+    // staking rule decides what to fund. The forward ledger currently returns
+    // roughly a third of what this reports on the same policy.
+    out.source = 'track_record.json (resimulated, end-of-season stats)';
+    out.caveat = 'upper bound: marginal calls are hindsight-ordered; the forward ledger is the clean measure';
     const dest = path.join(__dirname, '..', 'src', 'data', 'planBacktest.json');
     fs.writeFileSync(dest, `${JSON.stringify(out, null, 2)}\n`);
     console.log(`\nwrote src/data/planBacktest.json (edge ${out.edge.roi}% over ${out.edge.days} staked days)`);

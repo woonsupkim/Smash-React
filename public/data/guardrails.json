@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-23T14:20:52.402Z",
+  "generatedAt": "2026-08-24T06:07:36.794Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -33,21 +33,21 @@
       "label": "ATP clay",
       "engine": "smash",
       "status": "ok",
-      "n": 223,
-      "seasonAcc": 71,
+      "n": 178,
+      "seasonAcc": 74,
       "recentN": 40,
-      "recentAcc": 70,
-      "rankRecentAcc": 70,
+      "recentAcc": 73,
+      "rankRecentAcc": 73,
       "recentEngines": {
-        "smash": 70,
-        "sim": 65,
-        "elo": 65,
-        "rank": 70,
-        "upset": 63
+        "smash": 73,
+        "sim": 68,
+        "elo": 70,
+        "rank": 73,
+        "upset": 65
       },
       "bestRecent": {
         "engine": "smash",
-        "acc": 70
+        "acc": 73
       },
       "reasons": []
     },
