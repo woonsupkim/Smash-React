@@ -127,9 +127,11 @@ export default function DrawPage() {
           )}
           {entry.status === 'projection' && (
             <p className="draw-note">
-              No live draw right now, so this is the road to the {entry.event}: the top 16 by
-              ranking, seeded the standard way, simulated on {entry.surface}. It re-prices with
-              every data refresh until the real draw drops.
+              No live draw right now, so this is the road to the {entry.event}: a full
+              {entry.fieldSize}-player field by ranking, seeded the standard way, simulated
+              on {entry.surface}.
+              {entry.qualifierSlots > 0 && ` Our roster comes up ${entry.qualifierSlots} short of a full draw, so the weakest ${entry.qualifierSlots} seed positions are held by placeholder qualifiers - the same slots real qualifiers fill.`}
+              {' '}It re-prices with every data refresh until the real draw drops.
             </p>
           )}
           {entry.status === 'live' && (
