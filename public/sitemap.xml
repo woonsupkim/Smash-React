@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-08-24</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-08-24</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/parlay</loc><lastmod>2026-08-24</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-08-24</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-08-24</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-08-25</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-08-25</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/parlay</loc><lastmod>2026-08-25</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-08-25</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-08-25</lastmod></url>
   <url><loc>https://smash-react.vercel.app/compare</loc></url>
   <url><loc>https://smash-react.vercel.app/challenge</loc></url>
-  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-08-24</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-08-24</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-08-25</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-08-25</lastmod></url>
   <url><loc>https://smash-react.vercel.app/h2h</loc></url>
   <url><loc>https://smash-react.vercel.app/draw</loc></url>
   <url><loc>https://smash-react.vercel.app/dream-brackets</loc></url>
@@ -568,7 +568,7 @@
   <url><loc>https://smash-react.vercel.app/match/alexander-zverev-vs-jannik-sinner-177491</loc></url>
   <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-karolina-muchova-177707</loc></url>
   <url><loc>https://smash-react.vercel.app/match/novak-djokovic-vs-jannik-sinner-180453</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-08-24</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-08-25</lastmod></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/daniil-medvedev-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/novak-djokovic-vs-jannik-sinner</loc></url>
@@ -623,7 +623,6 @@
   <url><loc>https://smash-react.vercel.app/event/asb-classic</loc></url>
   <url><loc>https://smash-react.vercel.app/event/adelaide-international</loc></url>
   <url><loc>https://smash-react.vercel.app/event/australian-open</loc></url>
-  <url><loc>https://smash-react.vercel.app/event/national-bank-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/qatar-totalenergies-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/dubai-duty-free-championships</loc></url>
   <url><loc>https://smash-react.vercel.app/event/bnp-paribas-open</loc></url>
@@ -635,5 +634,6 @@
   <url><loc>https://smash-react.vercel.app/event/hsbc-championships</loc></url>
   <url><loc>https://smash-react.vercel.app/event/lexus-eastbourne-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/wimbledon</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/national-bank-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/cincinnati-open</loc></url>
 </urlset>

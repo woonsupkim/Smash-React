@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T09:42:43.150Z",
+  "generatedAt": "2026-08-25T09:32:06.794Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,21 +9,21 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 283,
-      "seasonAcc": 74,
+      "n": 272,
+      "seasonAcc": 76,
       "recentN": 40,
       "recentAcc": 70,
       "rankRecentAcc": 70,
       "recentEngines": {
         "smash": 70,
-        "sim": 60,
-        "elo": 73,
+        "sim": 65,
+        "elo": 70,
         "rank": 70,
-        "upset": 78
+        "upset": 65
       },
       "bestRecent": {
-        "engine": "upset",
-        "acc": 78
+        "engine": "smash",
+        "acc": 70
       },
       "reasons": []
     },
@@ -33,21 +33,21 @@
       "label": "ATP clay",
       "engine": "smash",
       "status": "ok",
-      "n": 175,
-      "seasonAcc": 73,
+      "n": 180,
+      "seasonAcc": 72,
       "recentN": 40,
       "recentAcc": 68,
       "rankRecentAcc": 68,
       "recentEngines": {
         "smash": 68,
-        "sim": 65,
-        "elo": 65,
+        "sim": 70,
+        "elo": 70,
         "rank": 68,
-        "upset": 63
+        "upset": 70
       },
       "bestRecent": {
-        "engine": "smash",
-        "acc": 68
+        "engine": "sim",
+        "acc": 70
       },
       "reasons": []
     },
@@ -57,15 +57,15 @@
       "label": "ATP grass",
       "engine": "smash",
       "status": "ok",
-      "n": 68,
-      "seasonAcc": 79,
+      "n": 71,
+      "seasonAcc": 80,
       "recentN": 40,
       "recentAcc": 78,
       "rankRecentAcc": 78,
       "recentEngines": {
         "smash": 78,
         "sim": 75,
-        "elo": 75,
+        "elo": 78,
         "rank": 78,
         "upset": 75
       },
@@ -81,41 +81,17 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 306,
-      "seasonAcc": 82,
-      "recentN": 40,
-      "recentAcc": 85,
-      "rankRecentAcc": 85,
-      "recentEngines": {
-        "smash": 85,
-        "sim": 70,
-        "elo": 83,
-        "rank": 85,
-        "upset": 65
-      },
-      "bestRecent": {
-        "engine": "smash",
-        "acc": 85
-      },
-      "reasons": []
-    },
-    {
-      "tour": "wta",
-      "surface": "clay",
-      "label": "WTA clay",
-      "engine": "smash",
-      "status": "ok",
-      "n": 163,
-      "seasonAcc": 77,
+      "n": 316,
+      "seasonAcc": 80,
       "recentN": 40,
       "recentAcc": 83,
       "rankRecentAcc": 83,
       "recentEngines": {
         "smash": 83,
-        "sim": 60,
-        "elo": 83,
+        "sim": 65,
+        "elo": 80,
         "rank": 83,
-        "upset": 63
+        "upset": 70
       },
       "bestRecent": {
         "engine": "smash",
@@ -125,31 +101,55 @@
     },
     {
       "tour": "wta",
+      "surface": "clay",
+      "label": "WTA clay",
+      "engine": "smash",
+      "status": "ok",
+      "n": 159,
+      "seasonAcc": 77,
+      "recentN": 40,
+      "recentAcc": 83,
+      "rankRecentAcc": 83,
+      "recentEngines": {
+        "smash": 83,
+        "sim": 63,
+        "elo": 85,
+        "rank": 83,
+        "upset": 63
+      },
+      "bestRecent": {
+        "engine": "elo",
+        "acc": 85
+      },
+      "reasons": []
+    },
+    {
+      "tour": "wta",
       "surface": "grass",
       "label": "WTA grass",
       "engine": "smash",
       "status": "ok",
-      "n": 43,
-      "seasonAcc": 95,
+      "n": 53,
+      "seasonAcc": 87,
       "recentN": 40,
-      "recentAcc": 95,
-      "rankRecentAcc": 90,
+      "recentAcc": 83,
+      "rankRecentAcc": 83,
       "recentEngines": {
-        "smash": 95,
-        "sim": 98,
-        "elo": 95,
-        "rank": 90,
-        "upset": 98
+        "smash": 83,
+        "sim": 83,
+        "elo": 83,
+        "rank": 83,
+        "upset": 83
       },
       "bestRecent": {
-        "engine": "sim",
-        "acc": 98
+        "engine": "smash",
+        "acc": 83
       },
       "reasons": []
     }
   ],
   "forward": {
-    "n": 182,
+    "n": 186,
     "recentN": 40,
     "recentAcc": 68,
     "status": "ok"

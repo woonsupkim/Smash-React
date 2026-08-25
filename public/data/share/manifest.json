@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-24T09:43:10.465Z",
-  "seasonN": 2053,
+  "generatedAt": "2026-08-25T09:32:31.253Z",
+  "seasonN": 2070,
   "lastStreak": {
     "key": "wta|grass",
     "len": 6
@@ -12,24 +12,24 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Sinner 35%, Alcaraz 20%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Sinner 35%, Alcaraz 20%, Zverev 9%."
+      "caption": "US Open ATP title odds today: Sinner 36%, Alcaraz 18%, Zverev 8%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Sinner 36%, Alcaraz 18%, Zverev 8%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Rybakina 18%, Swiatek 17%, Sabalenka 17%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Rybakina 18%, Swiatek 17%, Sabalenka 17%."
+      "caption": "US Open WTA title odds today: Rybakina 21%, Sabalenka 19%, Swiatek 17%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Rybakina 21%, Sabalenka 19%, Swiatek 17%."
     },
     {
       "file": "results.png",
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-08-24: called 2 of 2 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-08-24: called 2 of 2 winners."
+      "caption": "Receipts from 2026-08-25: called 3 of 4 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-08-25: called 3 of 4 winners."
     },
     {
       "file": "day-money.png",
@@ -112,20 +112,12 @@
       "alt": "Us vs the bookmakers this week: 67% to 67% across 18 priced matches, same fixtures for both."
     },
     {
-      "file": "autopsy.png",
-      "type": "seed-autopsy",
-      "format": "square",
-      "category": "misses",
-      "caption": "Seed autopsy: No. 31 Nakashima takes down No. 7. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "Seed autopsy card: rank 31 beat rank 7, with our call and the market's."
-    },
-    {
       "file": "edge-dollar.png",
       "type": "edge-dollar-test",
       "format": "square",
       "category": "edge",
-      "caption": "The $10 test: $10 on each side of every one of the 35 matches where we and the betting market picked different winners. Our picks: +$132. Their own favorites: -$121. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 35 disagreements."
+      "caption": "The $10 test: $10 on each side of every one of the 32 matches where we and the betting market picked different winners. Our picks: +$128. Their own favorites: -$123. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 32 disagreements."
     },
     {
       "file": "edge-split.png",
@@ -140,15 +132,15 @@
       "type": "edge-live-plan",
       "format": "square",
       "category": "edge",
-      "caption": "Cincinnati, following the recommended plan across 8 settled days: +$8.84 on $186.60 staked, +4.7%, 5 of 8 days in front. Put that identical $187 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back +$3.25 - +1.7%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/parlay #tennis #atp #wta #tennisprediction",
-      "alt": "Cincinnati: the recommended plan returned +4.7% against +1.7% for the market's favourite on the same money."
+      "caption": "Cincinnati, following the recommended plan across 8 settled days: -$18.42 on $191.95 staked, -9.6%, 4 of 8 days in front. Put that identical $192 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back +$2.07 - +1.1%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/parlay #tennis #atp #wta #tennisprediction",
+      "alt": "Cincinnati: the recommended plan returned -9.6% against +1.1% for the market's favourite on the same money."
     },
     {
       "file": "proof.png",
       "type": "proof",
       "format": "square",
       "category": "promo",
-      "caption": "The 2026 receipts: 74% of winners called before play (134 of 182 verified, no take-backs), all graded in public. #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts: 73% of winners called before play (136 of 186 verified, no take-backs), all graded in public. #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card: overall accuracy versus the bookmakers."
     },
     {
@@ -156,7 +148,7 @@
       "type": "proof",
       "format": "portrait",
       "category": "promo",
-      "caption": "The 2026 receipts in 4:5: 74% of winners called before play (134 of 182 verified, no take-backs). #tennis #atp #wta #tennisprediction",
+      "caption": "The 2026 receipts in 4:5: 73% of winners called before play (136 of 186 verified, no take-backs). #tennis #atp #wta #tennisprediction",
       "alt": "Season receipts card, portrait format."
     },
     {
@@ -164,7 +156,7 @@
       "type": "banner",
       "format": "wide",
       "category": "promo",
-      "caption": "Every call public. Every miss too. 74% of winners called before play (134 of 182 verified, no take-backs). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "Every call public. Every miss too. 73% of winners called before play (136 of 186 verified, no take-backs). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "alt": "Wide banner: every call public, every miss too."
     },
     {
@@ -188,7 +180,7 @@
       "type": "explainer",
       "format": "square",
       "category": "promo",
-      "caption": "How Smash works, 3 of 3: then the results grade us. 74% of winners called before play (134 of 182 verified, no take-backs). #tennis #atp #wta #tennisprediction",
+      "caption": "How Smash works, 3 of 3: then the results grade us. 73% of winners called before play (136 of 186 verified, no take-backs). #tennis #atp #wta #tennisprediction",
       "alt": "How Smash works, 3 of 3: then the results grade us."
     },
     {
@@ -196,8 +188,8 @@
       "type": "no-call",
       "format": "square",
       "category": "promo",
-      "caption": "We passed on 1,340 of 3,393 graded matches this season, because they sat under our confidence cutoff - 58-64%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
-      "alt": "We passed on 1340 matches; those leans landed 52% of the time."
+      "caption": "We passed on 1,335 of 3,405 graded matches this season, because they sat under our confidence cutoff - 58-65%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
+      "alt": "We passed on 1335 matches; those leans landed 52% of the time."
     },
     {
       "file": "pool-promo.png",
@@ -228,24 +220,24 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "7 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "7 days until the US Open."
+      "caption": "6 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "6 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1086 matches this season. ATP 74% · WTA 77% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1086 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1099 matches this season. ATP 74% · WTA 74% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1099 matches this season."
     },
     {
       "file": "hype-cutoff.png",
       "type": "surface-cutoff",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is on hard, and hard is where we call the least. Our WTA hard cutoff is 62% - the highest we set - because that is where the model has been least reliable. 566 matches cleared it this season and we called 77% of them right. Fewer calls, better ones. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
-      "alt": "Our WTA hard cutoff is 62%, the highest of any surface."
+      "caption": "The US Open is on hard, and hard is where we call the least. Our ATP hard cutoff is 61% - the highest we set - because that is where the model has been least reliable. 498 matches cleared it this season and we called 74% of them right. Fewer calls, better ones. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
+      "alt": "Our ATP hard cutoff is 61%, the highest of any surface."
     },
     {
       "file": "hype-favorites-atp.png",
@@ -268,8 +260,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "7 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "7 days to the US Open."
+      "caption": "6 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "6 days to the US Open."
     }
   ]
 }
