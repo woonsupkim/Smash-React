@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T09:32:06.794Z",
+  "generatedAt": "2026-08-26T09:37:50.131Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,8 +9,8 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 272,
-      "seasonAcc": 76,
+      "n": 273,
+      "seasonAcc": 75,
       "recentN": 40,
       "recentAcc": 70,
       "rankRecentAcc": 70,
