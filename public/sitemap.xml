@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-08-26</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-08-26</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/parlay</loc><lastmod>2026-08-26</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-08-26</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-08-26</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-08-27</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-08-27</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/parlay</loc><lastmod>2026-08-27</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-08-27</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-08-27</lastmod></url>
   <url><loc>https://smash-react.vercel.app/compare</loc></url>
   <url><loc>https://smash-react.vercel.app/challenge</loc></url>
-  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-08-26</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-08-26</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-08-27</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-08-27</lastmod></url>
   <url><loc>https://smash-react.vercel.app/h2h</loc></url>
   <url><loc>https://smash-react.vercel.app/draw</loc></url>
   <url><loc>https://smash-react.vercel.app/dream-brackets</loc></url>
@@ -261,6 +261,73 @@
   <url><loc>https://smash-react.vercel.app/player/wta/prest</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/chara</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/kawa</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/arthur-fils-vs-stefanos-tsitsipas-182655</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/pablo-carreno-busta-vs-jiri-lehecka-182656</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/adrian-mannarino-vs-thiago-agustin-tirante-182659</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/lorenzo-sonego-vs-alexander-zverev-182660</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alexander-shevchenko-vs-dino-prizmic-182661</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alejandro-tabilo-vs-yannick-hanfmann-182662</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jenson-brooksby-vs-jaime-faria-182665</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/james-duckworth-vs-matteo-arnaldi-182669</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/vit-kopriva-vs-tomas-martin-etcheverry-182670</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/andrey-rublev-vs-marin-cilic-182673</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/stan-wawrinka-vs-matteo-berrettini-182674</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/novak-djokovic-vs-mariano-navone-182675</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/tallon-griekspoor-vs-ben-shelton-182676</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/cameron-norrie-vs-luca-van-assche-182678</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/hubert-hurkacz-vs-damir-dzumhur-182679</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/denis-shapovalov-vs-miomir-kecmanovic-182680</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jan-lennard-struff-vs-camilo-ugo-carabelli-182694</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/botic-van-de-zandschulp-vs-jan-choinski-182697</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/rinky-hijikata-vs-felix-auger-aliassime-182701</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/lorenzo-musetti-vs-arthur-fery-182702</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/casper-ruud-vs-juan-manuel-cerundolo-182710</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/daniel-altmaier-vs-zachary-svajda-182712</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/flavio-cobolli-vs-francisco-comesana-182721</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/learner-tien-vs-nuno-borges-182734</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karen-khachanov-vs-roman-andres-burruchaga-182739</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/ignacio-buse-vs-marcos-giron-182750</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/benjamin-bonzi-vs-alex-molcan-182751</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/hamad-medjedovic-vs-kamil-majchrzak-182758</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/aleksandar-kovacevic-vs-valentin-vacherot-182760</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/frances-tiafoe-vs-martin-damm-182762</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/sebastian-baez-vs-brandon-nakashima-182767</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/arthur-rinderknech-vs-sho-shimabukuro-182778</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/barbora-krejcikova-vs-kamilla-rakhimova-182591</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karolina-pliskova-vs-hanne-vandewinkel-182594</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/taylor-townsend-vs-maja-chwalinska-182595</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alycia-parks-vs-taylah-preston-182596</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/ella-seidel-vs-yuliia-starodubtseva-182598</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/elise-mertens-vs-kaitlin-quevedo-182600</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jessica-bouzas-maneiro-vs-darja-vidmanova-182601</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/diana-shnaider-vs-daria-snigur-182604</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/marie-bouzkova-vs-elsa-jacquemot-182610</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alina-korneeva-vs-madison-keys-182611</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/anastasia-zakharova-vs-naomi-osaka-182612</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/katerina-siniakova-vs-elisabetta-cocciaretto-182613</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/belinda-bencic-vs-yulia-putintseva-182615</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-jessica-pegula-182616</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-katie-volynets-182617</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-mccartney-kessler-182620</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/petra-marcinko-vs-kimberly-birrell-182621</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/antonia-ruzic-vs-ann-li-182622</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/donna-vekic-vs-talia-gibson-182624</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/sorana-cirstea-vs-julia-grabher-182625</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karolina-muchova-vs-sinja-kraus-182626</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/janice-tjen-vs-mirra-andreeva-182628</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/solana-sierra-vs-elina-svitolina-182629</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/liudmila-samsonova-vs-maya-joint-182630</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/mayar-sherif-vs-nikola-bartunkova-182631</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/veronika-erjavec-vs-jasmine-paolini-182632</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/diane-parry-vs-viktorija-golubic-182635</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/magdalena-frech-vs-iva-jovic-182636</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/amanda-anisimova-vs-ashlyn-krueger-182638</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/cristina-bucsa-vs-sara-bejlek-182640</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/cori-gauff-vs-zeynep-sonmez-182645</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jelena-ostapenko-vs-tatjana-maria-182648</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/tereza-valentova-vs-anastasia-potapova-182650</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/tamara-korpatsch-vs-lilli-tagger-182652</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/anna-kalinskaya-vs-anna-blinkova-182653</loc></url>
   <url><loc>https://smash-react.vercel.app/match/jessica-pegula-vs-cori-gauff-182424</loc></url>
   <url><loc>https://smash-react.vercel.app/match/frances-tiafoe-vs-arthur-fils-181963</loc></url>
   <url><loc>https://smash-react.vercel.app/match/cori-gauff-vs-sara-bejlek-182418</loc></url>
@@ -568,7 +635,7 @@
   <url><loc>https://smash-react.vercel.app/match/alexander-zverev-vs-jannik-sinner-177491</loc></url>
   <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-karolina-muchova-177707</loc></url>
   <url><loc>https://smash-react.vercel.app/match/novak-djokovic-vs-jannik-sinner-180453</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-08-26</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-08-27</lastmod></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/daniil-medvedev-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/novak-djokovic-vs-jannik-sinner</loc></url>
