@@ -1,9 +1,8 @@
-SMASH DAILY - Friday, August 28
+SMASH DAILY - Saturday, August 29
 
-1 from 3 yesterday. Not our finest hour. It is all in the record anyway. 3 more are locked for today at US Open, every one of them public before a ball is struck, plus 3 coin flips we are sitting out.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. 3 more are locked for today at US Open, every one of them public before a ball is struck, plus 3 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 1 from 3 (33%)
-  The one that stings: Maja Chwalinska (we said 86%) - Alycia Parks had other ideas
+YESTERDAY, GRADED: 2 from 2 (100%)
 
 NEXT UP
   [ US Open - ATP ]
@@ -11,26 +10,24 @@ NEXT UP
     Call: https://smash-react.vercel.app/match/pablo-carreno-busta-vs-jiri-lehecka-182656
     Compare: https://smash-react.vercel.app/compare/atp/pablo-carreno-busta-vs-jiri-lehecka
     Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=carre&b=lehec
-  Etcheverry over Kopriva - 65%
-    Call: https://smash-react.vercel.app/match/vit-kopriva-vs-tomas-martin-etcheverry-182670
-    Compare: https://smash-react.vercel.app/compare/atp/vit-kopriva-vs-tomas-martin-etcheverry
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=kopri&b=etche
-  Djokovic over Navone - 87%
-    Call: https://smash-react.vercel.app/match/novak-djokovic-vs-mariano-navone-182675
-    Compare: https://smash-react.vercel.app/compare/atp/novak-djokovic-vs-mariano-navone
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=djoko&b=navon
+  Rinderknech over Shimabukuro - 64%
+    Call: https://smash-react.vercel.app/match/arthur-rinderknech-vs-sho-shimabukuro-182778
+    Compare: https://smash-react.vercel.app/compare/atp/arthur-rinderknech-vs-sho-shimabukuro
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=rinde&b=shima
+  [ US Open - WTA ]
+  Krejcikova over Rakhimova - 71%
+    Call: https://smash-react.vercel.app/match/barbora-krejcikova-vs-kamilla-rakhimova-182591
+    Compare: https://smash-react.vercel.app/compare/wta/barbora-krejcikova-vs-kamilla-rakhimova
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=krejc&b=rakhi
 
-THE MONEY QUESTION - the recommended plan (hypothetical $100, follow the edge):
-  $5.05 on Etcheverry (65% @ 1.80)
-  Total $5.05; we expect 0.6 to land, returning $5.87; 65% chance of finishing ahead
-  https://smash-react.vercel.app/parlay
+THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/parlay
 
-COMING UP: 3 days to the US Open (hard)
-  ATP: Jannik Sinner 35%, Carlos Alcaraz 18%, Alexander Zverev 9%
-  WTA: Elena Rybakina 21%, Aryna Sabalenka 19%, Iga Swiatek 17%
+COMING UP: 2 days to the US Open (hard)
+  ATP: Carlos Alcaraz 27%, Alexander Zverev 12%, Novak Djokovic 12%
+  WTA: Elena Rybakina 20%, Iga Swiatek 18%, Aryna Sabalenka 15%
   https://smash-react.vercel.app/draw
 
-SEASON: 74% (1,544 of 2,080)
+SEASON: 74% (1,576 of 2,118)
 
 See today's full card: https://smash-react.vercel.app/today
 
