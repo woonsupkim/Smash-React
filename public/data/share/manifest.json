@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-29T14:07:26.924Z",
-  "seasonN": 2118,
+  "generatedAt": "2026-08-30T14:15:27.852Z",
+  "seasonN": 2121,
   "lastStreak": {
     "key": "wta|grass",
     "len": 6
@@ -14,7 +14,7 @@
     "5/8 Jessica Pegula over Elena Gabriela Ruse at 89% on hard. High confidence. https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-jessica-pegula-182616",
     "6/8 Cameron Norrie over Luca Van Assche at 65% on hard. https://smash-react.vercel.app/match/cameron-norrie-vs-luca-van-assche-182678",
     "7/8 Tommy Paul over Chak Lam Coleman Wong at 76% on hard. High confidence. https://smash-react.vercel.app/match/tommy-paul-vs-chak-lam-coleman-wong-182667",
-    "8/8 Daniil Medvedev over Hugo Gaston at 82% on hard. High confidence. https://smash-react.vercel.app/match/hugo-gaston-vs-daniil-medvedev-182733",
+    "8/8 Daniil Medvedev over Hugo Gaston at 81% on hard. High confidence. https://smash-react.vercel.app/match/hugo-gaston-vs-daniil-medvedev-182733",
     "If every call hits, $10 at fair odds returns $103. Not betting advice, just the math on our own confidence.",
     "Every call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction"
   ],
@@ -96,8 +96,8 @@
       "type": "match",
       "format": "square",
       "category": "daily",
-      "caption": " High confidence: Daniil Medvedev over Hugo Gaston at 82%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/hugo-gaston-vs-daniil-medvedev-182733 #tennis #atp #wta #tennisprediction",
-      "alt": " High confidence: Daniil Medvedev over Hugo Gaston at 82%, US Open (hard)."
+      "caption": " High confidence: Daniil Medvedev over Hugo Gaston at 81%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/hugo-gaston-vs-daniil-medvedev-182733 #tennis #atp #wta #tennisprediction",
+      "alt": " High confidence: Daniil Medvedev over Hugo Gaston at 81%, US Open (hard)."
     },
     {
       "file": "rivalry.png",
@@ -144,8 +144,8 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open ATP title odds today: Alcaraz 24%, Djokovic 14%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open ATP title odds today: Alcaraz 24%, Djokovic 14%, Zverev 9%."
+      "caption": "US Open ATP title odds today: Alcaraz 29%, Zverev 13%, Djokovic 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open ATP title odds today: Alcaraz 29%, Zverev 13%, Djokovic 9%."
     },
     {
       "file": "odds-movers-atp.png",
@@ -160,8 +160,8 @@
       "type": "title-odds",
       "format": "square",
       "category": "daily",
-      "caption": "US Open WTA title odds today: Pegula 17%, Rybakina 15%, Gauff 12%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "alt": "US Open WTA title odds today: Pegula 17%, Rybakina 15%, Gauff 12%."
+      "caption": "US Open WTA title odds today: Swiatek 18%, Sabalenka 16%, Rybakina 16%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "alt": "US Open WTA title odds today: Swiatek 18%, Sabalenka 16%, Rybakina 16%."
     },
     {
       "file": "odds-movers-wta.png",
@@ -176,8 +176,8 @@
       "type": "results",
       "format": "square",
       "category": "daily",
-      "caption": "Receipts from 2026-08-28: called 2 of 2 winners. Season benchmark: 74%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "alt": "Receipts from 2026-08-28: called 2 of 2 winners."
+      "caption": "Receipts from 2026-08-29: called 1 of 2 winners. Season benchmark: 74%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "alt": "Receipts from 2026-08-29: called 1 of 2 winners."
     },
     {
       "file": "day-money.png",
@@ -192,8 +192,8 @@
       "type": "todays-calls",
       "format": "square",
       "category": "daily",
-      "caption": "50 calls locked before play today, top of the card Svitolina at 93%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "alt": "Today's 50 locked calls with their stated probabilities."
+      "caption": "51 calls locked before play today, top of the card Svitolina at 93%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "alt": "Today's 51 locked calls with their stated probabilities."
     },
     {
       "file": "upset-call.png",
@@ -232,8 +232,8 @@
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Jessica Pegula's path, round by round. The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "alt": "Jessica Pegula's path, round by round."
+      "caption": "Iga Swiatek's path, round by round. The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "alt": "Iga Swiatek's path, round by round."
     },
     {
       "file": "weekly.png",
@@ -360,8 +360,8 @@
       "type": "no-call",
       "format": "square",
       "category": "promo",
-      "caption": "We passed on 1,384 of 3,502 graded matches this season, because they sat under our confidence cutoff - 58-65%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
-      "alt": "We passed on 1384 matches; those leans landed 52% of the time."
+      "caption": "We passed on 1,389 of 3,510 graded matches this season, because they sat under our confidence cutoff - 58-65%, set per tour and surface from the record. Those leans landed 52% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. https://smash-react.vercel.app/methodology #tennis #atp #wta #tennisprediction",
+      "alt": "We passed on 1389 matches; those leans landed 52% of the time."
     },
     {
       "file": "pool-promo.png",
@@ -392,16 +392,16 @@
       "type": "countdown",
       "format": "square",
       "category": "hype",
-      "caption": "2 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
-      "alt": "2 days until the US Open."
+      "caption": "1 days until the US Open. Picks live the moment the draw drops - every one locked before play and graded in public. #tennis #atp #wta #tennisprediction",
+      "alt": "1 days until the US Open."
     },
     {
       "file": "hype-surface.png",
       "type": "surface-record",
       "format": "square",
       "category": "hype",
-      "caption": "The US Open is played on hard - and hard is where we've graded 1147 matches this season. ATP 75% · WTA 74% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The US Open is played on hard - and hard is where we've graded 1147 matches this season."
+      "caption": "The US Open is played on hard - and hard is where we've graded 1150 matches this season. ATP 75% · WTA 74% (season benchmark). https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "alt": "The US Open is played on hard - and hard is where we've graded 1150 matches this season."
     },
     {
       "file": "hype-cutoff.png",
@@ -416,8 +416,8 @@
       "type": "countdown",
       "format": "story",
       "category": "hype",
-      "caption": "2 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
-      "alt": "2 days to the US Open."
+      "caption": "1 days to the US Open. The model is warming up - picks the moment the draw drops. #tennis #atp #wta #tennisprediction",
+      "alt": "1 days to the US Open."
     }
   ]
 }

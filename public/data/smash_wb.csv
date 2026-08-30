@@ -32,7 +32,7 @@ humbe,Ugo Humbert,Ugo,Humbert,30,2,0.61,0.90,0.28,0.44,0.40,0.16,FRA,28,8,4,3,7
 nakas,Brandon Nakashima,Brandon,Nakashima,31,2,0.68,0.95,0.26,0.45,0.39,0.17,USA,25,4,2,7,3
 etche,Tomas Martin Etcheverry,Tomas,Martin Etcheverry,32,2,0.66,0.94,0.21,0.43,0.36,0.13,ARG,27,0,3,2,8
 tabil,Alejandro Tabilo,Alejandro,Tabilo,33,2,0.63,0.90,0.21,0.40,0.34,0.12,CHI,29,0,3,5,5
-buse,Ignacio Buse,Ignacio,Buse,34,2,0.65,0.93,0.26,0.44,0.35,0.05,PER,22,3,3,5,5
+buse,Ignacio Buse,Ignacio,Buse,34,2,0.65,0.93,0.26,0.44,0.35,0.05,PER,22,3,3,6,4
 arnal,Matteo Arnaldi,Matteo,Arnaldi,35,2,0.59,0.89,0.21,0.48,0.35,0.13,ITA,25,2,2,4,6
 block,Alexander Blockx,Alexander,Blockx,36,2,0.62,0.89,0.22,0.44,0.38,0.13,BEL,21,0,1,4,6
 bergs,Zizou Bergs,Zizou,Bergs,37,2,0.60,0.85,0.32,0.45,0.38,0.16,BEL,27,7,3,5,5
@@ -77,7 +77,7 @@ royer,Valentin Royer,Valentin,Royer,75,2,0.63,0.93,0.21,0.45,0.36,0.11,FRA,25,1,
 fucso,Marton Fucsovics,Marton,Fucsovics,76,2,0.60,0.87,0.27,0.44,0.40,0.10,HUN,34,3,3,3,7
 rune,Holger Rune,Holger,Rune,77,2,0.61,0.88,0.25,0.38,0.42,0.15,DEN,23,0,0,7,3
 cazau,Arthur Cazaux,Arthur,Cazaux,78,2,0.61,0.88,0.30,0.42,0.37,0.18,FRA,24,0,0,5,5
-duckw,James Duckworth,James,Duckworth,79,2,0.57,0.91,0.24,0.38,0.41,0.17,AUS,34,2,4,6,4
+duckw,James Duckworth,James,Duckworth,79,2,0.57,0.91,0.24,0.38,0.41,0.17,AUS,34,2,4,5,5
 assch,Luca Van Assche,Luca,Van Assche,80,2,0.65,0.86,0.28,0.44,0.34,0.08,FRA,22,0,1,7,3
 brook,Jenson Brooksby,Jenson,Brooksby,81,2,0.68,0.95,0.30,0.47,0.35,0.08,USA,25,4,4,4,6
 hijik,Rinky Hijikata,Rinky,Hijikata,82,2,0.61,0.92,0.26,0.46,0.38,0.10,AUS,25,7,4,6,4
@@ -113,7 +113,7 @@ ofner,Sebastian Ofner,Sebastian,Ofner,110,2,0.56,0.91,0.23,0.44,0.39,0.26,AUT,30
 basil,Nikoloz Basilashvili,Nikoloz,Basilashvili,111,2,0.57,0.86,0.26,0.43,0.42,0.15,GEO,34,2,3,2,8
 svrci,Dalibor Svrcina,Dalibor,Svrcina,112,2,0.64,0.89,0.32,0.53,0.31,0.05,CZE,23,0,1,4,6
 kypso,Patrick Kypson,Patrick,Kypson,113,2,0.63,0.89,0.27,0.47,0.33,0.15,USA,26,1,1,4,6
-fery,Arthur Fery,Arthur,Fery,114,2,0.64,0.95,0.30,0.44,0.37,0.09,GBR,24,11,4,8,2
+fery,Arthur Fery,Arthur,Fery,114,2,0.64,0.95,0.30,0.44,0.37,0.09,GBR,24,11,4,7,3
 opelk,Reilly Opelka,Reilly,Opelka,115,2,0.61,0.89,0.21,0.38,0.39,0.31,USA,29,0,0,4,6
 drogu,Titouan Droguet,Titouan,Droguet,116,2,0.62,0.95,0.26,0.38,0.36,0.19,FRA,25,3,2,6,4
 riedi,Leandro Riedi,Leandro,Riedi,117,2,0.61,0.89,0.26,0.44,0.41,0.17,SUI,24,1,1,5,5

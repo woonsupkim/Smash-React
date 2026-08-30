@@ -1,10 +1,10 @@
-SMASH DAILY - Saturday, August 29
+SMASH DAILY - Sunday, August 30
 
-2 from 2 yesterday. A clean sweep, and no, that is not the usual. 3 more are locked for today at US Open, every one of them public before a ball is struck, plus 3 coin flips we are sitting out.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. 13 more are locked for today at US Open, every one of them public before a ball is struck, plus 8 coin flips we are sitting out.
 
 YESTERDAY, GRADED: 2 from 2 (100%)
 
-NEXT UP
+ON COURT TODAY
   [ US Open - ATP ]
   Lehecka over Carreno-Busta - 69%
     Call: https://smash-react.vercel.app/match/pablo-carreno-busta-vs-jiri-lehecka-182656
@@ -19,12 +19,26 @@ NEXT UP
     Call: https://smash-react.vercel.app/match/barbora-krejcikova-vs-kamilla-rakhimova-182591
     Compare: https://smash-react.vercel.app/compare/wta/barbora-krejcikova-vs-kamilla-rakhimova
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=krejc&b=rakhi
+  Paolini over Erjavec - 87%
+    Call: https://smash-react.vercel.app/match/veronika-erjavec-vs-jasmine-paolini-182632
+    Compare: https://smash-react.vercel.app/compare/wta/veronika-erjavec-vs-jasmine-paolini
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=erjav&b=paoli
+  Pegula over Ruse - 89%
+    Call: https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-jessica-pegula-182616
+    Compare: https://smash-react.vercel.app/compare/wta/elena-gabriela-ruse-vs-jessica-pegula
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=ruse&b=pegul
 
-THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/parlay
+THE MONEY QUESTION - the recommended plan (hypothetical $100, follow the edge):
+  $8.61 on Alexandrova (78% @ 1.56)
+  $7.35 on Marcinko (64% @ 2.09)
+  $5.05 on Etcheverry (65% @ 1.80)
+  $6.36 on the parlay
+  Total $27.38; we expect 2.0 to land, returning $35.87; 48% chance of finishing ahead
+  https://smash-react.vercel.app/parlay
 
-COMING UP: 2 days to the US Open (hard)
-  ATP: Carlos Alcaraz 27%, Alexander Zverev 12%, Novak Djokovic 12%
-  WTA: Elena Rybakina 20%, Iga Swiatek 18%, Aryna Sabalenka 15%
+COMING UP: 1 days to the US Open (hard)
+  ATP: Carlos Alcaraz 24%, Novak Djokovic 14%, Alexander Zverev 9%
+  WTA: Jessica Pegula 17%, Elena Rybakina 15%, Cori Gauff 12%
   https://smash-react.vercel.app/draw
 
 SEASON: 74% (1,576 of 2,118)
