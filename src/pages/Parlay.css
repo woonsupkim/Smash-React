@@ -167,8 +167,8 @@
 }
 /* The per-tournament strip sits under the all-time one and reads as a
    subordinate view of the same record, not a competing headline. */
-.parlay-receipt-event { margin-top: 0.5rem; }
-.parlay-receipt-event .parlay-receipt-val { font-size: 1.15rem; }
+/* The per-tournament receipt ("<event>, day by day") was removed; only the
+   complete settled record remains, which uses the base .parlay-receipt. */
 
 /* Let the text column claim the remaining width so the sparkline stays on
    the right instead of wrapping underneath it. Without this the longer

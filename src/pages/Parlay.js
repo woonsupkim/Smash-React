@@ -391,44 +391,13 @@ export default function Parlay() {
             </span>
             <span className="parlay-receipt-sub">
               {planHistory.all.days.length} days · {planHistory.all.up} up, {planHistory.all.days.length - planHistory.all.up} down
-              {' '}· the dashed line is the same money on the bookmakers&apos; favourites:{' '}
-              <strong>{signedPct(planHistory.all.mktRoi)}</strong>
-              {planHistory.all.mktN >= 8 && (
-                <>
-                  , landing {planHistory.all.mktHits} of {planHistory.all.mktN} where their own prices
-                  expected {planHistory.all.mktExp.toFixed(1)}
-                </>
-              )}
             </span>
           </div>
-          <PlanCurve values={planHistory.all.curve} market={planHistory.all.mktCurve} />
-        </div>
-      )}
-
-      {planHistory?.event && (
-        <div className={`parlay-receipt parlay-receipt-event${planHistory.event.total >= 0 ? ' pos' : ' neg'}`}>
-          <div className="parlay-receipt-main">
-            <span className="parlay-receipt-cap">{planHistory.event.name}, day by day</span>
-            <span className="parlay-receipt-val">
-              {signedPct(planHistory.event.roi)}
-              <span className="parlay-receipt-dollars">
-                {' '}({planHistory.event.total >= 0 ? '+' : '-'}${Math.abs(planHistory.event.total).toFixed(2)} on ${planHistory.event.staked.toFixed(2)} staked)
-              </span>
-            </span>
-            <span className="parlay-receipt-sub">
-              {planHistory.event.up} of {planHistory.event.days.length} days up · the same money on the
-              bookmakers&apos; favourites, same matches and same parlay, returned{' '}
-              <strong>{signedPct(planHistory.event.mktRoi)}</strong>{' '}
-              ({planHistory.event.mktTotal >= 0 ? '+' : '-'}${Math.abs(planHistory.event.mktTotal).toFixed(2)})
-              {planHistory.event.mktN >= 8 && (
-                <>
-                  {', '}landing {planHistory.event.mktHits} of {planHistory.event.mktN} where their own
-                  prices expected {planHistory.event.mktExp.toFixed(1)}
-                </>
-              )}
-            </span>
-          </div>
-          <PlanCurve values={planHistory.event.curve} market={planHistory.event.mktCurve} />
+          {/* No market series any more: the line that explained the dashed
+              stroke is gone, and an unlabelled second line on a 168px sparkline
+              is decoration. The market comparison still lives on The Edge,
+              where it has the room to be argued properly. */}
+          <PlanCurve values={planHistory.all.curve} />
         </div>
       )}
 

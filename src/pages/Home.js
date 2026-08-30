@@ -222,62 +222,6 @@ export default function Home() {
     };
   }, [picks.card, picks.graded]);
 
-  // The live tournament, following the recommended plan. The hero's other two
-  // numbers are season-scale; this one answers "is it working right now",
-  // which is the question a first-time visitor actually has. Same maths as
-  // /parlay - the day is replayed with reliability measured only on rows
-  // graded before it - and the event is the one owning the most recent
-  // settled days, so it can never be a window chosen after seeing the result.
-  const livePlan = useMemo(() => {
-    const rows = (picks.graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1 && typeof m.favProb === 'number');
-    if (rows.length < 4) return null;
-    const dayOf = (m) => String(m.date).slice(0, 10);
-    // A day belongs to whichever event most of its calls belong to.
-    const tally = new Map();
-    for (const m of rows) {
-      if (!m.event) continue;
-      if (!tally.has(dayOf(m))) tally.set(dayOf(m), new Map());
-      const t = tally.get(dayOf(m));
-      t.set(m.event, (t.get(m.event) || 0) + 1);
-    }
-    const owner = new Map();
-    for (const [day, t] of tally) owner.set(day, [...t.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
-    const days = [...new Set(rows.map(dayOf))].sort();
-    const latest = owner.get(days[days.length - 1]);
-    if (!latest) return null;
-    const mine = days.filter((d) => owner.get(d) === latest);
-    let profit = 0, staked = 0, up = 0, n = 0;
-    for (const day of mine) {
-      const card = rows.filter((m) => dayOf(m) === day);
-      if (card.length < 2) continue;
-      const bets = card.map((m) => ({
-        key: String(m.id), p: m.favProb,
-        o: Number(m.favorite === m.p1 ? m.lockOdd1 : m.lockOdd2), won: !!m.correct,
-      }));
-      const rel = reliability((picks.graded || []).filter((m) => dayOf(m) < day));
-      const f = planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
-      const plan = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
-      if (!plan) continue;
-      const by = new Map(bets.map((b) => [b.key, b]));
-      let dayP = 0, dayS = 0;
-      for (const [key, stake] of Object.entries(plan.singles || {})) {
-        if (!(stake > 0.005)) continue;
-        const b = by.get(key); if (!b) continue;
-        dayS += stake;
-        dayP += b.won ? stake * (b.o - 1) : -stake;
-      }
-      if (plan.parlayStake > 0.005 && (plan.parlayLegs || []).length >= 2 && plan.parlayLegs.every((k) => by.has(k))) {
-        dayS += plan.parlayStake;
-        const won = plan.parlayLegs.every((k) => by.get(k).won);
-        const o = plan.parlayLegs.reduce((m, k) => m * by.get(k).o, 1);
-        dayP += won ? plan.parlayStake * (o - 1) : -plan.parlayStake;
-      }
-      if (dayS < 0.01) continue;
-      profit += dayP; staked += dayS; n++; if (dayP > 0) up++;
-    }
-    if (n < 3 || staked <= 0) return null;
-    return { event: latest, profit, staked, roi: profit / staked, up, days: n };
-  }, [picks.graded]);
 
   // Live proof stats from the graded track record - the credibility engine
   // that separates this from a "form with a number".
@@ -505,22 +449,6 @@ export default function Home() {
               ? <>Every Call,<br />Graded in Public</>
               : <>We Beat the<br />Market on Price</>}
           </h1>
-          {/* ONE number here, not a rail of them. The first version of this
-              put the season return and the forward record in the hero too -
-              and both already sit in the stat rail six inches below, so the
-              hero repeated itself and the page got busier while I was
-              supposedly condensing it. What the rail does NOT carry is how
-              the plan is doing right now, at the tournament on screen, which
-              is the question a first-time visitor actually has. */}
-          {livePlan && (
-            <p className="hero-live">
-              <strong className={livePlan.roi >= 0 ? 'pos' : 'neg'}>
-                {livePlan.roi >= 0 ? '+' : '-'}{Math.abs(livePlan.roi * 100).toFixed(1)}%
-              </strong>
-              {' '}following the plan at {livePlan.event} so far, {livePlan.days} days,{' '}
-              {livePlan.profit >= 0 ? '+' : '-'}${Math.abs(livePlan.profit).toFixed(0)} on ${livePlan.staked.toFixed(0)} staked
-            </p>
-          )}
           {/* Two sentences. This ran to four, explaining the grading policy,
               the split record, the dollar comparison and the page layout
               before it had said what the product does - and a hero that

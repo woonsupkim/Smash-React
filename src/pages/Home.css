@@ -878,26 +878,4 @@
    StakingPlan lesson). */
 .home-stat-trend.down { color: #ff8f8f; }
 
-/* One live figure under the hero: how the plan is doing at the tournament on
-   screen. Deliberately a sentence rather than a stat card - the stat rail
-   below already owns the season numbers, and a second rail of tiles was what
-   made the hero feel busy in the first place. */
-.hero-live {
-  margin: 0.15rem 0 1.35rem;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--text-2, #b6bcc5);
-}
-.hero-live strong {
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-}
-.hero-live strong.pos { color: var(--accent-brand, #c8f560); }
-.hero-live strong.neg { color: #ff8f8f; }
-@media (max-width: 640px) {
-  .hero-live { font-size: 0.86rem; }
-  .hero-live strong { font-size: 1.15rem; }
-}
+/* The hero's live plan-return line was removed; .hero-live went with it. */
