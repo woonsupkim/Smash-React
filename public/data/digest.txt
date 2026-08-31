@@ -1,33 +1,25 @@
-SMASH WEEKLY - Monday, August 24
+SMASH WEEKLY - Monday, August 31
 
-THE WEEK: 32 from 43 (74%)
+THE WEEK: 10 from 19 (53%)
 
 DAY BY DAY
-  Tue: 10/12 (83%)
-  Wed: 4/9 (44%)
-  Thu: 6/8 (75%)
-  Fri: 1/2 (50%)
-  Sat: 2/3 (67%)
-  Sun: 3/3 (100%)
-  Mon: 2/2 (100%)
+  Tue: 3/5 (60%)
+  Wed: 1/4 (25%)
+  Thu: 1/3 (33%)
+  Fri: 3/3 (100%)
+  Sat: 1/2 (50%)
 
 THE ONES WE GOT WRONG
-  - Sabalenka lost to Bejlek 7-6(7) 6-4
-  - Zverev lost to Paul 4-6 7-6(6) 6-4
-  - Aliassime lost to Tiafoe 6-3 6-4
+  - Chwalinska lost to Parks 3-6 6-2 6-2
+  - Medvedev lost to Damm 7-5 6-3
+  - Krueger lost to Grabher 6-4 6-4
 
-IF YOU HAD FOLLOWED ALONG ALL WEEK ($100 a day, recommended plan): -$23.97 over 4 days
-  Follow the edge: -$24.55 (8/13 singles, 3 days)
-  Back every call: -$43.33 (16/23 singles, 3 days)
-  Spread plus a parlay: -$60.72 (16/23 singles, 3 days)
-  Whole card, weighted: -$60.85 (17/24 singles, 3 days)
+US VS THE BOOKMAKERS: 57% vs 57% (7 priced matches)
 
-US VS THE BOOKMAKERS: 67% vs 67% (18 priced matches)
+FORWARD TEST: 136-50 (55 pending)
+SEASON: 74%
 
-FORWARD TEST: 134-48
-SEASON: 75%
-
-NEXT UP: 7 days to the US Open
+NEXT UP: 140 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
