@@ -306,3 +306,24 @@ test('dream brackets: a full draw renders a quarter at a time', async ({ page })
   await expect(page.locator('.bracket-col').first().locator('.bracket-match')).toHaveCount(4);
   expect(errors).toEqual([]);
 });
+
+test('today: every row carries its start time, and the page says which day it is', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/today');
+  await page.waitForSelector('.today-row, .today-empty', { timeout: 20000 });
+
+  // The card is rebuilt through the day and served from a cache, so the page
+  // has to name the day it is describing.
+  const date = page.locator('.today-date');
+  await expect(date).toBeVisible();
+  await expect(date).toHaveText(/\w+day, \w+ \d{1,2}, \d{4}/);
+
+  const rows = page.locator('.today-row');
+  const n = await rows.count();
+  for (let i = 0; i < Math.min(n, 8); i++) {
+    // A real clock time, or an honest "time TBD" where the order of play has
+    // not been published. Never an invented midnight.
+    await expect(rows.nth(i).locator('.today-start')).toHaveText(/^(\d{1,2}:\d{2} (AM|PM)|time TBD)$/);
+  }
+  expect(errors).toEqual([]);
+});

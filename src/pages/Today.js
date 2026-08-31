@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
-import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
+import { timeUntil, localStartTime, localDayLabel, localZoneLabel, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import { ledgerNoCall } from '../utils/deployedPick';
 import PushToggle from '../components/PushToggle';
 import useDocMeta from '../utils/useDocMeta';
@@ -35,6 +35,9 @@ export default function Today() {
   const [tour, setTour] = useState('all');
   const [event, setEvent] = useState('all');
   const [sort, setSort] = useState('time');
+  // Read once: the label must not flicker between renders, and a viewer does
+  // not change timezone mid-session.
+  const zone = useMemo(() => localZoneLabel(), []);
 
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
@@ -74,6 +77,13 @@ export default function Today() {
         <div className="today-page">
       <div className="eyebrow">TODAY'S CALLS</div>
       <h1 className="today-title">Locked before play</h1>
+      {/* Which today. The card is rebuilt through the day and served from a
+          cache, so a reader landing on a stale copy had no way to tell what
+          day they were looking at - and every start time below is printed in
+          their own zone, which is worth naming rather than assuming. */}
+      <p className="today-date">
+        {localDayLabel()}{zone ? <> · all times {zone}</> : null}
+      </p>
       <PushToggle />
       {season && (
         <p className="today-season">
@@ -147,6 +157,7 @@ export default function Today() {
         <div className="today-list">
           {shown.map((p) => {
             const when = timeUntil(p.date);
+            const start = localStartTime(p.date);
             const favIsP1 = p.favorite === p.p1;
             return (
               <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className={`today-row${ledgerNoCall(p) ? ' nocall' : ''}`}>
@@ -159,7 +170,16 @@ export default function Today() {
                   <span className="today-vs"> vs </span>
                   <span className={!favIsP1 ? 'fav' : ''}>{p.name2}</span>
                   <span className="today-meta">
-                    {p.tour.toUpperCase()} · {p.event} · {p.surface}{when ? ` · ${when.label}` : ''}
+                    {p.tour.toUpperCase()} · {p.event} · {p.surface}
+                    {/* The scheduled start, then how long until it. The
+                        countdown alone answered "when" only for someone
+                        reading at that exact minute. */}
+                    {' · '}
+                    <strong className="today-start">{start || 'time TBD'}</strong>
+                    {/* The countdown, only while it is one. Its fallback
+                        label is "today", which next to a printed 2:00 PM on a
+                        page called Today says nothing three times. */}
+                    {when && when.label !== 'today' ? ` · ${when.label}` : ''}
                   </span>
                 </span>
                 {ledgerNoCall(p) ? (

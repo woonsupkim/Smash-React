@@ -139,3 +139,60 @@ test('/parlay still resolves, for every link already published', async ({ page }
   await expect(page.getByRole('heading', { name: /today.s staking plan/i })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the card table shows the whole day, filters it, and never lets that move the plan', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+
+  const rows = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay)');
+  const passes = page.locator('.stake-row.pass');
+  const total = await rows.count();
+  expect(total).toBeGreaterThan(0);
+
+  // THE INVARIANT. Passes are on the table because the card is the card, and
+  // they are never staked, never priced, never in a single number above. If a
+  // view control can move the exposure figure, a match we refuse to call has
+  // found its way into the plan.
+  const exposure = async () => page.locator('.risk-exposure-cap').innerText();
+  const before = await exposure();
+
+  const hide = page.getByText(/Hide the \d+ we do not call/);
+  if (await hide.count() > 0) {
+    expect(await passes.count()).toBeGreaterThan(0);
+    // Every pass reads "no call" and offers nothing to stake.
+    await expect(passes.first().locator('.stake-pass-tag')).toBeVisible();
+    await expect(passes.first().locator('input[type="checkbox"]')).toBeDisabled();
+
+    await hide.click();
+    await expect(passes).toHaveCount(0);
+    expect(await exposure()).toBe(before);
+    await hide.click();
+    await expect(passes).toHaveCount(await passes.count());
+  }
+
+  // Tour filters partition the card and, again, touch nothing but the view.
+  for (const t of [/^ATP/, /^WTA/]) {
+    await page.getByRole('button', { name: t }).click();
+    expect(await rows.count()).toBeLessThanOrEqual(total);
+    expect(await exposure()).toBe(before);
+  }
+  await page.getByRole('button', { name: 'Both tours' }).click();
+  await expect(rows).toHaveCount(total);
+
+  // Each ordering has to actually order by what it names, descending.
+  const read = (sel) => rows.locator(sel).allInnerTexts();
+  await page.getByRole('button', { name: 'Our %', exact: true }).click();
+  const probs = (await read('.stake-pick em')).map((t) => parseFloat((t.match(/([\d.]+)%/) || [])[1]));
+  for (let i = 1; i < probs.length; i++) expect(probs[i]).toBeLessThanOrEqual(probs[i - 1] + 1e-9);
+
+  await page.getByRole('button', { name: 'Edge', exact: true }).click();
+  // A pass has no edge to rank by, so it must sink rather than head a table
+  // sorted by a number its own row refuses to print.
+  const edgeRows = await rows.evaluateAll((els) => els.map((e) => e.classList.contains('pass')));
+  const firstPass = edgeRows.indexOf(true);
+  if (firstPass >= 0) expect(edgeRows.slice(firstPass).every(Boolean)).toBe(true);
+
+  expect(errors).toEqual([]);
+});

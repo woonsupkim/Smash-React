@@ -323,3 +323,69 @@
   margin: 0.6rem 0 0.2rem;
 }
 .stake-custom-note { font-size: 0.78rem; color: var(--text-3, #7c8698); }
+
+/* ── Card filters ───────────────────────────────────────────────────────
+   A view of the table, never a scope for the plan. The page already has one
+   explicit way to change what gets priced (the drop buttons and the
+   narrow-the-card chips), and a control that sometimes hides a row and
+   sometimes unfunds it would be the worst of both. */
+.stake-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.1rem;
+  margin: 1rem 0 0.75rem;
+}
+.stake-filter-set { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+.stake-filter-cap {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  margin-right: 0.15rem;
+}
+.stake-filter-set button {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.28rem 0.65rem;
+  color: var(--text-3, #7c8698);
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  cursor: pointer;
+}
+.stake-filter-set button:hover { border-color: var(--border-2, rgba(255, 255, 255, 0.24)); color: var(--text-1, #fff); }
+.stake-filter-set button:focus-visible { outline: 2px solid var(--accent-brand, #c8f560); outline-offset: 2px; }
+.stake-filter-set button.on {
+  color: var(--accent-brand, #c8f560);
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 12%, transparent);
+}
+.stake-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-3, #7c8698);
+  cursor: pointer;
+}
+.stake-filter-check input { width: 15px; height: 15px; accent-color: var(--accent-brand, #c8f560); }
+
+/* A match we declined to call. Present because the card is the card, dimmed
+   because nothing here is stakeable, and never coloured like an edge. */
+.stake-row.pass .stake-pick strong a,
+.stake-row.pass .stake-pick em { color: var(--text-3, #7c8698); }
+.stake-row.pass .stake-odds-flat { color: var(--text-3, #7c8698); font-variant-numeric: tabular-nums; }
+.stake-pass-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.14));
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}

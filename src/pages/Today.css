@@ -186,3 +186,12 @@
 }
 .today-call.nocall { text-align: right; }
 .today-call.nocall .today-pick { color: var(--text-3, #9aa1ab); }
+
+/* Which day this card is, and the zone its start times are printed in. */
+.today-date {
+  margin: 0.15rem 0 0.9rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-3, #7c8698);
+}
+.today-start { color: var(--text-2, #aeb6c4); font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -51,8 +51,12 @@ function composition(p) {
 // the verdict. The histogram and the risk lab answered the same question -
 // how can today finish - with the lab answering it better and in both
 // directions, so keeping both was showing the same distribution twice.
+// noCalls are today's matches the model declined to call. They appear in the
+// table so the card is the whole card, and they are never staked, never
+// priced into the plan, and never enter a single number above: a product that
+// refuses to claim a match and then funds it is saying two things at once.
 export default function StakingPlan({
-  legs, graded = [], onDrop = null, onPlanChange = null, riskSlot = null,
+  legs, graded = [], noCalls = [], onDrop = null, onPlanChange = null, riskSlot = null,
 }) {
   // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
   // the recommendation: it needs no input to be useful.
@@ -63,6 +67,13 @@ export default function StakingPlan({
   const [useParlay, setUseParlay] = useState(true); // master switch: singles only when off
   const [parlayStake, setParlayStake] = useState(0);
   const [budget, setBudget] = useState(100);
+  // How the table is VIEWED. Deliberately not how the plan is scoped: the
+  // page already has one explicit way to change what gets priced (the drop
+  // buttons and the narrow-the-card chips), and a control that sometimes
+  // hides a row and sometimes unfunds it would be the worst of both.
+  const [tourView, setTourView] = useState('all');
+  const [hidePasses, setHidePasses] = useState(false);
+  const [sortBy, setSortBy] = useState('prob');
 
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
@@ -216,6 +227,46 @@ export default function StakingPlan({
   const expWinners = backedSingles.reduce((s, b) => s + b.p, 0);
   const stakedCount = backedSingles.length;
   const expReturn = analysis.ev + analysis.staked;
+
+  // The whole day in one list: the calls the plan can fund, then the passes
+  // it cannot, each tagged so nothing downstream has to guess which is which.
+  // Sorting and filtering happen HERE and nowhere else - every number above
+  // is computed from `legs`, in the order the card arrived, so no view choice
+  // can move a stake.
+  const rows = useMemo(() => {
+    const tagged = [
+      ...legs.map((l) => ({ l, call: true })),
+      ...noCalls.map((l) => ({ l, call: false })),
+    ];
+    const shown = tagged.filter(({ l, call }) => {
+      if (hidePasses && !call) return false;
+      if (tourView !== 'all' && l.tour !== tourView) return false;
+      return true;
+    });
+    const key = {
+      prob: ({ l }) => l.favProb,
+      odds: ({ l }) => oddsOf(l) || 0,
+      edge: ({ l, call }) => {
+        // A pass has no edge to rank by: the row deliberately prints "no
+        // call" instead of a number, and sorting it above a real edge would
+        // rank it by a figure we have just refused to show. An unpriced match
+        // has no edge either - not a bad one - so both sink rather than
+        // claiming to be the worst bet on the card.
+        if (!call) return -Infinity;
+        const e = edgePerDollar(probOf(l), oddsOf(l));
+        return e == null ? -Infinity : e;
+      },
+    }[sortBy];
+    // Calls first at equal rank, so a pass can never head a table whose
+    // entire purpose is the plan.
+    return [...shown].sort((a, b) => (key(b) - key(a)) || (Number(b.call) - Number(a.call)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legs, noCalls, hidePasses, tourView, sortBy, oddsOverride, rel.lambda]);
+
+  const tourCounts = useMemo(() => {
+    const both = [...legs, ...noCalls];
+    return { atp: both.filter((l) => l.tour === 'atp').length, wta: both.filter((l) => l.tour === 'wta').length };
+  }, [legs, noCalls]);
 
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
@@ -474,6 +525,29 @@ export default function StakingPlan({
         </label>
       )}
 
+      <div className="stake-filters">
+        <div className="stake-filter-set" role="group" aria-label="Tour">
+          {[['all', 'Both tours'], ['atp', `ATP (${tourCounts.atp})`], ['wta', `WTA (${tourCounts.wta})`]]
+            .map(([id, label]) => (
+              <button key={id} type="button" aria-pressed={tourView === id}
+                className={tourView === id ? 'on' : ''} onClick={() => setTourView(id)}>{label}</button>
+            ))}
+        </div>
+        <div className="stake-filter-set" role="group" aria-label="Order by">
+          <span className="stake-filter-cap">Order by</span>
+          {[['prob', 'Our %'], ['odds', 'Odds'], ['edge', 'Edge']].map(([id, label]) => (
+            <button key={id} type="button" aria-pressed={sortBy === id}
+              className={sortBy === id ? 'on' : ''} onClick={() => setSortBy(id)}>{label}</button>
+          ))}
+        </div>
+        {noCalls.length > 0 && (
+          <label className="stake-filter-check">
+            <input type="checkbox" checked={hidePasses} onChange={() => setHidePasses((v) => !v)} />
+            Hide the {noCalls.length} we do not call
+          </label>
+        )}
+      </div>
+
       <div className={`stake-table${useParlay ? '' : ' no-parlay'}${onDrop ? ' has-drop' : ''}`} role="table">
         {/* role="row" requires columnheader/cell children, so every span in
             this grid carries one. Without them the table announces as a bare
@@ -486,51 +560,59 @@ export default function StakingPlan({
           <span role="columnheader">Parlay</span>
           {onDrop && <span role="columnheader"><span className="sr-only">Remove</span></span>}
         </div>
-        {legs.map((l) => {
+        {rows.map(({ l, call }) => {
           const o = oddsOf(l);
-          const e = edgePerDollar(probOf(l), o);
-          const stake = singleFor(l);
+          const e = call ? edgePerDollar(probOf(l), o) : null;
+          const stake = call ? singleFor(l) : 0;
           return (
-            <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}`} role="row" key={l.id}>
+            <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}${call ? '' : ' pass'}`}
+              role="row" key={l.id}>
               <span className="stake-pick" role="cell">
                 <strong><Link to={`/match/${matchSlug(l)}`}>{lastName(l.favName)}</Link></strong>
                 <em>
                   over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
                   {l.event ? ` · ${l.event}` : ''}
-                  {/* The plan prices no-calls (it bets edges, not calls); the
-                      ledger does not claim them. Both true, both said. */}
-                  {l.noCall ? ' · no call - priced anyway' : ''}
                 </em>
               </span>
               <span className="stake-odds" role="cell">
-                <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
-                  onChange={(e2) => setOddsOverride((s) => ({ ...s, [l.id]: parseFloat(e2.target.value) || 0 }))} />
+                {call
+                  ? <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
+                      onChange={(e2) => setOddsOverride((s2) => ({ ...s2, [l.id]: parseFloat(e2.target.value) || 0 }))} />
+                  : <span className="stake-odds-flat">{o > 1 ? o.toFixed(2) : '–'}</span>}
               </span>
-              <span role="cell" className={`stake-edge ${e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
-                {e == null ? 'no price' : pctSigned(e)}
+              {/* A pass carries no edge figure on purpose. Our probability on
+                  a coin flip is the number we have just said we do not trust,
+                  and an edge computed from it would read as a tip. */}
+              <span role="cell" className={`stake-edge ${!call || e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
+                {!call ? <span className="stake-pass-tag">no call</span>
+                  : e == null ? 'no price' : pctSigned(e)}
               </span>
               <span className="stake-single" role="cell">
-                {mode === 'budget'
-                  ? <span className="stake-suggest">{stake > 0 ? money(stake) : '–'}</span>
-                  : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
-                      disabled={!(o > 1)}
-                      onChange={(e2) => setStakes((s) => ({ ...s, [l.id]: e2.target.value }))} />}
+                {!call
+                  ? <span className="stake-suggest">–</span>
+                  : mode === 'budget'
+                    ? <span className="stake-suggest">{stake > 0 ? money(stake) : '–'}</span>
+                    : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
+                        disabled={!(o > 1)}
+                        onChange={(e2) => setStakes((s2) => ({ ...s2, [l.id]: e2.target.value }))} />}
               </span>
               <span className="stake-inpar" role="cell">
                 {/* In budget mode the optimiser owns this choice, so the box
                     reports the plan instead of driving it. */}
                 <input type="checkbox"
-                  aria-label={mode === 'budget'
-                    ? `${inActiveParlay(l) ? 'In' : 'Not in'} the plan's parlay`
-                    : 'Include in parlay'}
-                  checked={mode === 'budget' ? inActiveParlay(l) : isIn(l)}
-                  disabled={mode === 'budget' || !(o > 1)}
-                  onChange={() => setInParlay((s) => ({ ...s, [l.id]: !isIn(l) }))} />
+                  aria-label={!call
+                    ? `${lastName(l.favName)} is a no call and cannot be staked`
+                    : mode === 'budget'
+                      ? `${inActiveParlay(l) ? 'In' : 'Not in'} the plan's parlay`
+                      : 'Include in parlay'}
+                  checked={call && (mode === 'budget' ? inActiveParlay(l) : isIn(l))}
+                  disabled={!call || mode === 'budget' || !(o > 1)}
+                  onChange={() => setInParlay((s2) => ({ ...s2, [l.id]: !isIn(l) }))} />
               </span>
               {onDrop && (
                 <span className="stake-drop" role="cell">
-                  <button type="button" title={`Take ${lastName(l.favName)} out of the slip`}
-                    aria-label={`Remove ${lastName(l.favName)} from the slip`}
+                  <button type="button" title={`Take ${lastName(l.favName)} off the card`}
+                    aria-label={`Remove ${lastName(l.favName)} from the card`}
                     onClick={() => onDrop(l)}>&times;</button>
                 </span>
               )}

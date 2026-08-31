@@ -99,7 +99,7 @@ export default function Parlay() {
     "Risk Lab · Today's Calls | Smash",
     "How much to stake on today's calls, and what that plan does to your budget: the spread of outcomes, how often a bad day arrives, and whether you are betting past the size that grows a bankroll rather than shrinking it."
   );
-  const { all, legs, graded, awaiting, dropped, setDropped, toggle, restore } = useTodayCard();
+  const { all, legs, noCalls, graded, awaiting, dropped, setDropped, toggle, restore } = useTodayCard();
 
   // Whatever the staking plan currently has on its table, published upward so
   // the risk lab below describes THIS plan. One allocation on the page, read
@@ -405,7 +405,7 @@ export default function Parlay() {
               you picked in one place then priced in another. The staking plan
               already names every leg, so it took over the dropping too. */}
           {legs.length > 0 && (
-            <StakingPlan legs={legs} graded={graded} onDrop={toggle} onPlanChange={setPlan}
+            <StakingPlan legs={legs} graded={graded} noCalls={noCalls} onDrop={toggle} onPlanChange={setPlan}
               riskSlot={(
                 <div className="parlay-risk" id="risk">
                   <RiskLab legs={legs} graded={graded} plan={plan} />

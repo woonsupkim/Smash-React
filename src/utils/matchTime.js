@@ -80,6 +80,33 @@ export function localKickoff(iso) {
   return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+// Just the clock time, in the viewer's own timezone: "7:00 PM".
+//
+// Returns null on a placeholder stamp rather than printing its meaningless
+// hour. A schedule that has not published its order of play yet says so; it
+// does not invent a 12:00 AM start and let someone plan around it.
+export function localStartTime(iso) {
+  if (isPlaceholderTime(iso)) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// The viewer's own calendar day, spelled out, and the zone the times above
+// are printed in. A page whose whole claim is "today" has to say which today
+// it means, or a reader landing on cached data has no way to tell.
+export function localDayLabel(now = new Date()) {
+  return now.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+
+export function localZoneLabel(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(now);
+  const z = parts.find((x) => x.type === 'timeZoneName');
+  return z ? z.value : null;
+}
+
 // Stable, readable match-page slug: "jannik-sinner-vs-alexander-zverev-177491".
 const slugify = (s) => String(s || '')
   .toLowerCase()

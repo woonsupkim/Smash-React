@@ -16,6 +16,13 @@ export const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
 
 export default function useTodayCard() {
   const [all, setAll] = useState(null);
+  // Today's matches the model declined to call. They are NOT part of the
+  // staking universe and never will be - "if we will not call it, we will not
+  // stake it" is a rule the whole product hangs on - but the card is the
+  // card, and a table that silently omits a third of the day makes the reader
+  // wonder what else is missing. They are carried separately so the two can
+  // never be confused for one list.
+  const [passes, setPasses] = useState([]);
   // Graded rows feed the reliability haircut, so every surface below describes
   // the same bets rather than two versions of them.
   const [graded, setGraded] = useState([]);
@@ -33,22 +40,32 @@ export default function useTodayCard() {
         // Calls only, matching planSettle.ledgerGraded: we do not ask anyone
         // to stake a coin flip the model declined to call.
         const rows = (d.predictions || []).filter((p) => !ledgerNoCall(p));
+        const onToday = (p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date);
+        setPasses((d.predictions || [])
+          .filter((p) => ledgerNoCall(p) && onToday(p))
+          .sort((a, b) => b.favProb - a.favProb));
         setGraded(rows.filter((p) => p.status === 'won' || p.status === 'lost'));
         // Every locked call with no result yet, which is what the receipt's
         // "still to settle" means: it exists to explain why a figure covering
         // settled days only has stopped moving.
         setAwaiting(rows.filter((p) => p.status === 'pending').length);
-        setAll(rows
-          .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
-          .sort((a, b) => b.favProb - a.favProb));
+        setAll(rows.filter(onToday).sort((a, b) => b.favProb - a.favProb));
       })
-      .catch(() => { if (live) { setAll([]); setGraded([]); } });
+      .catch(() => { if (live) { setAll([]); setGraded([]); setPasses([]); } });
     return () => { live = false; };
   }, []);
 
   const legs = useMemo(
     () => (all || []).filter((p) => !dropped.has(legKey(p))),
     [all, dropped]
+  );
+
+  // Droppable on the same terms as everything else on the card: a reader
+  // clearing matches they will not watch should not have one stick around
+  // just because we declined to call it.
+  const noCalls = useMemo(
+    () => passes.filter((p) => !dropped.has(legKey(p))),
+    [passes, dropped]
   );
 
   const toggle = (l) => setDropped((prev) => {
@@ -62,5 +79,5 @@ export default function useTodayCard() {
 
   // setDropped is exposed for the builder's "narrow the card to these"
   // suggestions, which replace the whole selection rather than nudging it.
-  return { all, legs, graded, awaiting, dropped, setDropped, toggle, restore };
+  return { all, legs, noCalls, graded, awaiting, dropped, setDropped, toggle, restore };
 }
