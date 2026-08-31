@@ -28,6 +28,15 @@ const pct1 = (v) => `${(v * 100).toFixed(1)}%`;
 const pct0 = (v) => `${Math.round(v * 100)}%`;
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
+// Same figure the plan card, the parlay builder and the digest all use.
+const DEFAULT_BANKROLL = 100;
+// Where the panel opens: enough of the bankroll on the card to be worth
+// looking at, nowhere near enough to be alarming. The reader moves it.
+const OPENING_EXPOSURE = 0.15;
+const openingStake = (bankroll, legCount) => (legCount > 0
+  ? Math.max(1, Math.round((bankroll * OPENING_EXPOSURE) / legCount))
+  : 1);
+
 // ── Charts ──────────────────────────────────────────────────────────────────
 
 // Exceedance: "the chance you end up at least this far in one direction". A
@@ -130,8 +139,17 @@ function KellyGauge({ ratio }) {
 // page's own control surface rather than a panel reading someone else's list.
 export default function RiskLab({ legs, graded = [], onDrop = null }) {
   const [tab, setTab] = useState('slip');
-  const [bankroll, setBankroll] = useState(500);
-  const [flat, setFlat] = useState(10);
+  // $100, matching PLAN_BUDGET everywhere else on the site, so a reader
+  // comparing this page with the plan card or the digest is comparing like
+  // with like instead of silently rebasing.
+  const [bankroll, setBankroll] = useState(DEFAULT_BANKROLL);
+  // The opening stake is DERIVED, not a second hardcoded number. A fixed $10
+  // against a $100 bankroll opens at 290% exposure on a full tour day, so the
+  // panel would shout "ruinous" before the reader had typed anything - an
+  // artifact of the defaults rather than a judgement about their betting.
+  // Seeded to put roughly OPENING_EXPOSURE of the bankroll on the card, then
+  // it is theirs. Runs once: dropping a match must not move the stake.
+  const [flat, setFlat] = useState(() => openingStake(DEFAULT_BANKROLL, legs.length));
   const [parlayStake, setParlayStake] = useState(0);
   const [override, setOverride] = useState({});   // { id: stake }
   const [inParlay, setInParlay] = useState({});   // { id: bool }, default true
