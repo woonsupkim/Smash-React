@@ -398,3 +398,17 @@
   font-size: 0.86rem;
   color: var(--text-3, #7c8698);
 }
+
+/* In Custom a pass carries its real edge, with the caveat attached to the
+   number rather than replacing it. */
+.stake-pass-note {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  margin-top: 0.1rem;
+}
+.stake-row.pass .stake-odds input,
+.stake-row.pass .stake-single input { opacity: 0.85; }

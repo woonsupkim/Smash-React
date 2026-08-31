@@ -239,7 +239,7 @@ function KellyGauge({ ratio }) {
 
 // onDrop(leg) takes a match off the card entirely. Supplied when this is the
 // page's own control surface rather than a panel reading someone else's list.
-export default function RiskLab({ legs, graded = [], plan = null }) {
+export default function RiskLab({ legs, graded = [], noCalls = [], plan = null }) {
   const [tab, setTab] = useState('slip');
   const [days, setDays] = useState(30);
 
@@ -250,22 +250,32 @@ export default function RiskLab({ legs, graded = [], plan = null }) {
   // is staked zero, not quietly given a default: a plan that skips a match is
   // making a statement, and inventing a stake for it would describe a slip
   // nobody proposed.
-  const singles = (plan && plan.singles) || {};
+  const singles = useMemo(() => (plan && plan.singles) || {}, [plan]);
   const stakeOf = (l) => Number(singles[l.id]) || 0;
+
+  // The card this panel prices. Normally the calls, because the plan above
+  // never funds anything else. But Custom lets someone stake a match we
+  // declined to call, and a risk read that silently ignored that money would
+  // be describing a slip they are not holding. A pass joins the moment it
+  // carries a stake, and not before.
+  const card = useMemo(() => {
+    const staked = noCalls.filter((l) => Number(singles[l.id]) > 0);
+    return staked.length ? [...legs, ...staked] : legs;
+  }, [legs, noCalls, singles]);
   const isIn = (l) => ((plan && plan.parlayLegs) || []).includes(l.id) && defaultOdds(l) > 1;
 
-  const bets = useMemo(() => legs.map((l) => ({
+  const bets = useMemo(() => card.map((l) => ({
     key: l.id,
     p: adjustProb(l.favProb, rel.lambda),
     o: defaultOdds(l),
     single: stakeOf(l),
   })),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [legs, singles, rel.lambda]);
+  [card, singles, rel.lambda]);
 
-  const parlayLegs = useMemo(() => legs.filter(isIn).map((l) => l.id),
+  const parlayLegs = useMemo(() => card.filter(isIn).map((l) => l.id),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [legs, plan]);
+    [card, plan]);
 
   const parStake = Number(plan && plan.parlayStake) || 0;
   const analysis = useMemo(
@@ -340,7 +350,7 @@ export default function RiskLab({ legs, graded = [], plan = null }) {
   }, [analysis.dist]);
   const streak = expectedLosingStreak(pLoseDay, Number(days) || 30);
 
-  if (!legs.length) return null;
+  if (!card.length) return null;
   const nothingStaked = staked <= 0;
 
   return (
@@ -353,7 +363,8 @@ export default function RiskLab({ legs, graded = [], plan = null }) {
               trust the number. */}
           <p className="risk-sub">
             {money0(staked)} of your {money0(bank)} on{' '}
-            {legs.filter((l) => stakeOf(l) > 0).length} of today&apos;s {legs.length} calls
+            {card.filter((l) => stakeOf(l) > 0).length} of today&apos;s{' '}
+            {legs.length + noCalls.length} matches
             {parStake > 0 ? `, ${money0(parStake)} of it on the parlay` : ''}.
             Change the plan above and everything here follows.
           </p>

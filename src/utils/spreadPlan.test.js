@@ -121,15 +121,26 @@ describe('the recommended menu', () => {
     }
   });
 
-  it('recommends the edge plan when it stakes, and it is never a lone reckless bet', () => {
-    // Policy recommendation, chosen by tournament (expPlanPolicies.js), not
-    // by per-day beauty contest: a daily follower needs one consistent rule.
+  it('recommends the searched plan, and it is never a lone reckless bet', () => {
+    // The recommendation was policy (the edge plan, chosen by tournament) on
+    // the reasoning that a daily follower needs one consistent rule. It is
+    // now searched per card against a positive typical day and best expected
+    // growth, because consistency is worth less than not losing on the
+    // median day. The edge plan stays on the menu.
     const { plans, recommendedId } = planFrontier(ten(1.5), 100);
-    expect(recommendedId).toBe('edge');
+    expect(recommendedId).toBe('best');
+    const rec = plans.find((p) => p.id === 'best');
+    expect(rec.metrics.staked).toBeLessThanOrEqual(100);
+    // Two ceilings on any one bet, and a third on the whole day.
+    for (const v of Object.values(rec.singles)) expect(v).toBeLessThanOrEqual(10 + 1e-9);
+    if (rec.parlayStake) expect(rec.parlayStake).toBeLessThanOrEqual(5 + 1e-9);
+    expect(rec.metrics.pcts.p05).toBeGreaterThanOrEqual(-15 - 1e-6);
+    // And it is a spread, not a punt: ten priced bets deserve more than one.
+    expect(Object.values(rec.singles).filter((v) => v > 0).length).toBeGreaterThan(1);
+
+    // The edge plan is still offered for anyone who wants that trade.
     const edge = plans.find((p) => p.id === 'edge');
-    expect(edge.metrics.staked).toBeLessThanOrEqual(100);
-    // per-bet cap: no single bet above 20% of budget
+    expect(edge).toBeTruthy();
     for (const v of Object.values(edge.singles)) expect(v).toBeLessThanOrEqual(20 + 1e-9);
-    if (edge.parlayStake) expect(edge.parlayStake).toBeLessThanOrEqual(10 + 1e-9);
   });
 });

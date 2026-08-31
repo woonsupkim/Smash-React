@@ -9,7 +9,9 @@
 //
 // The worked example that defines the spread lives in spreadPlan.test.js.
 import { describe, it, expect } from 'vitest';
-import { planFrontier, edgePerDollar } from './staking';
+import {
+  planFrontier, edgePerDollar, analyzeSlip, expectedLogGrowth,
+} from './staking';
 
 const bet = (key, p, o) => ({ key, p, o });
 const slate = [
@@ -35,7 +37,7 @@ describe('planFrontier', () => {
     // 6%-ROI coin-flip experience; the edge plan stakes quarter-Kelly on the
     // +EV calls and keeping the rest IS the recommendation.
     for (const p of planFrontier(slate, 250).plans) {
-      if (p.id === 'edge') {
+      if (p.id === 'edge' || p.id === 'best') {
         expect(p.metrics.staked).toBeGreaterThan(0);
         expect(p.metrics.staked).toBeLessThanOrEqual(250 + 1e-6);
       } else {
@@ -44,12 +46,66 @@ describe('planFrontier', () => {
     }
   });
 
-  it('leads with the edge plan whenever it stakes; the spread stays on the menu', () => {
+  it('leads with the searched plan, and the policy plans stay on the menu', () => {
+    // The recommendation used to be pinned to the edge policy unconditionally.
+    // It won on return per dollar risked and lost on the thing a daily
+    // follower actually experiences: on a thin card its middle outcome was a
+    // loss. `best` is searched against that bar directly.
     const { plans, recommendedId } = planFrontier(slate, 100);
-    expect(recommendedId).toBe('edge');
+    expect(recommendedId).toBe('best');
+    for (const id of ['spread', 'edge']) {
+      expect(plans.some((p) => p.id === id)).toBe(true);
+    }
     const spread = plans.find((p) => p.id === 'spread');
-    expect(spread).toBeTruthy();
     expect(spread.funded).toBeGreaterThan(1);
+  });
+
+  it('the recommended plan finishes up on a typical day', () => {
+    // The headline promise, and the reason the objective was rewritten. A
+    // right-skewed plan can carry a healthy average while losing on most
+    // individual days; somebody following it every morning lives the median.
+    const { plans, recommendedId } = planFrontier(slate, 100);
+    const rec = plans.find((p) => p.id === recommendedId);
+    expect(rec.metrics.pcts.p50).toBeGreaterThan(0);
+    expect(rec.metrics.ev).toBeGreaterThan(0);
+  });
+
+  it('the recommended plan keeps a bad day inside its ceiling', () => {
+    // One day in twenty is worse than p05. Growth alone will commit most of
+    // the budget once it has enough independent +EV bets; this is what stops
+    // it, and it is a constraint rather than a weight so it can be checked.
+    for (const budget of [50, 100, 400]) {
+      const { plans, recommendedId } = planFrontier(slate, budget);
+      const rec = plans.find((p) => p.id === recommendedId);
+      expect(rec.metrics.pcts.p05).toBeGreaterThanOrEqual(-budget * 0.15 - 1e-6);
+      expect(rec.metrics.staked).toBeLessThan(budget);
+    }
+  });
+
+  it('the recommended plan spreads rather than piling onto one match', () => {
+    // Sizing each bet at its own Kelly fraction INDEPENDENTLY is what makes
+    // this true: an earlier version spread a fixed total, so every extra bet
+    // was funded by taking money off the best one and widening always looked
+    // like a loss.
+    const wide = Array.from({ length: 8 }, (_, i) => bet(`w${i}`, 0.62 + i * 0.02, 1.9 - i * 0.05));
+    const { plans, recommendedId } = planFrontier(wide, 100);
+    const rec = plans.find((p) => p.id === recommendedId);
+    const funded = Object.values(rec.singles).filter((v) => v > 0).length;
+    expect(funded).toBeGreaterThan(1);
+  });
+
+  it('carries a parlay only when the whole day is better for it', () => {
+    // "You may not even have a parlay" is a real outcome, not a formality:
+    // no parlay is one of the candidates and it wins on most cards.
+    const { plans, recommendedId } = planFrontier(slate, 100);
+    const rec = plans.find((p) => p.id === recommendedId);
+    if (rec.parlayStake > 0) {
+      expect(rec.parlayLegs.length).toBeGreaterThan(1);
+      // Never more than the parlay cap: it is correlated with its own legs.
+      expect(rec.parlayStake).toBeLessThanOrEqual(100 * 0.05 + 1e-6);
+    } else {
+      expect(rec.parlayLegs).toEqual([]);
+    }
   });
 
   it('carries a match that is -EV on its own when the portfolio still covers', () => {
@@ -82,11 +138,11 @@ describe('planFrontier', () => {
     // the full budget for whoever wants full allocation.
     const { plans, recommendedId } = planFrontier([bet('a', 0.8, 1.5)], 100);
     expect(plans.length).toBeGreaterThan(0);
-    expect(recommendedId).toBe('edge');
-    const edge = plans.find((p) => p.id === 'edge');
-    expect(edge.metrics.staked).toBeGreaterThan(0);
-    expect(edge.metrics.staked).toBeLessThan(100);
-    const whole = plans.find((p) => p.id !== 'edge');
+    expect(recommendedId).toBe('best');
+    const rec = plans.find((p) => p.id === 'best');
+    expect(rec.metrics.staked).toBeGreaterThan(0);
+    expect(rec.metrics.staked).toBeLessThan(100);
+    const whole = plans.find((p) => p.id !== 'edge' && p.id !== 'best');
     if (whole) expect(whole.metrics.staked).toBeCloseTo(100, 6);
   });
 
@@ -134,9 +190,10 @@ describe('no plan abandons matches on the card', () => {
     const negative = card.filter((b) => b.p * b.o - 1 < 0);
     expect(negative.length).toBeGreaterThan(0);      // the fixture must bite
     for (const plan of f.plans) {
-      if (plan.id === 'edge') {
-        // The edge plan funds only +EV calls - that selectivity is the whole
-        // point (it is the tournament winner, +19.7% vs the spread's +5.1%).
+      if (plan.id === 'edge' || plan.id === 'best') {
+        // Both selective plans fund only +EV calls. For the recommendation
+        // that is not a policy preference but arithmetic: a leg priced
+        // against us lowers the median and the growth rate at every size.
         for (const b of negative) expect(plan.singles[b.key] || 0).toBe(0);
         continue;
       }
@@ -237,15 +294,44 @@ describe('the parlay length is chosen by the plan, not by the parlay alone', () 
         const rec = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
         const ev = rec.metrics.ev;
         if (prev) {
-          expect(
-            `lambda ${lambda}, $${prev.budget} -> $${budget}: ${prev.ev.toFixed(4)} -> ${ev.toFixed(4)}`
-          ).toBe(
-            `lambda ${lambda}, $${prev.budget} -> $${budget}: ${prev.ev.toFixed(4)} -> ${Math.max(ev, prev.ev).toFixed(4)}`
-          );
+          // A few percent of slack, and no more. The recommendation is chosen
+          // on expected growth with a typical-day gate, and both are read off
+          // analyzeSlip's P&L distribution, which is binned on an absolute
+          // dollar grid: at an $8 budget the stakes are cents and the median
+          // estimate can wobble by a bin between one budget and the next.
+          // That is quantisation, not the fault this test exists for, which
+          // was a plan that inverted from staking the whole budget to staking
+          // fifty cents across a single dollar - a 93% collapse.
+          const floor = prev.ev * 0.95;
+          // eslint-disable-next-line jest/valid-expect
+          expect(ev, `lambda ${lambda}, $${prev.budget} -> $${budget}`).toBeGreaterThanOrEqual(floor);
         }
         prev = { budget, ev };
       }
     }
+  });
+
+  it('scales the recommendation with the budget, near enough linearly', () => {
+    // The real guarantee behind the test above, and the one the old fault
+    // broke outright: every quantity in the search is a fraction of the
+    // budget, so the plan a follower is shown has the same shape at every
+    // budget and doubling the budget doubles the expected profit. Checked
+    // across a 25x range, where a quantisation wobble cannot hide.
+    const card = [
+      { key: 'a', p: 0.525, o: 2.39 },
+      { key: 'b', p: 0.715, o: 1.49 },
+      { key: 'c', p: 0.61, o: 1.95 },
+    ];
+    const evAt = (budget) => {
+      const f = planFrontier(card, budget, { lambda: 1 });
+      const rec = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+      return rec.metrics.ev;
+    };
+    const small = evAt(10);
+    const large = evAt(250);
+    expect(small).toBeGreaterThan(0);
+    expect(large / small).toBeGreaterThan(25 * 0.9);
+    expect(large / small).toBeLessThan(25 * 1.1);
   });
 
   it('recommends the same plan SHAPE at every budget', () => {
@@ -270,5 +356,54 @@ describe('the parlay length is chosen by the plan, not by the parlay alone', () 
     for (const budget of [5, 8, 9, 11, 20, 50, 250, 1000]) {
       expect(`$${budget}: ${shapeAt(budget)}`).toBe(`$${budget}: ${base}`);
     }
+  });
+});
+
+describe('expected log growth', () => {
+  it('prefers the same edge spread over one concentrated punt', () => {
+    // The property the whole objective rests on. Four independent +EV bets at
+    // a modest size grow a bankroll faster than the same money on one of
+    // them, and log growth is what sees that; expected value alone cannot,
+    // because both have the same mean.
+    const bets = Array.from({ length: 4 }, (_, i) => ({ key: `b${i}`, p: 0.65, o: 1.7 }));
+    const spread = analyzeSlip(bets.map((b) => ({ ...b, single: 5 })), null);
+    const punt = analyzeSlip(bets.map((b, i) => ({ ...b, single: i === 0 ? 20 : 0 })), null);
+    expect(spread.staked).toBeCloseTo(punt.staked, 9);
+    expect(spread.ev).toBeCloseTo(punt.ev, 6);          // identical on average
+    expect(expectedLogGrowth(spread.dist, 100))
+      .toBeGreaterThan(expectedLogGrowth(punt.dist, 100));
+  });
+
+  it('turns down once a plan is over-sized, which is what caps the search', () => {
+    const bets = Array.from({ length: 4 }, (_, i) => ({ key: `b${i}`, p: 0.65, o: 1.7 }));
+    const at = (stake) => expectedLogGrowth(
+      analyzeSlip(bets.map((b) => ({ ...b, single: stake })), null).dist, 100
+    );
+    // Sane, then greedy, then ruinous. Growth has to peak in the middle.
+    expect(at(6)).toBeGreaterThan(at(1));
+    expect(at(6)).toBeGreaterThan(at(24));
+  });
+
+  it('is minus infinity when an outcome can take more than the bankroll', () => {
+    // Staking more than you hold. log(0) is undefined and the honest answer
+    // is that no growth rate exists, not a large negative number.
+    const bets = [{ key: 'a', p: 0.6, o: 2, single: 150 }];
+    expect(expectedLogGrowth(analyzeSlip(bets, null).dist, 100)).toBe(-Infinity);
+    // Staking the whole bankroll is survivable-adjacent rather than ruin in
+    // the binned distribution, so it scores badly but finitely.
+    const all = [{ key: 'a', p: 0.6, o: 2, single: 100 }];
+    const g = expectedLogGrowth(analyzeSlip(all, null).dist, 100);
+    expect(Number.isFinite(g)).toBe(true);
+    expect(g).toBeLessThan(0);
+  });
+
+  it('reads the same whatever the bankroll is measured in', () => {
+    // Growth is a rate, so scaling stakes and bankroll together must not move
+    // it. This is why the recommendation has the same shape at every budget.
+    const bets = [{ key: 'a', p: 0.7, o: 1.6 }, { key: 'b', p: 0.64, o: 1.85 }];
+    const g = (k) => expectedLogGrowth(
+      analyzeSlip(bets.map((b) => ({ ...b, single: 8 * k })), null).dist, 100 * k
+    );
+    expect(g(1)).toBeCloseTo(g(10), 3);
   });
 });

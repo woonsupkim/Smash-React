@@ -397,6 +397,256 @@ export function recommendedPlanId(plans) {
   }, pool[0]).id;
 }
 
+/**
+ * Expected log growth of a bankroll over one day of this slip.
+ *
+ * This is Kelly's own objective, and it is the one number that says "earn
+ * more" and "risk less" at the same time rather than trading them off by
+ * taste. Doubling money is worth exactly as much as halving it is costly, so
+ * a plan that wins big on 49% of days and bleeds on 51% scores badly however
+ * flattering its average, and a plan that stakes the whole budget to chase a
+ * marginal edge scores worse than the same plan sized down.
+ *
+ * Undefined (and returned as -Infinity) if any outcome can take more than the
+ * bankroll: log of zero or less. That is the correct answer, not an edge case
+ * to paper over.
+ *
+ * Read off analyzeSlip's `dist`, which is clipped at the 1st and 99th
+ * percentiles for drawing. The extreme tails are therefore approximated, so
+ * this slightly UNDERSTATES the pain of a catastrophic day. It does not
+ * matter for what this scores - the recommendation caps any one bet at a
+ * tenth of the budget and holds a 5th-percentile day inside 15% of it, so the
+ * clipped region carries no plan the search would consider - but a future
+ * caller sizing anything near the whole bankroll should know it is there.
+ *
+ * @param {object} dist analyzeSlip().dist
+ * @param {number} bankroll the money the stakes are drawn from
+ */
+export function expectedLogGrowth(dist, bankroll) {
+  if (!dist || !dist.bins || !dist.bins.length || !(bankroll > 0)) return -Infinity;
+  const { lo, hi, bins } = dist;
+  const span = hi - lo;
+  let g = 0, total = 0;
+  for (let i = 0; i < bins.length; i++) {
+    const pr = bins[i].prob;
+    if (!(pr > 0)) continue;
+    const pl = lo + (span * (i + 0.5)) / bins.length;
+    const end = bankroll + pl;
+    if (end <= 0) return -Infinity;
+    g += pr * Math.log(end / bankroll);
+    total += pr;
+  }
+  return total > 0 ? g / total : -Infinity;
+}
+
+/**
+ * THE RECOMMENDED PLAN.
+ *
+ * Built by search rather than by policy, against two requirements stated in
+ * the order they matter:
+ *
+ *   1. A TYPICAL DAY MUST FINISH UP. The median outcome has to be positive.
+ *      This is a hard gate, not a term in a score. Expected value is an
+ *      average over many days and a right-skewed plan can carry a healthy one
+ *      while losing on most individual days: the old recommendation did
+ *      exactly that, +$4.53 expected on a day whose middle outcome was
+ *      -$5.56, because it funded two bets and needed both to land. Somebody
+ *      following a plan every morning experiences the median, not the mean.
+ *
+ *   2. AMONG THOSE, MAXIMISE EXPECTED LOG GROWTH. Kelly's criterion, which
+ *      rewards return and punishes variance in one number, so "earn more" and
+ *      "risk less" stop being a trade-off someone has to weigh by eye.
+ *
+ * Everything else falls out of those two rather than being imposed:
+ *
+ *   - It does not spend the budget. Log growth turns down past the
+ *     growth-optimal fraction, so the search settles below it on its own and
+ *     the remainder stays in the pocket.
+ *   - It may not carry a parlay. No parlay is always one of the candidates,
+ *     and a parlay only survives when it improves the score of the whole plan
+ *     rather than being sized in isolation and bolted on.
+ *   - It may back one match, or ten, or none at all. When no candidate clears
+ *     the median gate the function returns null and the page says so, which
+ *     is the honest answer on a card where every plan loses more days than it
+ *     wins.
+ *
+ * @param {{key:string,p:number,o:number}[]} bets reliability-adjusted already
+ * @param {number} budget the money set aside, which is also the bankroll
+ */
+// Two ceilings on any one bet, and the tighter of them wins.
+//
+// TEN PERCENT of budget on any one match, so a single match can never be the
+// plan. The search maximises growth, and growth alone will happily pile
+// everything onto the best price it can see: with this cap the only way to
+// put real money to work is to spread it, which is where the risk half of
+// "earn more, risk less" starts.
+const REC_BET_CAP = 0.10;
+const REC_PARLAY_CAP = 0.05;   // a parlay is correlated with its own legs
+const REC_MIN_STAKE = 0.005;   // of budget: below this a bet is noise, not a bet
+// THE BAD DAY CEILING. A day at the 5th percentile - one in twenty - may not
+// cost more than this share of the budget.
+//
+// Expected log growth on its own will happily commit most of the budget once
+// it has enough independent +EV bets to work with: on a nine-bet card it
+// staked $88 of $100, which is growth-optimal if our probabilities are exactly
+// right and reckless if they are a little hot. Half Kelly already hedges the
+// size of each bet; this bounds what the whole day can do, which is the thing
+// a person actually feels. Stated as a constraint rather than folded into the
+// score because "how much can I lose on a bad day" deserves a real answer, not
+// a weight in an objective nobody can inspect.
+const REC_MAX_BAD_DAY = 0.15;
+// TOTAL exposure to try, as a share of the budget. Deliberately a grid over
+// the TOTAL rather than a multiplier applied to each bet: sizing every bet at
+// its own Kelly fraction makes a four-bet plan stake four times what a
+// one-bet plan does, so the search was really choosing between "concentrated
+// at a sane size" and "diversified and over-staked", and it picked the former
+// on nine days in ten. Spreading a FIXED total across more independent +EV
+// bets raises expected growth outright, and the search can only find that if
+// the two choices are separable.
+// Kelly multiples to try. Each bet is sized at its OWN Kelly fraction times
+// this, INDEPENDENTLY of the others, and the total is whatever that adds up
+// to. That independence is the whole trick and it took two wrong versions to
+// find: spreading a fixed TOTAL across more bets means every extra bet is
+// funded by taking money off the best one, so widening always looked like a
+// loss and the search concentrated on a single match nine days in ten. Sized
+// independently, each extra +EV bet adds growth on its own account, and
+// expected log growth over the JOINT distribution is what stops that running
+// away - it already accounts for several bets competing for one bankroll, so
+// it turns down on its own once the day is over-committed.
+// Topping out at HALF Kelly, never full. Full Kelly is only growth-optimal if
+// the probability is exactly right, and ours is a model output with a standard
+// error; betting it on a mis-estimated edge is how a positive-edge bettor goes
+// broke. Half gives up about a quarter of the growth for a far smaller
+// drawdown, and the search usually settles well below even that.
+const REC_SCALES = [0.04, 0.07, 0.1, 0.14, 0.18, 0.24, 0.3, 0.38, 0.5];
+// How many of the best-priced bets to include.
+const REC_WIDTHS = [1, 2, 3, 4, 5, 6, 8, 10, 14, 20];
+
+export function recommendedPlan(bets, budget, { lambda = 1, maxSearch = 12 } = {}) {
+  const B = Number(budget) || 0;
+  if (!(B > 0)) return null;
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+  const priced = adj.filter((b) => b.o > 1 && b.p > 0);
+
+  // Only bets that beat their own price can carry a plan whose typical day is
+  // up: a -EV leg lowers both the median and the growth rate at every size.
+  const pool = priced
+    .map((b) => ({ ...b, f: kellyFraction(b.p, b.o) }))
+    .filter((b) => b.f > 0)
+    .sort((a, b) => b.f - a.f);
+  if (!pool.length) return null;
+
+  const combos = parlayCandidates(pool, 4, maxSearch);
+  const byN = new Map();
+  for (const c of combos) if (!byN.has(c.n) || c.f > byN.get(c.n).f) byN.set(c.n, c);
+  const comboChoices = [...byN.values()].sort((a, b) => a.n - b.n).slice(0, 3);
+
+  // One candidate: spread `exposure` of the budget across the best `width`
+  // bets in proportion to their Kelly fractions, handing `share` of that to a
+  // parlay. Null when the shape is not worth pricing.
+  const build = (width, scale, combo) => {
+    const take = pool.slice(0, Math.min(width, pool.length));
+    const singles = {};
+    let spent = 0;
+    for (const b of take) {
+      const stake = Math.min(B * REC_BET_CAP, B * scale * b.f);
+      if (stake >= B * REC_MIN_STAKE) { singles[b.key] = stake; spent += stake; }
+    }
+    if (!Object.keys(singles).length) return null;
+    // The parlay is sized the same way and out of what is left, so it can
+    // never push the day past the budget just because it looked good alone.
+    const parStake = combo
+      ? Math.min(B * REC_PARLAY_CAP, B * scale * combo.f, Math.max(0, B - spent))
+      : 0;
+    if (combo && parStake < B * REC_MIN_STAKE) return null;
+    if (spent + parStake > B + 1e-9) return null;
+    // Only the bets that carry money. A zero-stake leg contributes nothing to
+    // the P&L distribution but still costs a convolution pass, and the search
+    // prices a hundred candidates against a card that can hold forty matches:
+    // on a 28-match card this alone took the search from 468ms to well under
+    // a hundred. Parlay legs are kept whatever their single, since the parlay
+    // stake rides on them.
+    const parLegs = combo ? combo.legs : [];
+    const staked = adj
+      .filter((b) => (singles[b.key] || 0) > 0 || parLegs.includes(b.key))
+      .map((b) => ({ ...b, single: singles[b.key] || 0 }));
+    const metrics = analyzeSlip(staked, { stake: parStake, legs: parLegs });
+    if (!(metrics.ev > 0)) return null;
+    const score = expectedLogGrowth(metrics.dist, B);
+    if (!Number.isFinite(score)) return null;
+    // One in twenty days is worse than p05. That is the day this plan has to
+    // survive, so it is a constraint and not a footnote.
+    const badDay = metrics.pcts ? metrics.pcts.p05 : metrics.worst;
+    if (badDay < -B * REC_MAX_BAD_DAY) return null;
+    return {
+      singles, combo: parStake > 0 ? combo : null, parStake, metrics, score,
+      width: Object.keys(singles).length,
+      typicalUp: !!(metrics.pcts && metrics.pcts.p50 > 0),
+    };
+  };
+
+  // Every candidate the search prices, so the choice can be made in one pass
+  // over all of them instead of depending on the order they were walked.
+  const seen = [];
+  const consider = (w, sc, c) => {
+    const cand = build(w, sc, c);
+    if (cand) seen.push(cand);
+    return cand;
+  };
+
+  // Width x size, without a parlay. Priced in full rather than by coordinate
+  // descent: descent was path-dependent and it showed - on a card carrying
+  // both tours it locked onto a parlay early and returned a plan whose
+  // typical day made 23 cents, while the same search restricted to ATP alone
+  // found $4.94. More to choose from must never produce a worse answer, and
+  // with a coordinate walk it could. The full sweep is ~90 convolutions and
+  // costs about 60ms, which is affordable for something that re-runs on a
+  // filter change rather than on a keystroke.
+  const widths = REC_WIDTHS.filter((w, i) => w <= pool.length || REC_WIDTHS[i - 1] < pool.length);
+  for (const w of widths) for (const sc of REC_SCALES) consider(w, sc, null);
+
+  // Then the parlays, at the widths that proved themselves without one.
+  const bare = [...seen].sort((a, b) => b.score - a.score).slice(0, 3);
+  const goodWidths = [...new Set(bare.map((c) => c.width))];
+  for (const c of comboChoices) {
+    for (const w of goodWidths.length ? goodWidths : [widths[0]]) {
+      for (const sc of REC_SCALES) consider(w, sc, c);
+    }
+  }
+  if (!seen.length) return null;
+
+  // THE CHOICE, in one pass.
+  //
+  //   1. A typical day that finishes up, if any candidate manages it. Hard
+  //      gate: expected value is an average over many days and a right-skewed
+  //      plan can carry a healthy one while losing on most individual days.
+  //      Somebody following a plan every morning lives the median.
+  //   2. Among those, best expected log growth - Kelly's own measure, which
+  //      rewards return and punishes swings in one number.
+  //   3. Among plans all but level on growth, the better typical day. A floor
+  //      of "greater than zero" let a plan through on a thin card whose middle
+  //      day made 27 cents while a near-identical one made several dollars,
+  //      and within a few percent of the same growth rate the score is not
+  //      really discriminating between them.
+  const GROWTH_TOLERANCE = 0.92;
+  const up = seen.filter((c) => c.typicalUp);
+  const field = up.length ? up : seen;
+  const topScore = field.reduce((m, c) => Math.max(m, c.score), -Infinity);
+  const median = (c) => (c.metrics.pcts ? c.metrics.pcts.p50 : 0);
+  const near = field.filter((c) => c.score >= topScore * (topScore > 0 ? GROWTH_TOLERANCE : 1 / GROWTH_TOLERANCE));
+  const best = near.reduce((b, c) => (median(c) > median(b) ? c : b), near[0]);
+
+  return {
+    singles: best.singles,
+    combo: best.combo,
+    parlayStake: best.parStake,
+    parlayLegs: best.combo ? best.combo.legs : [],
+    metrics: best.metrics,
+    growth: best.score,
+    typicalUp: best.typicalUp,
+  };
+}
+
 export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12 } = {}) {
   const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
   const priced = adj.filter((b) => b.o > 1 && b.p > 0);
@@ -539,6 +789,22 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   })();
 
   const plans = [];
+
+  // The recommendation, built by search against a positive typical day and
+  // best expected growth. It leads the menu because it is the answer; the
+  // policy plans below it stay on offer for anyone who wants a different
+  // trade, and the page shows every one of them the same numbers.
+  const best = recommendedPlan(bets, B, { lambda, maxSearch });
+  if (best) {
+    plans.push({
+      id: 'best',
+      label: best.typicalUp ? 'Up on a typical day' : 'Best of a bad card',
+      ...shape(best.singles, best.combo, best.parlayStake),
+      growth: best.growth,
+      typicalUp: best.typicalUp,
+    });
+  }
+
   if (edgePlan) {
     plans.push({ id: 'edge', label: 'Follow the edge', ...edgePlan });
   }
@@ -621,11 +887,17 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   }
 
   if (plans.length) {
-    // The recommendation is POLICY, not a per-day beauty contest: the edge
-    // plan won the plan tournament (see the constants above) and a daily
-    // follower needs one consistent answer, so it leads whenever it stakes
-    // anything. The chance-first rule remains the tiebreak among the rest.
-    const recommendedId = plans.some((p) => p.id === 'edge') ? 'edge' : recommendedPlanId(plans);
+    // The recommendation used to be pinned to the edge policy unconditionally,
+    // on the reasoning that a daily follower needs one consistent answer and
+    // that policy won the walk-forward tournament. It does win on return per
+    // dollar risked. What it does not do is finish up on a typical day: on a
+    // thin card it funds two bets, needs both, and its middle outcome is a
+    // loss. Consistency is worth less than that.
+    //
+    // `best` is now built to clear that bar directly (recommendedPlan above),
+    // so it leads when it exists. The old chance-first rule stays as the
+    // tiebreak for a card where the search comes back empty.
+    const recommendedId = plans.some((p) => p.id === 'best') ? 'best' : recommendedPlanId(plans);
     return { plans, lambda, reason: null, recommendedId };
   }
   if (!plans.length) {

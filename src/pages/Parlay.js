@@ -431,7 +431,7 @@ export default function Parlay() {
               onDrop={toggle} onPlanChange={setPlan}
               riskSlot={(
                 <div className="parlay-risk" id="risk">
-                  <RiskLab legs={viewLegs} graded={graded} plan={plan} />
+                  <RiskLab legs={viewLegs} graded={graded} noCalls={viewNoCalls} plan={plan} />
                 </div>
               )} />
           )}

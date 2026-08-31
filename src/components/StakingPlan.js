@@ -76,6 +76,21 @@ export default function StakingPlan({
   const [hidePasses, setHidePasses] = useState(false);
   const [sortBy, setSortBy] = useState('prob');
 
+  // What the user is allowed to stake, which is not the same as what the plan
+  // is allowed to recommend.
+  //
+  // The recommendation NEVER funds a match the model declined to call: a
+  // product that refuses to claim a coin flip and then tells you to back it
+  // is saying two things at once. Custom is the user's own slip, though, and
+  // refusing to price a bet they have decided to make is a different failure -
+  // it just leaves them doing the arithmetic somewhere we cannot see. So in
+  // Custom the passes become stakeable, they carry their real edge, and every
+  // number on the page includes them. Budget mode never sees them.
+  const stakeable = useMemo(
+    () => (mode === 'mine' ? [...legs, ...noCalls] : legs),
+    [mode, legs, noCalls]
+  );
+
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
   // Which legs the parlay WOULD cover, versus which it actually does. The
@@ -83,9 +98,9 @@ export default function StakingPlan({
   // switching the parlay back on restores exactly the combination you built.
   // Both are memoised because analyzeSlip enumerates 2^n outcomes off them.
   const pickedLegIds = useMemo(
-    () => legs.filter(isIn).map((l) => l.id),
+    () => stakeable.filter(isIn).map((l) => l.id),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [legs, oddsOverride, inParlay]
+    [stakeable, oddsOverride, inParlay]
   );
   const parlayLegIds = useMemo(
     () => (useParlay ? pickedLegIds : []),
@@ -94,7 +109,7 @@ export default function StakingPlan({
 
   // Bets carry the odds you'll actually get; singles come from your own inputs
   // in Custom, or from the chosen recommendation.
-  const priceBets = (singleFor) => legs.map((l) => ({
+  const priceBets = (singleFor, from = stakeable) => from.map((l) => ({
     key: l.id, p: l.favProb, o: oddsOf(l), single: singleFor(l),
   }));
 
@@ -110,7 +125,7 @@ export default function StakingPlan({
   // Not every match gets money, and a funded single need not be in the parlay -
   // both fall out of what clears its price. See utils/staking planFrontier.
   const frontier = useMemo(
-    () => planFrontier(priceBets(() => 0), Number(budget) || 0, { lambda: rel.lambda }),
+    () => planFrontier(priceBets(() => 0, legs), Number(budget) || 0, { lambda: rel.lambda }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [legs, oddsOverride, budget, rel.lambda]
   );
@@ -160,7 +175,7 @@ export default function StakingPlan({
   // directly below. Keyed on a signature rather than the object, because a
   // fresh object every render would re-fire the effect forever.
   const allocation = useMemo(() => ({
-    singles: Object.fromEntries(legs.map((l) => [l.id, +(singleFor(l) || 0).toFixed(2)])),
+    singles: Object.fromEntries(stakeable.map((l) => [l.id, +(singleFor(l) || 0).toFixed(2)])),
     parlayStake: +(parStake || 0).toFixed(2),
     parlayLegs: activeParlayLegs,
     // The money set aside for today, which is also what the risk lab sizes
@@ -170,7 +185,7 @@ export default function StakingPlan({
     mode,
   }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [legs, mode, rec, stakes, parStake, activeParlayLegs, budget]);
+  [stakeable, mode, rec, stakes, parStake, activeParlayLegs, budget]);
   const allocSig = JSON.stringify(allocation);
   useEffect(() => {
     if (onPlanChange) onPlanChange(JSON.parse(allocSig));
@@ -180,9 +195,10 @@ export default function StakingPlan({
   // Start a custom plan FROM the recommendation on screen rather than from
   // zero: the point is to adjust a good answer, not to rebuild one.
   const customise = () => {
-    setStakes(Object.fromEntries(legs.map((l) => [l.id, +(rec?.singles[l.id] || 0).toFixed(2)])));
+    const all = [...legs, ...noCalls];
+    setStakes(Object.fromEntries(all.map((l) => [l.id, +(rec?.singles[l.id] || 0).toFixed(2)])));
     setParlayStake(+(rec?.parlayStake || 0).toFixed(2));
-    setInParlay(Object.fromEntries(legs.map((l) => [l.id, (rec?.parlayLegs || []).includes(l.id)])));
+    setInParlay(Object.fromEntries(all.map((l) => [l.id, (rec?.parlayLegs || []).includes(l.id)])));
     setUseParlay((rec?.parlayStake || 0) > 0);
     setMode('mine');
   };
@@ -203,6 +219,8 @@ export default function StakingPlan({
   // risk lab's flat-stake box used to do before the two pages became one, and
   // it is the quickest way to ask "what if I just backed everything the same".
   const flatten = () => {
+    // Calls only. "Flat across the card" is a shortcut, and quietly funding
+    // every coin flip we declined to call is not what anyone means by it.
     const priced = legs.filter((l) => oddsOf(l) > 1);
     if (!priced.length) return;
     const each = +(((Number(budget) || 0) || analysis.staked) / priced.length).toFixed(2);
@@ -215,7 +233,7 @@ export default function StakingPlan({
   // the +EV bets only (a -EV leg can't be sized to break even, so it goes to 0).
   const balance = () => {
     const total = analysis.staked || Number(budget) || 0;
-    const r = recommendStakes(priceBets(() => 0), parlayLegIds, total);
+    const r = recommendStakes(priceBets(() => 0, legs), parlayLegIds, total);
     setStakes(Object.fromEntries(legs.map((l) => [l.id, +(r.singles[l.id] || 0).toFixed(2)])));
     setParlayStake(+(r.parlay || 0).toFixed(2));
   };
@@ -428,15 +446,39 @@ export default function StakingPlan({
                   recommend the biggest bet every single day.
                 </p>
                 <p>
-                  The lead plan is <strong>fixed policy, not a daily beauty contest</strong>. It was picked
-                  by replaying {BACKTEST.windowDays} tournament days of graded calls through every
-                  candidate rule, walk-forward, settled at the prices stamped before play. Funding only
-                  calls priced better than we rate them, at a quarter of Kelly, staked on{' '}
-                  {BACKTEST.edge.days} of those days and returned <strong>+{BACKTEST.edge.roi}%</strong> on
-                  money staked, with a worst day of −${BACKTEST.edge.worst} and a ${BACKTEST.edge.maxDD}{' '}
-                  deepest drawdown per $100 of budget. Backing the whole card returned{' '}
-                  +{BACKTEST.spread.roi}% for {(BACKTEST.spread.staked / BACKTEST.edge.staked).toFixed(1)}× the
-                  money at risk and {(BACKTEST.spread.maxDD / BACKTEST.edge.maxDD).toFixed(1)}× the drawdown.
+                  The lead plan is <strong>searched for this card</strong>, against two requirements in
+                  the order they matter. First, a <strong>typical day has to finish up</strong>: the
+                  middle outcome must be a profit, which is a hard gate rather than something traded off.
+                  Second, among the plans that clear it, the one with the best{' '}
+                  <strong>expected growth</strong> wins. That is Kelly&apos;s own measure, and it rewards
+                  return and punishes swings in a single number, so earning more and risking less stop
+                  being a trade-off you have to weigh by eye. Where two plans are all but level on
+                  growth, the better typical day breaks the tie.
+                </p>
+                <p>
+                  Three things fall out of that rather than being imposed. It <strong>does not spend the
+                  budget</strong>, because growth turns down past the optimal fraction and the rest is
+                  worth more tomorrow. It <strong>may not carry a parlay</strong>, since no parlay is
+                  always one of the candidates and usually the better one. And no single match takes
+                  more than a tenth of the budget or half its own Kelly stake, so putting real money to
+                  work means spreading it. A day at the 5th percentile, one in twenty, is held inside
+                  15% of the budget.
+                </p>
+                <p>
+                  {/* The old lead plan, kept on the menu and kept honest about
+                      what it is. It still wins on return per dollar risked,
+                      which is why it is still offered; it lost the lead
+                      because on a thin card its middle day is a loss. */}
+                  <strong>Follow the edge</strong> is still on the menu below. It was the lead until it
+                  was not: picked by replaying {BACKTEST.windowDays} tournament days of graded calls
+                  through every candidate rule, walk-forward, settled at the prices stamped before play,
+                  it staked on {BACKTEST.edge.days} of those days and returned{' '}
+                  <strong>+{BACKTEST.edge.roi}%</strong> on money staked, against{' '}
+                  +{BACKTEST.spread.roi}% for backing the whole card at{' '}
+                  {(BACKTEST.spread.staked / BACKTEST.edge.staked).toFixed(1)}× the money at risk. It
+                  still wins on return per dollar risked. What it does not do is finish up on a typical
+                  day: on a card with two qualifying bets it funds both, needs both, and its middle
+                  outcome is a loss.
                 </p>
                 <p>
                   {/* The backtest runs on the RESIMULATED record, whose
@@ -568,8 +610,12 @@ export default function StakingPlan({
         )}
         {rows.map(({ l, call }) => {
           const o = oddsOf(l);
-          const e = call ? edgePerDollar(probOf(l), o) : null;
-          const stake = call ? singleFor(l) : 0;
+          // A pass is live in Custom: the user's slip is theirs to build, and
+          // pricing a bet they have already decided on is more honest than
+          // making them do it on paper. The plan still never funds one.
+          const live = call || mode === 'mine';
+          const e = live ? edgePerDollar(probOf(l), o) : null;
+          const stake = call ? singleFor(l) : (mode === 'mine' ? singleFor(l) : 0);
           return (
             <div className={`stake-row${e != null && e < 0 ? ' neg' : ''}${call ? '' : ' pass'}`}
               role="row" key={l.id}>
@@ -586,38 +632,44 @@ export default function StakingPlan({
                 </em>
               </span>
               <span className="stake-odds" role="cell">
-                {call
+                {live
                   ? <input type="number" min="1" step="0.01" value={o || ''} placeholder="–"
                       onChange={(e2) => setOddsOverride((s2) => ({ ...s2, [l.id]: parseFloat(e2.target.value) || 0 }))} />
                   : <span className="stake-odds-flat">{o > 1 ? o.toFixed(2) : '–'}</span>}
               </span>
-              {/* A pass carries no edge figure on purpose. Our probability on
-                  a coin flip is the number we have just said we do not trust,
-                  and an edge computed from it would read as a tip. */}
-              <span role="cell" className={`stake-edge ${!call || e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
-                {!call ? <span className="stake-pass-tag">no call</span>
-                  : e == null ? 'no price' : pctSigned(e)}
+              {/* In Recommended a pass carries no edge figure: our probability
+                  on a coin flip is the number we have just said we do not
+                  trust, and an edge computed from it would read as a tip. In
+                  Custom the number is shown, with the caveat attached to it
+                  rather than in place of it. */}
+              <span role="cell" className={`stake-edge ${e == null ? 'na' : e >= 0 ? 'pos' : 'neg'}`}>
+                {e == null
+                  ? (call ? 'no price' : <span className="stake-pass-tag">no call</span>)
+                  : (
+                    <>
+                      {pctSigned(e)}
+                      {!call && <span className="stake-pass-note">no call</span>}
+                    </>
+                  )}
               </span>
               <span className="stake-single" role="cell">
-                {!call
-                  ? <span className="stake-suggest">–</span>
-                  : mode === 'budget'
-                    ? <span className="stake-suggest">{stake > 0 ? money(stake) : '–'}</span>
-                    : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
-                        disabled={!(o > 1)}
-                        onChange={(e2) => setStakes((s2) => ({ ...s2, [l.id]: e2.target.value }))} />}
+                {mode === 'budget'
+                  ? <span className="stake-suggest">{call && stake > 0 ? money(stake) : '–'}</span>
+                  : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
+                      disabled={!(o > 1)}
+                      onChange={(e2) => setStakes((s2) => ({ ...s2, [l.id]: e2.target.value }))} />}
               </span>
               <span className="stake-inpar" role="cell">
                 {/* In budget mode the optimiser owns this choice, so the box
                     reports the plan instead of driving it. */}
                 <input type="checkbox"
-                  aria-label={!call
-                    ? `${lastName(l.favName)} is a no call and cannot be staked`
-                    : mode === 'budget'
+                  aria-label={mode === 'budget'
+                    ? (call
                       ? `${inActiveParlay(l) ? 'In' : 'Not in'} the plan's parlay`
-                      : 'Include in parlay'}
-                  checked={call && (mode === 'budget' ? inActiveParlay(l) : isIn(l))}
-                  disabled={!call || mode === 'budget' || !(o > 1)}
+                      : `${lastName(l.favName)} is a no call, so the plan will not stake it`)
+                    : `Include ${lastName(l.favName)} in the parlay`}
+                  checked={mode === 'budget' ? (call && inActiveParlay(l)) : isIn(l)}
+                  disabled={mode === 'budget' || !(o > 1)}
                   onChange={() => setInParlay((s2) => ({ ...s2, [l.id]: !isIn(l) }))} />
               </span>
               {onDrop && (

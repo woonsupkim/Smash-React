@@ -178,14 +178,21 @@ test('the card table shows the whole day, and each control scopes exactly what i
   // exposure has to follow it, and the two tours have to add up to the whole
   // card rather than quietly dropping matches between them.
   let partition = 0;
+  const perTour = [];
   for (const t of [/^ATP/, /^WTA/]) {
     await page.getByRole('button', { name: t }).click();
     const n = await rows.count();
     partition += n;
     expect(n).toBeLessThanOrEqual(total);
-    if (n > 0 && n < total) await expect(page.locator('.risk-exposure-cap')).not.toHaveText(before);
+    perTour.push(await page.locator('.risk-exposure-cap').innerText().catch(() => ''));
   }
+  // The two tours account for the whole card between them, and at least one
+  // of them prices differently from the pair. Asserted this way round rather
+  // than "each tour must differ": a tour whose share of the card carries no
+  // qualifying bet correctly stakes nothing, and demanding a different figure
+  // there would be demanding the plan invent one.
   expect(partition).toBe(total);
+  if (total > 1) expect(perTour.some((x) => x !== before)).toBe(true);
   await page.getByRole('button', { name: 'Both tours' }).click();
   await expect(rows).toHaveCount(total);
   expect(await exposure()).toBe(before);
@@ -207,6 +214,60 @@ test('the card table shows the whole day, and each control scopes exactly what i
   const edgeRows = await rows.evaluateAll((els) => els.map((e) => e.classList.contains('pass')));
   const firstPass = edgeRows.indexOf(true);
   if (firstPass >= 0) expect(edgeRows.slice(firstPass).every(Boolean)).toBe(true);
+
+  expect(errors).toEqual([]);
+});
+
+test('the recommended plan finishes up on a typical day, and never buries the budget', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+
+  // The headline promise of the objective. Read off the lab, which prices
+  // exactly what the plan above put on the table.
+  const typical = await page.locator('.risk-metric').first().innerText();
+  const dollars = parseFloat(typical.replace(/[^0-9.\-]/g, ''));
+  expect(typical).not.toMatch(/^-/);
+  expect(dollars).toBeGreaterThan(0);
+
+  // It is a plan, not a punt: the whole budget never goes on the table, and a
+  // bad day stays inside its ceiling.
+  const exposure = await page.locator('.risk-exposure-cap').innerText();
+  const pct = parseFloat((exposure.match(/([\d.]+)% of your/) || [])[1]);
+  expect(pct).toBeLessThan(100);
+  const bad = await page.locator('.risk-metric').nth(1).innerText();
+  expect(Math.abs(parseFloat(bad.replace(/[^0-9.\-]/g, '')))).toBeLessThanOrEqual(15.5);
+
+  expect(errors).toEqual([]);
+});
+
+test('custom mode prices the matches we would not call, and the plan still will not', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  const pass = page.locator('.stake-row.pass').first();
+  if (await pass.count() === 0) { expect(errors).toEqual([]); return; }
+
+  // Recommended: no edge figure, nothing to stake. Our probability on a coin
+  // flip is the number we have just said we do not trust.
+  await expect(pass.locator('.stake-pass-tag')).toBeVisible();
+  await expect(pass.locator('.stake-single input')).toHaveCount(0);
+
+  // Custom: the slip is the user's, so it prices. The edge appears with the
+  // caveat attached to it rather than in place of it.
+  await page.getByRole('tab', { name: 'Custom' }).click();
+  await expect(pass.locator('.stake-edge')).toContainText('%');
+  await expect(pass.locator('.stake-pass-note')).toHaveText('no call');
+  await expect(pass.locator('.stake-single input')).toHaveCount(1);
+  await expect(pass.locator('.stake-odds input')).toHaveCount(1);
+
+  // And staking one has to reach the risk read, or the lab is describing a
+  // slip the reader is not holding.
+  const before = await page.locator('.risk-exposure-cap').innerText();
+  await pass.locator('.stake-single input').fill('12');
+  await expect(page.locator('.risk-exposure-cap')).not.toHaveText(before);
 
   expect(errors).toEqual([]);
 });
