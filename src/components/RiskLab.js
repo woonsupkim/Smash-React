@@ -193,12 +193,12 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
     <section className="risk-lab" aria-label="Size your risk">
       <div className="risk-head">
         <div>
-          <div className="risk-cap">Size your risk</div>
-          <p className="risk-sub">
-            The plan above says what we would stake. This says what happens to <em>you</em> if you
-            stake something else. Put in your own bankroll and stakes: nothing here is a
-            recommendation, it is the consequence of the numbers you type.
-          </p>
+          <div className="risk-cap">Your money on today&apos;s card</div>
+          {/* One line. This ran to three sentences explaining that the panel
+              describes rather than recommends - which the interface can just
+              show, by putting your inputs first and labelling every output as
+              a consequence of them. */}
+          <p className="risk-sub">Change the two numbers below and everything else follows.</p>
         </div>
       </div>
 
@@ -229,7 +229,10 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
       </div>
 
       <div className="risk-tabs" role="tablist" aria-label="Risk view">
-        {[['slip', 'This slip'], ['repeat', 'Repeated'], ['limits', 'My limits']].map(([id, label]) => (
+        {/* Named as the questions themselves. "This slip / Repeated / My
+            limits" were labels you had to open to understand, which is the
+            same failure as explaining the page in a paragraph. */}
+        {[['slip', 'Today'], ['repeat', 'If I did this all season'], ['limits', 'Am I betting too big?']].map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id}
             className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}

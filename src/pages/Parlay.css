@@ -175,3 +175,40 @@
    per-tournament caption pushed the curve onto its own line, where it read
    as a stray graphic rather than as this row's chart. */
 .parlay-receipt-main { flex: 1 1 20rem; }
+
+/* ── Hand-off to the risk page ────────────────────────────────────────────
+   Styled as a step, not a link list: the two pages are one flow and the
+   reader should not have to infer that from the nav. */
+.parlay-next {
+  display: block;
+  margin-top: 1.75rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.parlay-next:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--border-2); }
+.parlay-next-cap {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.parlay-next-main {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.parlay-next-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--accent-brand);
+  font-weight: 700;
+}

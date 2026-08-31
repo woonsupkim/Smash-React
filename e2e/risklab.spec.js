@@ -51,12 +51,12 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
   for (let i = 1; i < nums.length; i++) expect(nums[i]).toBeLessThanOrEqual(nums[i - 1] + 1e-9);
 
   // "Repeated": the fan chart and a ruin figure.
-  await page.getByRole('tab', { name: 'Repeated' }).click();
+  await page.getByRole('tab', { name: 'If I did this all season' }).click();
   await expect(page.locator('.risk-chart')).toBeVisible();
   await expect(page.getByText('chance of going broke')).toBeVisible();
 
   // "My limits": the Kelly gauge and a verdict.
-  await page.getByRole('tab', { name: 'My limits' }).click();
+  await page.getByRole('tab', { name: 'Am I betting too big?' }).click();
   await expect(page.locator('.risk-gauge, .risk-verdict').first()).toBeVisible();
 
   expect(errors).toEqual([]);
@@ -73,7 +73,7 @@ test('risk lab: a bankroll too small for the stake reads as over-sized', async (
   // the warning the panel exists to give.
   await page.locator('.risk-inputs input[type="number"]').nth(0).fill('50');
   await page.locator('.risk-inputs input[type="number"]').nth(1).fill('40');
-  await page.getByRole('tab', { name: 'My limits' }).click();
+  await page.getByRole('tab', { name: 'Am I betting too big?' }).click();
   await expect(page.locator('.risk-verdict.aggressive, .risk-verdict.ruinous, .risk-verdict.none').first())
     .toBeVisible({ timeout: 10000 });
   expect(errors).toEqual([]);

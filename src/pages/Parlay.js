@@ -101,6 +101,8 @@ export default function Parlay() {
   // The graded rows from the same file, kept so the staking plan can size
   // itself on the model's MEASURED accuracy rather than its stated confidence.
   const [graded, setGraded] = useState([]);
+  // Locked calls with no result yet, so a frozen receipt can say why.
+  const [awaiting, setAwaiting] = useState(0);
   // Today's whole card is in by default and you take legs OUT. Tracking the
   // REMOVALS rather than the selections is what makes that work: a set that
   // starts empty already means "everything", so the plan below is priced and
@@ -119,6 +121,12 @@ export default function Parlay() {
         // it actually bets. Mirrored by planSettle.ledgerGraded.
         const rows = (d.predictions || []).filter((p) => !ledgerNoCall(p));
         setGraded(rows.filter((p) => p.status === 'won' || p.status === 'lost'));
+        // Calls that are locked but not yet settled. The receipt below reads
+        // "every settled day so far", which is exactly right and looks broken
+        // when the tour is between events: it froze at the last graded day
+        // with nothing on screen to say why. This is what lets it explain
+        // itself instead.
+        setAwaiting(rows.filter((p) => p.status === 'pending').length);
         setAll(rows
           .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
           .sort((a, b) => b.favProb - a.favProb));
@@ -391,6 +399,10 @@ export default function Parlay() {
             </span>
             <span className="parlay-receipt-sub">
               {planHistory.all.days.length} days · {planHistory.all.up} up, {planHistory.all.days.length - planHistory.all.up} down
+              {planHistory.all.last?.day && (
+                <> · last settled {new Date(`${planHistory.all.last.day}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}</>
+              )}
+              {awaiting > 0 && <> · {awaiting} call{awaiting === 1 ? '' : 's'} still to settle</>}
             </span>
           </div>
           {/* No market series any more: the line that explained the dashed
@@ -471,6 +483,18 @@ export default function Parlay() {
           )}
 
         </>
+      )}
+
+      {/* The next step in the flow, not a related link: this page says what
+          to stake, and the obvious next question is what that does to your
+          bankroll. Without this the two pages are siblings a reader has to
+          discover in the nav and work out the difference between. */}
+      {legs.length > 0 && (
+        <Link to="/risk" className="parlay-next">
+          <span className="parlay-next-cap">Next</span>
+          <span className="parlay-next-main">See what this does to your bankroll</span>
+          <span className="parlay-next-sub">Your own stakes, your own limits &rarr;</span>
+        </Link>
       )}
 
       <div className="parlay-footer">
