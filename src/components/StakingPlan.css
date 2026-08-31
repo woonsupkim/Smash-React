@@ -311,3 +311,15 @@
   gap: 0.5rem 0.7rem;
   margin-top: 0.6rem;
 }
+
+/* Custom-mode shortcuts. "Flat across the card" is the one affordance lost
+   when the risk lab stopped owning a stake box of its own: it is the quickest
+   way to ask what backing everything the same actually looks like. */
+.stake-custom-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.6rem 0 0.2rem;
+}
+.stake-custom-note { font-size: 0.78rem; color: var(--text-3, #7c8698); }

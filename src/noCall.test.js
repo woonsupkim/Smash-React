@@ -118,7 +118,10 @@ describe('headline surfaces count calls only', () => {
 
   it('every headline consumer derives the exclusion instead of reading the flag', () => {
     for (const f of [
-      'src/pages/Home.js', 'src/pages/TrackRecord.js', 'src/pages/Parlay.js',
+      // The builder's own copy of this filter moved into useTodayCard when the
+      // risk lab was folded into the page: one loader for the staking
+      // surfaces, so there is one population rather than two that can drift.
+      'src/pages/Home.js', 'src/pages/TrackRecord.js', 'src/utils/useTodayCard.js',
       'data-pipeline/buildDigest.js', 'data-pipeline/buildShareAssets.js',
       'data-pipeline/checkGuardrails.js', 'data-pipeline/sendPush.js',
     ]) {
@@ -142,9 +145,17 @@ describe('the staking universe is calls only', () => {
   // reasoning that it bets edges rather than calls; a product that declines
   // to claim a coin flip and then asks you to stake one says two things at
   // once, so the two now agree.
-  it('the parlay page filters the whole ledger before it builds anything', () => {
-    const src = read('src/pages/Parlay.js');
+  it('the shared card loader filters the whole ledger before anything is built', () => {
+    const src = read('src/utils/useTodayCard.js');
     expect(src).toMatch(/\(d\.predictions \|\| \[\]\)\.filter\(\(p\) => !ledgerNoCall\(p\)\)/);
+  });
+
+  it('the builder and the risk lab load the card from that one place', () => {
+    // They used to be two pages with two copies of the same forty lines, which
+    // is two chances to price different populations on the same day.
+    const src = read('src/pages/Parlay.js');
+    expect(src).toMatch(/useTodayCard/);
+    expect(src).not.toMatch(/d\.predictions/);
   });
 
   it('plan settlement excludes them at the shared seam', () => {

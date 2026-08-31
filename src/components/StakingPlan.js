@@ -17,7 +17,7 @@
 // out to their match pages - so the slip above can stay a verdict on value
 // while this answers what to actually stake.
 // All the math lives in utils/staking; this is just the controls and readout.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { matchSlug } from '../utils/matchTime';
@@ -42,7 +42,18 @@ function composition(p) {
 
 // onDrop(leg) removes a match from the slip entirely, which is the job the
 // checkbox list above this table used to do before it was folded in here.
-export default function StakingPlan({ legs, graded = [], onDrop = null }) {
+//
+// onPlanChange(allocation) publishes whatever is currently on the table, so
+// the risk lab below can describe THIS plan rather than a second set of
+// stakes of its own. It fires for recommendations and custom edits alike:
+// there is one allocation on the page, and both surfaces read it.
+// riskSlot renders in place of the outcome histogram that used to sit under
+// the verdict. The histogram and the risk lab answered the same question -
+// how can today finish - with the lab answering it better and in both
+// directions, so keeping both was showing the same distribution twice.
+export default function StakingPlan({
+  legs, graded = [], onDrop = null, onPlanChange = null, riskSlot = null,
+}) {
   // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
   // the recommendation: it needs no input to be useful.
   const [mode, setMode] = useState('budget');
@@ -133,6 +144,27 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
     [mode, rec, bets, parStake, activeParlayLegs]
   );
 
+  // Publish the allocation to whoever is listening, currently the risk lab
+  // directly below. Keyed on a signature rather than the object, because a
+  // fresh object every render would re-fire the effect forever.
+  const allocation = useMemo(() => ({
+    singles: Object.fromEntries(legs.map((l) => [l.id, +(singleFor(l) || 0).toFixed(2)])),
+    parlayStake: +(parStake || 0).toFixed(2),
+    parlayLegs: activeParlayLegs,
+    // The money set aside for today, which is also what the risk lab sizes
+    // against: one number for "what I am playing with" rather than a budget
+    // here and a bankroll there.
+    budget: Number(budget) || 0,
+    mode,
+  }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [legs, mode, rec, stakes, parStake, activeParlayLegs, budget]);
+  const allocSig = JSON.stringify(allocation);
+  useEffect(() => {
+    if (onPlanChange) onPlanChange(JSON.parse(allocSig));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allocSig]);
+
   // Start a custom plan FROM the recommendation on screen rather than from
   // zero: the point is to adjust a good answer, not to rebuild one.
   const customise = () => {
@@ -154,6 +186,18 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
   // number, so the Edge column agrees with the money in both modes.
   const probOf = (l) => adjustProb(l.favProb, rel.lambda);
   const inActiveParlay = (l) => activeParlayLegs.includes(l.id);
+
+  // The same money spread evenly over every priced match. This is what the
+  // risk lab's flat-stake box used to do before the two pages became one, and
+  // it is the quickest way to ask "what if I just backed everything the same".
+  const flatten = () => {
+    const priced = legs.filter((l) => oddsOf(l) > 1);
+    if (!priced.length) return;
+    const each = +(((Number(budget) || 0) || analysis.staked) / priced.length).toFixed(2);
+    setStakes(Object.fromEntries(legs.map((l) => [l.id, oddsOf(l) > 1 ? each : 0])));
+    setParlayStake(0);
+    setUseParlay(false);
+  };
 
   // "Balance to break-even": keep the same total on the table, but move it onto
   // the +EV bets only (a -EV leg can't be sized to break even, so it goes to 0).
@@ -413,6 +457,13 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
         </div>
       </div>
 
+      {mode === 'mine' && (
+        <div className="stake-custom-tools">
+          <button type="button" className="stake-balance" onClick={flatten}>Flat across the card</button>
+          <span className="stake-custom-note">Same money on every priced match, no parlay.</span>
+        </div>
+      )}
+
       {mode === 'budget' && (
         <label className="stake-budget">
           Total to stake
@@ -521,43 +572,12 @@ export default function StakingPlan({ legs, graded = [], onDrop = null }) {
 
       {analysis.staked > 0 ? (
         <div className={`stake-out ${evClass}`}>
-          {analysis.dist && (() => {
-            const { lo, hi, bins } = analysis.dist;
-            const max = Math.max(...bins.map((b) => b.prob), 1e-9);
-            const zeroPct = hi > lo ? ((0 - lo) / (hi - lo)) * 100 : 50;
-            return (
-              <div className="stake-dist">
-                {/* The chart had a title and no instructions, so it looked
-                    like decoration. One line on how to read it and one on
-                    what to take from it costs nothing and turns it into the
-                    honest centrepiece of the page: the spread IS the product,
-                    and the losing half is not a disclaimer. */}
-                <div className="stake-dist-cap">Every way today can finish, by our probabilities</div>
-                <div className="stake-dist-how">
-                  Each bar is one possible end-of-day result; taller means likelier. Red is
-                  down on the day, green is up.
-                  {analysis.pProfit != null && <> The green area is {pct(analysis.pProfit)} of it, so
-                    roughly {Math.round((analysis.pProfit || 0) * 10)} days in 10 finish ahead
-                    and the rest do not.</>}
-                </div>
-                <div className="stake-dist-plot">
-                  <span className="stake-dist-zero" style={{ left: `${zeroPct}%` }} />
-                  <div className="stake-dist-bars">
-                    {bins.map((b, i) => (
-                      <span key={i} className={`stake-dist-bar ${b.win ? 'win' : 'loss'}`}
-                        style={{ height: `${Math.max(3, (b.prob / max) * 100)}%` }}
-                        title={`${pct(b.prob)} chance`} />
-                    ))}
-                  </div>
-                </div>
-                <div className="stake-dist-axis">
-                  <span>{money(lo)}</span>
-                  <span className="stake-dist-mid">down on the day ← break even → up on the day</span>
-                  <span>+{money(hi).replace('-', '')}</span>
-                </div>
-              </div>
-            );
-          })()}
+          {/* Where the outcome histogram used to be. It drew this same
+              distribution as bars and could only say how likely each end-of-day
+              result was; the lab draws both arms cumulatively, which is the
+              form the question is actually asked in, and carries the ladders
+              and the season view with it. */}
+          {riskSlot}
 
           {/* The badge used to read "Break-even or better", which is a
               promise this number cannot make: `breakEven` is `ev >= 0`, a

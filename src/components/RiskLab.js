@@ -3,8 +3,15 @@
 // The sizing panel. Its one job is to describe exposure, and it deliberately
 // recommends nothing: the staking plan above already answers "what should I
 // stake", and answering the same question twice in two voices is how a tool
-// stops being trusted. Here the stakes are the reader's, and every number is
-// a consequence of what they typed.
+// stops being trusted.
+//
+// It is CONTROLLED by that plan. The panel used to own a second copy of the
+// card, a second stake box, and a row of chips for loading the builder's
+// plans into it, all because it lived on its own page. Merged into the
+// builder, every one of those was a second place to set the same number, and
+// two sets of stakes on one page is exactly the disagreement the panel exists
+// to avoid. Stakes come in through `plan`; the only input still owned here is
+// the bankroll, which is a fact about the reader rather than about the day.
 //
 // The three tabs are three different questions people actually ask, in the
 // order they ask them:
@@ -17,8 +24,7 @@
 // you can be right about every price and still go broke by sizing. Nothing
 // else in the app says that, and it is not a matter of taste.
 import React, { useMemo, useState } from 'react';
-import { lastName } from '../utils/names';
-import { analyzeSlip, parlayCombo, reliability, adjustProb, planFrontier } from '../utils/staking';
+import { analyzeSlip, parlayCombo, reliability, adjustProb } from '../utils/staking';
 import { lossExceedance, gainExceedance, twoSidedExceedance, amountAtExceedance, kellyCheck, simulateBankroll, expectedLosingStreak, outcomePairs } from '../utils/riskLab';
 import './RiskLab.css';
 
@@ -43,13 +49,6 @@ const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2)
 
 // Same figure the plan card, the parlay builder and the digest all use.
 const DEFAULT_BANKROLL = 100;
-// Where the panel opens: enough of the bankroll on the card to be worth
-// looking at, nowhere near enough to be alarming. The reader moves it.
-const OPENING_EXPOSURE = 0.15;
-const openingStake = (bankroll, legCount) => (legCount > 0
-  ? Math.max(1, Math.round((bankroll * OPENING_EXPOSURE) / legCount))
-  : 1);
-
 // ── Charts ──────────────────────────────────────────────────────────────────
 
 // Both arms of the day on one axis: losses left of break-even, gains right,
@@ -60,9 +59,22 @@ const openingStake = (bankroll, legCount) => (legCount > 0
 // really one shape - a tent peaking at break-even, falling away as the
 // outcome gets more extreme. Nothing here needs subtracting to be read: each
 // side answers its own question in its own direction.
+// A ladder of round numbers covering [0, top], for an axis that should read
+// in dollars people recognise rather than in whatever the extremes happened
+// to be. Steps at 1-2-5 x a power of ten, the scale every chart axis uses.
+function niceSteps(top, target = 4) {
+  if (!(top > 0)) return [];
+  const raw = top / target;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map((m) => m * mag).find((v) => v >= raw) || mag * 10;
+  const out = [];
+  for (let v = step; v <= top + 1e-9; v += step) out.push(+v.toFixed(4));
+  return out;
+}
+
 function OutcomeCurve({ series, pcts, staked }) {
   if (!series || series.length < 4) return null;
-  const w = 420, h = 178, padL = 34, padR = 10, padT = 24, padB = 30;
+  const w = 420, h = 186, padL = 36, padR = 12, padT = 24, padB = 32;
   const loss = series.filter((s) => s.side === 'loss');
   const gain = series.filter((s) => s.side === 'gain');
   const lo = loss[0].pl, hi = gain[gain.length - 1].pl;
@@ -75,16 +87,54 @@ function OutcomeCurve({ series, pcts, staked }) {
   const base = h - padB;
   const pLose = loss[loss.length - 1].prob;
   const pWin = gain[0].prob;
-  const tick = (v, label) => (
-    <g key={label}>
-      <line x1={x(v)} x2={x(v)} y1={base} y2={base + 4} stroke="rgba(255,255,255,0.3)" />
-      <text x={x(v)} y={base + 15} textAnchor="middle" className="risk-axis">{label}</text>
-    </g>
+
+  // Dollar ticks out from break-even in both directions, on the same round
+  // step, so the two arms are read on one scale rather than two.
+  const step = Math.max(
+    niceSteps(Math.abs(lo), 3)[0] || 1,
+    niceSteps(hi, 3)[0] || 1
   );
+  const round = [{ v: 0, label: 'break even' }];
+  for (let v = step; v <= hi + 1e-9; v += step) round.push({ v, label: `+${money0(v)}` });
+  for (let v = step; v <= Math.abs(lo) + 1e-9; v += step) round.push({ v: -v, label: money0(-v) });
+
+  // The extremes carry something the round ladder cannot: the worst case is
+  // where you lose the lot, and the best is the whole card landing. They are
+  // added as ticks in their own right, and where one lands on top of a round
+  // tick the round one gives way - the ladder exists to convey scale, and one
+  // rung of it is the cheaper thing to lose.
+  const ends = [
+    { v: lo, label: `${money0(lo)}${lo <= -staked + 0.01 ? ' (all)' : ''}`, anchor: 'start' },
+    { v: hi, label: `+${money0(hi)}`, anchor: 'end' },
+  ];
+  const CLEAR = 34;   // viewBox units, about the width of one axis label
+  const xTicks = [
+    ...round.filter((t) => t.v === 0 || ends.every((e) => Math.abs(x(t.v) - x(e.v)) > CLEAR)),
+    ...ends.filter((e) => Math.abs(x(e.v) - zeroX) > CLEAR),
+  ];
+
+  // Horizontal gridlines at round percentages. The curve's whole job is to be
+  // read off at a height, and two labels at the ends made that guesswork.
+  const yTicks = niceSteps(maxP, 6).filter((v) => v <= maxP + 1e-9);
+
+  // The median, ON the curve rather than pinned to the axis. Its height is
+  // the answer to "how often do you do at least this well", which for the
+  // median is about half - so the marker lands where the curve crosses 50%
+  // and says why it is there.
+  const side = pcts && pcts.p50 > 0 ? gain : loss;
+  const near = pcts
+    ? side.reduce((best, q) => (Math.abs(q.pl - pcts.p50) < Math.abs(best.pl - pcts.p50) ? q : best), side[0])
+    : null;
+
   return (
     <svg className="risk-chart wide" viewBox={`0 0 ${w} ${h}`} role="img"
       aria-label={`Outcome curve. Chance of losing anything ${pct0(pLose)}, chance of winning anything ${pct0(pWin)}. A bad day is ${money0(pcts ? pcts.p05 : lo)}, a typical day ${money0(pcts ? pcts.p50 : 0)}, a good day ${money0(pcts ? pcts.p95 : hi)}.`}>
-      {/* Fills first, so the curves sit on top of their own shading. */}
+      {/* Gridlines under everything, so they read as paper rather than data. */}
+      {yTicks.map((v) => (
+        <line key={`g${v}`} x1={padL} x2={w - padR} y1={y(v)} y2={y(v)}
+          stroke="rgba(255,255,255,0.07)" />
+      ))}
+
       <polygon points={`${x(lo)},${base} ${path(loss)} ${zeroX},${base}`} fill="rgba(255,92,92,0.16)" />
       <polygon points={`${zeroX},${base} ${path(gain)} ${x(hi)},${base}`} fill="rgba(92,191,141,0.16)" />
       <polyline points={path(loss)} fill="none" stroke="#ff8f8f" strokeWidth="2" strokeLinejoin="round" />
@@ -97,21 +147,32 @@ function OutcomeCurve({ series, pcts, staked }) {
       <text x={zeroX - 6} y={y(pLose) - 7} textAnchor="end" className="risk-axis strong loss">{pct0(pLose)} lose</text>
       <text x={zeroX + 6} y={y(pWin) - 7} className="risk-axis strong gain">{pct0(pWin)} win</text>
 
-      {/* A typical day, where it actually falls. */}
-      {pcts && (
+      {near && (
         <g>
-          <circle cx={x(pcts.p50)} cy={base} r="3" fill="var(--accent-brand, #c8f560)" />
-          <text x={x(pcts.p50) + (pcts.p50 > 0 ? 7 : -7)} y={base - 6}
-            textAnchor={pcts.p50 > 0 ? 'start' : 'end'} className="risk-axis strong">typical</text>
+          <line x1={x(near.pl)} x2={x(near.pl)} y1={y(near.prob)} y2={base}
+            stroke="var(--accent-brand, #c8f560)" strokeWidth="0.75" strokeDasharray="2 2" opacity="0.7" />
+          <circle cx={x(near.pl)} cy={y(near.prob)} r="3.5" fill="var(--accent-brand, #c8f560)"
+            stroke="#12151b" strokeWidth="1" />
+          <text x={x(near.pl) + (near.pl > 0 ? 8 : -8)} y={y(near.prob) + 3}
+            textAnchor={near.pl > 0 ? 'start' : 'end'} className="risk-axis strong">
+            typical day {money0(pcts.p50)}
+          </text>
         </g>
       )}
 
       <line x1={padL} x2={w - padR} y1={base} y2={base} stroke="rgba(255,255,255,0.16)" />
-      <text x={padL - 4} y={padT + 6} textAnchor="end" className="risk-axis">{pct0(maxP)}</text>
-      <text x={padL - 4} y={base} textAnchor="end" className="risk-axis">0</text>
-      {tick(lo, `${money0(lo)}${lo <= -staked + 0.01 ? ' (all)' : ''}`)}
-      {tick(0, 'break even')}
-      {tick(hi, `+${money0(hi).replace('-', '')}`)}
+      {yTicks.map((v) => (
+        <text key={`y${v}`} x={padL - 5} y={y(v) + 3} textAnchor="end" className="risk-axis">{pct0(v)}</text>
+      ))}
+      <text x={padL - 5} y={base + 3} textAnchor="end" className="risk-axis">0</text>
+      {xTicks.map((t) => (
+        <g key={t.label}>
+          <line x1={x(t.v)} x2={x(t.v)} y1={base} y2={base + 4} stroke="rgba(255,255,255,0.3)" />
+          <text x={x(t.v)} y={base + 15} textAnchor={t.anchor || 'middle'} className="risk-axis">
+            {t.label}
+          </text>
+        </g>
+      ))}
     </svg>
   );
 }
@@ -178,63 +239,20 @@ function KellyGauge({ ratio }) {
 
 // onDrop(leg) takes a match off the card entirely. Supplied when this is the
 // page's own control surface rather than a panel reading someone else's list.
-export default function RiskLab({ legs, graded = [], onDrop = null }) {
+export default function RiskLab({ legs, graded = [], plan = null }) {
   const [tab, setTab] = useState('slip');
-  // $100, matching PLAN_BUDGET everywhere else on the site, so a reader
-  // comparing this page with the plan card or the digest is comparing like
-  // with like instead of silently rebasing.
-  const [bankroll, setBankroll] = useState(DEFAULT_BANKROLL);
-  // The opening stake is DERIVED, not a second hardcoded number. A fixed $10
-  // against a $100 bankroll opens at 290% exposure on a full tour day, so the
-  // panel would shout "ruinous" before the reader had typed anything - an
-  // artifact of the defaults rather than a judgement about their betting.
-  // Seeded to put roughly OPENING_EXPOSURE of the bankroll on the card, then
-  // it is theirs. Runs once: dropping a match must not move the stake.
-  const [flat, setFlat] = useState(() => openingStake(DEFAULT_BANKROLL, legs.length));
-  const [parlayStake, setParlayStake] = useState(0);
-  const [override, setOverride] = useState({});   // { id: stake }
-  const [inParlay, setInParlay] = useState({});   // { id: bool }, default true
   const [days, setDays] = useState(30);
-  // Which builder plan is currently loaded, or null for stakes you set
-  // yourself. Cleared the moment any stake is edited, so the highlight can
-  // never claim you are looking at a plan you have since changed.
-  const [applied, setApplied] = useState(null);
 
   // Same reliability haircut the plan uses: the panel must describe the same
   // bets the rest of the page prices, or the two disagree about one slip.
   const rel = useMemo(() => reliability(graded), [graded]);
-  const stakeOf = (l) => (override[l.id] != null ? Number(override[l.id]) || 0 : Number(flat) || 0);
-  const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && defaultOdds(l) > 1;
-
-  // The builder's own plan menu, computed on YOUR bankroll rather than the
-  // site's hypothetical $100. Same function the parlay builder runs, so these
-  // are the same plans, sized to the money you actually have. Whether that
-  // sizing is sane is the question the Kelly gauge below answers, which is
-  // the point of being able to load them here at all.
-  const frontier = useMemo(() => {
-    const priced = legs
-      .map((l) => ({ key: l.id, p: l.favProb, o: defaultOdds(l) }))
-      .filter((b) => b.o > 1 && b.p > 0);
-    if (priced.length < 2 || !(Number(bankroll) > 0)) return null;
-    try {
-      return planFrontier(priced, Number(bankroll), { lambda: rel.lambda });
-    } catch { return null; }
-  }, [legs, bankroll, rel.lambda]);
-
-  // Load a plan's stakes in as if you had typed them. Every leg is written
-  // explicitly, including the zeros: a plan that declines to back a match is
-  // making a statement, and leaving those legs on the flat stake would show
-  // a slip the builder never proposed.
-  const applyPlan = (plan) => {
-    const next = {};
-    for (const l of legs) next[l.id] = +((plan.singles || {})[l.id] || 0).toFixed(2);
-    setOverride(next);
-    setParlayStake(+(plan.parlayStake || 0).toFixed(2));
-    const inPar = {};
-    for (const l of legs) inPar[l.id] = (plan.parlayLegs || []).includes(l.id);
-    setInParlay(inPar);
-    setApplied(plan.id);
-  };
+  // Straight off the plan on the table above. A leg the plan declines to back
+  // is staked zero, not quietly given a default: a plan that skips a match is
+  // making a statement, and inventing a stake for it would describe a slip
+  // nobody proposed.
+  const singles = (plan && plan.singles) || {};
+  const stakeOf = (l) => Number(singles[l.id]) || 0;
+  const isIn = (l) => ((plan && plan.parlayLegs) || []).includes(l.id) && defaultOdds(l) > 1;
 
   const bets = useMemo(() => legs.map((l) => ({
     key: l.id,
@@ -243,20 +261,24 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
     single: stakeOf(l),
   })),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [legs, override, flat, rel.lambda]);
+  [legs, singles, rel.lambda]);
 
   const parlayLegs = useMemo(() => legs.filter(isIn).map((l) => l.id),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [legs, inParlay]);
+    [legs, plan]);
 
-  const parStake = Number(parlayStake) || 0;
+  const parStake = Number(plan && plan.parlayStake) || 0;
   const analysis = useMemo(
     () => analyzeSlip(bets, { stake: parStake, legs: parlayLegs }),
     [bets, parStake, parlayLegs]
   );
   const combo = useMemo(() => parlayCombo(bets, parlayLegs), [bets, parlayLegs]);
 
-  const bank = Number(bankroll) || 0;
+  // The budget from the plan above IS the bankroll. They were two inputs for
+  // one idea: the money you have set aside to play with. Asking for it twice
+  // invited them to disagree, and a Kelly reading is only as honest as the
+  // number it is sized against.
+  const bank = Number(plan && plan.budget) || DEFAULT_BANKROLL;
   const staked = analysis.staked;
 
   // Both ladders stop at the 2% outcome rather than at the theoretical
@@ -280,13 +302,19 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
     return gainExceedance(analysis.dist, levels).map((s) => ({ ...s, amount: s.gain }));
   }, [analysis.dist, staked, analysis.best]);
 
-  // The chance of the ceiling actually arriving. It used to be read off the
-  // top rung of the upside ladder, which is no longer the extreme.
-  const pBest = useMemo(
-    () => (analysis.dist && analysis.best > 0
-      ? gainExceedance(analysis.dist, [analysis.best])[0].prob : 0),
-    [analysis.dist, analysis.best]
-  );
+  const backedCount = useMemo(() => bets.filter((b) => (b.single || 0) > 0).length, [bets]);
+
+  // The chance of the ceiling actually arriving: every bet in the slip wins at
+  // once, so the product over every leg that carries money. Read off the
+  // distribution at first, which returned zero whenever the best case landed
+  // outside the p99 clip the chart is drawn across - and on a slip of short
+  // favourites the best case is not a rare event at all.
+  const pBest = useMemo(() => {
+    const keys = new Set(bets.filter((b) => (b.single || 0) > 0).map((b) => b.key));
+    if (parStake > 0) for (const k of parlayLegs) keys.add(k);
+    if (!keys.size) return 0;
+    return bets.filter((b) => keys.has(b.key)).reduce((s2, b) => s2 * b.p, 1);
+  }, [bets, parStake, parlayLegs]);
 
   const curve = useMemo(
     () => (analysis.dist && staked > 0 ? twoSidedExceedance(analysis.dist, 24) : []),
@@ -319,58 +347,18 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
     <section className="risk-lab" aria-label="Risk Lab">
       <div className="risk-head">
         <div>
-          <div className="risk-cap">Your money on today&apos;s card</div>
-          {/* One line. This ran to three sentences explaining that the panel
-              describes rather than recommends - which the interface can just
-              show, by putting your inputs first and labelling every output as
-              a consequence of them. */}
-          <p className="risk-sub">Change the two numbers below and everything else follows.</p>
+          <div className="risk-cap">What it does to you</div>
+          {/* Names its input out loud. The panel is downstream of the table
+              above, and a reader who cannot see why a number moved will not
+              trust the number. */}
+          <p className="risk-sub">
+            {money0(staked)} of your {money0(bank)} on{' '}
+            {legs.filter((l) => stakeOf(l) > 0).length} of today&apos;s {legs.length} calls
+            {parStake > 0 ? `, ${money0(parStake)} of it on the parlay` : ''}.
+            Change the plan above and everything here follows.
+          </p>
         </div>
       </div>
-
-      <div className="risk-inputs">
-        <label className="risk-input">
-          <span>Your bankroll</span>
-          <span className="risk-money">$<input type="number" min="0" step="50" value={bankroll}
-            onChange={(e) => setBankroll(e.target.value)} /></span>
-        </label>
-        <label className="risk-input">
-          <span>Stake per match</span>
-          <span className="risk-money">$<input type="number" min="0" step="5" value={flat}
-            onChange={(e) => { setFlat(e.target.value); setOverride({}); setApplied(null); }} /></span>
-        </label>
-      </div>
-
-      {/* The builder's plans, loadable. Without these the page only ever
-          describes stakes someone invented, and the most useful question a
-          reader has is what the RECOMMENDED plan does to their bankroll. */}
-      {frontier && frontier.plans.length > 0 && (
-        <div className="risk-plans">
-          <div className="risk-plans-cap">Load a plan from the builder</div>
-          <div className="risk-plans-row">
-            {frontier.plans.map((pl) => (
-              <button key={pl.id} type="button"
-                className={`risk-plan-chip${applied === pl.id ? ' on' : ''}`}
-                onClick={() => applyPlan(pl)}>
-                <span className="risk-plan-chip-title">
-                  {pl.label}
-                  {pl.id === frontier.recommendedId && <em> · recommended</em>}
-                </span>
-                <span className="risk-plan-chip-sub">
-                  {money0(pl.metrics.staked)} staked · {Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead
-                </span>
-              </button>
-            ))}
-            {applied && (
-              <button type="button" className="risk-plan-chip clear"
-                onClick={() => { setOverride({}); setParlayStake(0); setInParlay({}); setApplied(null); }}>
-                <span className="risk-plan-chip-title">Back to my own</span>
-                <span className="risk-plan-chip-sub">flat {money0(Number(flat) || 0)} a match</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="risk-exposure">
         <div className="risk-exposure-bar">
@@ -379,8 +367,11 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
         </div>
         <div className="risk-exposure-cap">
           <strong>{money(staked)}</strong> at risk today
-          {bank > 0 && <> · {pct1(staked / bank)} of your bankroll</>}
-          {' '}· {legs.length} match{legs.length === 1 ? '' : 'es'}
+          {bank > 0 && <> · {pct1(staked / bank)} of your {money0(bank)} budget</>}
+          {/* Matches BACKED, not matches on the card. The plan above funds a
+              handful and skips the rest, so counting the card claimed a
+              fifteen-match exposure on a seven-match slip. */}
+          {' '}· {backedCount} match{backedCount === 1 ? '' : 'es'}
           {combo.priced && parStake > 0 ? ` + a ${combo.n}-leg parlay` : ''}
         </div>
       </div>
@@ -559,7 +550,7 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
                 <div className="risk-kelly-read">
                   <strong>{kelly.ratio.toFixed(2)}x Kelly</strong>
                   <span>
-                    {' '}({money(kelly.staked)} staked, growth-optimal is {money(kelly.kellyStake)} on a {money0(bank)} bankroll)
+                    {' '}({money(kelly.staked)} staked, growth-optimal is {money(kelly.kellyStake)} on a {money0(bank)} budget)
                   </span>
                 </div>
               </div>
@@ -574,7 +565,7 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
               <div className="risk-grid">
                 <div className="risk-metric">
                   <span className={`risk-metric-v ${kelly.exposure > 0.25 ? 'neg' : ''}`}>{pct1(kelly.exposure)}</span>
-                  <span className="risk-metric-l">of bankroll on the table today</span>
+                  <span className="risk-metric-l">of your budget on the table today</span>
                 </div>
                 <div className="risk-metric">
                   <span className="risk-metric-v">{money(kelly.kellyStake)}</span>
@@ -598,67 +589,6 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
           </p>
         </div>
       )}
-
-      {/* The card itself, not tucked into a disclosure: on its own page this
-          IS the control surface, and the parlay is assembled from the same
-          ticks rather than in a separate widget. */}
-      <div className={`risk-legs${onDrop ? ' has-drop' : ''}`}>
-        <div className="risk-legs-head">
-          <span>Today&apos;s card ({legs.length})</span>
-          <span>Stake</span>
-          <span>In parlay</span>
-          {onDrop && <span className="sr-only">Remove</span>}
-        </div>
-        <div className="risk-legs-list">
-          {legs.map((l) => {
-            const o = defaultOdds(l);
-            return (
-              <div className="risk-leg" key={l.id}>
-                <span className="risk-leg-name">
-                  {lastName(l.favName)}
-                  <em>
-                    over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct0(adjustProb(l.favProb, rel.lambda))}
-                    {' '}· {o > 1 ? o.toFixed(2) : 'no price'}{l.event ? ` · ${l.event}` : ''}
-                  </em>
-                </span>
-                <span className="risk-leg-stake">
-                  $<input type="number" min="0" step="1" value={override[l.id] ?? flat}
-                    onChange={(e) => { setOverride((s) => ({ ...s, [l.id]: e.target.value })); setApplied(null); }} />
-                </span>
-                <span className="risk-leg-par">
-                  <input type="checkbox" aria-label={`Include ${lastName(l.favName)} in the parlay`}
-                    checked={isIn(l)} disabled={!(o > 1)}
-                    onChange={() => { setInParlay((s) => ({ ...s, [l.id]: !isIn(l) })); setApplied(null); }} />
-                </span>
-                {onDrop && (
-                  <span className="risk-leg-drop">
-                    <button type="button" aria-label={`Take ${lastName(l.favName)} off the card`}
-                      title={`Take ${lastName(l.favName)} off the card`}
-                      onClick={() => onDrop(l)}>&times;</button>
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {combo.priced && (
-          <div className="risk-parlay-row">
-            <span className="risk-leg-name">
-              Parlay
-              <em>
-                {combo.n} legs · lands {pct1(combo.p)} · pays {combo.o.toFixed(2)}
-                {parStake > 0 ? '' : ' · no stake yet'}
-              </em>
-            </span>
-            <span className="risk-leg-stake">
-              $<input type="number" min="0" step="1" value={parlayStake}
-                onChange={(e) => { setParlayStake(e.target.value); setApplied(null); }} />
-            </span>
-            <span />
-            {onDrop && <span />}
-          </div>
-        )}
-      </div>
 
       <p className="risk-fine">
         Every figure here follows from your stakes and our probabilities, both of which can be

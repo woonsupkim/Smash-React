@@ -18,14 +18,14 @@
 // worse than we do. That is the same disagreement The Edge grades all
 // season, priced per selection instead of per match.
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { isToday, stillUpcoming } from '../utils/matchTime';
+import { Link, useLocation } from 'react-router-dom';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
+import RiskLab from '../components/RiskLab';
+import useTodayCard, { legKey } from '../utils/useTodayCard';
 import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
-import { ledgerNoCall } from '../utils/deployedPick';
 import { surfaceBgClass } from '../utils/surfaceBg';
 import './Parlay.css';
 
@@ -71,7 +71,6 @@ function PlanCurve({ values, market }) {
   );
 }
 
-const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
 // The market's own view of our pick, with the bookmaker's margin divided
 // out - the like-for-like comparison against our probability (same
 // vig-stripping as the Edge board).
@@ -97,53 +96,24 @@ export default function Parlay() {
     'Parlay Builder · Today\'s Calls | Smash',
     "Stack today's locked picks and see the real combined probability, our fair price, and what the market offers."
   );
-  const [all, setAll] = useState(null);
-  // The graded rows from the same file, kept so the staking plan can size
-  // itself on the model's MEASURED accuracy rather than its stated confidence.
-  const [graded, setGraded] = useState([]);
-  // Locked calls with no result yet, so a frozen receipt can say why.
-  const [awaiting, setAwaiting] = useState(0);
-  // Today's whole card is in by default and you take legs OUT. Tracking the
-  // REMOVALS rather than the selections is what makes that work: a set that
-  // starts empty already means "everything", so the plan below is priced and
-  // sized the moment the page loads instead of after N clicks.
-  const [dropped, setDropped] = useState(() => new Set());
+  const { all, legs, graded, awaiting, dropped, setDropped, toggle, restore } = useTodayCard();
 
+  // Whatever the staking plan currently has on its table, published upward so
+  // the risk lab below describes THIS plan. One allocation on the page, read
+  // by both surfaces, so they can never disagree about the same day.
+  const [plan, setPlan] = useState(null);
+
+  // /risk still resolves here, and so does /parlay#risk from the nav. Either
+  // way a link aimed at the risk lab has to land ON it rather than at the top
+  // of a long page. Waits for the legs, because the section does not exist
+  // until the card has loaded.
+  const { pathname, hash } = useLocation();
+  const wantsRisk = hash === '#risk' || pathname === '/risk';
   useEffect(() => {
-    fetch(process.env.PUBLIC_URL + '/data/predictions.json')
-      .then((r) => r.json())
-      .then((d) => {
-        // Calls only, on both sides. The builder used to price the no-calls
-        // too, on the reasoning that it bets edges rather than calls - but a
-        // product that refuses to claim a coin flip and then asks you to
-        // stake one is telling you two different things. The same filter
-        // runs on the graded history so the plan is sized on the population
-        // it actually bets. Mirrored by planSettle.ledgerGraded.
-        const rows = (d.predictions || []).filter((p) => !ledgerNoCall(p));
-        setGraded(rows.filter((p) => p.status === 'won' || p.status === 'lost'));
-        // Calls that are locked but not yet settled. The receipt below reads
-        // "every settled day so far", which is exactly right and looks broken
-        // when the tour is between events: it froze at the last graded day
-        // with nothing on screen to say why. This is what lets it explain
-        // itself instead.
-        setAwaiting(rows.filter((p) => p.status === 'pending').length);
-        setAll(rows
-          .filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))
-          .sort((a, b) => b.favProb - a.favProb));
-      })
-      .catch(() => { setAll([]); setGraded([]); });
-  }, []);
-
-  const legs = useMemo(
-    () => (all || []).filter((p) => !dropped.has(legKey(p))),
-    [all, dropped]
-  );
-
-  const toggle = (k) => setDropped((prev) => {
-    const next = new Set(prev);
-    if (next.has(k)) next.delete(k); else next.add(k);
-    return next;
-  });
+    if (!wantsRisk || !legs.length) return;
+    const el = document.getElementById('risk');
+    if (el) el.scrollIntoView({ block: 'start' });
+  }, [wantsRisk, legs.length]);
 
   // The combined maths (chance all land, our fair price, the market's price)
   // now lives in the staking plan, which owns the odds you can edit and so is
@@ -373,7 +343,9 @@ export default function Parlay() {
       <p className="parlay-intro">
         How much to put on which of today&apos;s matches, and whether a parlay earns a
         slice. It only backs calls priced better than we rate them, so most days it
-        stakes well under the budget and the rest stays in your pocket.
+        stakes well under the budget and the rest stays in your pocket. Underneath,
+        the <a href="#risk">Risk Lab</a> takes whatever ends up on the table and shows
+        what it can do to you.
       </p>
 
       {/* The record, on two horizons, with percentages.
@@ -431,7 +403,7 @@ export default function Parlay() {
           {legs.length === 0 && (
             <p className="parlay-slip-empty">
               You've taken every leg out, so there's nothing left to price.{' '}
-              <button type="button" className="parlay-restore" onClick={() => setDropped(new Set())}>
+              <button type="button" className="parlay-restore" onClick={restore}>
                 Put today's {all.length} calls back
               </button>
             </p>
@@ -442,7 +414,12 @@ export default function Parlay() {
               you picked in one place then priced in another. The staking plan
               already names every leg, so it took over the dropping too. */}
           {legs.length > 0 && (
-            <StakingPlan legs={legs} graded={graded} onDrop={(l) => toggle(legKey(l))} />
+            <StakingPlan legs={legs} graded={graded} onDrop={toggle} onPlanChange={setPlan}
+              riskSlot={(
+                <div className="parlay-risk" id="risk">
+                  <RiskLab legs={legs} graded={graded} plan={plan} />
+                </div>
+              )} />
           )}
 
           {/* The conversion point that actually makes sense on this page: the
@@ -473,7 +450,7 @@ export default function Parlay() {
                   );
                 })}
                 {dropped.size > 0 && (
-                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={() => setDropped(new Set())}>
+                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={restore}>
                     <span className="parlay-chip-title">All {all.length} back</span>
                     <span className="parlay-chip-sub">put today's whole card in</span>
                   </button>
@@ -483,18 +460,6 @@ export default function Parlay() {
           )}
 
         </>
-      )}
-
-      {/* The next step in the flow, not a related link: this page says what
-          to stake, and the obvious next question is what that does to your
-          bankroll. Without this the two pages are siblings a reader has to
-          discover in the nav and work out the difference between. */}
-      {legs.length > 0 && (
-        <Link to="/risk" className="parlay-next">
-          <span className="parlay-next-cap">Next</span>
-          <span className="parlay-next-main">See what this does to your bankroll</span>
-          <span className="parlay-next-sub">Your own stakes, your own limits &rarr;</span>
-        </Link>
       )}
 
       <div className="parlay-footer">

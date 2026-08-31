@@ -235,75 +235,9 @@
 }
 
 /* ── The card ───────────────────────────────────────────────────────────── */
-.risk-legs { margin-top: 1.4rem; }
-.risk-legs-head,
-.risk-leg,
-.risk-parlay-row {
-  display: grid;
-  grid-template-columns: 1fr 92px 64px;
-  align-items: center;
-  gap: 0.6rem;
-}
-.risk-legs.has-drop .risk-legs-head,
-.risk-legs.has-drop .risk-leg,
-.risk-legs.has-drop .risk-parlay-row {
-  grid-template-columns: 1fr 92px 64px 30px;
-}
-.risk-legs-head {
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.14));
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3, #7c8698);
-}
-.risk-legs-head span:nth-child(n + 2) { text-align: center; }
-.risk-leg {
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.07));
-}
-.risk-parlay-row {
-  padding: 0.7rem 0 0.2rem;
-  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.16));
-  margin-top: 2px;
-}
-.risk-parlay-row .risk-leg-name { color: var(--accent-brand, #c8f560); }
-.risk-leg-drop { text-align: right; }
-.risk-leg-drop button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 0.2rem;
-  font-size: 1.15rem;
-  line-height: 1;
-  color: var(--text-3, #7c8698);
-}
-.risk-leg-drop button:hover { color: #ff8f8f; }
-.risk-leg-name { display: flex; flex-direction: column; min-width: 0; font-size: 0.86rem; font-weight: 700; color: var(--text-1, #fff); }
-.risk-leg-name em {
-  font-style: normal;
-  font-weight: 400;
-  font-size: 0.74rem;
-  color: var(--text-3, #7c8698);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.risk-leg-stake { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--text-1, #fff); }
-.risk-leg-stake input { width: 68px; }
-.risk-leg-par { text-align: center; }
-.risk-leg-par input { width: 17px; height: 17px; accent-color: var(--accent-brand, #c8f560); }
-
 @media (max-width: 560px) {
   .risk-grid { gap: 0.9rem 1.4rem; }
   .risk-metric-l { max-width: 16ch; }
-  .risk-legs-head,
-  .risk-leg,
-  .risk-parlay-row { grid-template-columns: 1fr 74px 48px; }
-  .risk-legs.has-drop .risk-legs-head,
-  .risk-legs.has-drop .risk-leg,
-  .risk-legs.has-drop .risk-parlay-row { grid-template-columns: 1fr 74px 48px 26px; }
 }
 
 /* The two exceedance ladders, the combined curve read back as numbers.
@@ -321,40 +255,3 @@
 .risk-chart-cap.up { color: #5cbf8d; }
 .risk-chart-cap.down { color: #ff8f8f; }
 
-/* ── Builder plans, loadable ─────────────────────────────────────────────
-   Chips rather than a select: each carries what it stakes and its chance of
-   finishing ahead, so the choice can be made without applying one first. */
-.risk-plans { margin: 0.25rem 0 1.1rem; }
-.risk-plans-cap {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-3, #7c8698);
-  margin-bottom: 0.5rem;
-}
-.risk-plans-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.risk-plan-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  padding: 0.5rem 0.85rem;
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12));
-  border-radius: var(--radius-md, 12px);
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-}
-.risk-plan-chip:hover { border-color: var(--accent-brand, #c8f560); }
-.risk-plan-chip:focus-visible { outline: 2px solid var(--accent-brand, #c8f560); outline-offset: 2px; }
-.risk-plan-chip.on {
-  border-color: var(--accent-brand, #c8f560);
-  background: color-mix(in srgb, var(--accent-brand, #c8f560) 12%, transparent);
-}
-.risk-plan-chip-title { font-size: 0.85rem; font-weight: 700; color: var(--text-1, #fff); }
-.risk-plan-chip.on .risk-plan-chip-title { color: var(--accent-brand, #c8f560); }
-.risk-plan-chip-title em { font-style: normal; font-weight: 400; color: var(--text-3, #7c8698); }
-.risk-plan-chip-sub { font-size: 0.72rem; color: var(--text-3, #7c8698); }
-.risk-plan-chip.clear { border-style: dashed; }

@@ -1,4 +1,5 @@
-// The Today group must list the risk page between the builder and the draw.
+// The Today group must still list the Risk Lab between the builder and the
+// draw, even though it is now a section of the builder rather than a page.
 const { test, expect } = require('@playwright/test');
 
 test('Risk Lab sits in the Today nav, after the builder', async ({ page }) => {
@@ -14,5 +15,11 @@ test('Risk Lab sits in the Today nav, after the builder', async ({ page }) => {
   expect(names[i + 1]).toMatch(/The Draw/);
 
   await page.locator('.nav-pillar-menu').getByRole('link', { name: 'Risk Lab' }).click();
-  await expect(page.getByRole('heading', { name: /what today can do to you/i })).toBeVisible({ timeout: 15000 });
+  // It lands on the builder now, scrolled to the lab: same destination, one
+  // page instead of two.
+  await expect(page.getByRole('heading', { name: /today.s staking plan/i })).toBeVisible({ timeout: 15000 });
+  await page.waitForSelector('.stake-plan, .parlay-empty, .parlay-slip-empty', { timeout: 20000 });
+  if (await page.locator('.risk-lab').count() > 0) {
+    await expect(page.locator('#risk')).toBeInViewport({ timeout: 10000 });
+  }
 });
