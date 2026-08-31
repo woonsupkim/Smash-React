@@ -140,7 +140,7 @@ test('/parlay still resolves, for every link already published', async ({ page }
   expect(errors).toEqual([]);
 });
 
-test('the card table shows the whole day, filters it, and never lets that move the plan', async ({ page }) => {
+test('the card table shows the whole day, and each control scopes exactly what it claims to', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
@@ -152,13 +152,14 @@ test('the card table shows the whole day, filters it, and never lets that move t
   expect(total).toBeGreaterThan(0);
 
   // THE INVARIANT. Passes are on the table because the card is the card, and
-  // they are never staked, never priced, never in a single number above. If a
-  // view control can move the exposure figure, a match we refuse to call has
-  // found its way into the plan.
+  // they are never staked, never priced, never in a single number above. If
+  // hiding them can move the exposure figure, a match we refuse to call has
+  // found its way into the plan. (Tour is different, and checked below: that
+  // one is meant to re-price.)
   const exposure = async () => page.locator('.risk-exposure-cap').innerText();
   const before = await exposure();
 
-  const hide = page.getByText(/Hide the \d+ we do not call/);
+  const hide = page.getByText('Hide the matches we do not call');
   if (await hide.count() > 0) {
     expect(await passes.count()).toBeGreaterThan(0);
     // Every pass reads "no call" and offers nothing to stake.
@@ -172,14 +173,27 @@ test('the card table shows the whole day, filters it, and never lets that move t
     await expect(passes).toHaveCount(await passes.count());
   }
 
-  // Tour filters partition the card and, again, touch nothing but the view.
+  // Tour is the one control that DOES scope the plan: picking a tour prices
+  // a plan on that tour rather than dimming half a plan built on both. The
+  // exposure has to follow it, and the two tours have to add up to the whole
+  // card rather than quietly dropping matches between them.
+  let partition = 0;
   for (const t of [/^ATP/, /^WTA/]) {
     await page.getByRole('button', { name: t }).click();
-    expect(await rows.count()).toBeLessThanOrEqual(total);
-    expect(await exposure()).toBe(before);
+    const n = await rows.count();
+    partition += n;
+    expect(n).toBeLessThanOrEqual(total);
+    if (n > 0 && n < total) await expect(page.locator('.risk-exposure-cap')).not.toHaveText(before);
   }
+  expect(partition).toBe(total);
   await page.getByRole('button', { name: 'Both tours' }).click();
   await expect(rows).toHaveCount(total);
+  expect(await exposure()).toBe(before);
+
+  // Every row says when it starts. A plan for today is a plan for a running
+  // clock, and half these matches are over by dinner.
+  const metas = await rows.locator('.stake-pick em').allInnerTexts();
+  for (const m of metas) expect(m).toMatch(/(\d{1,2}:\d{2}\s?(AM|PM)|time TBD)/);
 
   // Each ordering has to actually order by what it names, descending.
   const read = (sel) => rows.locator(sel).allInnerTexts();

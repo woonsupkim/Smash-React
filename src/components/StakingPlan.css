@@ -389,3 +389,12 @@
   padding: 0.1rem 0.5rem;
   white-space: nowrap;
 }
+
+/* Filtered down to nothing. A real state, and not the same as a card you
+   emptied yourself, so it says which one it is. */
+.stake-row-none {
+  display: block;
+  padding: 1rem 0;
+  font-size: 0.86rem;
+  color: var(--text-3, #7c8698);
+}

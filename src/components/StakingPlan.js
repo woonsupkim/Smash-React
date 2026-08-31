@@ -20,7 +20,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
-import { matchSlug } from '../utils/matchTime';
+import { matchSlug, localStartTime } from '../utils/matchTime';
 import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb } from '../utils/staking';
 import BACKTEST from '../data/planBacktest.json';
 import './StakingPlan.css';
@@ -57,6 +57,7 @@ function composition(p) {
 // refuses to claim a match and then funds it is saying two things at once.
 export default function StakingPlan({
   legs, graded = [], noCalls = [], onDrop = null, onPlanChange = null, riskSlot = null,
+  tourView = 'all', tourCounts = null, onTourView = null,
 }) {
   // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
   // the recommendation: it needs no input to be useful.
@@ -67,11 +68,11 @@ export default function StakingPlan({
   const [useParlay, setUseParlay] = useState(true); // master switch: singles only when off
   const [parlayStake, setParlayStake] = useState(0);
   const [budget, setBudget] = useState(100);
-  // How the table is VIEWED. Deliberately not how the plan is scoped: the
-  // page already has one explicit way to change what gets priced (the drop
-  // buttons and the narrow-the-card chips), and a control that sometimes
-  // hides a row and sometimes unfunds it would be the worst of both.
-  const [tourView, setTourView] = useState('all');
+  // How the table is VIEWED. The tour filter is NOT here: it narrows the card
+  // itself, so the page owns it and hands down an already-filtered `legs`.
+  // These two genuinely only move rows around - a pass is never staked, and
+  // the plan is keyed by match id rather than by row order - so neither can
+  // reach a number.
   const [hidePasses, setHidePasses] = useState(false);
   const [sortBy, setSortBy] = useState('prob');
 
@@ -238,11 +239,7 @@ export default function StakingPlan({
       ...legs.map((l) => ({ l, call: true })),
       ...noCalls.map((l) => ({ l, call: false })),
     ];
-    const shown = tagged.filter(({ l, call }) => {
-      if (hidePasses && !call) return false;
-      if (tourView !== 'all' && l.tour !== tourView) return false;
-      return true;
-    });
+    const shown = tagged.filter(({ call }) => !(hidePasses && !call));
     const key = {
       prob: ({ l }) => l.favProb,
       odds: ({ l }) => oddsOf(l) || 0,
@@ -261,12 +258,7 @@ export default function StakingPlan({
     // entire purpose is the plan.
     return [...shown].sort((a, b) => (key(b) - key(a)) || (Number(b.call) - Number(a.call)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legs, noCalls, hidePasses, tourView, sortBy, oddsOverride, rel.lambda]);
-
-  const tourCounts = useMemo(() => {
-    const both = [...legs, ...noCalls];
-    return { atp: both.filter((l) => l.tour === 'atp').length, wta: both.filter((l) => l.tour === 'wta').length };
-  }, [legs, noCalls]);
+  }, [legs, noCalls, hidePasses, sortBy, oddsOverride, rel.lambda]);
 
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
@@ -526,13 +518,18 @@ export default function StakingPlan({
       )}
 
       <div className="stake-filters">
-        <div className="stake-filter-set" role="group" aria-label="Tour">
-          {[['all', 'Both tours'], ['atp', `ATP (${tourCounts.atp})`], ['wta', `WTA (${tourCounts.wta})`]]
-            .map(([id, label]) => (
-              <button key={id} type="button" aria-pressed={tourView === id}
-                className={tourView === id ? 'on' : ''} onClick={() => setTourView(id)}>{label}</button>
-            ))}
-        </div>
+        {/* Tour scopes the CARD: the plan below is re-derived on whatever is
+            showing, so picking ATP prices an ATP plan rather than dimming
+            half a plan built on both. */}
+        {onTourView && tourCounts && (
+          <div className="stake-filter-set" role="group" aria-label="Tour">
+            {[['all', 'Both tours'], ['atp', `ATP (${tourCounts.atp})`], ['wta', `WTA (${tourCounts.wta})`]]
+              .map(([id, label]) => (
+                <button key={id} type="button" aria-pressed={tourView === id}
+                  className={tourView === id ? 'on' : ''} onClick={() => onTourView(id)}>{label}</button>
+              ))}
+          </div>
+        )}
         <div className="stake-filter-set" role="group" aria-label="Order by">
           <span className="stake-filter-cap">Order by</span>
           {[['prob', 'Our %'], ['odds', 'Odds'], ['edge', 'Edge']].map(([id, label]) => (
@@ -543,7 +540,7 @@ export default function StakingPlan({
         {noCalls.length > 0 && (
           <label className="stake-filter-check">
             <input type="checkbox" checked={hidePasses} onChange={() => setHidePasses((v) => !v)} />
-            Hide the {noCalls.length} we do not call
+            Hide the matches we do not call
           </label>
         )}
       </div>
@@ -560,6 +557,15 @@ export default function StakingPlan({
           <span role="columnheader">Parlay</span>
           {onDrop && <span role="columnheader"><span className="sr-only">Remove</span></span>}
         </div>
+        {rows.length === 0 && (
+          <div className="stake-row stake-row-none" role="row">
+            <span role="cell">
+              {legs.length === 0 && noCalls.length === 0
+                ? 'No matches on this tour today.'
+                : 'Every match here is one we would not call. Untick the box above to see them.'}
+            </span>
+          </div>
+        )}
         {rows.map(({ l, call }) => {
           const o = oddsOf(l);
           const e = call ? edgePerDollar(probOf(l), o) : null;
@@ -572,6 +578,11 @@ export default function StakingPlan({
                 <em>
                   over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
                   {l.event ? ` · ${l.event}` : ''}
+                  {/* When it starts, in the reader's own zone. A plan for
+                      today is a plan for a running clock: half these matches
+                      are gone by dinner, and a table that never said so left
+                      you to work that out on another page. */}
+                  {' · '}{localStartTime(l.date) || 'time TBD'}
                 </em>
               </span>
               <span className="stake-odds" role="cell">

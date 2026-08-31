@@ -106,6 +106,27 @@ export default function Parlay() {
   // by both surfaces, so they can never disagree about the same day.
   const [plan, setPlan] = useState(null);
 
+  // Which tour the page is working on. It lives HERE rather than inside the
+  // table because it narrows the CARD, not just the view of it: the plan is
+  // re-derived on whatever is showing, and the risk read follows the plan. A
+  // control that scopes the money has to sit with the thing it scopes.
+  const [tourView, setTourView] = useState('all');
+  const viewLegs = useMemo(
+    () => legs.filter((l) => tourView === 'all' || l.tour === tourView),
+    [legs, tourView]
+  );
+  const viewNoCalls = useMemo(
+    () => noCalls.filter((l) => tourView === 'all' || l.tour === tourView),
+    [noCalls, tourView]
+  );
+  const tourCounts = useMemo(() => {
+    const both = [...legs, ...noCalls];
+    return {
+      atp: both.filter((l) => l.tour === 'atp').length,
+      wta: both.filter((l) => l.tour === 'wta').length,
+    };
+  }, [legs, noCalls]);
+
   // The combined maths (chance all land, our fair price, the market's price)
   // now lives in the staking plan, which owns the odds you can edit and so is
   // the only place those numbers can be right. Legs are treated as
@@ -405,10 +426,12 @@ export default function Parlay() {
               you picked in one place then priced in another. The staking plan
               already names every leg, so it took over the dropping too. */}
           {legs.length > 0 && (
-            <StakingPlan legs={legs} graded={graded} noCalls={noCalls} onDrop={toggle} onPlanChange={setPlan}
+            <StakingPlan legs={viewLegs} graded={graded} noCalls={viewNoCalls}
+              tourView={tourView} tourCounts={tourCounts} onTourView={setTourView}
+              onDrop={toggle} onPlanChange={setPlan}
               riskSlot={(
                 <div className="parlay-risk" id="risk">
-                  <RiskLab legs={legs} graded={graded} plan={plan} />
+                  <RiskLab legs={viewLegs} graded={graded} plan={plan} />
                 </div>
               )} />
           )}
