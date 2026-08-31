@@ -32,6 +32,7 @@ const MatchPage = lazy(() => import('./pages/MatchPage'));
 const PlayerPage = lazy(() => import('./pages/PlayerPage'));
 const Today = lazy(() => import('./pages/Today'));
 const Parlay = lazy(() => import('./pages/Parlay'));
+const RiskPage = lazy(() => import('./pages/RiskPage'));
 const DrawPage = lazy(() => import('./pages/DrawPage'));
 const ModelCard = lazy(() => import('./pages/ModelCard'));
 const Rivalry = lazy(() => import('./pages/Rivalry'));
@@ -71,6 +72,9 @@ const NAV_GROUPS = [
     items: [
       { to: '/today', label: "Today's Calls", tourAgnostic: true },
       { to: '/parlay', label: 'The Parlay Builder', tourAgnostic: true },
+      // Straight after the builder: it answers what to stake, this answers
+      // what that stake does to you.
+      { to: '/risk', label: 'Size Your Risk', tourAgnostic: true },
       { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
       { to: '/form', label: 'The Form Chart', tourAgnostic: true },
     ],
@@ -309,6 +313,7 @@ function App() {
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
           <Route path="/parlay" element={<Parlay />} />
+          <Route path="/risk" element={<RiskPage />} />
           {/* Merged into /compare: a rivalry is a comparison with history,
               and two hubs for that job was one too many. Redirect keeps every
               existing link and search result working. */}

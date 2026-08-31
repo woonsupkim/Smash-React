@@ -121,7 +121,9 @@ function KellyGauge({ ratio }) {
 
 // ── Panel ───────────────────────────────────────────────────────────────────
 
-export default function RiskLab({ legs, graded = [] }) {
+// onDrop(leg) takes a match off the card entirely. Supplied when this is the
+// page's own control surface rather than a panel reading someone else's list.
+export default function RiskLab({ legs, graded = [], onDrop = null }) {
   const [tab, setTab] = useState('slip');
   const [bankroll, setBankroll] = useState(500);
   const [flat, setFlat] = useState(10);
@@ -210,11 +212,6 @@ export default function RiskLab({ legs, graded = [] }) {
           <span>Stake per match</span>
           <span className="risk-money">$<input type="number" min="0" step="5" value={flat}
             onChange={(e) => { setFlat(e.target.value); setOverride({}); }} /></span>
-        </label>
-        <label className="risk-input">
-          <span>Parlay stake</span>
-          <span className="risk-money">$<input type="number" min="0" step="5" value={parlayStake}
-            onChange={(e) => setParlayStake(e.target.value)} /></span>
         </label>
       </div>
 
@@ -391,8 +388,16 @@ export default function RiskLab({ legs, graded = [] }) {
         </div>
       )}
 
-      <details className="risk-legs">
-        <summary>Per-match stakes ({legs.length})</summary>
+      {/* The card itself, not tucked into a disclosure: on its own page this
+          IS the control surface, and the parlay is assembled from the same
+          ticks rather than in a separate widget. */}
+      <div className={`risk-legs${onDrop ? ' has-drop' : ''}`}>
+        <div className="risk-legs-head">
+          <span>Today&apos;s card ({legs.length})</span>
+          <span>Stake</span>
+          <span>In parlay</span>
+          {onDrop && <span className="sr-only">Remove</span>}
+        </div>
         <div className="risk-legs-list">
           {legs.map((l) => {
             const o = defaultOdds(l);
@@ -400,7 +405,10 @@ export default function RiskLab({ legs, graded = [] }) {
               <div className="risk-leg" key={l.id}>
                 <span className="risk-leg-name">
                   {lastName(l.favName)}
-                  <em>over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {o > 1 ? o.toFixed(2) : 'no price'}</em>
+                  <em>
+                    over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct0(adjustProb(l.favProb, rel.lambda))}
+                    {' '}· {o > 1 ? o.toFixed(2) : 'no price'}{l.event ? ` · ${l.event}` : ''}
+                  </em>
                 </span>
                 <span className="risk-leg-stake">
                   $<input type="number" min="0" step="1" value={override[l.id] ?? flat}
@@ -411,11 +419,35 @@ export default function RiskLab({ legs, graded = [] }) {
                     checked={isIn(l)} disabled={!(o > 1)}
                     onChange={() => setInParlay((s) => ({ ...s, [l.id]: !isIn(l) }))} />
                 </span>
+                {onDrop && (
+                  <span className="risk-leg-drop">
+                    <button type="button" aria-label={`Take ${lastName(l.favName)} off the card`}
+                      title={`Take ${lastName(l.favName)} off the card`}
+                      onClick={() => onDrop(l)}>&times;</button>
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
-      </details>
+        {combo.priced && (
+          <div className="risk-parlay-row">
+            <span className="risk-leg-name">
+              Parlay
+              <em>
+                {combo.n} legs · lands {pct1(combo.p)} · pays {combo.o.toFixed(2)}
+                {parStake > 0 ? '' : ' · no stake yet'}
+              </em>
+            </span>
+            <span className="risk-leg-stake">
+              $<input type="number" min="0" step="1" value={parlayStake}
+                onChange={(e) => setParlayStake(e.target.value)} />
+            </span>
+            <span />
+            {onDrop && <span />}
+          </div>
+        )}
+      </div>
 
       <p className="risk-fine">
         Every figure here follows from your stakes and our probabilities, both of which can be

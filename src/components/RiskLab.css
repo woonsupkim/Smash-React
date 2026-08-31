@@ -222,23 +222,52 @@
   border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
 }
 
-/* ── Per-match stakes ───────────────────────────────────────────────────── */
-.risk-legs { margin-top: 1rem; }
-.risk-legs summary {
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-2, #9aa4b2);
-}
-.risk-legs-list { margin-top: 0.6rem; }
-.risk-leg {
+/* ── The card ───────────────────────────────────────────────────────────── */
+.risk-legs { margin-top: 1.4rem; }
+.risk-legs-head,
+.risk-leg,
+.risk-parlay-row {
   display: grid;
-  grid-template-columns: 1fr 92px 34px;
+  grid-template-columns: 1fr 92px 64px;
   align-items: center;
   gap: 0.6rem;
+}
+.risk-legs.has-drop .risk-legs-head,
+.risk-legs.has-drop .risk-leg,
+.risk-legs.has-drop .risk-parlay-row {
+  grid-template-columns: 1fr 92px 64px 30px;
+}
+.risk-legs-head {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-2, rgba(255, 255, 255, 0.14));
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+}
+.risk-legs-head span:nth-child(n + 2) { text-align: center; }
+.risk-leg {
   padding: 0.45rem 0;
   border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.07));
 }
+.risk-parlay-row {
+  padding: 0.7rem 0 0.2rem;
+  border-top: 1px solid var(--border-2, rgba(255, 255, 255, 0.16));
+  margin-top: 2px;
+}
+.risk-parlay-row .risk-leg-name { color: var(--accent-brand, #c8f560); }
+.risk-leg-drop { text-align: right; }
+.risk-leg-drop button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-3, #7c8698);
+}
+.risk-leg-drop button:hover { color: #ff8f8f; }
 .risk-leg-name { display: flex; flex-direction: column; min-width: 0; font-size: 0.86rem; font-weight: 700; color: var(--text-1, #fff); }
 .risk-leg-name em {
   font-style: normal;
@@ -257,5 +286,10 @@
 @media (max-width: 560px) {
   .risk-grid { gap: 0.9rem 1.4rem; }
   .risk-metric-l { max-width: 16ch; }
-  .risk-leg { grid-template-columns: 1fr 76px 28px; }
+  .risk-legs-head,
+  .risk-leg,
+  .risk-parlay-row { grid-template-columns: 1fr 74px 48px; }
+  .risk-legs.has-drop .risk-legs-head,
+  .risk-legs.has-drop .risk-leg,
+  .risk-legs.has-drop .risk-parlay-row { grid-template-columns: 1fr 74px 48px 26px; }
 }

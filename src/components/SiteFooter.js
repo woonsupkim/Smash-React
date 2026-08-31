@@ -69,6 +69,7 @@ export default function SiteFooter() {
             <div className="site-footer-head">Today</div>
             <Link to="/today">Today's Calls</Link>
             <Link to="/parlay">The Parlay Builder</Link>
+            <Link to="/risk">Size Your Risk</Link>
             <Link to="/draw">The Draw · Title Odds</Link>
             <Link to="/form">The Form Chart</Link>
           </nav>

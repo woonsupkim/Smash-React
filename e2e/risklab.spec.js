@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 test('risk lab: renders, reacts to stakes, and switches views', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/parlay');
+  await page.goto('/risk');
 
   // Settle first: branching on a count() taken straight after goto() races the
   // predictions fetch and lands in the wrong branch on a slow load.
@@ -19,6 +19,19 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
 
   await expect(lab).toBeVisible();
   await expect(page.locator('.risk-tabs button')).toHaveCount(3);
+
+  // The whole day's card is here, with a parlay assembled from it - this page
+  // owns its own selection rather than inheriting the builder's.
+  const rows = page.locator('.risk-leg');
+  const rowCount = await rows.count();
+  expect(rowCount).toBeGreaterThan(0);
+  await expect(page.locator('.risk-legs-head')).toBeVisible();
+
+  // Dropping a match takes it off the card entirely.
+  if (rowCount > 1) {
+    await page.locator('.risk-leg-drop button').first().click();
+    await expect(rows).toHaveCount(rowCount - 1);
+  }
 
   // Exposure responds to the stake box: this is the whole premise of the tab.
   const before = await page.locator('.risk-exposure-cap').innerText();
@@ -52,7 +65,7 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
 test('risk lab: a bankroll too small for the stake reads as over-sized', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/parlay');
+  await page.goto('/risk');
   await page.waitForSelector('.risk-lab, .parlay-empty, .parlay-slip-empty', { timeout: 20000 });
   if (await page.locator('.risk-lab').count() === 0) { expect(errors).toEqual([]); return; }
 

@@ -22,7 +22,6 @@ import { Link } from 'react-router-dom';
 import { isToday, stillUpcoming } from '../utils/matchTime';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
-import RiskLab from '../components/RiskLab';
 import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
@@ -433,12 +432,6 @@ export default function Parlay() {
           {legs.length > 0 && (
             <StakingPlan legs={legs} graded={graded} onDrop={(l) => toggle(legKey(l))} />
           )}
-
-          {/* Below the plan on purpose. The plan answers "what should I
-              stake", this answers "what happens to me if I stake something
-              else" - and putting the caveat first would have people sizing
-              risk before they had a number to size. */}
-          {legs.length > 0 && <RiskLab legs={legs} graded={graded} />}
 
           {/* The conversion point that actually makes sense on this page: the
               plan changes every morning and is worth nothing to someone who
