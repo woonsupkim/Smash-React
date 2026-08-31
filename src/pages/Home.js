@@ -440,26 +440,38 @@ export default function Home() {
         {/* ── Hero: one centered column, everything on the same axis ───── */}
         <header className="home-hero">
           <div className="eyebrow">MODEL VS MARKET · ATP + WTA</div>
-          {/* The headline is a factual claim about the ledger, so it is only
-              made while the ledger supports it. Everything under it is
-              computed, and it would be a lie the day the split record turns
-              without this - today it renders exactly as before. */}
-          <h1 className="main-title">
-            {beatsMarket === false
-              ? <>Every Call,<br />Graded in Public</>
-              : <>We Beat the<br />Market on Price</>}
-          </h1>
+          {/* Leads with what the product became. "We Beat the Market on Price"
+              was true and stayed true, but it sold only the first third of the
+              site in a tipster's voice - the calls. Half of what is here now
+              is the staking plan and the risk panel, and nobody else shows you
+              what a bad day costs. Being a claim about the TOOL rather than
+              about the ledger, it also needs no guard: it cannot come untrue
+              on a bad week. The market claim moved to the sub-line, where it
+              is gated on the record that has to support it. */}
+          <h1 className="main-title">Know What to Stake,<br />and What It Risks</h1>
           {/* Two sentences. This ran to four, explaining the grading policy,
               the split record, the dollar comparison and the page layout
               before it had said what the product does - and a hero that
               describes its own methodology is a hero nobody finishes. The
               claim goes first, the proof is the numbers immediately below,
               and the mechanics moved to the pages that own them. */}
+          {/* The trust the headline no longer carries. The market claim is
+              made ONLY while the ledger supports it - and only when it is
+              actually known, which the old guard got wrong: it tested
+              `=== false`, so a null (still loading, or below the sample
+              floor) fell through and asserted the claim before any data had
+              arrived. */}
           <p className="sub-title">
-            {beatsMarket === false
-              ? 'A simulation engine that calls every ATP and WTA match before play. On the matches where we split from the betting favorite, our side has not cleared break-even yet - and we show you that too.'
-              : 'A simulation engine that calls every ATP and WTA match before play, and calls the long-priced ones better than the bookmakers do.'}
-            {' '}Same winners, better prices, higher return.
+            A simulation engine that calls every ATP and WTA match before play and grades
+            every one of them in public. Then the part most tipsters skip: how much to
+            stake, and what a bad day actually costs.
+            {beatsMarket === true && proof.edge && (
+              <> Where we split from the betting favorite, a flat stake on our side has
+                returned {proof.edge.usNet >= 0 ? '+' : '-'}
+                {Math.abs(Math.round((proof.edge.usNet / proof.edge.n) * 100))}% while the same
+                money on theirs returned {proof.edge.mktNet >= 0 ? '+' : '-'}
+                {Math.abs(Math.round((proof.edge.mktNet / proof.edge.n) * 100))}%.</>
+            )}
           </p>
           <div className="hero-ctas">
             <Button as={Link} to="/today" className="cta-primary">

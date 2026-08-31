@@ -13,13 +13,20 @@ function collectErrors(page) {
 test('home renders the board and proof rail', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  // The headline is an HONESTY GATE, not fixed copy: "We Beat the Bookmakers"
-  // only while the split ledger supports the claim, "Every Call, Graded in
-  // Public" the moment it does not. Asserting the boastful branch made every
-  // PR red the morning the real results tied the split record 50-50 - the
-  // gate did its job and the test called that a failure. Assert the gate
-  // rendered one of its two honest states, not which one the season is in.
-  await expect(page.locator('.main-title')).toHaveText(/We Beat the|Every Call/, { timeout: 15000 });
+  // The headline is now a claim about the TOOL, not about the ledger, so it
+  // is fixed copy and cannot come untrue on a bad week. The honesty gate did
+  // not disappear, it moved to the sub-line, where the market comparison
+  // lives - and that is asserted below on the gate's behaviour rather than on
+  // which side of it this season happens to be.
+  await expect(page.locator('.main-title')).toHaveText(/Know What to Stake/, { timeout: 15000 });
+  // The market claim appears ONLY when the ledger supports it AND is known.
+  // Whichever way the season is running, the sub-line must never be mid-
+  // sentence or assert a comparison with no numbers in it.
+  const sub = await page.locator('.sub-title').innerText();
+  expect(sub).toMatch(/calls every ATP and WTA match/i);
+  if (/split from the betting favorite/i.test(sub)) {
+    expect(sub).toMatch(/returned [+-]\d+% while the same money on theirs returned [+-]\d+%/i);
+  }
   // The proof rail loads from track_record.json - a number, not a skeleton.
   // Asserted on the rail itself rather than any one caption: the captions
   // change with the season (off-season copy vs a live board), and this test
