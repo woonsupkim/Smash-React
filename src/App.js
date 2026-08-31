@@ -74,7 +74,7 @@ const NAV_GROUPS = [
       { to: '/parlay', label: 'The Parlay Builder', tourAgnostic: true },
       // Straight after the builder: it answers what to stake, this answers
       // what that stake does to you.
-      { to: '/risk', label: 'Size Your Risk', tourAgnostic: true },
+      { to: '/risk', label: 'Risk Lab', tourAgnostic: true },
       { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
       { to: '/form', label: 'The Form Chart', tourAgnostic: true },
     ],

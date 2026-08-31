@@ -1,6 +1,6 @@
 // src/pages/RiskPage.js
 //
-// SIZE YOUR RISK: the third page in the Today group, between the builder and
+// RISK LAB: the third page in the Today group, between the builder and
 // the draw.
 //
 // The builder answers "what should I stake". This page answers the question
@@ -26,7 +26,7 @@ const legKey = (p) => `${p.tour}-${p.p1}-${p.p2}-${p.date}`;
 
 export default function RiskPage() {
   useDocMeta(
-    'Size Your Risk · Today\'s Calls | Smash',
+    'Risk Lab · Today\'s Calls | Smash',
     "Put your own bankroll and stakes against today's card and see the exposure: the spread of outcomes, the chance of a bad run, and whether you are betting past the growth-optimal size."
   );
 
@@ -67,7 +67,7 @@ export default function RiskPage() {
 
   return (
     <div className="parlay-page">
-      <div className="eyebrow">SIZE YOUR RISK</div>
+      <div className="eyebrow">RISK LAB</div>
       <h1 className="parlay-title">What today can do to you</h1>
       <p className="parlay-intro">
         Every call on today&apos;s card starts in. Set your bankroll and your stakes, take out

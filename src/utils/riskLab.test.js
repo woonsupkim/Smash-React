@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeSlip } from './staking.mjs';
 import {
-  outcomePairs, lossExceedance, kellyCheck, simulateBankroll, expectedLosingStreak,
+  outcomePairs, lossExceedance, gainExceedance, kellyCheck, simulateBankroll, expectedLosingStreak,
 } from './riskLab.mjs';
 
 const slip = [
@@ -123,5 +123,45 @@ describe('expected losing streak', () => {
     expect(expectedLosingStreak(0, 100)).toBeNull();
     expect(expectedLosingStreak(1, 100)).toBeNull();
     expect(expectedLosingStreak(0.5, 1)).toBeNull();
+  });
+});
+
+describe('gain exceedance', () => {
+  const up = gainExceedance(res.dist, [5, 20, 50, res.best]);
+
+  it('is monotonically non-increasing: bigger wins are never more likely', () => {
+    for (let i = 1; i < up.length; i++) {
+      expect(up[i].prob).toBeLessThanOrEqual(up[i - 1].prob + 1e-12);
+    }
+  });
+
+  it('winning more than everything can pay is impossible', () => {
+    const [beyond] = gainExceedance(res.dist, [res.best + 1]);
+    expect(beyond.prob).toBe(0);
+  });
+
+  it('mirrors the loss ladder: the two arms cannot both claim the same mass', () => {
+    // P(win >= tiny) + P(lose >= tiny) must not exceed 1, since no single
+    // outcome is both a win and a loss.
+    const [win] = gainExceedance(res.dist, [0.01]);
+    const [lose] = lossExceedance(res.dist, [0.01]);
+    expect(win.prob + lose.prob).toBeLessThanOrEqual(1 + 1e-9);
+  });
+
+  it('agrees with the chance of finishing ahead', () => {
+    const [win] = gainExceedance(res.dist, [0.01]);
+    // Same question asked two ways, so they must land in the same place.
+    expect(Math.abs(win.prob - res.pProfit)).toBeLessThan(0.08);
+  });
+});
+
+describe('simulation upside', () => {
+  const sim = simulateBankroll(res.dist, { bankroll: 1000, days: 30, trials: 1500 });
+  it('reports both arms, and they are consistent', () => {
+    expect(sim.pUp).toBeGreaterThan(0);
+    expect(sim.pDown).toBeGreaterThan(0);
+    expect(sim.pUp + sim.pDown).toBeLessThanOrEqual(1 + 1e-9);
+    expect(sim.bestCase).toBeGreaterThanOrEqual(sim.finalP95);
+    expect(sim.pDouble).toBeLessThanOrEqual(sim.pUp + 1e-9);
   });
 });

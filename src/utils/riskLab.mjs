@@ -43,6 +43,26 @@ export function lossExceedance(dist, levels) {
 }
 
 /**
+ * Gain exceedance: the mirror of the ladder above. For each level, the chance
+ * of winning AT LEAST that much.
+ *
+ * The panel showed only losses at first, which is its own kind of dishonesty:
+ * a reader deciding what to stake needs both arms of the distribution, and a
+ * downside-only view makes every slip look like a bad idea.
+ *
+ * @param {object} dist analyzeSlip().dist
+ * @param {number[]} levels win amounts (positive numbers, dollars)
+ */
+export function gainExceedance(dist, levels) {
+  const pairs = outcomePairs(dist);
+  const total = pairs.reduce((s, x) => s + x.prob, 0) || 1;
+  return levels.map((L) => ({
+    gain: L,
+    prob: pairs.filter((x) => x.pl >= L - 1e-9).reduce((s, x) => s + x.prob, 0) / total,
+  }));
+}
+
+/**
  * The Kelly check: is this slip sized past the growth-optimal bet?
  *
  * Kelly is the stake that maximises long-run growth. Bet MORE than it and
@@ -181,6 +201,11 @@ export function simulateBankroll(dist, {
     finalP50: at(0.5),
     finalP95: at(0.95),
     pDown: finals.filter((v) => v < bankroll).length / trials,
+    // The upside, on the same footing as the ruin figure beside it. Reporting
+    // only the floor is as one-sided as reporting only the ceiling.
+    pUp: finals.filter((v) => v > bankroll).length / trials,
+    pDouble: finals.filter((v) => v >= bankroll * 2).length / trials,
+    bestCase: sortedFinal[trials - 1],
   };
 }
 

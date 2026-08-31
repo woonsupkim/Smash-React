@@ -293,3 +293,17 @@
   .risk-legs.has-drop .risk-leg,
   .risk-legs.has-drop .risk-parlay-row { grid-template-columns: 1fr 74px 48px 26px; }
 }
+
+/* Upside and downside side by side, so neither can be read without the
+   other. They stack on narrow screens with the upside first: the panel is
+   about limits, and a reader who only sees the first card should still see
+   what they stand to make. */
+.risk-two-up {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem 2rem;
+  margin-top: 1.2rem;
+}
+.risk-two-up .risk-chart-block { margin: 0; }
+.risk-chart-cap.up { color: #5cbf8d; }
+.risk-chart-cap.down { color: #ff8f8f; }
