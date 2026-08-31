@@ -1,6 +1,6 @@
 // data-pipeline/checkPlanCalibration.js
 //
-// Plan-level calibration: do the parlay builder's plans deliver the chance
+// Plan-level calibration: do the Risk Lab's plans deliver the chance
 // of finishing ahead they claim?
 //
 // Leg-level calibration is watched elsewhere (the tuner's by-band report);

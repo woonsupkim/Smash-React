@@ -1,6 +1,6 @@
 // data-pipeline/lib/planSettle.js
 //
-// Settlement of the parlay builder's recommended plans, shared by every
+// Settlement of the Risk Lab's recommended plans, shared by every
 // pipeline consumer (the digest, the share-asset generator). One home on
 // purpose: the digest used to carry its own copy of the staking maths and it
 // drifted - mirroring the plan logic per consumer is how the email ended up

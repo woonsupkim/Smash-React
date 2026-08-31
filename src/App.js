@@ -70,10 +70,10 @@ const NAV_GROUPS = [
     label: 'Today',
     items: [
       { to: '/today', label: "Today's Calls", tourAgnostic: true },
-      { to: '/parlay', label: 'The Parlay Builder', tourAgnostic: true },
-      // Straight after the builder: it answers what to stake, this answers
-      // what that stake does to you.
-      { to: '/parlay#risk', label: 'Risk Lab', tourAgnostic: true },
+      // One entry, where "The Parlay Builder" and "Risk Lab" used to sit as
+      // two. They are one page: the staking plan, and what that plan does to
+      // the budget behind it.
+      { to: '/risk', label: 'Risk Lab', tourAgnostic: true },
       { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
       { to: '/form', label: 'The Form Chart', tourAgnostic: true },
     ],
@@ -311,8 +311,11 @@ function App() {
           <Route path="/match/:slug" element={<MatchPage />} />
           <Route path="/player/:tour/:id" element={<PlayerPage />} />
           <Route path="/today" element={<Today />} />
-          <Route path="/parlay" element={<Parlay />} />
           <Route path="/risk" element={<Parlay />} />
+          {/* The page was the parlay builder for its whole life and is linked
+              that way from the sitemap, old digests and every share asset
+              already posted. The name changed; the URL still answers. */}
+          <Route path="/parlay" element={<Parlay />} />
           {/* Merged into /compare: a rivalry is a comparison with history,
               and two hubs for that job was one too many. Redirect keeps every
               existing link and search result working. */}

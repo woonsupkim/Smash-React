@@ -67,7 +67,7 @@ export function isToday(iso, now = new Date()) {
 // A real-timed match that kicked off well over a match-length ago has already
 // finished, so it's no longer an upcoming call - drop it from "today" boards.
 // Placeholder-timed stamps carry no real clock, so they always stay for their
-// scheduled day. Shared by the Today page and the Parlay builder.
+// scheduled day. Shared by the Today page and the Risk Lab.
 const FINISHED_AFTER_MS = 5.5 * 60 * 60 * 1000; // a long best-of-five, plus a buffer
 export function stillUpcoming(iso, now = Date.now()) {
   return isPlaceholderTime(iso) || (now - new Date(iso).getTime()) < FINISHED_AFTER_MS;

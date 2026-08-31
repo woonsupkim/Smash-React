@@ -1,4 +1,4 @@
-// The staking plan the Parlay builder is actually for: a SPREAD across the
+// The staking plan the Risk Lab is actually for: a SPREAD across the
 // day's card, not a concentrated bet.
 //
 // The worked example these tests are built from, stated by the product owner:

@@ -131,9 +131,9 @@ test('nav pillars open and navigate', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('parlay builder: the plan prices today\'s card and dropping a leg re-prices it', async ({ page }) => {
+test('risk lab: the plan prices today\'s card and dropping a leg re-prices it', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.goto('/parlay');
+  await page.goto('/risk');
   // Retitled when the page became a staking plan you follow rather than a
   // parlay you assemble (changelog 4.2.3).
   await expect(page.getByRole('heading', { name: /today's staking plan/i })).toBeVisible();

@@ -122,7 +122,7 @@ export default function Today() {
             </span>
           </div>
 
-          <Link to="/parlay" className="today-parlay-cta">
+          <Link to="/risk" className="today-parlay-cta">
             Stack today's calls into a parlay and see what the odds actually say →
           </Link>
         </>
@@ -183,7 +183,7 @@ export default function Today() {
 
       <div className="today-footer">
         <Link to="/">Explore the engine</Link>
-        <Link to="/parlay">Parlay builder</Link>
+        <Link to="/risk">Risk Lab</Link>
         <Link to="/track-record">The receipts</Link>
       </div>
         </div>

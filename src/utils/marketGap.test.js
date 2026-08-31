@@ -1,4 +1,4 @@
-// Pins the market-gap figures the Parlay builder PUBLISHES to the graded
+// Pins the market-gap figures the Risk Lab PUBLISHES to the graded
 // record they claim to describe.
 //
 // This exists because the page said those calls "came in 69% of the time" when

@@ -89,7 +89,7 @@ export default function Home() {
         // the board showed calls, the plan priced the no-calls too because
         // the builder bet edges rather than calls. That split is gone - we
         // do not stake what we will not call - so both read the same list,
-        // which is also the list /parlay builds. The coin flips still show
+        // which is also the list /risk builds. The coin flips still show
         // on the Today page, as restraint.
         const pending = all.filter((p) => p.status === 'pending' && !ledgerNoCall(p));
         const upcoming = pending
@@ -100,14 +100,14 @@ export default function Home() {
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         const list = [...upcoming, ...awaiting].slice(0, 6);
         // The suggested plan gets the FULL card and the graded history, not
-        // the six-row display list: it must reproduce the parlay builder's
+        // the six-row display list: it must reproduce the Risk Lab's
         // recommendation exactly, and that page prices every pending call on
         // the viewer's calendar day using reliability measured on everything
         // graded so far. Feeding it the display slice quietly priced a
         // six-match "card" nobody would see anywhere else on the site.
         const card = pending.filter((p) => isToday(p.date) && stillUpcoming(p.date));
         // Calls only here too: the plan is sized on the population it bets,
-        // exactly as /parlay and planSettle.ledgerGraded do it.
+        // exactly as /risk and planSettle.ledgerGraded do it.
         const gradedRows = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
         setPicks({ state: 'ready', list, live: upcoming.length > 0, card, graded: gradedRows });
         // "Decided" means GRADED, not merely "not pending". A void is a call
@@ -188,14 +188,14 @@ export default function Home() {
     [scorecard]
   );
 
-  // Today's suggested plan: THE parlay builder's recommendation, not a cousin
+  // Today's suggested plan: THE Risk Lab's recommendation, not a cousin
   // of it. This used to run the old recommendStakes recommender (+EV picks
   // only, sized by Kelly) over the six-match display list - so the home page
-  // and /parlay could show two different plans for the same day, and the home
+  // and /risk could show two different plans for the same day, and the home
   // one funded a policy the builder itself had moved away from. Same inputs
   // now: the full card, the same reliability haircut measured on everything
   // graded, the same budget the builder opens with, planFrontier end to end.
-  // If the numbers here and on /parlay ever disagree, one of them is wrong.
+  // If the numbers here and on /risk ever disagree, one of them is wrong.
   const plan = useMemo(() => {
     const oddsOf = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
     const card = picks.card || [];
@@ -724,7 +724,7 @@ export default function Home() {
               })}
             </div>
 
-            {/* The parlay builder's own recommendation, verbatim: same maths,
+            {/* The Risk Lab's own recommendation, verbatim: same maths,
                 same inputs, same numbers a visitor finds when they click
                 through. The menu shows all the plans it offers today with the
                 recommended one marked, so the choice is visible here too. */}
@@ -738,12 +738,12 @@ export default function Home() {
                       stacked, so the plan is to stake nothing. That is the answer more
                       often than anyone selling picks will admit.
                     </p>
-                    <Link to="/parlay" className="home-plan-cta">See why for each call →</Link>
+                    <Link to="/risk" className="home-plan-cta">See why for each call →</Link>
                   </>
                 ) : (
                   <>
                     <div className="home-plan-sub">
-                      how the builder would stake a ${PLAN_BUDGET} budget on today&apos;s {plan.n} priced calls
+                      how the Risk Lab would stake a ${PLAN_BUDGET} budget on today&apos;s {plan.n} priced calls
                     </div>
                     <div className="home-plan-out">
                       <span className="home-plan-ev">
@@ -785,13 +785,11 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
-                    <Link to="/parlay" className="home-plan-cta">Open the parlay builder →</Link>
-                    {/* The budget above is ours, not theirs. This is the only
-                        place on the home page that admits that and points at
-                        the page which takes their number instead. */}
-                    <Link to="/risk" className="home-plan-cta secondary">
-                      Size it to your own bankroll →
-                    </Link>
+                    {/* One link, not two. These pointed at the builder and
+                        the risk lab back when those were separate pages; they
+                        are one page now, so a second button under the first
+                        just promised somewhere else to go. */}
+                    <Link to="/risk" className="home-plan-cta">Open the Risk Lab →</Link>
                   </>
                 )}
               </aside>

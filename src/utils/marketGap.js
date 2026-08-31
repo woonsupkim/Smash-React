@@ -3,7 +3,7 @@
 // When our number sitting above the market's is worth pointing at, and the
 // published record behind that claim.
 //
-// The Parlay builder tells the reader how often calls in this band actually
+// The Risk Lab tells the reader how often calls in this band actually
 // landed, which makes it a factual claim about the ledger rather than framing.
 // It had drifted badly: the page said 69% while the record said 55%, a
 // 14-point overstatement that survived because the figure was typed into a

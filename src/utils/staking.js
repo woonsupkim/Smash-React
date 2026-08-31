@@ -1,6 +1,6 @@
 // src/utils/staking.js
 //
-// Expected-value + staking math for the Parlay builder's Staking Plan.
+// Expected-value + staking math for the Risk Lab's Staking Plan.
 //
 // Everything here is honest EV, and one fact drives all of it: a bet's edge
 // per $1 is fixed at p*o - 1 (p = our model win prob, o = the decimal odds you

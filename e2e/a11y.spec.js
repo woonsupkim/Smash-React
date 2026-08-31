@@ -12,7 +12,7 @@ const PAGES = [
   ['/model', 'model card'],
   ['/player/atp/sinne', 'player page'],
   ['/today', 'today'],
-  ['/parlay', 'parlay builder'],
+  ['/risk', 'risk lab'],
   ['/rivalries', 'rivalries board'],
   ['/rivalry/atp/jannik-sinner-vs-alexander-zverev', 'rivalry page'],
   ['/edge', 'edge board'],

@@ -68,7 +68,6 @@ export default function SiteFooter() {
           <nav className="site-footer-col" aria-label="Today">
             <div className="site-footer-head">Today</div>
             <Link to="/today">Today's Calls</Link>
-            <Link to="/parlay">The Parlay Builder</Link>
             <Link to="/risk">Risk Lab</Link>
             <Link to="/draw">The Draw · Title Odds</Link>
             <Link to="/form">The Form Chart</Link>

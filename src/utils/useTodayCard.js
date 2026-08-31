@@ -2,7 +2,7 @@
 //
 // Today's card, loaded once and owned in one place.
 //
-// The parlay builder and the risk lab both used to load this themselves, with
+// The Risk Lab and the standalone risk page both used to load this, with
 // forty identical lines each: the same fetch, the same no-call filter, the
 // same "everything starts in and you take legs out" selection. Two copies of a
 // filter is two chances for the pages to price different populations and

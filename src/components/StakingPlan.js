@@ -1,6 +1,6 @@
 // src/components/StakingPlan.js
 //
-// The Parlay builder's Staking Plan.
+// The Risk Lab's Staking Plan.
 //
 // Lands on a RECOMMENDATION, because that is what the page is for: arrive and
 // be told what to do with a budget. planFrontier returns a short menu of plans

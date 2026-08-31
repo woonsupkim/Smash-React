@@ -166,7 +166,7 @@ function mirrorPhoto(tour, id) {
 }
 
 // The market's own read on our pick, with the bookmaker's margin divided out.
-// Same vig-stripping the Parlay builder uses, so the two never disagree.
+// Same vig-stripping the Risk Lab uses, so the two never disagree.
 function marketProb(p) {
   if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1)) return null;
   const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
@@ -1141,10 +1141,9 @@ async function main() {
         </div>
         ${spreadBlock}
         ${p(`${unpriced > 0 ? `${plural(unpriced, 'call on the card had', 'calls on the card had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}, so the plan cannot stake ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
-        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Build your own slip')}</div>
-        <div style="padding-top:10px;font-size:14px;">
-          <a href="${SITE}/risk" style="color:${LINK};text-decoration:none;font-weight:700;border-bottom:1px solid ${LINE};">See your own exposure</a>
-          <span style="color:${MUTED};"> &nbsp;the same card against your bankroll, not ours</span>
+        <div style="padding-top:4px;">${button(`${SITE}/risk`, 'Open the Risk Lab')}</div>
+        <div style="padding-top:10px;font-size:14px;color:${MUTED};">
+          Build your own slip from today's card and see what it does to your budget
         </div>
       `));
       txtLines.push(`THE MONEY QUESTION - the recommended plan (hypothetical $${PLAN_BUDGET}, ${todayPlan.label.toLowerCase()}):`);
@@ -1159,8 +1158,7 @@ async function main() {
         const q = todayPlan.metrics.pcts;
         txtLines.push(`  Bad day $${q.p05.toFixed(2)} | typical $${q.p50.toFixed(2)} | good day $${q.p95.toFixed(2)}`);
       }
-      txtLines.push(`  ${SITE}/parlay`);
-      txtLines.push(`  Your own exposure: ${SITE}/risk`, '');
+      txtLines.push(`  Build your own slip and size it: ${SITE}/risk`, '');
     } else {
       blocks.push(section(`
         ${kicker('The money question')}
@@ -1172,9 +1170,9 @@ async function main() {
       : calls.length
         ? 'Nothing on the card carried a market price when we locked it, so there is no edge to size against.'
         : 'We are not calling anything on today\'s card, and we do not stake what we will not call.'} Some days that is the answer, and pretending otherwise is how people lose money.`)}
-        <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Check it against your own book')}</div>
+        <div style="padding-top:4px;">${button(`${SITE}/risk`, 'Check it against your own book')}</div>
       `));
-      txtLines.push(`THE MONEY QUESTION: nothing worth staking today. ${SITE}/parlay`, '');
+      txtLines.push(`THE MONEY QUESTION: nothing worth staking today. ${SITE}/risk`, '');
     }
 
     // Countdown, with the crest and who the simulation currently likes. The
@@ -1417,7 +1415,7 @@ async function main() {
           ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did over the ${plural(comparableDays, 'day', 'days')} all of them were on the menu${partial ? ' - a like-for-like comparison, so it is a shorter window than the total above' : ''}:`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 10px;">${rows}</table>
           ${p(`${recTotal >= 0 ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and a week is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
-          <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Size this week\'s card')}</div>
+          <div style="padding-top:4px;">${button(`${SITE}/risk`, 'Size this week\'s card')}</div>
         `));
         txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK ($${PLAN_BUDGET} a day, recommended plan): ${money(recTotal)} over ${recDays} days`);
         for (const [, t] of totals) txtLines.push(`  ${t.label}: ${money(t.profit)} (${t.hits}/${t.n} singles, ${t.days} days)`);

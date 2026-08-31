@@ -5,7 +5,7 @@
 // Brackets already use - clay through the French run-up, grass at Wimbledon,
 // hard for the US and Australian stretches.
 //
-// Today's Calls and the Parlay builder were the two pages with no photo at
+// Today's Calls and the Risk Lab were the two pages with no photo at
 // all: flat panels on a flat background, which is what made them read as
 // generated rather than designed next to the rest of the site. They now share
 // the same atmosphere, and because it follows the calendar the page changes

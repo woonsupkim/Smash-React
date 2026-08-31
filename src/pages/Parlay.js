@@ -1,7 +1,10 @@
 // src/pages/Parlay.js
 //
-// The parlay builder: stack today's locked calls and see what they're
-// actually worth.
+// THE RISK LAB. Named for what the page became once the standalone risk page
+// was folded into it: one card, one staking plan, and one honest account of
+// what that plan can do to the money behind it. The file keeps its old name,
+// and /parlay keeps answering, because the page has been linked that way from
+// the sitemap, every share asset already posted and every digest already sent.
 //
 // The design brief this page refuses: "suggest a parlay that will land".
 // Parlays multiply, so honesty means leading with the number that gets
@@ -17,8 +20,8 @@
 // When the market's price is longer than ours, the market rates our picks
 // worse than we do. That is the same disagreement The Edge grades all
 // season, priced per selection instead of per match.
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import RiskLab from '../components/RiskLab';
@@ -93,8 +96,8 @@ const signedPct = (v) => `${v >= 0 ? '+' : '-'}${Math.abs(v * 100).toFixed(1)}%`
 
 export default function Parlay() {
   useDocMeta(
-    'Parlay Builder · Today\'s Calls | Smash',
-    "Stack today's locked picks and see the real combined probability, our fair price, and what the market offers."
+    "Risk Lab · Today's Calls | Smash",
+    "How much to stake on today's calls, and what that plan does to your budget: the spread of outcomes, how often a bad day arrives, and whether you are betting past the size that grows a bankroll rather than shrinking it."
   );
   const { all, legs, graded, awaiting, dropped, setDropped, toggle, restore } = useTodayCard();
 
@@ -102,18 +105,6 @@ export default function Parlay() {
   // the risk lab below describes THIS plan. One allocation on the page, read
   // by both surfaces, so they can never disagree about the same day.
   const [plan, setPlan] = useState(null);
-
-  // /risk still resolves here, and so does /parlay#risk from the nav. Either
-  // way a link aimed at the risk lab has to land ON it rather than at the top
-  // of a long page. Waits for the legs, because the section does not exist
-  // until the card has loaded.
-  const { pathname, hash } = useLocation();
-  const wantsRisk = hash === '#risk' || pathname === '/risk';
-  useEffect(() => {
-    if (!wantsRisk || !legs.length) return;
-    const el = document.getElementById('risk');
-    if (el) el.scrollIntoView({ block: 'start' });
-  }, [wantsRisk, legs.length]);
 
   // The combined maths (chance all land, our fair price, the market's price)
   // now lives in the staking plan, which owns the odds you can edit and so is
@@ -334,7 +325,7 @@ export default function Parlay() {
     <div className={`page-background ${surfaceBgClass()}`}>
       <div className="overlay">
         <div className="parlay-page">
-      <div className="eyebrow">THE PARLAY BUILDER</div>
+      <div className="eyebrow">RISK LAB</div>
       <h1 className="parlay-title">Today's staking plan</h1>
       {/* Two sentences. This was five, and the reader who came to place
           today's bets had to read a paragraph of policy before reaching the
@@ -343,9 +334,9 @@ export default function Parlay() {
       <p className="parlay-intro">
         How much to put on which of today&apos;s matches, and whether a parlay earns a
         slice. It only backs calls priced better than we rate them, so most days it
-        stakes well under the budget and the rest stays in your pocket. Underneath,
-        the <a href="#risk">Risk Lab</a> takes whatever ends up on the table and shows
-        what it can do to you.
+        stakes well under the budget and the rest stays in your pocket. Then the
+        part most tipsters skip: what that plan can actually do to your money, in
+        both directions.
       </p>
 
       {/* The record, on two horizons, with percentages.

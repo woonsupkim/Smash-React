@@ -47,7 +47,7 @@ const rungs = (top, n = 5) => {
 
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
-// Same figure the plan card, the parlay builder and the digest all use.
+// Same figure the plan card, the Risk Lab and the digest all use.
 const DEFAULT_BANKROLL = 100;
 // ── Charts ──────────────────────────────────────────────────────────────────
 

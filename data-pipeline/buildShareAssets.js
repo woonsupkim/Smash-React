@@ -2341,7 +2341,7 @@ async function run() {
           file: 'weekly-plan.png',
           accent: recTotal >= 0 ? PAL.calls.key : '#ff5c5c',
         });
-        add('weekly-plan.png', 'weekly-plan', 'square', 'weekly', `The plan, settled: $${planSettle.PLAN_BUDGET} a day into the builder's recommended plan came out ${money(recTotal)} this week${best.profit !== recTotal ? ` (best of the menu: ${best.label.toLowerCase()} at ${money(best.profit)})` : ''}. Every stake settled at locked odds, ${recDays} days. A ${recTotal >= 0 ? 'good' : 'bad'} week proves nothing on its own - the point is we publish it either way. ${SITE}/parlay ${tags}`);
+        add('weekly-plan.png', 'weekly-plan', 'square', 'weekly', `The plan, settled: $${planSettle.PLAN_BUDGET} a day into the builder's recommended plan came out ${money(recTotal)} this week${best.profit !== recTotal ? ` (best of the menu: ${best.label.toLowerCase()} at ${money(best.profit)})` : ''}. Every stake settled at locked odds, ${recDays} days. A ${recTotal >= 0 ? 'good' : 'bad'} week proves nothing on its own - the point is we publish it either way. ${SITE}/risk ${tags}`);
 
     // ── WEEKLY: the money and the five that paid ──────────────────────────
     // Separate cards from the record, and this week shows why: 75% of winners
@@ -2573,7 +2573,7 @@ async function run() {
         staked: run.staked, roi, up: run.up, mktProfit, mktStaked, mktRoi,
       }, 'edge-live-plan.png');
       add('edge-live-plan.png', 'edge-live-plan', 'square', 'edge',
-        `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Put that identical $${run.staked.toFixed(0)} flat across every match on the same days, backing the bookmakers' own favourite, and it comes back ${money(mktProfit)} - ${pctOf(mktRoi)}. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. ${SITE}/parlay ${tags}`,
+        `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Put that identical $${run.staked.toFixed(0)} flat across every match on the same days, backing the bookmakers' own favourite, and it comes back ${money(mktProfit)} - ${pctOf(mktRoi)}. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. ${SITE}/risk ${tags}`,
         `${liveEvent}: the recommended plan returned ${pctOf(roi)} against ${pctOf(mktRoi)} for the market's favourite on the same money.`);
     }
   }

@@ -12,7 +12,7 @@
 //     the odds on the graded record. This is where "the money edge" actually
 //     lives or dies.
 //
-//  2. RECOMMENDATION OBJECTIVE - the parlay builder's menu keeps a domination
+//  2. RECOMMENDATION OBJECTIVE - the Risk Lab's menu keeps a domination
 //     filter (never offer a plan another beats on both chance and expected
 //     profit), then must pick ONE to lead with. Chance-first is what ships
 //     today; EV-first is the return framing. Both are backfilled with

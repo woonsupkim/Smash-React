@@ -62,11 +62,13 @@ function main() {
 
   // ── Static routes (mirrors src/App.js; skips /admin, redirects, and the
   // legal fine-print pages /terms /privacy /disclaimer).
-  const FRESH = new Set(['/', '/today', '/parlay', '/track-record', '/edge', '/season', '/form']); // regenerated every data refresh
+  const FRESH = new Set(['/', '/today', '/risk', '/track-record', '/edge', '/season', '/form']); // regenerated every data refresh
   const staticRoutes = [
     '/',
     '/today',
-    '/parlay',
+    // The Risk Lab. /parlay still answers, for links already published,
+    // but only one of the two belongs in a sitemap.
+    '/risk',
     '/track-record',
     '/edge',
     '/compare',

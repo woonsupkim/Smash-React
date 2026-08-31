@@ -1,6 +1,6 @@
 // data-pipeline/buildMarketGap.js
 //
-// Derives the market-gap figures the Parlay builder publishes, from the graded
+// Derives the market-gap figures the Risk Lab publishes, from the graded
 // record they claim to describe, and writes them to src/data/marketGap.json.
 //
 // These used to be constants typed into src/utils/marketGap.js by hand, with a

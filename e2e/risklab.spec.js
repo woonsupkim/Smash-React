@@ -1,5 +1,5 @@
-// The risk lab, now the second half of the parlay builder rather than its own
-// page, against the real production bundle.
+// The Risk Lab: today's card, the staking plan, and what that plan does to
+// the budget behind it. One page, against the real production bundle.
 const { test, expect } = require('@playwright/test');
 
 // The card takes a moment to arrive; branching on a count() straight after
@@ -12,7 +12,7 @@ async function openCard(page) {
 test('risk lab: reads the plan on the page, and switches views', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/parlay');
+  await page.goto('/risk');
   if (!(await openCard(page))) {
     await expect(page.locator('.parlay-empty, .parlay-slip-empty').first()).toBeVisible();
     expect(errors).toEqual([]);
@@ -76,7 +76,7 @@ test('risk lab: reads the plan on the page, and switches views', async ({ page }
 test('risk lab: changing the plan moves the risk numbers', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/parlay');
+  await page.goto('/risk');
   if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
 
   // This is the whole premise of merging the two: one allocation, read by both
@@ -103,7 +103,7 @@ test('risk lab: changing the plan moves the risk numbers', async ({ page }) => {
 test('risk lab: staking the whole budget reads as riskier than the plan', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto('/parlay');
+  await page.goto('/risk');
   if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
 
   // Kelly's bands, coldest first. The budget is now the bankroll, so a
@@ -128,16 +128,14 @@ test('risk lab: staking the whole budget reads as riskier than the plan', async 
   expect(errors).toEqual([]);
 });
 
-test('/risk still resolves, and lands on the risk lab', async ({ page }) => {
+test('/parlay still resolves, for every link already published', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  // The digest, the home page and the site footer all link here by name. The
-  // route outlived the page, so the link has to keep working.
-  await page.goto('/risk');
+  // The page was the parlay builder for its whole life. The sitemap, every
+  // share asset already posted and every digest already sent point at that
+  // URL, and none of them can be edited after the fact.
+  await page.goto('/parlay');
   await page.waitForSelector('.stake-plan, .parlay-empty, .parlay-slip-empty', { timeout: 20000 });
   await expect(page.getByRole('heading', { name: /today.s staking plan/i })).toBeVisible();
-  if (await page.locator('.risk-lab').count() > 0) {
-    await expect(page.locator('#risk')).toBeInViewport({ timeout: 10000 });
-  }
   expect(errors).toEqual([]);
 });
