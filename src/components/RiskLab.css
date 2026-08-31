@@ -1,0 +1,261 @@
+/* src/components/RiskLab.css
+   Sits below the staking plan and deliberately reads quieter than it: the
+   plan is the answer, this is the caveat. Same tokens throughout so the two
+   panels are obviously the same tool. */
+.risk-lab {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius, 16px);
+  background: var(--surface-1, rgba(255, 255, 255, 0.02));
+  padding: 1.25rem 1.35rem 1.1rem;
+}
+
+.risk-cap {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2, #9aa4b2);
+}
+.risk-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-3, #7c8698);
+  max-width: 62ch;
+}
+.risk-sub em { color: var(--text-1, #fff); font-style: normal; font-weight: 700; }
+
+/* ── Inputs ─────────────────────────────────────────────────────────────── */
+.risk-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin: 1.1rem 0 0.9rem;
+}
+.risk-input { display: flex; flex-direction: column; gap: 0.3rem; }
+.risk-input > span:first-child {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+}
+.risk-input-wide { margin-bottom: 1rem; }
+.risk-money {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-1, #fff);
+  font-weight: 700;
+}
+.risk-lab input[type="number"] {
+  width: 92px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  color: var(--text-1, #fff);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.4rem 0.5rem;
+}
+
+/* ── Exposure ───────────────────────────────────────────────────────────── */
+.risk-exposure { margin: 0.5rem 0 1.1rem; }
+.risk-exposure-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  overflow: hidden;
+}
+.risk-exposure-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent-brand, #c8f560);
+  border-radius: 4px;
+}
+/* Past a quarter of the bankroll on one day, the bar stops being decorative. */
+.risk-exposure-bar span.hot { background: #ff8f8f; }
+.risk-exposure-cap {
+  margin-top: 0.5rem;
+  font-size: 0.84rem;
+  color: var(--text-3, #7c8698);
+}
+.risk-exposure-cap strong { color: var(--text-1, #fff); }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+.risk-tabs {
+  display: inline-flex;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 1rem;
+}
+.risk-tabs button {
+  border: none;
+  background: none;
+  color: var(--text-3, #7c8698);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.risk-tabs button.on { background: var(--accent-brand, #c8f560); color: #0c0f14; }
+
+.risk-panel { animation: none; }
+.risk-empty {
+  font-size: 0.86rem;
+  color: var(--text-3, #7c8698);
+  line-height: 1.55;
+  margin: 0.5rem 0 0;
+}
+
+/* ── Metrics ────────────────────────────────────────────────────────────── */
+.risk-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 2rem;
+  margin: 1rem 0;
+}
+.risk-metric { display: flex; flex-direction: column; }
+.risk-metric-v {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-1, #fff);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+/* Deliberately NOT --accent-positive/negative at full strength: these sit on
+   the panel tint, where the greens used elsewhere measure under AA (the
+   StakingPlan badge lesson). */
+.risk-metric-v.pos { color: #5cbf8d; }
+.risk-metric-v.neg { color: #ff8f8f; }
+.risk-metric-l {
+  font-size: 0.72rem;
+  color: var(--text-3, #7c8698);
+  margin-top: 0.2rem;
+  max-width: 22ch;
+  line-height: 1.4;
+}
+
+/* ── Charts ─────────────────────────────────────────────────────────────── */
+.risk-chart-block { margin: 1.2rem 0 0.5rem; }
+.risk-chart-cap {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  margin-bottom: 0.6rem;
+}
+.risk-chart { width: 100%; max-width: 420px; height: auto; display: block; }
+.risk-gauge { width: 100%; max-width: 380px; height: auto; display: block; }
+.risk-axis { fill: var(--text-3, #7c8698); font-size: 8px; }
+
+.risk-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-3, #7c8698);
+}
+.risk-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+.risk-legend .k-mid { background: var(--accent-brand, #c8f560); height: 3px; }
+.risk-legend .k-band { background: rgba(200, 245, 96, 0.35); height: 8px; border-radius: 2px; }
+.risk-legend .k-low { background: #ff8f8f; }
+.risk-legend .k-zero { background: rgba(255, 255, 255, 0.4); }
+
+/* ── Ladder ─────────────────────────────────────────────────────────────── */
+.risk-ladder { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+.risk-ladder li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.07));
+  font-size: 0.84rem;
+  color: var(--text-3, #7c8698);
+}
+.risk-ladder li:last-child { border-bottom: none; }
+.risk-ladder strong { color: var(--text-1, #fff); font-variant-numeric: tabular-nums; }
+
+/* ── Verdicts ───────────────────────────────────────────────────────────── */
+.risk-kelly-read { margin-top: 0.5rem; font-size: 0.86rem; color: var(--text-3, #7c8698); }
+.risk-kelly-read strong { color: var(--text-1, #fff); font-size: 1rem; }
+.risk-verdict {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  color: var(--text-2, #9aa4b2);
+}
+.risk-verdict.conservative { border-color: rgba(92, 191, 141, 0.4); background: rgba(92, 191, 141, 0.08); }
+.risk-verdict.full { border-color: rgba(200, 245, 96, 0.35); background: rgba(200, 245, 96, 0.06); }
+.risk-verdict.aggressive { border-color: rgba(255, 183, 77, 0.45); background: rgba(255, 183, 77, 0.08); }
+.risk-verdict.ruinous { border-color: rgba(255, 92, 92, 0.5); background: rgba(255, 92, 92, 0.09); color: #ffc9c9; }
+
+.risk-note {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-3, #7c8698);
+  margin: 0.9rem 0 0;
+  max-width: 66ch;
+}
+.risk-fine {
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-3, #7c8698);
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+}
+
+/* ── Per-match stakes ───────────────────────────────────────────────────── */
+.risk-legs { margin-top: 1rem; }
+.risk-legs summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-2, #9aa4b2);
+}
+.risk-legs-list { margin-top: 0.6rem; }
+.risk-leg {
+  display: grid;
+  grid-template-columns: 1fr 92px 34px;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.07));
+}
+.risk-leg-name { display: flex; flex-direction: column; min-width: 0; font-size: 0.86rem; font-weight: 700; color: var(--text-1, #fff); }
+.risk-leg-name em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.74rem;
+  color: var(--text-3, #7c8698);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.risk-leg-stake { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--text-1, #fff); }
+.risk-leg-stake input { width: 68px; }
+.risk-leg-par { text-align: center; }
+.risk-leg-par input { width: 17px; height: 17px; accent-color: var(--accent-brand, #c8f560); }
+
+@media (max-width: 560px) {
+  .risk-grid { gap: 0.9rem 1.4rem; }
+  .risk-metric-l { max-width: 16ch; }
+  .risk-leg { grid-template-columns: 1fr 76px 28px; }
+}

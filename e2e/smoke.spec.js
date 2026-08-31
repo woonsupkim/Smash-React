@@ -134,6 +134,12 @@ test('parlay builder: the plan prices today\'s card and dropping a leg re-prices
   // Either there are calls today (the plan renders) or the honest empty state.
   // There is no separate selection list any more: every call arrives already
   // in the plan, which is the single table for both picking and pricing.
+  //
+  // WAIT for one of the two before branching. Counting straight after goto()
+  // raced the predictions fetch: on a slow load neither had rendered yet, the
+  // test took the empty branch and then failed looking for an empty state
+  // that was also still on its way. That is what made this flaky.
+  await page.waitForSelector('.stake-plan, .parlay-empty', { timeout: 20000 });
   const plan = page.locator('.stake-plan');
   if (await plan.count() === 0) {
     await expect(page.locator('.parlay-empty')).toBeVisible();
