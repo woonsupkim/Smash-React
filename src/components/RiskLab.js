@@ -19,13 +19,26 @@
 import React, { useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { analyzeSlip, parlayCombo, reliability, adjustProb, planFrontier } from '../utils/staking';
-import { lossExceedance, gainExceedance, kellyCheck, simulateBankroll, expectedLosingStreak, outcomePairs } from '../utils/riskLab';
+import { lossExceedance, gainExceedance, twoSidedExceedance, amountAtExceedance, kellyCheck, simulateBankroll, expectedLosingStreak, outcomePairs } from '../utils/riskLab';
 import './RiskLab.css';
 
 const money = (v) => `${v < 0 ? '-' : ''}$${Math.abs(v || 0).toFixed(2)}`;
 const money0 = (v) => `${v < 0 ? '-' : ''}$${Math.abs(Math.round(v || 0))}`;
 const pct1 = (v) => `${(v * 100).toFixed(1)}%`;
 const pct0 = (v) => `${Math.round(v * 100)}%`;
+// Five rungs for a ladder, distinct once rounded to whole dollars. Two rungs
+// that print the same amount with two different probabilities read as a
+// contradiction, which is exactly what a reader checking a figure will spot.
+const rungs = (top, n = 5) => {
+  if (!(top > 0)) return [];
+  const out = [];
+  for (let i = 1; i <= n; i++) {
+    const v = Math.max(1, Math.round((top * i) / n));
+    if (!out.length || v > out[out.length - 1]) out.push(v);
+  }
+  return out;
+};
+
 const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
 
 // Same figure the plan card, the parlay builder and the digest all use.
@@ -39,38 +52,66 @@ const openingStake = (bankroll, legCount) => (legCount > 0
 
 // ── Charts ──────────────────────────────────────────────────────────────────
 
-// Exceedance: "the chance you end up at least this far in one direction". A
-// descending curve rather than a histogram, because the question is
-// cumulative - nobody asks the odds of losing exactly $37.
+// Both arms of the day on one axis: losses left of break-even, gains right,
+// height = how likely you are to get at least that far in that direction.
 //
-// Drawn for both arms of the distribution. Showing only the losing arm was
-// its own kind of dishonesty: a reader deciding what to stake needs both, and
-// a downside-only view makes every slip look like a bad idea.
-function ExceedanceChart({ steps, endNote, colour, fill, verb }) {
-  if (!steps || steps.length < 2) return null;
-  const w = 300, h = 108, padL = 30, padB = 20, padT = 8, padR = 6;
-  const maxP = Math.max(...steps.map((s) => s.prob), 0.01);
-  const x = (i) => padL + (i / (steps.length - 1)) * (w - padL - padR);
+// This replaced a pair of side-by-side charts. Two charts made the reader
+// compare heights across a gap and hold two pictures at once, when it is
+// really one shape - a tent peaking at break-even, falling away as the
+// outcome gets more extreme. Nothing here needs subtracting to be read: each
+// side answers its own question in its own direction.
+function OutcomeCurve({ series, pcts, staked }) {
+  if (!series || series.length < 4) return null;
+  const w = 420, h = 178, padL = 34, padR = 10, padT = 24, padB = 30;
+  const loss = series.filter((s) => s.side === 'loss');
+  const gain = series.filter((s) => s.side === 'gain');
+  const lo = loss[0].pl, hi = gain[gain.length - 1].pl;
+  const span = Math.max(hi - lo, 1e-6);
+  const maxP = Math.max(...series.map((s) => s.prob), 0.05);
+  const x = (v) => padL + ((v - lo) / span) * (w - padL - padR);
   const y = (p) => padT + (1 - p / maxP) * (h - padT - padB);
-  const pts = steps.map((s, i) => `${x(i).toFixed(1)},${y(s.prob).toFixed(1)}`).join(' ');
-  const first = steps[0], last = steps[steps.length - 1];
+  const path = (arr) => arr.map((s) => `${x(s.pl).toFixed(1)},${y(s.prob).toFixed(1)}`).join(' ');
+  const zeroX = x(0);
+  const base = h - padB;
+  const pLose = loss[loss.length - 1].prob;
+  const pWin = gain[0].prob;
+  const tick = (v, label) => (
+    <g key={label}>
+      <line x1={x(v)} x2={x(v)} y1={base} y2={base + 4} stroke="rgba(255,255,255,0.3)" />
+      <text x={x(v)} y={base + 15} textAnchor="middle" className="risk-axis">{label}</text>
+    </g>
+  );
   return (
-    <svg className="risk-chart" viewBox={`0 0 ${w} ${h}`} role="img"
-      aria-label={`Chance of ${verb} at least a given amount, from ${money0(first.amount)} at ${pct0(first.prob)} down to ${money0(last.amount)} at ${pct0(last.prob)}.`}>
-      <line x1={padL} x2={w - padR} y1={h - padB} y2={h - padB} stroke="rgba(255,255,255,0.16)" />
-      <polygon points={`${padL},${h - padB} ${pts} ${x(steps.length - 1)},${h - padB}`} fill={fill} />
-      <polyline points={pts} fill="none" stroke={colour} strokeWidth="2" strokeLinejoin="round" />
-      {steps.map((s, i) => (
-        <circle key={i} cx={x(i)} cy={y(s.prob)} r="2.5" fill={colour}>
-          <title>{`${pct1(s.prob)} chance of ${verb} ${money0(s.amount)} or more`}</title>
-        </circle>
-      ))}
+    <svg className="risk-chart wide" viewBox={`0 0 ${w} ${h}`} role="img"
+      aria-label={`Outcome curve. Chance of losing anything ${pct0(pLose)}, chance of winning anything ${pct0(pWin)}. A bad day is ${money0(pcts ? pcts.p05 : lo)}, a typical day ${money0(pcts ? pcts.p50 : 0)}, a good day ${money0(pcts ? pcts.p95 : hi)}.`}>
+      {/* Fills first, so the curves sit on top of their own shading. */}
+      <polygon points={`${x(lo)},${base} ${path(loss)} ${zeroX},${base}`} fill="rgba(255,92,92,0.16)" />
+      <polygon points={`${zeroX},${base} ${path(gain)} ${x(hi)},${base}`} fill="rgba(92,191,141,0.16)" />
+      <polyline points={path(loss)} fill="none" stroke="#ff8f8f" strokeWidth="2" strokeLinejoin="round" />
+      <polyline points={path(gain)} fill="none" stroke="#5cbf8d" strokeWidth="2" strokeLinejoin="round" />
+
+      {/* Break-even: the only line on the chart worth drawing full height. */}
+      <line x1={zeroX} x2={zeroX} y1={padT - 4} y2={base} stroke="rgba(255,255,255,0.5)" strokeDasharray="3 3" />
+
+      {/* The pair of numbers that make the shape legible without a legend. */}
+      <text x={zeroX - 6} y={y(pLose) - 7} textAnchor="end" className="risk-axis strong loss">{pct0(pLose)} lose</text>
+      <text x={zeroX + 6} y={y(pWin) - 7} className="risk-axis strong gain">{pct0(pWin)} win</text>
+
+      {/* A typical day, where it actually falls. */}
+      {pcts && (
+        <g>
+          <circle cx={x(pcts.p50)} cy={base} r="3" fill="var(--accent-brand, #c8f560)" />
+          <text x={x(pcts.p50) + (pcts.p50 > 0 ? 7 : -7)} y={base - 6}
+            textAnchor={pcts.p50 > 0 ? 'start' : 'end'} className="risk-axis strong">typical</text>
+        </g>
+      )}
+
+      <line x1={padL} x2={w - padR} y1={base} y2={base} stroke="rgba(255,255,255,0.16)" />
       <text x={padL - 4} y={padT + 6} textAnchor="end" className="risk-axis">{pct0(maxP)}</text>
-      <text x={padL - 4} y={h - padB} textAnchor="end" className="risk-axis">0</text>
-      <text x={padL} y={h - 6} className="risk-axis">{money0(first.amount)}</text>
-      <text x={w - padR} y={h - 6} textAnchor="end" className="risk-axis">
-        {money0(last.amount)}{endNote || ''}
-      </text>
+      <text x={padL - 4} y={base} textAnchor="end" className="risk-axis">0</text>
+      {tick(lo, `${money0(lo)}${lo <= -staked + 0.01 ? ' (all)' : ''}`)}
+      {tick(0, 'break even')}
+      {tick(hi, `+${money0(hi).replace('-', '')}`)}
     </svg>
   );
 }
@@ -218,9 +259,14 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
   const bank = Number(bankroll) || 0;
   const staked = analysis.staked;
 
+  // Both ladders stop at the 2% outcome rather than at the theoretical
+  // extreme. Anchoring the downside at the full stake, or the upside at
+  // everything landing, spent most of the rungs printing 0.0%: those ends
+  // need every leg to break the same way at once. The extremes are still
+  // reported, as the two headline metrics above.
   const ladder = useMemo(() => {
     if (!analysis.dist || staked <= 0) return [];
-    const levels = [0.1, 0.25, 0.5, 0.75, 1].map((f) => +(staked * f).toFixed(2));
+    const levels = rungs(amountAtExceedance(analysis.dist, 0.02, 'loss'));
     return lossExceedance(analysis.dist, levels).map((s) => ({ ...s, amount: s.loss }));
   }, [analysis.dist, staked]);
 
@@ -230,9 +276,22 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
   // curve flat on the floor and unreadable.
   const upLadder = useMemo(() => {
     if (!analysis.dist || staked <= 0 || !(analysis.best > 0)) return [];
-    const levels = [0.1, 0.25, 0.5, 0.75, 1].map((f) => +(analysis.best * f).toFixed(2));
+    const levels = rungs(amountAtExceedance(analysis.dist, 0.02, 'gain'));
     return gainExceedance(analysis.dist, levels).map((s) => ({ ...s, amount: s.gain }));
   }, [analysis.dist, staked, analysis.best]);
+
+  // The chance of the ceiling actually arriving. It used to be read off the
+  // top rung of the upside ladder, which is no longer the extreme.
+  const pBest = useMemo(
+    () => (analysis.dist && analysis.best > 0
+      ? gainExceedance(analysis.dist, [analysis.best])[0].prob : 0),
+    [analysis.dist, analysis.best]
+  );
+
+  const curve = useMemo(
+    () => (analysis.dist && staked > 0 ? twoSidedExceedance(analysis.dist, 24) : []),
+    [analysis.dist, staked]
+  );
 
   const kelly = useMemo(
     () => kellyCheck(bets, bank, combo.priced && parStake > 0 ? { stake: parStake, p: combo.p, o: combo.o } : null),
@@ -374,46 +433,51 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
             <div className="risk-metric">
               <span className="risk-metric-v pos">{money(analysis.best)}</span>
               <span className="risk-metric-l">
-                if everything lands{upLadder.length ? ` · ${upLadder[upLadder.length - 1].prob < 0.001 ? 'under 0.1' : (upLadder[upLadder.length - 1].prob * 100).toFixed(1)}% chance` : ''}
+                if everything lands{pBest > 0 ? ` · ${pBest < 0.001 ? 'under 0.1' : (pBest * 100).toFixed(1)}% chance` : ''}
               </span>
             </div>
           </div>
 
+          <div className="risk-chart-block">
+            <div className="risk-chart-cap">How far the day can go, and how likely</div>
+            <OutcomeCurve series={curve} pcts={analysis.pcts} staked={staked} />
+            <div className="risk-legend">
+              <span><i className="k-loss" /> chance of losing at least that much</span>
+              <span><i className="k-gain" /> chance of winning at least that much</span>
+            </div>
+          </div>
+
+          {/* The same curve as numbers. The chart shows the shape; people
+              checking a specific figure want to read it, not measure it. */}
           <div className="risk-two-up">
-            <div className="risk-chart-block">
-              <div className="risk-chart-cap up">How likely is a win of at least this size</div>
-              <ExceedanceChart steps={upLadder} verb="winning" colour="#5cbf8d"
-                fill="rgba(92,191,141,0.16)" endNote=" (everything)" />
+            <div className="risk-ladder-col">
+              <div className="risk-chart-cap up">If it goes your way</div>
               <ul className="risk-ladder">
-                {upLadder.map((s) => (
-                  <li key={s.gain}>
-                    <span>{money0(s.gain)} or better</span>
-                    <strong>{s.prob < 0.001 && s.prob > 0 ? '<0.1%' : pct1(s.prob)}</strong>
-                  </li>
-                ))}
+              {upLadder.map((s) => (
+                <li key={s.gain}>
+                  <span>Win {money0(s.gain)} or more</span>
+                  <strong className="gain">{s.prob < 0.001 && s.prob > 0 ? '<0.1%' : pct1(s.prob)}</strong>
+                </li>
+              ))}
               </ul>
             </div>
-
-            <div className="risk-chart-block">
-              <div className="risk-chart-cap down">How likely is a loss of at least this size</div>
-              <ExceedanceChart steps={ladder} verb="losing" colour="#ff8f8f"
-                fill="rgba(255,92,92,0.16)"
-                endNote={ladder.length && ladder[ladder.length - 1].amount >= staked - 0.01 ? ' (all of it)' : ''} />
+            <div className="risk-ladder-col">
+              <div className="risk-chart-cap down">If it does not</div>
               <ul className="risk-ladder">
-                {ladder.map((s) => (
-                  <li key={s.loss}>
-                    <span>{money0(s.loss)} or worse</span>
-                    <strong>{s.prob < 0.001 && s.prob > 0 ? '<0.1%' : pct1(s.prob)}</strong>
-                  </li>
-                ))}
+              {ladder.map((s) => (
+                <li key={s.loss}>
+                  <span>Lose {money0(s.loss)} or more</span>
+                  <strong className="loss">{s.prob < 0.001 && s.prob > 0 ? '<0.1%' : pct1(s.prob)}</strong>
+                </li>
+              ))}
               </ul>
             </div>
           </div>
 
           <p className="risk-note">
-            Both ends need everything to break the same way at once, which is why the outer
-            figures are small on either side. Neither is zero. The middle of the two curves is
-            where almost every day actually finishes.
+            Both ends need everything to break the same way at once, which is why the curve
+            flattens as it goes out. Neither end is zero. The tall part either side of
+            break-even is where almost every day actually finishes.
           </p>
         </div>
       )}

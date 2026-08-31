@@ -46,7 +46,7 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
   // Bigger losses are never more likely than smaller ones - the ladder must
   // read as a non-increasing column, which is the one thing a reader will
   // check by eye.
-  const probs = await page.locator('.risk-two-up .risk-chart-block').nth(1)
+  const probs = await page.locator('.risk-two-up .risk-ladder-col').nth(1)
     .locator('.risk-ladder li strong').allInnerTexts();
   const nums = probs.map((t) => (t.startsWith('<') ? 0.05 : parseFloat(t)));
   for (let i = 1; i < nums.length; i++) expect(nums[i]).toBeLessThanOrEqual(nums[i - 1] + 1e-9);
@@ -67,13 +67,16 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
 
   // Upside as well as downside: the panel showed only losses at first, which
   // made every slip look like a bad idea.
-  await expect(page.getByText('How likely is a win of at least this size')).toBeVisible();
   await expect(page.getByText('expected profit', { exact: false })).toBeVisible();
   await expect(page.getByText('if everything lands', { exact: false })).toBeVisible();
-  await expect(page.locator('.risk-two-up .risk-chart')).toHaveCount(2);
+  // One chart, both arms. Two side-by-side charts made the reader compare
+  // heights across a gap; the combined curve is a single shape peaking at
+  // break-even, so the two ladders below are the only pair left.
+  await expect(page.locator('.risk-chart.wide')).toHaveCount(1);
+  await expect(page.locator('.risk-two-up .risk-ladder')).toHaveCount(2);
 
   // Bigger wins are never more likely than smaller ones either.
-  const upProbs = await page.locator('.risk-two-up .risk-chart-block').first()
+  const upProbs = await page.locator('.risk-two-up .risk-ladder-col').first()
     .locator('.risk-ladder li strong').allInnerTexts();
   const upNums = upProbs.map((t) => (t.startsWith('<') ? 0.05 : parseFloat(t)));
   for (let i = 1; i < upNums.length; i++) expect(upNums[i]).toBeLessThanOrEqual(upNums[i - 1] + 1e-9);

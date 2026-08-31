@@ -63,6 +63,89 @@ export function gainExceedance(dist, levels) {
 }
 
 /**
+ * Both arms of the outcome distribution on ONE axis.
+ *
+ * The panel drew two charts, a win curve and a loss curve, which forced the
+ * reader to hold two pictures in their head and compare heights across a gap.
+ * They are really one shape: a tent peaking at break-even and falling away in
+ * both directions, because the further you go from zero the less likely you
+ * are to get there.
+ *
+ * Every point answers a question in its own direction, so nothing has to be
+ * subtracted to be read:
+ *   right of zero  P(profit >= x)
+ *   left of zero   P(loss >= |x|)
+ *
+ * The two heights at zero are P(win anything) and P(lose anything), which sum
+ * to 1 less the chance of landing exactly flat. That is the honest headline
+ * pair, and it is visible without a legend.
+ *
+ * Sampled across the plotted range rather than the theoretical extremes: on a
+ * big card the extremes have twenty zeros after the decimal point and would
+ * flatten everything worth seeing.
+ *
+ * @param {object} dist analyzeSlip().dist
+ * @param {number} steps points per side
+ */
+export function twoSidedExceedance(dist, steps = 24) {
+  if (!dist || !dist.bins || !dist.bins.length) return [];
+  const pairs = outcomePairs(dist);
+  const total = pairs.reduce((s, x) => s + x.prob, 0) || 1;
+  const lo = Math.min(dist.lo, 0);
+  const hi = Math.max(dist.hi, 0);
+  const out = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = lo + ((0 - lo) * i) / steps;          // losses, worst -> zero
+    out.push({
+      pl: x,
+      side: 'loss',
+      prob: pairs.filter((q) => q.pl <= x + 1e-9).reduce((s, q) => s + q.prob, 0) / total,
+    });
+  }
+  for (let i = 0; i <= steps; i++) {
+    const x = (hi * i) / steps;                      // gains, zero -> best
+    out.push({
+      pl: x,
+      side: 'gain',
+      prob: pairs.filter((q) => q.pl >= x - 1e-9).reduce((s, q) => s + q.prob, 0) / total,
+    });
+  }
+  return out;
+}
+
+/**
+ * The amount you reach with roughly the given probability, in one direction.
+ *
+ * The inverse of the exceedance ladders above, and the honest way to anchor
+ * one. Anchoring a ladder at the theoretical extreme (everything wins, or
+ * everything loses) spends most of its rungs printing 0.0%: the best case on
+ * a five-leg card needs five coin-flips to break the same way. Anchoring at
+ * the 2% point instead means every rung on the ladder is an outcome someone
+ * will actually meet.
+ *
+ * @param {object} dist analyzeSlip().dist
+ * @param {number} prob target exceedance, e.g. 0.02
+ * @param {'gain'|'loss'} side
+ * @returns {number} a positive dollar amount, 0 if that side is empty
+ */
+export function amountAtExceedance(dist, prob, side = 'gain') {
+  const pairs = outcomePairs(dist);
+  if (!pairs.length) return 0;
+  const total = pairs.reduce((s, x) => s + x.prob, 0) || 1;
+  // Walk outward from break-even, so the first amount that has spent the
+  // probability budget is the furthest one still worth putting on a ladder.
+  const arm = side === 'gain'
+    ? pairs.filter((x) => x.pl > 0).sort((a, b) => b.pl - a.pl)
+    : pairs.filter((x) => x.pl < 0).sort((a, b) => a.pl - b.pl);
+  let acc = 0;
+  for (const x of arm) {
+    acc += x.prob / total;
+    if (acc >= prob) return Math.abs(x.pl);
+  }
+  return arm.length ? Math.abs(arm[arm.length - 1].pl) : 0;
+}
+
+/**
  * The Kelly check: is this slip sized past the growth-optimal bet?
  *
  * Kelly is the stake that maximises long-run growth. Bet MORE than it and

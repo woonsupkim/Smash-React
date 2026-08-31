@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeSlip } from './staking.mjs';
 import {
-  outcomePairs, lossExceedance, gainExceedance, kellyCheck, simulateBankroll, expectedLosingStreak,
+  outcomePairs, lossExceedance, gainExceedance, twoSidedExceedance, amountAtExceedance,
+  kellyCheck, simulateBankroll, expectedLosingStreak,
 } from './riskLab.mjs';
 
 const slip = [
@@ -163,5 +164,86 @@ describe('simulation upside', () => {
     expect(sim.pUp + sim.pDown).toBeLessThanOrEqual(1 + 1e-9);
     expect(sim.bestCase).toBeGreaterThanOrEqual(sim.finalP95);
     expect(sim.pDouble).toBeLessThanOrEqual(sim.pUp + 1e-9);
+  });
+});
+
+describe('two-sided exceedance (one chart, both arms)', () => {
+  const series = twoSidedExceedance(res.dist, 16);
+  const loss = series.filter((x) => x.side === 'loss');
+  const gain = series.filter((x) => x.side === 'gain');
+
+  it('covers both directions and meets at break-even', () => {
+    expect(loss.length).toBe(17);
+    expect(gain.length).toBe(17);
+    expect(loss[loss.length - 1].pl).toBeCloseTo(0, 9);
+    expect(gain[0].pl).toBeCloseTo(0, 9);
+  });
+
+  it('peaks at zero and falls away in both directions', () => {
+    // Losses run worst -> zero, so probability must RISE along that array.
+    for (let i = 1; i < loss.length; i++) {
+      expect(loss[i].prob).toBeGreaterThanOrEqual(loss[i - 1].prob - 1e-12);
+    }
+    // Gains run zero -> best, so probability must FALL along that one.
+    for (let i = 1; i < gain.length; i++) {
+      expect(gain[i].prob).toBeLessThanOrEqual(gain[i - 1].prob + 1e-12);
+    }
+  });
+
+  it('the two heights at break-even account for all the probability', () => {
+    const pLoseAnything = loss[loss.length - 1].prob;
+    const pWinAnything = gain[0].prob;
+    // Everything is a win, a loss, or exactly flat - so together they cannot
+    // exceed 1, and cannot leave much unaccounted for.
+    expect(pLoseAnything + pWinAnything).toBeGreaterThan(0.98);
+    expect(pLoseAnything + pWinAnything).toBeLessThanOrEqual(1 + 1e-9);
+  });
+
+  it('agrees with the separate one-sided ladders it replaces', () => {
+    const mid = gain[Math.floor(gain.length / 2)];
+    const [same] = gainExceedance(res.dist, [mid.pl]);
+    expect(Math.abs(mid.prob - same.prob)).toBeLessThan(1e-9);
+    const lmid = loss[Math.floor(loss.length / 3)];
+    const [lsame] = lossExceedance(res.dist, [Math.abs(lmid.pl)]);
+    expect(Math.abs(lmid.prob - lsame.prob)).toBeLessThan(1e-9);
+  });
+
+  it('never plots outside the range the chart is drawn across', () => {
+    for (const pt of series) {
+      expect(pt.pl).toBeGreaterThanOrEqual(Math.min(res.dist.lo, 0) - 1e-9);
+      expect(pt.pl).toBeLessThanOrEqual(Math.max(res.dist.hi, 0) + 1e-9);
+      expect(pt.prob).toBeGreaterThanOrEqual(0);
+      expect(pt.prob).toBeLessThanOrEqual(1 + 1e-9);
+    }
+  });
+});
+
+describe('amount at a target exceedance', () => {
+  it('returns an amount that really is reached about that often', () => {
+    const g = amountAtExceedance(res.dist, 0.02, 'gain');
+    expect(g).toBeGreaterThan(0);
+    const [hit] = gainExceedance(res.dist, [g]);
+    expect(hit.prob).toBeGreaterThanOrEqual(0.02 - 1e-9);
+    const l = amountAtExceedance(res.dist, 0.02, 'loss');
+    expect(l).toBeGreaterThan(0);
+    const [lhit] = lossExceedance(res.dist, [l]);
+    expect(lhit.prob).toBeGreaterThanOrEqual(0.02 - 1e-9);
+  });
+
+  it('sits inside the extreme, which is the whole point of using it', () => {
+    expect(amountAtExceedance(res.dist, 0.02, 'gain')).toBeLessThanOrEqual(res.best + 1e-9);
+    expect(amountAtExceedance(res.dist, 0.02, 'loss')).toBeLessThanOrEqual(Math.abs(res.worst) + 1e-9);
+  });
+
+  it('moves further out as the probability budget grows', () => {
+    const near = amountAtExceedance(res.dist, 0.3, 'loss');
+    const far = amountAtExceedance(res.dist, 0.02, 'loss');
+    expect(far).toBeGreaterThanOrEqual(near);
+  });
+
+  it('is zero when the requested side is empty', () => {
+    const sure = analyzeSlip([{ key: 'x', p: 1, o: 2, single: 10 }], null);
+    expect(amountAtExceedance(sure.dist, 0.02, 'loss')).toBe(0);
+    expect(amountAtExceedance(null, 0.02, 'gain')).toBe(0);
   });
 });

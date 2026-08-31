@@ -151,8 +151,16 @@
   margin-bottom: 0.6rem;
 }
 .risk-chart { width: 100%; max-width: 420px; height: auto; display: block; }
+/* The combined outcome curve carries twice the axis of a one-sided chart and
+   needs the room to keep both arms legible. */
+.risk-chart.wide { max-width: 560px; }
 .risk-gauge { width: 100%; max-width: 380px; height: auto; display: block; }
 .risk-axis { fill: var(--text-3, #7c8698); font-size: 8px; }
+/* The two headline percentages either side of break-even carry the whole
+   chart, so they read at label weight rather than axis weight. */
+.risk-axis.strong { font-size: 10px; font-weight: 700; fill: var(--text-1, #fff); }
+.risk-axis.loss { fill: #ff8f8f; }
+.risk-axis.gain { fill: #5cbf8d; }
 
 .risk-legend {
   display: flex;
@@ -174,6 +182,8 @@
 .risk-legend .k-band { background: rgba(200, 245, 96, 0.35); height: 8px; border-radius: 2px; }
 .risk-legend .k-low { background: #ff8f8f; }
 .risk-legend .k-zero { background: rgba(255, 255, 255, 0.4); }
+.risk-legend .k-loss { background: #ff8f8f; }
+.risk-legend .k-gain { background: #5cbf8d; }
 
 /* ── Ladder ─────────────────────────────────────────────────────────────── */
 .risk-ladder { list-style: none; margin: 0.75rem 0 0; padding: 0; }
@@ -188,6 +198,8 @@
 }
 .risk-ladder li:last-child { border-bottom: none; }
 .risk-ladder strong { color: var(--text-1, #fff); font-variant-numeric: tabular-nums; }
+.risk-ladder strong.gain { color: #5cbf8d; }
+.risk-ladder strong.loss { color: #ff8f8f; }
 
 /* ── Verdicts ───────────────────────────────────────────────────────────── */
 .risk-kelly-read { margin-top: 0.5rem; font-size: 0.86rem; color: var(--text-3, #7c8698); }
@@ -294,10 +306,10 @@
   .risk-legs.has-drop .risk-parlay-row { grid-template-columns: 1fr 74px 48px 26px; }
 }
 
-/* Upside and downside side by side, so neither can be read without the
-   other. They stack on narrow screens with the upside first: the panel is
-   about limits, and a reader who only sees the first card should still see
-   what they stand to make. */
+/* The two exceedance ladders, the combined curve read back as numbers.
+   Side by side so neither can be read without the other, stacking on narrow
+   screens with the upside first: the panel is about limits, and a reader who
+   only sees the first column should still see what they stand to make. */
 .risk-two-up {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -305,6 +317,7 @@
   margin-top: 1.2rem;
 }
 .risk-two-up .risk-chart-block { margin: 0; }
+.risk-two-up .risk-ladder { margin-top: 0.4rem; }
 .risk-chart-cap.up { color: #5cbf8d; }
 .risk-chart-cap.down { color: #ff8f8f; }
 
