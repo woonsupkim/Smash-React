@@ -410,6 +410,29 @@
   text-decoration: none;
 }
 .home-plan-cta:hover { text-decoration: underline; color: var(--accent-brand); }
+/* Second CTA on the card: a real alternative, not a repeat of the first, so
+   it reads as the quieter of two doors rather than competing with it.
+   margin-top:auto on the base rule would push these apart. */
+.home-plan-cta.secondary {
+  margin-top: 0.35rem;
+  padding-top: 0;
+  color: var(--text-2, #b6bcc5);
+  font-weight: 700;
+}
+.home-plan-cta.secondary:hover { color: var(--accent-brand); }
+
+/* The spread line: the median leads because it is the number a reader will
+   actually live through, and it is regularly the opposite sign to the EV
+   printed above it. */
+.home-plan-spread {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-3, #7c8698);
+}
+.home-plan-spread strong { font-variant-numeric: tabular-nums; }
+.home-plan-spread strong.pos { color: #5cbf8d; }
+.home-plan-spread strong.neg { color: #ff8f8f; }
 
 /* ── Engine health: the guardrail board in one strip ──────────────────── */
 .home-health { margin-bottom: 3rem; }

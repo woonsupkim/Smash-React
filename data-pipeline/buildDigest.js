@@ -1089,6 +1089,35 @@ async function main() {
         ? ` The builder also offers ${others.map((pl) => `${pl.label.toLowerCase()} (${Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead, ${pl.metrics.ev >= 0 ? '+' : '-'}$${Math.abs(pl.metrics.ev).toFixed(2)} expected)`).join(' and ')}; this one leads because nothing on the menu beats it on both chance and expectation.`
         : '';
 
+      // The shape of the day, not just its average. A plan can carry positive
+      // EV and still lose on MOST days - that is what a long-priced edge looks
+      // like - and a section that reports only the expectation reads as a
+      // forecast of profit. analyzeSlip already computes these percentiles for
+      // the plan being described; they were simply not being printed.
+      const pc = todayPlan.metrics.pcts;
+      const skewed = pc && pc.p50 < 0 && todayPlan.metrics.ev > 0;
+      const spreadBlock = pc ? `
+        <div style="padding-top:14px;">
+          ${kicker('What that actually looks like')}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>
+              <td width="33%" style="padding:0 8px 0 0;vertical-align:top;">
+                <div style="font-family:${MONO};font-size:18px;font-weight:700;color:${pc.p05 >= 0 ? WIN : LOSS};">${money2(pc.p05)}</div>
+                <div style="font-size:12px;color:${MUTED};padding-top:2px;">a bad day (1 in 20)</div>
+              </td>
+              <td width="33%" style="padding:0 8px;vertical-align:top;">
+                <div style="font-family:${MONO};font-size:18px;font-weight:700;color:${pc.p50 >= 0 ? WIN : LOSS};">${money2(pc.p50)}</div>
+                <div style="font-size:12px;color:${MUTED};padding-top:2px;">a typical day</div>
+              </td>
+              <td width="33%" style="padding:0 0 0 8px;vertical-align:top;">
+                <div style="font-family:${MONO};font-size:18px;font-weight:700;color:${WIN};">${money2(pc.p95)}</div>
+                <div style="font-size:12px;color:${MUTED};padding-top:2px;">a good day (1 in 20)</div>
+              </td>
+            </tr>
+          </table>
+          ${skewed ? `<p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:${BODY};">Read those together with the expectation above: the plan is worth ${money2(todayPlan.metrics.ev)} on average and still loses on a typical day. That is not a contradiction, it is what backing long prices looks like - most days give a little back, and the ones that land pay for them. It is also why the size you stake matters more than the pick.</p>` : ''}
+        </div>` : '';
+
       blocks.push(section(`
         ${kicker('The money question')}
         ${h2('What we would actually stake')}
@@ -1110,8 +1139,13 @@ async function main() {
             Same numbers you will find on the builder itself, because it is the same arithmetic.
           </p>
         </div>
+        ${spreadBlock}
         ${p(`${unpriced > 0 ? `${plural(unpriced, 'call on the card had', 'calls on the card had')} no market price when we locked ${unpriced === 1 ? 'it' : 'them'}, so the plan cannot stake ${unpriced === 1 ? 'it' : 'them'}. ` : ''}Fair warning, the builder is a killjoy. Most days it stakes less than you hoped, and some days it stakes nothing at all. That is the feature.`, 'padding-top:14px;')}
         <div style="padding-top:4px;">${button(`${SITE}/parlay`, 'Build your own slip')}</div>
+        <div style="padding-top:10px;font-size:14px;">
+          <a href="${SITE}/risk" style="color:${LINK};text-decoration:none;font-weight:700;border-bottom:1px solid ${LINE};">See your own exposure</a>
+          <span style="color:${MUTED};"> &nbsp;the same card against your bankroll, not ours</span>
+        </div>
       `));
       txtLines.push(`THE MONEY QUESTION - the recommended plan (hypothetical $${PLAN_BUDGET}, ${todayPlan.label.toLowerCase()}):`);
       for (const { b, stake } of stakes) {
@@ -1121,7 +1155,12 @@ async function main() {
       }
       if (todayPlan.parlayStake > 0.005) txtLines.push(`  $${todayPlan.parlayStake.toFixed(2)} on the parlay`);
       txtLines.push(`  Total $${todayPlan.metrics.staked.toFixed(2)}; we expect ${todayPlan.expWinners.toFixed(1)} to land, returning $${todayPlan.expReturn.toFixed(2)}${todayPlan.metrics.pProfit != null ? `; ${Math.round(todayPlan.metrics.pProfit * 100)}% chance of finishing ahead` : ''}`);
-      txtLines.push(`  ${SITE}/parlay`, '');
+      if (todayPlan.metrics.pcts) {
+        const q = todayPlan.metrics.pcts;
+        txtLines.push(`  Bad day $${q.p05.toFixed(2)} | typical $${q.p50.toFixed(2)} | good day $${q.p95.toFixed(2)}`);
+      }
+      txtLines.push(`  ${SITE}/parlay`);
+      txtLines.push(`  Your own exposure: ${SITE}/risk`, '');
     } else {
       blocks.push(section(`
         ${kicker('The money question')}

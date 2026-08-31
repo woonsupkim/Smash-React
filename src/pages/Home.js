@@ -742,6 +742,24 @@ export default function Home() {
                         {Math.abs(plan.rec.metrics.ev).toFixed(2)} expected on {plan.rec.composition}
                       </span>
                     </div>
+                    {/* The shape of the thing, not just its average. A plan
+                        can carry positive EV and still lose on most days -
+                        that is what a long-priced edge looks like - and a card
+                        showing only "+$X expected" reads as "you make $X".
+                        analyzeSlip already computes these percentiles for
+                        every plan on the menu; they were being thrown away. */}
+                    {plan.rec.metrics.pcts && (
+                      <p className="home-plan-spread">
+                        A typical day is{' '}
+                        <strong className={plan.rec.metrics.pcts.p50 >= 0 ? 'pos' : 'neg'}>
+                          {plan.rec.metrics.pcts.p50 >= 0 ? '+' : '-'}${Math.abs(plan.rec.metrics.pcts.p50).toFixed(2)}
+                        </strong>
+                        {plan.rec.metrics.pcts.p50 < 0 && plan.rec.metrics.ev > 0 && ', even though the average is positive'}
+                        . A good one{' '}
+                        <strong className="pos">+${Math.abs(plan.rec.metrics.pcts.p95).toFixed(2)}</strong>, a bad one{' '}
+                        <strong className="neg">-${Math.abs(plan.rec.metrics.pcts.p05).toFixed(2)}</strong>.
+                      </p>
+                    )}
                     <div className="home-plan-rows">
                       {plan.menu.map((p) => (
                         <div className={`home-plan-row${p.id === plan.recommendedId ? ' parlay' : ''}`} key={p.id}>
@@ -756,6 +774,12 @@ export default function Home() {
                       ))}
                     </div>
                     <Link to="/parlay" className="home-plan-cta">Open the parlay builder →</Link>
+                    {/* The budget above is ours, not theirs. This is the only
+                        place on the home page that admits that and points at
+                        the page which takes their number instead. */}
+                    <Link to="/risk" className="home-plan-cta secondary">
+                      Size it to your own bankroll →
+                    </Link>
                   </>
                 )}
               </aside>

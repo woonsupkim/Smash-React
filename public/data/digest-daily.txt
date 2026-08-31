@@ -1,47 +1,56 @@
-SMASH DAILY - Sunday, August 30
+SMASH DAILY - Monday, August 31
 
-2 from 2 yesterday. A clean sweep, and no, that is not the usual. 13 more are locked for today at US Open, every one of them public before a ball is struck, plus 8 coin flips we are sitting out.
+1 from 2 yesterday. Half right, which means half wrong, and both halves are below. 22 more are locked for today at US Open, every one of them public before a ball is struck, plus 7 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 2 from 2 (100%)
+YESTERDAY, GRADED: 1 from 2 (50%)
+  The one that stings: Tereza Valentova (we said 62%) - Katie Volynets had other ideas
 
 ON COURT TODAY
   [ US Open - ATP ]
-  Lehecka over Carreno-Busta - 69%
-    Call: https://smash-react.vercel.app/match/pablo-carreno-busta-vs-jiri-lehecka-182656
-    Compare: https://smash-react.vercel.app/compare/atp/pablo-carreno-busta-vs-jiri-lehecka
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=carre&b=lehec
-  Rinderknech over Shimabukuro - 64%
-    Call: https://smash-react.vercel.app/match/arthur-rinderknech-vs-sho-shimabukuro-182778
-    Compare: https://smash-react.vercel.app/compare/atp/arthur-rinderknech-vs-sho-shimabukuro
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=rinde&b=shima
+  Fils over Tsitsipas - 69%
+    Call: https://smash-react.vercel.app/match/arthur-fils-vs-stefanos-tsitsipas-182655
+    Compare: https://smash-react.vercel.app/compare/atp/arthur-fils-vs-stefanos-tsitsipas
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=fils&b=tsits
+  Rublev over Cilic - 72%
+    Call: https://smash-react.vercel.app/match/andrey-rublev-vs-marin-cilic-182673
+    Compare: https://smash-react.vercel.app/compare/atp/andrey-rublev-vs-marin-cilic
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=ruble&b=cilic
+  Vacherot over Kovacevic - 72%
+    Call: https://smash-react.vercel.app/match/aleksandar-kovacevic-vs-valentin-vacherot-182760
+    Compare: https://smash-react.vercel.app/compare/atp/aleksandar-kovacevic-vs-valentin-vacherot
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=kovac&b=vache
   [ US Open - WTA ]
-  Krejcikova over Rakhimova - 71%
-    Call: https://smash-react.vercel.app/match/barbora-krejcikova-vs-kamilla-rakhimova-182591
-    Compare: https://smash-react.vercel.app/compare/wta/barbora-krejcikova-vs-kamilla-rakhimova
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=krejc&b=rakhi
-  Paolini over Erjavec - 87%
-    Call: https://smash-react.vercel.app/match/veronika-erjavec-vs-jasmine-paolini-182632
-    Compare: https://smash-react.vercel.app/compare/wta/veronika-erjavec-vs-jasmine-paolini
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=erjav&b=paoli
-  Pegula over Ruse - 89%
-    Call: https://smash-react.vercel.app/match/elena-gabriela-ruse-vs-jessica-pegula-182616
-    Compare: https://smash-react.vercel.app/compare/wta/elena-gabriela-ruse-vs-jessica-pegula
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=ruse&b=pegul
+  Bouzkova over Jacquemot - 86%
+    Call: https://smash-react.vercel.app/match/marie-bouzkova-vs-elsa-jacquemot-182610
+    Compare: https://smash-react.vercel.app/compare/wta/marie-bouzkova-vs-elsa-jacquemot
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bouzk&b=jacqu
+  Muchova over Kraus - 87%
+    Call: https://smash-react.vercel.app/match/karolina-muchova-vs-sinja-kraus-182626
+    Compare: https://smash-react.vercel.app/compare/wta/karolina-muchova-vs-sinja-kraus
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=mucho&b=kraus
 
 THE MONEY QUESTION - the recommended plan (hypothetical $100, follow the edge):
-  $8.61 on Alexandrova (78% @ 1.56)
   $7.35 on Marcinko (64% @ 2.09)
-  $5.05 on Etcheverry (65% @ 1.80)
-  $6.36 on the parlay
-  Total $27.38; we expect 2.0 to land, returning $35.87; 48% chance of finishing ahead
+  $6.80 on Vacherot (72% @ 1.67)
+  $5.45 on Anisimova (87% @ 1.22)
+  $5.35 on Kalinskaya (83% @ 1.30)
+  $4.25 on Tien (70% @ 1.58)
+  $3.84 on Parry (64% @ 1.77)
+  $3.67 on Rublev (72% @ 1.50)
+  $2.63 on Samsonova (73% @ 1.45)
+  $0.71 on Li (73% @ 1.41)
+  $5.63 on the parlay
+  Total $45.69; we expect 6.5 to land, returning $54.33; 57% chance of finishing ahead
+  Bad day $-19.97 | typical $3.10 | good day $38.14
   https://smash-react.vercel.app/parlay
+  Your own exposure: https://smash-react.vercel.app/risk
 
-COMING UP: 1 days to the US Open (hard)
-  ATP: Carlos Alcaraz 24%, Novak Djokovic 14%, Alexander Zverev 9%
-  WTA: Jessica Pegula 17%, Elena Rybakina 15%, Cori Gauff 12%
+COMING UP: 140 days to the Australian Open (hard)
+  ATP: Carlos Alcaraz 29%, Alexander Zverev 12%, Novak Djokovic 10%
+  WTA: Iga Swiatek 17%, Aryna Sabalenka 15%, Elena Rybakina 15%
   https://smash-react.vercel.app/draw
 
-SEASON: 74% (1,576 of 2,118)
+SEASON: 74% (1,578 of 2,121)
 
 See today's full card: https://smash-react.vercel.app/today
 
