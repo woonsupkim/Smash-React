@@ -18,7 +18,7 @@
 // else in the app says that, and it is not a matter of taste.
 import React, { useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
-import { analyzeSlip, parlayCombo, reliability, adjustProb } from '../utils/staking';
+import { analyzeSlip, parlayCombo, reliability, adjustProb, planFrontier } from '../utils/staking';
 import { lossExceedance, gainExceedance, kellyCheck, simulateBankroll, expectedLosingStreak, outcomePairs } from '../utils/riskLab';
 import './RiskLab.css';
 
@@ -154,12 +154,46 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
   const [override, setOverride] = useState({});   // { id: stake }
   const [inParlay, setInParlay] = useState({});   // { id: bool }, default true
   const [days, setDays] = useState(30);
+  // Which builder plan is currently loaded, or null for stakes you set
+  // yourself. Cleared the moment any stake is edited, so the highlight can
+  // never claim you are looking at a plan you have since changed.
+  const [applied, setApplied] = useState(null);
 
   // Same reliability haircut the plan uses: the panel must describe the same
   // bets the rest of the page prices, or the two disagree about one slip.
   const rel = useMemo(() => reliability(graded), [graded]);
   const stakeOf = (l) => (override[l.id] != null ? Number(override[l.id]) || 0 : Number(flat) || 0);
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && defaultOdds(l) > 1;
+
+  // The builder's own plan menu, computed on YOUR bankroll rather than the
+  // site's hypothetical $100. Same function the parlay builder runs, so these
+  // are the same plans, sized to the money you actually have. Whether that
+  // sizing is sane is the question the Kelly gauge below answers, which is
+  // the point of being able to load them here at all.
+  const frontier = useMemo(() => {
+    const priced = legs
+      .map((l) => ({ key: l.id, p: l.favProb, o: defaultOdds(l) }))
+      .filter((b) => b.o > 1 && b.p > 0);
+    if (priced.length < 2 || !(Number(bankroll) > 0)) return null;
+    try {
+      return planFrontier(priced, Number(bankroll), { lambda: rel.lambda });
+    } catch { return null; }
+  }, [legs, bankroll, rel.lambda]);
+
+  // Load a plan's stakes in as if you had typed them. Every leg is written
+  // explicitly, including the zeros: a plan that declines to back a match is
+  // making a statement, and leaving those legs on the flat stake would show
+  // a slip the builder never proposed.
+  const applyPlan = (plan) => {
+    const next = {};
+    for (const l of legs) next[l.id] = +((plan.singles || {})[l.id] || 0).toFixed(2);
+    setOverride(next);
+    setParlayStake(+(plan.parlayStake || 0).toFixed(2));
+    const inPar = {};
+    for (const l of legs) inPar[l.id] = (plan.parlayLegs || []).includes(l.id);
+    setInParlay(inPar);
+    setApplied(plan.id);
+  };
 
   const bets = useMemo(() => legs.map((l) => ({
     key: l.id,
@@ -244,9 +278,40 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
         <label className="risk-input">
           <span>Stake per match</span>
           <span className="risk-money">$<input type="number" min="0" step="5" value={flat}
-            onChange={(e) => { setFlat(e.target.value); setOverride({}); }} /></span>
+            onChange={(e) => { setFlat(e.target.value); setOverride({}); setApplied(null); }} /></span>
         </label>
       </div>
+
+      {/* The builder's plans, loadable. Without these the page only ever
+          describes stakes someone invented, and the most useful question a
+          reader has is what the RECOMMENDED plan does to their bankroll. */}
+      {frontier && frontier.plans.length > 0 && (
+        <div className="risk-plans">
+          <div className="risk-plans-cap">Load a plan from the builder</div>
+          <div className="risk-plans-row">
+            {frontier.plans.map((pl) => (
+              <button key={pl.id} type="button"
+                className={`risk-plan-chip${applied === pl.id ? ' on' : ''}`}
+                onClick={() => applyPlan(pl)}>
+                <span className="risk-plan-chip-title">
+                  {pl.label}
+                  {pl.id === frontier.recommendedId && <em> · recommended</em>}
+                </span>
+                <span className="risk-plan-chip-sub">
+                  {money0(pl.metrics.staked)} staked · {Math.round((pl.metrics.pProfit || 0) * 100)}% to finish ahead
+                </span>
+              </button>
+            ))}
+            {applied && (
+              <button type="button" className="risk-plan-chip clear"
+                onClick={() => { setOverride({}); setParlayStake(0); setInParlay({}); setApplied(null); }}>
+                <span className="risk-plan-chip-title">Back to my own</span>
+                <span className="risk-plan-chip-sub">flat {money0(Number(flat) || 0)} a match</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="risk-exposure">
         <div className="risk-exposure-bar">
@@ -494,12 +559,12 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
                 </span>
                 <span className="risk-leg-stake">
                   $<input type="number" min="0" step="1" value={override[l.id] ?? flat}
-                    onChange={(e) => setOverride((s) => ({ ...s, [l.id]: e.target.value }))} />
+                    onChange={(e) => { setOverride((s) => ({ ...s, [l.id]: e.target.value })); setApplied(null); }} />
                 </span>
                 <span className="risk-leg-par">
                   <input type="checkbox" aria-label={`Include ${lastName(l.favName)} in the parlay`}
                     checked={isIn(l)} disabled={!(o > 1)}
-                    onChange={() => setInParlay((s) => ({ ...s, [l.id]: !isIn(l) }))} />
+                    onChange={() => { setInParlay((s) => ({ ...s, [l.id]: !isIn(l) })); setApplied(null); }} />
                 </span>
                 {onDrop && (
                   <span className="risk-leg-drop">
@@ -523,7 +588,7 @@ export default function RiskLab({ legs, graded = [], onDrop = null }) {
             </span>
             <span className="risk-leg-stake">
               $<input type="number" min="0" step="1" value={parlayStake}
-                onChange={(e) => setParlayStake(e.target.value)} />
+                onChange={(e) => { setParlayStake(e.target.value); setApplied(null); }} />
             </span>
             <span />
             {onDrop && <span />}

@@ -51,6 +51,20 @@ test('risk lab: renders, reacts to stakes, and switches views', async ({ page })
   const nums = probs.map((t) => (t.startsWith('<') ? 0.05 : parseFloat(t)));
   for (let i = 1; i < nums.length; i++) expect(nums[i]).toBeLessThanOrEqual(nums[i - 1] + 1e-9);
 
+  // The builder's plans are loadable, and loading one actually changes the
+  // stakes rather than just highlighting a chip.
+  const chips = page.locator('.risk-plan-chip');
+  if (await chips.count() > 0) {
+    const exposureBefore = await page.locator('.risk-exposure-cap').innerText();
+    await chips.first().click();
+    await expect(chips.first()).toHaveClass(/on/);
+    await expect(page.locator('.risk-exposure-cap')).not.toHaveText(exposureBefore);
+    // Editing a stake by hand must drop the "this is a plan" highlight, or it
+    // would claim you are looking at a plan you have since changed.
+    await page.locator('.risk-inputs input[type="number"]').nth(1).fill('7');
+    await expect(chips.first()).not.toHaveClass(/on/);
+  }
+
   // Upside as well as downside: the panel showed only losses at first, which
   // made every slip look like a bad idea.
   await expect(page.getByText('How likely is a win of at least this size')).toBeVisible();

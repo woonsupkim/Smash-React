@@ -307,3 +307,41 @@
 .risk-two-up .risk-chart-block { margin: 0; }
 .risk-chart-cap.up { color: #5cbf8d; }
 .risk-chart-cap.down { color: #ff8f8f; }
+
+/* ── Builder plans, loadable ─────────────────────────────────────────────
+   Chips rather than a select: each carries what it stakes and its chance of
+   finishing ahead, so the choice can be made without applying one first. */
+.risk-plans { margin: 0.25rem 0 1.1rem; }
+.risk-plans-cap {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  margin-bottom: 0.5rem;
+}
+.risk-plans-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.risk-plan-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 12px);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.risk-plan-chip:hover { border-color: var(--accent-brand, #c8f560); }
+.risk-plan-chip:focus-visible { outline: 2px solid var(--accent-brand, #c8f560); outline-offset: 2px; }
+.risk-plan-chip.on {
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 12%, transparent);
+}
+.risk-plan-chip-title { font-size: 0.85rem; font-weight: 700; color: var(--text-1, #fff); }
+.risk-plan-chip.on .risk-plan-chip-title { color: var(--accent-brand, #c8f560); }
+.risk-plan-chip-title em { font-style: normal; font-weight: 400; color: var(--text-3, #7c8698); }
+.risk-plan-chip-sub { font-size: 0.72rem; color: var(--text-3, #7c8698); }
+.risk-plan-chip.clear { border-style: dashed; }
