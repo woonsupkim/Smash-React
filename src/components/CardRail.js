@@ -63,7 +63,7 @@ export default function CardRail({
                 laid the message out as three narrow columns instead of a
                 line of prose. */}
             <span className="card-rail-lockcopy">
-              Switch the plan above to <strong>Custom</strong> to add matches yourself.
+              Switch the plan to <strong>Custom</strong> from Recommended to add these matches.
             </span>
           </div>
         )}

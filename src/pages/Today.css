@@ -221,4 +221,6 @@
 
 /* The follow, at the end of the card rather than above it: the reader has
    just been given the day's calls, which is the thing worth following for. */
-.today-follow { margin: 1.6rem 0 0.4rem; max-width: 520px; }
+/* Full width, so it lines up with the match rows underneath. Capped at 520px
+   it read as a floating card rather than part of the page. */
+.today-follow { margin: 1.6rem 0 0.4rem; }
