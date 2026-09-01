@@ -241,6 +241,11 @@
 
 @media (max-width: 560px) {
   .stake-row { grid-template-columns: 1fr 68px 60px 74px 32px; gap: 0.35rem; }
+  /* The drop column needs its own narrow layout, or the desktop six-column
+     rule wins here on specificity and the table runs ~440px wide inside a
+     375px phone. Body clips the overflow rather than scrolling it, so the
+     remove button was not merely off-screen, it was unreachable. */
+  .stake-table.has-drop .stake-row { grid-template-columns: 1fr 68px 60px 74px 32px 24px; }
   .stake-pick em { font-size: 0.68rem; }
   .stake-out-grid { gap: 1rem 1.4rem; }
 }

@@ -382,7 +382,54 @@ test('the home plan says why it has nothing, rather than disappearing', async ({
   // without a word - indistinguishable from a bug.
   const plan = page.locator('.home-plan');
   if (await plan.count() > 0) {
-    await expect(plan).toContainText(/card is done|stake nothing|of \$?\d/i);
+    // Either it explains why it has nothing, or it shows a real figure.
+    // Deliberately not pinned to a phrase: this asserted "of $100" and broke
+    // the moment the copy read "a $100 budget" instead, which is a test
+    // failing on wording rather than on behaviour.
+    await expect(plan).toContainText(/card is done|stake nothing|\$\d|\d+%/i);
   }
+  expect(errors).toEqual([]);
+});
+
+test('every page names one authoritative URL', async ({ page }) => {
+  const errors = collectErrors(page);
+  // The app shipped with no <link rel="canonical"> at all, while serving
+  // several pages under two URLs: /women/track-record was byte-identical to
+  // /track-record, title and all, and both were in the sitemap.
+  const cases = [
+    ['/', '/'],
+    ['/women', '/'],
+    ['/track-record', '/track-record'],
+    ['/women/track-record', '/track-record'],
+    ['/women/methodology', '/methodology'],
+    ['/women/draw', '/draw'],
+    ['/parlay', '/risk'],
+    ['/risk', '/risk'],
+    // Genuinely a different page: it takes a tour prop and renders WTA.
+    ['/women/h2h', '/women/h2h'],
+    // A view of a page, not a page. Every utm-tagged share link would
+    // otherwise declare itself canonical.
+    ['/h2h?surface=clay', '/h2h'],
+  ];
+  for (const [route, want] of cases) {
+    await page.goto(route);
+    await page.waitForTimeout(300);
+    const tags = page.locator('link[rel="canonical"]');
+    // eslint-disable-next-line jest/valid-expect
+    expect(await tags.count(), `${route} canonical tag count`).toBe(1);
+    const href = await tags.getAttribute('href');
+    // eslint-disable-next-line jest/valid-expect
+    expect(new URL(href).pathname, `${route} canonical`).toBe(want);
+  }
+
+  // And it has to follow client-side navigation, or every page after the
+  // first claims the first one's URL.
+  await page.goto('/');
+  await page.waitForTimeout(300);
+  await page.goto('/track-record');
+  await page.waitForTimeout(500);
+  expect(new URL(await page.locator('link[rel="canonical"]').getAttribute('href')).pathname)
+    .toBe('/track-record');
+
   expect(errors).toEqual([]);
 });

@@ -81,12 +81,16 @@ function main() {
     '/model',
     '/methodology',
     '/changelog',
-    '/women',
+    // Only the /women routes that are a DIFFERENT page. These two take a
+    // tour prop and render WTA content; the rest of the /women prefix is a
+    // pure alias, serving byte-identical markup and the same <title> as the
+    // unprefixed URL. Submitting both told search engines about pairs of URLs
+    // with nothing to choose between them, which splits the ranking signal
+    // and lets the engine pick a winner on your behalf. They still resolve -
+    // old links and the tour toggle depend on it - and they now carry a
+    // canonical pointing at the URL that owns the content (utils/useCanonical).
     '/women/h2h',
-    '/women/draw',
     '/women/dream-brackets',
-    '/women/track-record',
-    '/women/methodology',
   ];
 
   // Frozen season archives (public/data/seasons/<year>.json -> /season/<year>).

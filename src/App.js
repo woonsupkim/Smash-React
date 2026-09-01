@@ -1,6 +1,7 @@
 // src/App.js
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
+import useCanonical from './utils/useCanonical';
 
 import Home from './pages/Home';
 import SiteFooter from './components/SiteFooter';
@@ -260,9 +261,18 @@ function NavBar() {
   );
 }
 
+// Inside <Router> so it can read the location. Renders nothing; it exists to
+// keep <link rel="canonical"> pointing at one authoritative URL per page,
+// including the /women aliases that serve identical content.
+function Canonical() {
+  useCanonical();
+  return null;
+}
+
 function App() {
   return (
     <Router>
+      <Canonical />
       <GATracker /> {/* <-- Google Analytics route change tracker */}
       <Analytics /> {/* <-- Vercel Web Analytics */}
       <ToastHost />
