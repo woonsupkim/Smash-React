@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-01T10:48:19.040Z",
+  "generatedAt": "2026-09-01T10:57:03.154Z",
   "seasonN": 2121,
   "lastStreak": {
     "key": "wta|grass",
@@ -7,6 +7,7 @@
   },
   "captions": {
     "today": "US Open round of 16: here are the 8 matches we are calling today, every one locked before a ball is struck.\n\nIf every call hits, $10 at fair odds returns $109. Not betting advice, just the math on our own confidence.\n\nEvery call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
+    "weekly": "The week in calls: 6 of 13 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "story": "Stories for today: the slate, a poll on the biggest match coming up, and the tale of the tape.\n\nEvery call locked before play and graded after: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
     "recap": "How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.\n\nWe publish the bad days on the same schedule as the good ones.\n\nThe whole record: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "moments": "The moments worth stopping on: where we split from the market, the calls nobody else made, and the streaks.\n\nAn upset is a disagreement, not a surprise. We say so before play, not after.\n\nWhere we split with the bookmakers: https://smash-react.vercel.app/edge\n\n#tennis #atp #wta #tennisprediction",
@@ -253,8 +254,27 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 10 of 19 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "alt": "The week in calls: 10 of 19 winners called."
+      "caption": "The week in calls: 6 of 13 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 27,
+      "alt": "The week in calls: 6 of 13 winners called."
+    },
+    {
+      "file": "cover-weekly.png",
+      "type": "carousel-cover",
+      "format": "square",
+      "category": "weekly",
+      "caption": "The week in calls: 6 of 13 winners. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 0,
+      "alt": "Weekly recap carousel cover."
+    },
+    {
+      "file": "closer-weekly.png",
+      "type": "carousel-closer",
+      "format": "square",
+      "category": "weekly",
+      "caption": "Every call we make is locked before play and graded after, win or lose. The whole record: https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 999,
+      "alt": "Weekly recap carousel closer."
     },
     {
       "file": "edge-dollar.png",

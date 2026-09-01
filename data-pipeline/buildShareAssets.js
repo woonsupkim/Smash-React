@@ -2398,6 +2398,12 @@ async function run() {
     for (const a of (prevManifest.assets || [])) {
       if (a.category === 'weekly' && fs.existsSync(path.join(OUT, a.file))) assets.push(a);
     }
+    // The caption travels with the cards. Carrying the images forward without
+    // it left the weekly section on the admin page with a cover, a closer and
+    // nothing to paste, six days out of seven.
+    if (prevManifest.captions?.weekly && assets.some((a) => a.category === 'weekly')) {
+      captions.weekly = prevManifest.captions.weekly;
+    }
   }
 
   // Motion assets (.mp4) are appended by buildMotionAssets AFTER this script
@@ -2544,6 +2550,109 @@ async function run() {
       }
     }
   }
+
+
+  // ── WEEKLY: the bookends ────────────────────────────────────────────────
+  // Built after the week's cards so the cover can quote the week's own
+  // number, and only when there is a week to wrap: a cover in front of
+  // nothing is worse than no cover.
+  {
+    const weekCards = assets.filter((a) => a.category === 'weekly');
+    const hasBookend = weekCards.some((a) => a.type === 'carousel-cover');
+    if (weekCards.length && !hasBookend) {
+      const weekMs = (track.matches || []).filter((m) => (Date.now() - new Date(m.date).getTime()) < 7 * 864e5);
+      const correct = weekMs.filter((m) => pickCorrect(m)).length;
+      const pill = weekMs.length
+        ? `${correct} OF ${weekMs.length} WINNERS CALLED`
+        : 'EVERY CALL GRADED IN PUBLIC';
+      await sectionCoverCard('cover-weekly.png', {
+        event: null,
+        kicker: 'Seven days, graded',
+        sub: 'WHAT WE GOT RIGHT, AND WRONG',
+        line1: 'THE',
+        line2: 'WEEK',
+        pill,
+        palette: 'receipts',
+      });
+      add('cover-weekly.png', 'carousel-cover', 'square', 'weekly',
+        `The week in calls${weekMs.length ? `: ${correct} of ${weekMs.length} winners` : ''}. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. ${SITE}/track-record ${tags}`,
+        'Weekly recap carousel cover.', 0);
+
+      await sectionCloserCard('closer-weekly.png', {
+        event: null,
+        kicker: 'Seven days, graded',
+        heroSub: 'Same time next week',
+        hero: 'EVERY CALL',
+        lines: [
+          'Locked before play. Graded after. Published either way.',
+          'The bad weeks go up on the same schedule as the good ones.',
+        ],
+        palette: 'receipts',
+        cta: 'THE WHOLE RECORD  →',
+      });
+      add('closer-weekly.png', 'carousel-closer', 'square', 'weekly',
+        `Every call we make is locked before play and graded after, win or lose. The whole record: ${SITE}/track-record ${tags}`,
+        'Weekly recap carousel closer.', 999);
+
+      captions.weekly = [
+        `The week in calls${weekMs.length ? `: ${correct} of ${weekMs.length} winners called` : ''}.`,
+        'The boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.',
+        `A good week proves nothing on its own. The point is that we publish the bad ones too: ${SITE}/track-record`,
+        tags,
+      ].join('\n\n');
+    }
+  }
+
+
+    // ── RECAP: the one nobody saw coming ──────────────────────────────────
+    //
+    // Yesterday's biggest surprise, measured on OUR own number: the match
+    // where the player we rated highest lost anyway. Drawn from every graded
+    // match on the day, not just the ones we called - a first-round exit by a
+    // former champion is the story whether or not we staked it, and pretending
+    // otherwise would make this a highlight reel of our own hits.
+    //
+    // Gated at 70%. Below that we were not confident, so nothing about the
+    // result is unexpected, and a card manufacturing a shock out of a coin
+    // flip is exactly the kind of thing this whole product exists not to do.
+    // Most days there is no card here, which is correct.
+    {
+      const graded = (preds.predictions || [])
+        .filter((p) => (p.status === 'won' || p.status === 'lost'));
+      const gDays = [...new Set(graded.map((p) => String(p.date).slice(0, 10)))].sort();
+      const gDay = gDays[gDays.length - 1];
+      const misses = graded
+        .filter((p) => String(p.date).slice(0, 10) === gDay && p.status === 'lost')
+        .sort((a, b) => b.favProb - a.favProb);
+      const shock = misses[0];
+      if (shock && shock.favProb >= (Number(process.env.SHOCK_MIN) || 0.70)) {
+        const loser = last(shock.favName);
+        const winnerId = shock.winner;
+        const winner = last(winnerId === shock.p1 ? shock.name1 : shock.name2);
+        // What the market thought, vig stripped, so we can say whether this
+        // was our miss alone or one the whole room got wrong.
+        const mkt = marketProbOfOurPick(shock);
+        const declined = ledgerNoCall(shock);
+        await reportCard({
+          eyebrowText: `Yesterday · ${gDay}`,
+          headline1: loser.toUpperCase(),
+          headline2: 'WENT OUT',
+          stats: [
+            { value: `${Math.round(shock.favProb * 100)}%`, label: `our number on ${loser} before play` },
+            ...(mkt ? [{ value: `${Math.round(mkt * 100)}%`, label: mkt >= 0.6 ? 'the market had them there too' : 'the market was less sure' }] : []),
+            { value: winner, label: `won it${shock.score ? ` ${shock.score}` : ''}` },
+            { value: declined ? 'NO CALL' : 'ON THE RECORD', label: declined ? 'too close for us to claim, graded anyway' : 'our miss, published like every other' },
+          ],
+          footNote: 'locked before play · graded after · we publish the misses too',
+          file: 'unexpected.png',
+          accent: PAL.upset.key,
+          cta: '',
+        });
+        add('unexpected.png', 'unexpected', 'square', 'recap',
+          `Nobody saw this one coming: we had ${loser} at ${Math.round(shock.favProb * 100)}%${mkt ? ` and the market had them at ${Math.round(mkt * 100)}%` : ''}. ${winner} won it${shock.score ? ` ${shock.score}` : ''}. ${declined ? 'We declined to call this one, and it still goes on the record.' : 'Our miss, and it goes up the same as every hit.'} ${SITE}/track-record ${tags}`,
+          `${loser} lost after we rated them ${Math.round(shock.favProb * 100)}%.`);
+      }
+    }
 
   // ── MOMENTS: milestone crossings + perfect days ─────────────────────────
   const prevN = prevManifest.seasonN || 0;
@@ -2830,9 +2939,12 @@ async function run() {
 
   const recapCards = assets.filter((a) => a.category === 'recap');
   if (recapCards.length) {
+    const hadShock = assets.some((a) => a.file === 'unexpected.png');
     captions.recap = [
       `How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.`,
-      'We publish the bad days on the same schedule as the good ones.',
+      hadShock
+        ? 'Including the one nobody saw coming.'
+        : 'We publish the bad days on the same schedule as the good ones.',
       `The whole record: ${SITE}/track-record`,
       tags,
     ].join('\n\n');
