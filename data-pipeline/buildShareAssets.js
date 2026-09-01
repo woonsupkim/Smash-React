@@ -757,7 +757,7 @@ async function pollCard(p, file) {
     ${T('anton', 'VS', SQ / 2, midY + 16, 44, { anchor: 'middle', fill: C_WHITE }).svg}
     ${sPlate(aX + PW / 2, PY + PH - 28, last(p.name1).toUpperCase(), C_WHITE, false, a.ink[2])}
     ${sPlate(bX + PW / 2, PY + PH - 28, last(p.name2).toUpperCase(), C_WHITE, false, a.ink[2])}
-    ${sBar(SQ, SQ, 'VOTE IN THE COMMENTS  →', a, { sub: 'WE ALREADY PICKED A SIDE · ANSWER TOMORROW' })}
+    ${sBar(SQ, SQ, '', a, { sub: 'WE ALREADY PICKED A SIDE · ANSWER TOMORROW' })}
     </svg>`;
   const rr = async (svg) => sharp(Buffer.from(svg), { density: 144 }).resize(SQ, SQ).png().toBuffer();
   await renderOn(file, bg, [
@@ -769,6 +769,58 @@ async function pollCard(p, file) {
 }
 
 // ── DAILY: cover / parlay / slate story / results (typographic) ────────────
+// ── Carousel bookends ───────────────────────────────────────────────────
+//
+// Every carousel needs a cover that says what it is and a closer that says
+// what to do next, and there are now five of them (today, contenders, the
+// draw, moments, the week). Drawing each pair by hand would be ten near
+// identical files drifting apart one tweak at a time, so both are one
+// function with the words passed in.
+//
+// The shape deliberately matches the original daily cover - same mast, same
+// stacked headline, same bottom bar - because a carousel whose first slide
+// looks like a different product is a carousel people swipe out of.
+async function sectionCoverCard(file, {
+  event, kicker, line1, line2, sub, pill = null, palette = 'calls', swipe = 'SWIPE →',
+}) {
+  const a = paletteFor(event, palette);
+  // Both headline words are sized to the NARROWER of the two, so a long word
+  // like CONTENDERS cannot run off the canvas and the pair still share a
+  // scale. Fixed at 212 it overflowed the right edge by half a letter.
+  const hs = Math.min(212, fitT('anton', line1, 212, SQ - 120), fitT('anton', line2, 212, SQ - 120));
+  const glow = T('anton', line2, 60, 392 + hs, hs, { fill: a.key });
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ, { ghost: line2 })}
+  ${sMast(SQ, kicker, a)}
+  ${T('bebas', sub, 62, 190, 42, { fill: a.sub, tracking: 6 }).svg}
+  ${T('anton', line1, 60, 392, hs, { fill: C_WHITE }).svg}
+  <g filter="url(#glow)" opacity="0.55">${glow.svg}</g>
+  ${T('anton', line2, 60, 392 + hs, hs, { fill: a.key, skew: -7 }).svg}
+  ${pill ? sChip(SQ / 2, 742, pill.toUpperCase(), a) : ''}
+  ${sBar(SQ, SQ, swipe, a)}
+  </svg>`;
+  await render(file, base);
+}
+
+// The closer. One number worth remembering, one line of what it means, and
+// where to go - not a second cover.
+async function sectionCloserCard(file, {
+  event, kicker, hero, heroSub, lines = [], palette = 'calls', cta = 'EVERY CALL GRADED IN PUBLIC',
+}) {
+  const a = paletteFor(event, palette);
+  const rows = lines.slice(0, 3).map((t, i) =>
+    T('body', t, SQ / 2, 592 + i * 52, 30, { anchor: 'middle', fill: C_MUTE }).svg).join('');
+  const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
+  ${sStage(a, SQ, SQ)}
+  ${sMast(SQ, kicker, a)}
+  ${T('bebas', heroSub.toUpperCase(), SQ / 2, 340, 40, { anchor: 'middle', fill: a.sub, tracking: 6 }).svg}
+  ${T('anton', hero, SQ / 2, 500, fitT('anton', hero, 150, SQ - 160), { anchor: 'middle', fill: a.key }).svg}
+  ${rows}
+  ${sBar(SQ, SQ, cta, a, { sub: SITE.replace(/^https?:\/\//, '').toUpperCase() })}
+  </svg>`;
+  await render(file, base);
+}
+
 async function coverCard(picks, sc, file) {
   const ev = picks[0]?.event || 'The Tour';
   const a = paletteFor(ev, 'calls');
@@ -871,7 +923,7 @@ async function resultsCard(sc, file) {
   ${y ? `<g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}` : ''}
   ${T('body', "winners called on yesterday's matches", SQ / 2, 524, 32, { anchor: 'middle', fill: C_MUTE }).svg}
   ${lines.map((l, i) => `<rect x="176" y="${596 + i * 60 - 23}" width="9" height="34" rx="2" fill="${l.color}"/>${T('body', l.txt, 208, 596 + i * 60, fitT('body', l.txt, 31, SQ - 260), { fill: l.color }).svg}`).join('')}
-  ${sBar(SQ, SQ, 'SEE EVERY GRADED CALL  →', a)}
+  ${sBar(SQ, SQ, '', a)}
   </svg>`;
   await render(file, base);
 }
@@ -1188,7 +1240,7 @@ async function reportCard({ eyebrowText, headline1, headline2, stats, footNote, 
   ${T('anton', headline1, 60, 262, hFs, { fill: C_WHITE }).svg}
   ${headline2 ? T('anton', headline2, 60, h2Y, hFs, { fill: a.key, skew: -6 }).svg : ''}
   ${rows}
-  ${sBar(SQ, SQ, cta || 'SEE EVERY GRADED CALL  →', a, footNote ? { sub: footNote.toUpperCase() } : {})}
+  ${sBar(SQ, SQ, cta == null ? 'SEE EVERY GRADED CALL  →' : cta, a, footNote ? { sub: footNote.toUpperCase() } : {})}
   </svg>`;
   await render(file, base);
 }
@@ -1238,19 +1290,27 @@ function stakeRun(rows) {
 // questions and the money is the one that gets buried.
 async function dayMoneyCard(run, dayISO, file) {
   const up = run.profit >= 0;
+  // The PERCENTAGE leads, not the dollar figure.
+  //
+  // A headline of "+$4.60" says nothing without knowing what was risked to
+  // get it, and the amount risked changes every day with the size of the
+  // card - so the one number that is comparable day to day was buried in the
+  // stat row while an incomparable one took the headline. The dollars stay,
+  // rebased onto a fixed $10 so they mean the same thing on a three-match
+  // Tuesday as on a fifteen-match Saturday.
+  const back = 10 * (1 + run.roi / 100);
   await reportCard({
     eyebrowText: `Yesterday's calls · ${dayISO}`,
-    headline1: money(run.profit),
-    headline2: up ? 'ON THE DAY' : 'ON THE DAY',
+    headline1: pctOf(run.roi),
+    headline2: 'ON THE DAY',
     stats: [
-      { value: pctOf(run.roi), label: `return on $${run.staked} staked` },
+      { value: `$${back.toFixed(2)}`, label: 'back on $10 spread across every call' },
       { value: `${run.hits}/${run.n}`, label: 'calls that landed' },
-      { value: `$${STAKE}`, label: 'flat stake, every call, no no-calls' },
     ],
     footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
     file,
     accent: up ? PAL.calls.key : '#ff5c5c',
-    cta: "SEE TODAY'S CARD  →",
+    cta: '',
   });
 }
 
@@ -1982,9 +2042,35 @@ async function run() {
   const assets = [];
   // alt: accessibility text for the image (defaults to the caption's first
   // sentence so every asset ships with SOMETHING usable).
-  const add = (file, type, format, category, caption, alt = null) =>
-    assets.push({ file, type, format, category, caption, alt: alt || `${caption.split('.')[0]}.` });
+  // `category` is the SECTION a card belongs to and `order` is its place in
+  // that section's carousel, so the admin page can hand over a sequence to
+  // post rather than a bag of images to sort by eye. Order defaults to the
+  // insertion order, which is already right for everything built in a loop.
+  let seq = 0;
+  const add = (file, type, format, category, caption, alt = null, order = null) =>
+    assets.push({
+      file, type, format, category, caption, order: order == null ? (seq += 1) : order,
+      alt: alt || `${caption.split('.')[0]}.`,
+    });
   const tags = '#tennis #atp #wta #tennisprediction';
+  // "US Open quarter-finals" beats a bare date on a caption, and the field
+  // size is the only round marker the data actually carries.
+  const roundLabel = (rows) => {
+    const n = (rows || []).length;
+    if (!n) return '';
+    const remaining = n * 2;
+    if (remaining <= 2) return 'final';
+    if (remaining <= 4) return 'semi-finals';
+    if (remaining <= 8) return 'quarter-finals';
+    if (remaining <= 16) return 'round of 16';
+    return '';
+  };
+  // One caption per SECTION, not one per image. The daily thread used to be
+  // eleven posts - an opener, one per match, a closer - which is a thread for
+  // a platform that wants threads. A carousel wants one caption, so each
+  // section gets a single concise post with the hook, the one number worth
+  // quoting, a call to action and the tags.
+  const captions = {};
 
   const decorate = (p) => {
     const favId = p.favorite;
@@ -2024,11 +2110,29 @@ async function run() {
 
   // ── DAILY layer ─────────────────────────────────────────────────────────
   if (picks.length) {
+    // The day's one caption. It used to be eleven posts; this says the same
+    // things in the order they matter - what this is, the one call worth
+    // arguing about, the arithmetic on our own confidence, where to go.
+    const upsetPicks = picks.filter((p) => p._flags.upset || marketDisagrees(p));
+    const mult = picks.reduce((m, x) => m * (1 / x.favProb), 1);
+    const evName = picks[0].event;
+    captions.today = [
+      `${evName}${roundLabel(picks) ? ` ${roundLabel(picks)}` : ''}: here are the ${picks.length} match${picks.length === 1 ? '' : 'es'} we are calling today, every one locked before a ball is struck.`,
+      upsetPicks.length
+        ? `One you would not expect: we have ${upsetPicks[0].favName} over ${upsetPicks[0].favorite === upsetPicks[0].p1 ? upsetPicks[0].name2 : upsetPicks[0].name1} at ${pctTxt(upsetPicks[0].favProb)}, against the market.`
+        : '',
+      picks.length >= 2
+        ? `If every call hits, $10 at fair odds returns $${(10 * mult).toFixed(0)}. Not betting advice, just the math on our own confidence.`
+        : '',
+      `Every call graded in public, wins and misses alike. Today's board: ${todayLink()}`,
+      tags,
+    ].filter(Boolean).join('\n\n');
+
     await coverCard(picks, sc, 'cover.png');
-    add('cover.png', 'carousel-cover', 'square', 'daily', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`,
+    add('cover.png', 'carousel-cover', 'square', 'today', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`,
       `Today's Calls cover card: ${picks.length} locked predictions at the ${picks[0].event}.`);
     await coverPortrait(picks, sc, 'cover-45.png');
-    add('cover-45.png', 'carousel-cover', 'portrait', 'daily', `Today's calls at the ${picks[0].event}, 4:5 feed format. ${todayLink()} ${tags}`,
+    add('cover-45.png', 'carousel-cover', 'portrait', 'today', `Today's calls at the ${picks[0].event}, 4:5 feed format. ${todayLink()} ${tags}`,
       `Today's Calls cover card in portrait format for the ${picks[0].event}.`);
 
     // Career h2h + our pair record enrich every match card.
@@ -2048,7 +2152,7 @@ async function run() {
       const file = `match-${i + 1}.png`;
       await matchCard(p, p._flags, file, null, contextFor(p));
       const flagBit = p._flags.upset ? ' UPSET PICK:' : (p._flags.confidence === 'high' ? ' High confidence:' : '');
-      add(file, 'match', 'square', 'daily', `${flagBit} ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, ${p.event} (${p.surface}). Full breakdown: ${matchLink(p)} ${tags}`);
+      add(file, 'match', 'square', 'today', `${flagBit} ${p.favName} over ${p.favorite === p.p1 ? p.name2 : p.name1} at ${pctTxt(p.favProb)}, ${p.event} (${p.surface}). Full breakdown: ${matchLink(p)} ${tags}`);
     }
 
     // Rivalry angle: the pick whose pair has the most career history (3+ meetings).
@@ -2063,21 +2167,39 @@ async function run() {
     if (withHistory) {
       const { p, h, pair } = withHistory;
       await rivalryCard(p, h, pair, 'rivalry.png');
-      add('rivalry.png', 'rivalry', 'square', 'daily', `${last(p.name1)} vs ${last(p.name2)}, meeting number ${withHistory.meetings + 1}. Career: ${h.w1}-${h.w2}.${pair.n ? ` We've called ${pair.correct} of ${pair.n} of their matches right.` : ''} ${matchLink(p)} ${tags}`);
+      add('rivalry.png', 'rivalry', 'square', 'today', `${last(p.name1)} vs ${last(p.name2)}, meeting number ${withHistory.meetings + 1}. Career: ${h.w1}-${h.w2}.${pair.n ? ` We've called ${pair.correct} of ${pair.n} of their matches right.` : ''} ${matchLink(p)} ${tags}`);
     }
 
     if (picks.length >= 2) {
       await parlayCard(picks, 'parlay.png');
       const mult = picks.reduce((m, p) => m * (1 / p.favProb), 1);
-      add('parlay.png', 'carousel-closer', 'square', 'daily', `If every call today hits, $10 at fair odds returns $${(10 * mult).toFixed(0)}. Every pick public, every result graded. Not betting advice. ${tags}`);
+      add('parlay.png', 'carousel-closer', 'square', 'today', `If every call today hits, $10 at fair odds returns $${(10 * mult).toFixed(0)}. Every pick public, every result graded. Not betting advice. ${tags}`);
     }
 
     await slateStory(picks, sc, 'slate-story.png');
-    add('slate-story.png', 'slate', 'story', 'daily', `The full slate for ${fmtDate(picks[0].date)}: every call with win probability and flags. All of today: ${todayLink()} ${tags}`);
+    add('slate-story.png', 'slate', 'story', 'story', `The full slate for ${fmtDate(picks[0].date)}: every call with win probability and flags. All of today: ${todayLink()} ${tags}`);
 
-    const pollPick = [...picks].sort((a, b) => a.favProb - b.favProb)[0];
+    // The poll runs the night before, so it asks about TOMORROW - a story
+    // posted today about a match starting in an hour is a poll nobody can
+    // answer in time. And it asks about the match worth asking about: best
+    // combined ranking, the same test the tale-of-the-tape card uses, rather
+    // than whichever call happened to be closest to a coin flip. Falls back
+    // to today's card when tomorrow has not locked yet.
+    const startOfTomorrow = new Date(NOW);
+    startOfTomorrow.setHours(24, 0, 0, 0);
+    const endOfTomorrow = new Date(startOfTomorrow.getTime() + 864e5);
+    const importance = (p) => (ranks[p.tour]?.get(p.p1) || 999) + (ranks[p.tour]?.get(p.p2) || 999);
+    const tomorrow = (preds.predictions || [])
+      .filter((p) => p.status === 'pending' && !ledgerNoCall(p) && ['slam', '1000'].includes(p.tier || 'slam'))
+      .filter((p) => {
+        const t = new Date(p.date).getTime();
+        return t >= startOfTomorrow.getTime() && t < endOfTomorrow.getTime();
+      })
+      .map(decorate);
+    const pollPool = tomorrow.length ? tomorrow : picks;
+    const pollPick = [...pollPool].sort((a, b) => importance(a) - importance(b))[0];
     await pollCard(pollPick, 'poll.png');
-    add('poll.png', 'poll', 'square', 'daily', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}? Our model already picked a side - drop yours below, answer tomorrow. ${matchLink(pollPick)} ${tags}`);
+    add('poll.png', 'poll', 'square', 'story', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}${tomorrow.length ? ', tomorrow' : ''}? Our model has already picked a side. ${matchLink(pollPick)} ${tags}`);
 
     // Tale of the tape: the marquee matchup (best combined ranking) gets the
     // full split-screen stat treatment.
@@ -2122,7 +2244,7 @@ async function run() {
         market: mkt,
       };
       await taleOfTheTape({ ...marquee, rank1: marquee._flags.rank1, rank2: marquee._flags.rank2 }, ctx, forms, 'tape.png');
-      add('tape.png', 'tale-of-the-tape', 'square', 'daily', `Tale of the tape: ${last(marquee.name1)} vs ${last(marquee.name2)} at the ${marquee.event}. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. ${matchLink(marquee)} ${tags}`,
+      add('tape.png', 'tale-of-the-tape', 'square', 'story', `Tale of the tape: ${last(marquee.name1)} vs ${last(marquee.name2)} at the ${marquee.event}. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. ${matchLink(marquee)} ${tags}`,
         `Tale of the tape stat comparison for ${marquee.name1} vs ${marquee.name2}.`);
     }
   }
@@ -2133,28 +2255,32 @@ async function run() {
   // its misses. The results REEL (buildMotionAssets) stays: it stamps MISSED
   // as loudly as CALLED IT.
 
+  // Whichever event the title odds are describing, for the section bookends
+  // built after this loop. Both tours run the same slam, so either wins.
+  let titleEventName = null;
   for (const tour of ['atp', 'wta']) {
     const o = titleOdds.events?.[tour];
     if (!o) continue;
+    titleEventName = titleEventName || o.event;
     const file = `title-odds-${tour}.png`;
     await titleOddsCard(o, tour, file);
     if (o.status === 'final' && o.champion) {
-      add(file, 'champion', 'square', 'daily', `${o.champion.name} wins the ${o.event}. We tracked the title odds every day of the tournament, in public. ${tags}`);
+      add(file, 'champion', 'square', 'contender', `${o.champion.name} wins the ${o.event}. We tracked the title odds every day of the tournament, in public. ${tags}`);
     } else {
       const topTxt = o.odds.slice(0, 3).map((p) => `${last(p.name)} ${pctTxt(p.prob)}`).join(', ');
-      add(file, 'title-odds', 'square', 'daily', `${o.event} ${tour.toUpperCase()} title odds today: ${topTxt}. The whole draw, simulated 2,000 times, updated daily. ${tags}`);
+      add(file, 'title-odds', 'square', 'contender', `${o.event} ${tour.toUpperCase()} title odds today: ${topTxt}. The whole draw, simulated 2,000 times, updated daily. ${tags}`);
     }
     // Overnight risers and fallers, from the same daily snapshots.
     const mv = `odds-movers-${tour}.png`;
     if (await oddsMoversCard(o, tour, mv)) {
-      add(mv, 'odds-movers', 'square', 'daily', `${o.event} ${tour.toUpperCase()} odds movers: who rose and who slid overnight in our 2,000-run title simulation. ${SITE}/draw ${tags}`,
+      add(mv, 'odds-movers', 'square', 'contender', `${o.event} ${tour.toUpperCase()} odds movers: who rose and who slid overnight in our 2,000-run title simulation. ${SITE}/draw ${tags}`,
         `Title odds movers card: overnight risers and fallers at the ${o.event}.`);
     }
   }
 
   if (sc.yesterday?.n > 0) {
     await resultsCard(sc, 'results.png');
-    add('results.png', 'results', 'square', 'daily', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
+    add('results.png', 'results', 'square', 'recap', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
 
   // ── DAILY: the money, the day's calls, and the disagreements ────────────
@@ -2169,9 +2295,9 @@ async function run() {
     const run = stakeRun(dayRows);
     if (run.staked > 0) {
       await dayMoneyCard(run, lastDay, 'day-money.png');
-      add('day-money.png', 'day-money', 'square', 'daily',
-        `$${STAKE} on every priced call we made on ${lastDay}: ${money(run.profit)}, ${pctOf(run.roi)} on $${run.staked} staked, ${run.hits} of ${run.n} landed. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
-        `Yesterday's calls returned ${money(run.profit)} on a $${STAKE} flat stake.`);
+      add('day-money.png', 'day-money', 'square', 'recap',
+        `Every call we made on ${lastDay}, backed flat: ${pctOf(run.roi)} on the day, ${run.hits} of ${run.n} landed. $10 spread across the card comes back $${(10 * (1 + run.roi / 100)).toFixed(2)}. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
+        `Yesterday's calls returned ${pctOf(run.roi)} on the day.`);
     }
 
     // Today's calls, and the ones where we take the underdog. Both can be
@@ -2183,7 +2309,7 @@ async function run() {
     if (todays.length) {
       const byConf = [...todays].sort((a, b) => b.favProb - a.favProb);
       await todaysCallsCard(byConf, 'todays-calls.png');
-      add('todays-calls.png', 'todays-calls', 'square', 'daily',
+      add('todays-calls.png', 'todays-calls', 'square', 'today',
         `${todays.length} call${todays.length === 1 ? '' : 's'} locked before play today, top of the card ${last(byConf[0].favName)} at ${Math.round(byConf[0].favProb * 100)}%. Every one timestamped now and graded automatically when the result lands. ${SITE}/today ${tags}`,
         `Today's ${todays.length} locked calls with their stated probabilities.`);
 
@@ -2486,7 +2612,7 @@ async function run() {
     // and lost - and an upset in the sense this account uses the word is a
     // disagreement with the market, which is a different card entirely
     // (upset-call.png). Filing them together made "upset" mean two things.
-    add('autopsy.png', 'seed-autopsy', 'square', 'misses', `Seed autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
+    add('autopsy.png', 'seed-autopsy', 'square', 'moments', `Seed autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
       `Seed autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
   }
 
@@ -2513,7 +2639,7 @@ async function run() {
       mktAcc: Math.round((mktRight / edgeRows.length) * 100),
     };
     await dollarTestCard(edge, 'edge-dollar.png');
-    add('edge-dollar.png', 'edge-dollar-test', 'square', 'edge',
+    add('edge-dollar.png', 'edge-dollar-test', 'square', 'moments',
       `The $${STAKE} test: $${STAKE} on each side of every one of the ${edge.n} matches where we and the betting market picked different winners. Our picks: ${edge.usNet >= 0 ? '+' : '-'}$${Math.abs(edge.usNet * STAKE).toFixed(0)}. Their own favorites: ${edge.mktNet >= 0 ? '+' : '-'}$${Math.abs(edge.mktNet * STAKE).toFixed(0)}. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: ${SITE}/edge ${tags}`,
       `The $1 test card: flat-stake payout of our picks versus the market's on ${edge.n} disagreements.`);
 
@@ -2529,7 +2655,7 @@ async function run() {
     if (split) {
       await edgeSplitCard(split, split.tour, 'edge-split.png');
       const weWon = pickCorrect(split);
-      add('edge-split.png', 'edge-split', 'square', 'edge',
+      add('edge-split.png', 'edge-split', 'square', 'moments',
         `We disagreed with the market on ${last(split.name1)} vs ${last(split.name2)}${split.event ? ` at the ${split.event}` : ''} - ${weWon ? 'and the model was right' : 'and the market took this one'}. Both calls graded in public, like every split this season: ${SITE}/edge ${tags}`,
         `Edge split card: our call versus the market's on ${split.name1} vs ${split.name2}, graded.`);
     }
@@ -2572,7 +2698,7 @@ async function run() {
         event: String(liveEvent).toUpperCase(), days: run.days, profit: run.profit,
         staked: run.staked, roi, up: run.up, mktProfit, mktStaked, mktRoi,
       }, 'edge-live-plan.png');
-      add('edge-live-plan.png', 'edge-live-plan', 'square', 'edge',
+      add('edge-live-plan.png', 'edge-live-plan', 'square', 'moments',
         `${liveEvent}, following the recommended plan across ${run.days} settled days: ${money(run.profit)} on $${run.staked.toFixed(2)} staked, ${pctOf(roi)}, ${run.up} of ${run.days} days in front. Put that identical $${run.staked.toFixed(0)} flat across every match on the same days, backing the bookmakers' own favourite, and it comes back ${money(mktProfit)} - ${pctOf(mktRoi)}. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. ${SITE}/risk ${tags}`,
         `${liveEvent}: the recommended plan returned ${pctOf(roi)} against ${pctOf(mktRoi)} for the market's favourite on the same money.`);
     }
@@ -2590,35 +2716,22 @@ async function run() {
     .sort((a, b) => a.mktOurs - b.mktOurs)[0];
   if (fwdSplit) {
     await forwardEdgeCard(fwdSplit.p, Math.round(fwdSplit.mktOurs * 100), 'edge-forward.png');
-    add('edge-forward.png', 'edge-forward', 'square', 'edge',
+    add('edge-forward.png', 'edge-forward', 'square', 'moments',
       `Locked before play: we're backing ${fwdSplit.p.favName} at ${Math.round(fwdSplit.p.favProb * 100)}% while the market has them at ${Math.round(fwdSplit.mktOurs * 100)}%. Graded within days, no take-backs. ${SITE}/edge ${tags}`,
       `Forward edge card: our underdog call on ${fwdSplit.p.favName}, locked with the market price attached.`);
   }
 
   // ── PROMO layer ─────────────────────────────────────────────────────────
   await proofCard(track, 'proof.png');
-  add('proof.png', 'proof', 'square', 'promo', `The ${SEASON_YEAR} receipts: ${sc.proofLine}, all graded in public. ${tags}`,
-    'Season receipts card: overall accuracy versus the bookmakers.');
   await proofPortrait(track, sc, 'proof-45.png');
-  add('proof-45.png', 'proof', 'portrait', 'promo', `The ${SEASON_YEAR} receipts in 4:5: ${sc.proofLine}. ${tags}`,
-    'Season receipts card, portrait format.');
   await bannerWide(sc, 'banner.png');
-  add('banner.png', 'banner', 'wide', 'promo', `Every call public. Every miss too. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${SITE}/track-record ${tags}`,
-    'Wide banner: every call public, every miss too.');
 
   // Monthly trust card: stated confidence vs reality (first week of the
   // month, or force with FORCE_TRUST=1).
   if ((new Date().getUTCDate() <= 7 && new Date().getUTCDay() === 1) || process.env.FORCE_TRUST === '1') {
-    if (await trustCard(track, 'trust.png')) {
-      add('trust.png', 'trust', 'square', 'promo', `Calibration check: when we say 70%, do we win 70%? Stated confidence vs reality on every graded call this season. ${SITE}/model ${tags}`,
-        'Calibration trust card: stated confidence versus actual win rates by band.');
-    }
   }
 
   await howItWorks(sc, 'how-it-works-1.png', 'how-it-works-2.png', 'how-it-works-3.png');
-  add('how-it-works-1.png', 'explainer', 'square', 'promo', `How Smash works, 1 of 3: we compute every match point by point before it happens - every path it can take, from real serve and return stats. ${tags}`);
-  add('how-it-works-2.png', 'explainer', 'square', 'promo', `How Smash works, 2 of 3: then we call it in public - win probability, exact score, upset risk. Locked before play. ${tags}`);
-  add('how-it-works-3.png', 'explainer', 'square', 'promo', `How Smash works, 3 of 3: then the results grade us. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. ${tags}`);
 
   // PROMO: the restraint. The strongest brand asset available, because nobody
   // else in this space advertises the matches they decline - and it is the
@@ -2632,9 +2745,6 @@ async function run() {
       : `${Math.round((CUTOFFS.fallback || 0.58) * 100)}%`;
     const total = passedRows.length + (track.matches || []).length;
     await noCallCard({ passed: passedRows.length, total, leanAcc, cuts }, 'no-call.png');
-    add('no-call.png', 'no-call', 'square', 'promo',
-      `We passed on ${passedRows.length.toLocaleString()} of ${total.toLocaleString()} graded matches this season, because they sat under our confidence cutoff - ${cuts}, set per tour and surface from the record. Those leans landed ${leanAcc}% of the time: a coin flip, which is exactly why we do not call them. A model with an opinion about everything has one about nothing. ${SITE}/methodology ${tags}`,
-      `We passed on ${passedRows.length} matches; those leans landed ${leanAcc}% of the time.`);
   }
 
   await poolPromoCard('pool-promo.png');
@@ -2642,7 +2752,7 @@ async function run() {
 
   for (const tour of ['atp', 'wta']) {
     const hot = await hotStreakCard(tour, `hot-streak-${tour}.png`);
-    if (hot) add(`hot-streak-${tour}.png`, 'spotlight', 'square', 'promo', `Hottest racket on the ${tour.toUpperCase()} right now: ${hot.name}, ${hot.w}-${hot.l} in recent matches. Their full page: ${SITE}/player/${tour}/${hot.id} ${tags}`);
+    if (hot) add(`hot-streak-${tour}.png`, 'spotlight', 'square', 'moments', `Hottest racket on the ${tour.toUpperCase()} right now: ${hot.name}, ${hot.w}-${hot.l} in recent matches. Their full page: ${SITE}/player/${tour}/${hot.id} ${tags}`);
   }
 
   // ── HYPE: the next grand slam, promoted (within 75 days) ────────────────
@@ -2708,32 +2818,123 @@ async function run() {
     add('hype-story.png', 'countdown', 'story', 'hype', `${daysTo} days to the ${nextMajor.label}. The model is warming up - picks the moment the draw drops. ${tags}`);
   }
 
-  // ── Ready-to-paste thread: the day's slate as a text thread ─────────────
-  // One post per pick with its deep link, plus an opener and a closer, so a
-  // webhook consumer (or a human) can publish the whole slate without
-  // composing anything. Lives in the manifest next to the images.
-  let thread = null;
-  if (picks.length) {
-    const posts = [];
-    posts.push(
-      `Today at the ${picks[0].event}: ${picks.length} call${picks.length === 1 ? '' : 's'}, every one locked before play. ` +
-      `${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. Picks below.`
-    );
-    picks.forEach((p, i) => {
-      const opp = p.favorite === p.p1 ? p.name2 : p.name1;
-      const flag = p._flags.upset ? 'UPSET PICK. ' : (p._flags.confidence === 'high' ? 'High confidence. ' : '');
-      posts.push(`${i + 1}/${picks.length} ${p.favName} over ${opp} at ${pctTxt(p.favProb)} on ${p.surface}. ${flag}${matchLink(p)}`);
+  // ── Section captions that do not belong to a single card ────────────────
+  const storyCards = assets.filter((a) => a.category === 'story');
+  if (storyCards.length) {
+    captions.story = [
+      'Stories for today: the slate, a poll on the biggest match coming up, and the tale of the tape.',
+      `Every call locked before play and graded after: ${todayLink()}`,
+      tags,
+    ].join('\n\n');
+  }
+
+  const recapCards = assets.filter((a) => a.category === 'recap');
+  if (recapCards.length) {
+    captions.recap = [
+      `How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.`,
+      'We publish the bad days on the same schedule as the good ones.',
+      `The whole record: ${SITE}/track-record`,
+      tags,
+    ].join('\n\n');
+  }
+
+  const momentCards = assets.filter((a) => a.category === 'moments');
+  if (momentCards.length) {
+    captions.moments = [
+      'The moments worth stopping on: where we split from the market, the calls nobody else made, and the streaks.',
+      'An upset is a disagreement, not a surprise. We say so before play, not after.',
+      `Where we split with the bookmakers: ${SITE}/edge`,
+      tags,
+    ].join('\n\n');
+  }
+
+  // ── Section bookends ────────────────────────────────────────────────────
+  // A carousel is a sequence, so each section that ships one gets a cover
+  // that says what it is and a closer that says what to do next. Built here,
+  // after their contents, so they can quote the numbers they are wrapping.
+  const contenderCards = assets.filter((a) => a.category === 'contender');
+  if (contenderCards.length) {
+    const ev = titleEventName || 'The Slam';
+    await sectionCoverCard('cover-contender.png', {
+      event: ev,
+      kicker: `${ev} · title race`,
+      sub: 'WHO ACTUALLY WINS THIS',
+      line1: 'THE',
+      line2: 'CONTENDERS',
+      pill: 'THE WHOLE DRAW, SIMULATED 2,000 TIMES',
     });
-    if (picks.length >= 2) {
-      const mult = picks.reduce((m, p) => m * (1 / p.favProb), 1);
-      posts.push(`If every call hits, $10 at fair odds returns $${(10 * mult).toFixed(0)}. Not betting advice, just the math on our own confidence.`);
-    }
-    posts.push(`Every call graded in public, wins and misses alike. Today's board: ${todayLink()} ${tags}`);
-    thread = posts;
+    add('cover-contender.png', 'carousel-cover', 'square', 'contender',
+      `${ev} title race: who the simulation actually favours, and who moved overnight. Swipe for both tours. ${SITE}/draw ${tags}`,
+      `Contenders carousel cover for the ${ev}.`, 0);
+
+    await sectionCloserCard('closer-contender.png', {
+      event: ev,
+      kicker: `${ev} · title race`,
+      heroSub: 'Re-simulated every day',
+      hero: '2,000',
+      lines: [
+        'Every remaining player, every possible path.',
+        'Updated after each round, in public.',
+      ],
+      cta: 'THE FULL RACE  →',
+    });
+    add('closer-contender.png', 'carousel-closer', 'square', 'contender',
+      `The whole bracket, simulated 2,000 times and re-priced every day. ${SITE}/draw ${tags}`,
+      'Contenders carousel closer.', 999);
+
+    captions.contender = [
+      `${ev}: who actually wins this, according to 2,000 simulations of the whole draw.`,
+      'Both tours, plus who rose and who slid overnight.',
+      `Re-priced every day of the tournament, in public: ${SITE}/draw`,
+      tags,
+    ].join('\n\n');
+  }
+
+  const drawCards = assets.filter((a) => a.category === 'draw');
+  if (drawCards.length) {
+    const ev = titleEventName || 'The Slam';
+    await sectionCoverCard('cover-draw.png', {
+      event: ev,
+      kicker: `${ev} · the bracket`,
+      sub: 'EVERY LINE OF IT',
+      line1: 'THE',
+      line2: 'DRAW',
+      pill: 'ROUND BY ROUND SURVIVAL ODDS',
+    });
+    add('cover-draw.png', 'carousel-cover', 'square', 'draw',
+      `${ev}: the bracket, and what it takes to get through it. Swipe for both tours. ${SITE}/draw ${tags}`,
+      `Draw carousel cover for the ${ev}.`, 0);
+
+    await sectionCloserCard('closer-draw.png', {
+      event: ev,
+      kicker: `${ev} · the bracket`,
+      heroSub: 'Build your own',
+      hero: 'YOUR CALL',
+      lines: [
+        'Seed a draw, simulate it to a champion.',
+        'Or fill it from the live bracket in one tap.',
+      ],
+      cta: 'DREAM BRACKETS  →',
+    });
+    add('closer-draw.png', 'carousel-closer', 'square', 'draw',
+      `Disagree with the bracket? Build your own and simulate it to a champion: ${SITE}/dream-brackets ${tags}`,
+      'Draw carousel closer.', 999);
+
+    captions.draw = [
+      `${ev}: every line of the bracket, and the round-by-round odds of surviving it.`,
+      'Both tours. The favourite\'s path, and the road anyone would have to walk.',
+      `Build your own and simulate it: ${SITE}/dream-brackets`,
+      tags,
+    ].join('\n\n');
   }
 
   // ── Manifest + stale cleanup ────────────────────────────────────────────
-  const manifest = { generatedAt: new Date().toISOString(), seasonN: sc.season.n, lastStreak, thread, assets };
+  // One caption per section instead of an eleven-post thread. The old field
+  // is gone rather than left empty: a consumer reading `thread` should fail
+  // loudly and be pointed at `captions`, not quietly post nothing.
+  const manifest = {
+    generatedAt: new Date().toISOString(), seasonN: sc.season.n, lastStreak, captions, assets,
+  };
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
   const keep = new Set([...assets.map((a) => a.file), 'manifest.json']);
   for (const f of fs.readdirSync(OUT)) {

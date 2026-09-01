@@ -121,42 +121,46 @@ export default function Admin() {
               Regenerated with every data refresh (last: {formatDate(shareKit.generatedAt)}).
               Right-click any card to save it; the caption below each one is ready to paste.
             </p>
-            {shareKit.thread?.length > 0 && (
-              <div className="admin-thread">
-                <div className="admin-kit-group">Ready-to-paste thread</div>
-                {shareKit.thread.map((post, i) => (
-                  <div className="admin-thread-post" key={i}>
-                    <span className="admin-thread-n">{i + 1}</span>
-                    <span className="admin-thread-text">{post}</span>
-                    <Button
-                      size="sm"
-                      className="admin-thread-copy"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(post)
-                          .then(() => toast({ type: 'success', title: 'Copied', message: `Post ${i + 1} on the clipboard.` }))
-                          .catch(() => {});
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* One block per SECTION, in the order they are worth posting, each
+                with the single caption that belongs to it. This used to be an
+                eleven-post thread above a flat grid of everything, which meant
+                deciding what went with what by looking at the pictures. */}
             {[
-              ['daily', "Today's posts"],
-              ['draw', 'Draw & brackets'],
-              ['hype', 'Next slam'],
-              ['wrap', 'Tournament wrap'],
-              ['weekly', 'Weekly recap'],
-              ['moments', 'Moments'],
-              ['promo', 'Evergreen promos'],
-            ].map(([cat, label]) => {
-              const group = shareKit.assets.filter((a) => (a.category || 'daily') === cat);
+              ['today', "Today's matches", 'Cover, one card per match, closer.'],
+              ['story', 'Instagram story', 'Slate, poll, tale of the tape.'],
+              ['contender', 'Contenders', 'Title odds and overnight movers, both tours.'],
+              ['recap', 'Yesterday recap', 'How the calls landed, and what they returned.'],
+              ['draw', 'Draw & brackets', 'The bracket and the road through it.'],
+              ['moments', 'Moments', 'Upsets, streaks, milestones, the market splits.'],
+              ['weekly', 'Weekly recap', 'The week, graded.'],
+              ['hype', 'Next slam', 'Countdown and surface record.'],
+              ['wrap', 'Tournament wrap', 'End-of-event report cards.'],
+            ].map(([cat, label, blurb]) => {
+              const group = shareKit.assets
+                .filter((a) => (a.category || 'today') === cat)
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
               if (!group.length) return null;
+              const caption = shareKit.captions?.[cat];
               return (
                 <div key={cat}>
-                  <div className="admin-kit-group">{label}</div>
+                  <div className="admin-kit-group">
+                    {label}
+                    <span className="admin-kit-count">{group.length}</span>
+                    <span className="admin-kit-blurb">{blurb}</span>
+                  </div>
+                  {caption && (
+                    <div className="admin-caption">
+                      <pre className="admin-caption-text">{caption}</pre>
+                      <Button
+                        size="sm"
+                        variant="outline-light"
+                        className="admin-caption-copy"
+                        onClick={() => navigator.clipboard?.writeText(caption)}
+                      >
+                        Copy caption
+                      </Button>
+                    </div>
+                  )}
                   <div className="admin-kit-grid">
                     {group.map((a) => {
                       const src = `${process.env.PUBLIC_URL}/data/share/${a.file}?v=${encodeURIComponent(shareKit.generatedAt)}`;
