@@ -758,7 +758,7 @@ export default function StakingPlan({
             ? 'Enter a stake on a pick, or a parlay stake, to see the numbers.'
             : !(Number(budget) > 0)
               ? 'Enter a budget above.'
-              : 'Nothing on your picks is worth staking at these prices. Add a match from the bench, or come back tomorrow.'}
+              : 'Nothing on your picks beats its price today. Add a match from the bench, or come back tomorrow.'}
         </p>
       )}
 

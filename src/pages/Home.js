@@ -84,7 +84,6 @@ export default function Home() {
         // placeholders that drift, so today counts as upcoming - but a pick
         // whose day has PASSED and still has no result is only awaiting a
         // scoreline, and must never lead a board with a live dot on it.
-        const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
         // One population now. The board and the plan card used to differ:
         // the board showed calls, the plan priced the no-calls too because
         // the builder bet edges rather than calls. That split is gone - we
@@ -92,13 +91,26 @@ export default function Home() {
         // which is also the list /risk builds. The coin flips still show
         // on the Today page, as restraint.
         const pending = all.filter((p) => p.status === 'pending' && !ledgerNoCall(p));
+        // TODAY, and only today. This filtered on `date >= startOfToday`,
+        // which is every future day as well: on a quiet evening the board
+        // filled up with tomorrow's matches under a heading that said
+        // "Happening Now". It also never expired anything, so a match that
+        // started at eleven was still on the board at midnight.
         const upcoming = pending
-          .filter((p) => new Date(p.date) >= startOfToday)
+          .filter((p) => isToday(p.date) && stillUpcoming(p.date))
           .sort((a, b) => new Date(a.date) - new Date(b.date));
+        // Started or from an earlier day, still ungraded. Not "happening" by
+        // any reading, so they get their own heading rather than sitting
+        // silently among matches that have not begun.
         const awaiting = pending
-          .filter((p) => new Date(p.date) < startOfToday)
+          .filter((p) => !upcoming.includes(p) && new Date(p.date) < new Date())
           .sort((a, b) => new Date(b.date) - new Date(a.date));
-        const list = [...upcoming, ...awaiting].slice(0, 6);
+        const list = (upcoming.length > 0 ? upcoming : awaiting).slice(0, 6);
+        // Today's calls that have started and have no result yet. The plan
+        // needs them to tell "the day is over" from "nothing is worth
+        // backing" - two very different sentences it used to answer with the
+        // same silence.
+        const inPlay = pending.filter((p) => isToday(p.date) && !stillUpcoming(p.date));
         // The suggested plan gets the FULL card and the graded history, not
         // the six-row display list: it must reproduce the Risk Lab's
         // recommendation exactly, and that page prices every pending call on
@@ -109,7 +121,7 @@ export default function Home() {
         // Calls only here too: the plan is sized on the population it bets,
         // exactly as /risk and planSettle.ledgerGraded do it.
         const gradedRows = all.filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
-        setPicks({ state: 'ready', list, live: upcoming.length > 0, card, graded: gradedRows });
+        setPicks({ state: 'ready', list, live: upcoming.length > 0, card, inPlay: inPlay.length, graded: gradedRows });
         // "Decided" means GRADED, not merely "not pending". A void is a call
         // that never resolved (walkover, retirement, an orphaned fixture the
         // pipeline retired), and p.correct is false on all of them - counting
@@ -200,7 +212,12 @@ export default function Home() {
     const oddsOf = (p) => Number(p.favorite === p.p1 ? p.lockOdd1 : p.lockOdd2);
     const card = picks.card || [];
     const priced = card.filter((p) => oddsOf(p) > 1 && p.favProb > 0);
-    if (priced.length < 2) return null;
+    // Too thin to price. If the day's matches have simply started, say that;
+    // returning null here dropped the whole plan card off the page without a
+    // word, which reads as broken rather than as finished.
+    if (priced.length < 2) {
+      return picks.inPlay > 0 ? { n: priced.length, done: true, awaiting: picks.inPlay } : null;
+    }
     const bets = priced.map((p) => ({ key: p.id, p: p.favProb, o: oddsOf(p) }));
     const rel = reliability(picks.graded || []);
     const frontier = planFrontier(bets, PLAN_BUDGET, { lambda: rel.lambda });
@@ -220,7 +237,7 @@ export default function Home() {
         pProfit: p.metrics.pProfit, ev: p.metrics.ev,
       })),
     };
-  }, [picks.card, picks.graded]);
+  }, [picks.card, picks.graded, picks.inPlay]);
 
 
   // Live proof stats from the graded track record - the credibility engine
@@ -608,7 +625,7 @@ export default function Home() {
           <div className="home-section-head">
             {picks.live && <span className="home-live-dot" />}
             <h2 className="home-section-title">
-              {picks.live ? 'Happening Now' : picks.list.length > 0 ? 'Awaiting Results' : 'Tournament Watch'}
+              {picks.live ? 'Happening Today' : picks.list.length > 0 ? 'Awaiting Results' : 'Tournament Watch'}
             </h2>
             {picks.list.length > 0 && (
               <span className="home-section-sub">
@@ -735,7 +752,16 @@ export default function Home() {
             {plan && (
               <aside className="home-plan" aria-label="Recommended staking plan">
                 <div className="home-plan-cap">Today&apos;s recommended plan</div>
-                {plan.none ? (
+                {plan.done ? (
+                  <>
+                    <p className="home-plan-none">
+                      <strong>Today&apos;s card is done.</strong> All {plan.awaiting} of today&apos;s
+                      calls have started, so there is nothing left to stake. They grade overnight
+                      onto the Ledger, and tomorrow&apos;s lock as the order of play is published.
+                    </p>
+                    <Link to="/track-record" className="home-plan-cta">See how they land →</Link>
+                  </>
+                ) : plan.none ? (
                   <>
                     <p className="home-plan-none">
                       Nothing on today's card returns what it costs to back, spread or

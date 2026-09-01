@@ -335,3 +335,54 @@ test('today: every row carries its start time, and the page says which day it is
   }
   expect(errors).toEqual([]);
 });
+
+test('a started call stays visible instead of vanishing, on every surface', async ({ page }) => {
+  const errors = collectErrors(page);
+
+  // Today's Calls: matches that have begun move to their own section rather
+  // than being filtered off the page. From about half past four each
+  // afternoon they used to disappear one by one and sit nowhere on the site
+  // until overnight grading put them on the Ledger.
+  await page.goto('/today');
+  await page.waitForSelector('.today-row, .today-empty', { timeout: 20000 });
+  const inPlay = page.locator('.today-inplay');
+  if (await inPlay.count() > 0) {
+    await expect(inPlay.locator('.today-inplay-cap')).toHaveText(/in play, awaiting result/i);
+    expect(await inPlay.locator('.today-row').count()).toBeGreaterThan(0);
+    // Marked as started, and never carrying a countdown to a match that has
+    // already begun. Compared in lower case: the meta line is uppercased in
+    // CSS, so innerText comes back "STARTED" - the positive check failed for
+    // the wrong reason and the negative one was passing vacuously.
+    for (const t of await inPlay.locator('.today-meta').allInnerTexts()) {
+      expect(t.toLowerCase()).toContain('started');
+      expect(t.toLowerCase()).not.toMatch(/\bin \d/);
+    }
+  }
+
+  // The home board is today only. It used to filter on "today or later", so a
+  // quiet evening filled it with tomorrow's matches under a live heading.
+  await page.goto('/');
+  await page.waitForSelector('.home-board-card, .home-offseason, .home-board-skel', { timeout: 20000 });
+  const title = page.locator('.home-section-title').first();
+  await expect(title).toHaveText(/happening today|awaiting results|tournament watch/i);
+  await expect(title).not.toHaveText(/happening now/i);
+
+  expect(errors).toEqual([]);
+});
+
+test('the home plan says why it has nothing, rather than disappearing', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  await page.waitForSelector('.home-board-card, .home-offseason, .home-board-skel', { timeout: 20000 });
+  await page.waitForTimeout(1200);
+
+  // Three honest states, and the card has to be in one of them or absent for
+  // a reason. It used to return null the moment the card thinned below two
+  // priced calls, which on any evening dropped the whole block off the page
+  // without a word - indistinguishable from a bug.
+  const plan = page.locator('.home-plan');
+  if (await plan.count() > 0) {
+    await expect(plan).toContainText(/card is done|stake nothing|of \$?\d/i);
+  }
+  expect(errors).toEqual([]);
+});

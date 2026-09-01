@@ -87,7 +87,12 @@ export default function CardRail({
                 <span className="card-rail-meta">
                   over {lastName(l.favorite === l.p1 ? l.name2 : l.name1)} · {pct(l.favProb)}
                   {o > 1 ? ` · ${o.toFixed(2)}` : ' · no price'}
-                  {start ? ` · ${start}` : ''}
+                  {/* Always says something about when. The plan table beside
+                      this one prints "time TBD" for a match whose order of
+                      play is unpublished; this dropped the field entirely, so
+                      the two surfaces disagreed about the same match and only
+                      on the days a placeholder stamp turned up. */}
+                  {` · ${start || 'time TBD'}`}
                 </span>
               </span>
             </li>

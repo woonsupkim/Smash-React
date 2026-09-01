@@ -31,6 +31,7 @@ export default function Today() {
     "The model's picks for today's tennis, locked before play and graded in public."
   );
   const [all, setAll] = useState(null);
+  const [inPlay, setInPlay] = useState([]);
   const [season, setSeason] = useState(null);
   const [tour, setTour] = useState('all');
   const [event, setEvent] = useState('all');
@@ -42,8 +43,18 @@ export default function Today() {
   useEffect(() => {
     fetch(process.env.PUBLIC_URL + '/data/predictions.json')
       .then((r) => r.json())
-      .then((d) => setAll((d.predictions || []).filter((p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date))))
-      .catch(() => setAll([]));
+      .then((d) => {
+        const today = (d.predictions || []).filter((p) => p.status === 'pending' && isToday(p.date));
+        setAll(today.filter((p) => stillUpcoming(p.date)));
+        // Started, no result yet. These used to be filtered out and simply
+        // vanish: from about half past four each afternoon the page emptied
+        // match by match, and those calls sat nowhere on the site until
+        // overnight grading put them on the Ledger. A call locked before play
+        // is this page's whole claim, so it stays readable until it is graded.
+        setInPlay(today.filter((p) => !stillUpcoming(p.date))
+          .sort((a, b) => new Date(b.date) - new Date(a.date)));
+      })
+      .catch(() => { setAll([]); setInPlay([]); });
     fetch(process.env.PUBLIC_URL + '/data/daily_scorecard.json')
       .then((r) => r.json())
       .then((d) => setSeason(d.season))
@@ -70,6 +81,52 @@ export default function Today() {
 
   // Only show a control when it can actually change something.
   const showFilters = !!all && all.length > 1 && (tours.length > 1 || events.length > 1);
+
+  // One row, two lists. Extracted when the in-play section arrived: the
+  // alternative was a second copy of forty lines that would drift.
+  const renderRow = (p, started = false) => {
+    const when = timeUntil(p.date);
+    const start = localStartTime(p.date);
+    const favIsP1 = p.favorite === p.p1;
+    return (
+      <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`}
+        className={`today-row${ledgerNoCall(p) ? ' nocall' : ''}${started ? ' started' : ''}`}>
+        <span className="today-faces">
+          <img src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
+          <img src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />
+        </span>
+        <span className="today-match">
+          <span className={favIsP1 ? 'fav' : ''}>{p.name1}</span>
+          <span className="today-vs"> vs </span>
+          <span className={!favIsP1 ? 'fav' : ''}>{p.name2}</span>
+          <span className="today-meta">
+            {p.tour.toUpperCase()} · {p.event} · {p.surface}
+            {/* The scheduled start, then how long until it. The countdown
+                alone answered "when" only for someone reading at that exact
+                minute, and it says nothing at all once the match is under way. */}
+            {' · '}
+            <strong className="today-start">{start || 'time TBD'}</strong>
+            {started
+              ? ' · started'
+              : (when && when.label !== 'today' ? ` · ${when.label}` : '')}
+          </span>
+        </span>
+        {ledgerNoCall(p) ? (
+          /* A coin flip we declined to call: the lean is on the record
+             (locked, graded for audit) but it is not a claim. */
+          <span className="today-call nocall">
+            <span className="today-nocall-tag">NO CALL</span>
+            <span className="today-pick">too close - we lean {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
+          </span>
+        ) : (
+          <span className="today-call">
+            <span className="today-pct">{Math.round(p.favProb * 100)}%</span>
+            <span className="today-pick">{lastName(p.favName)}</span>
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   return (
     <div className={`page-background ${surfaceBgClass()}`}>
@@ -155,50 +212,28 @@ export default function Today() {
 
       {shown && shown.length > 0 && (
         <div className="today-list">
-          {shown.map((p) => {
-            const when = timeUntil(p.date);
-            const start = localStartTime(p.date);
-            const favIsP1 = p.favorite === p.p1;
-            return (
-              <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className={`today-row${ledgerNoCall(p) ? ' nocall' : ''}`}>
-                <span className="today-faces">
-                  <img src={playerPhoto(p.tour, p.p1)} alt="" loading="lazy" />
-                  <img src={playerPhoto(p.tour, p.p2)} alt="" loading="lazy" />
-                </span>
-                <span className="today-match">
-                  <span className={favIsP1 ? 'fav' : ''}>{p.name1}</span>
-                  <span className="today-vs"> vs </span>
-                  <span className={!favIsP1 ? 'fav' : ''}>{p.name2}</span>
-                  <span className="today-meta">
-                    {p.tour.toUpperCase()} · {p.event} · {p.surface}
-                    {/* The scheduled start, then how long until it. The
-                        countdown alone answered "when" only for someone
-                        reading at that exact minute. */}
-                    {' · '}
-                    <strong className="today-start">{start || 'time TBD'}</strong>
-                    {/* The countdown, only while it is one. Its fallback
-                        label is "today", which next to a printed 2:00 PM on a
-                        page called Today says nothing three times. */}
-                    {when && when.label !== 'today' ? ` · ${when.label}` : ''}
-                  </span>
-                </span>
-                {ledgerNoCall(p) ? (
-                  /* A coin flip we declined to call: the lean is on the record
-                     (locked, graded for audit) but it is not a claim. */
-                  <span className="today-call nocall">
-                    <span className="today-nocall-tag">NO CALL</span>
-                    <span className="today-pick">too close - we lean {lastName(p.favName)} {Math.round(p.favProb * 100)}%</span>
-                  </span>
-                ) : (
-                  <span className="today-call">
-                    <span className="today-pct">{Math.round(p.favProb * 100)}%</span>
-                    <span className="today-pick">{lastName(p.favName)}</span>
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+          {shown.map((p) => renderRow(p))}
         </div>
+      )}
+
+      {/* Started, waiting on a result. The same rows, dimmed, under their own
+          heading: the call was locked before play and stays readable, but
+          nothing here is bettable any more and the section says so rather
+          than letting the rows quietly disappear. */}
+      {inPlay.length > 0 && (
+        <section className="today-inplay">
+          <div className="today-inplay-head">
+            <span className="today-inplay-cap">In play, awaiting result</span>
+            <span className="today-inplay-sub">
+              {inPlay.length} {inPlay.length === 1 ? 'call' : 'calls'} locked before play and
+              under way. {inPlay.length === 1 ? 'It grades' : 'They grade'} overnight, onto{' '}
+              <Link to="/track-record">the Ledger</Link>.
+            </span>
+          </div>
+          <div className="today-list">
+            {inPlay.map((p) => renderRow(p, true))}
+          </div>
+        </section>
       )}
 
       <div className="today-footer">

@@ -100,7 +100,7 @@ export default function Parlay() {
     "Risk Lab · Today's Calls | Smash",
     "How much to stake on today's calls, and what that plan does to your budget: the spread of outcomes, how often a bad day arrives, and whether you are betting past the size that grows a bankroll rather than shrinking it."
   );
-  const { all, legs, noCalls, graded, awaiting } = useTodayCard();
+  const { all, legs, noCalls, inPlay, graded, awaiting } = useTodayCard();
 
   // Whatever the staking plan currently has on its table, published upward so
   // the risk lab below describes THIS plan. One allocation on the page, read
@@ -465,7 +465,24 @@ export default function Parlay() {
 
       {all === null && <div className="skeleton parlay-skel" />}
 
-      {all && all.length === 0 && (
+      {/* Two ways to have nothing to price, and they are not the same thing.
+          The page said "no plan worth staking today" for both, which is a
+          judgement about PRICES - and on an evening when every match has
+          simply started, it is false. The day being over is a fact about the
+          clock, and it is the more common of the two by far: from about half
+          past four each afternoon the card empties match by match. */}
+      {all && all.length === 0 && inPlay.length > 0 && (
+        <div className="parlay-empty">
+          <strong>Today&apos;s card is done.</strong> The last of{' '}
+          {inPlay.length} {inPlay.length === 1 ? 'call has' : 'calls have'} started, so there is
+          nothing left to stake. {inPlay.length === 1 ? 'It grades' : 'They grade'} overnight and
+          land on <Link to="/track-record">the Ledger</Link>; tomorrow&apos;s calls lock as the
+          order of play is published. Meanwhile you can{' '}
+          <Link to="/h2h">run any matchup yourself</Link>.
+        </div>
+      )}
+
+      {all && all.length === 0 && inPlay.length === 0 && (
         <div className="parlay-empty">
           Nothing on today's card to stack. Calls lock for the slams and the big
           combined events as their matches are scheduled - meanwhile,{' '}

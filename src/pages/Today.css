@@ -195,3 +195,26 @@
   color: var(--text-3, #7c8698);
 }
 .today-start { color: var(--text-2, #aeb6c4); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* In play, awaiting result. Locked before play, under way, not yet graded -
+   readable but plainly not bettable, so the rows are dimmed and the section
+   says what it is rather than letting them vanish off the page. */
+.today-inplay { margin-top: 2rem; }
+.today-inplay-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  margin-bottom: 0.6rem;
+}
+.today-inplay-cap {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+}
+.today-inplay-sub { font-size: 0.82rem; color: var(--text-3, #7c8698); }
+.today-row.started { opacity: 0.68; }
+.today-row.started:hover { opacity: 1; }

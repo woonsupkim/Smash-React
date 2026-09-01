@@ -27,6 +27,13 @@ export default function useTodayCard() {
   // the same bets rather than two versions of them.
   const [graded, setGraded] = useState([]);
   const [awaiting, setAwaiting] = useState(0);
+  // Today's calls that have STARTED and have no result yet. They are off the
+  // card - you cannot stake a match already underway - but they are the
+  // difference between "these prices are not worth it" and "the day is over",
+  // and the page had no way to tell those apart. From about half past four
+  // every afternoon matches begin falling into this state, and until the
+  // overnight grading they existed nowhere on the site.
+  const [inPlay, setInPlay] = useState([]);
 
   useEffect(() => {
     let live = true;
@@ -37,7 +44,11 @@ export default function useTodayCard() {
         // Calls only, matching planSettle.ledgerGraded: we do not ask anyone
         // to stake a coin flip the model declined to call.
         const rows = (d.predictions || []).filter((p) => !ledgerNoCall(p));
-        const onToday = (p) => p.status === 'pending' && isToday(p.date) && stillUpcoming(p.date);
+        const todayPending = (p) => p.status === 'pending' && isToday(p.date);
+        const onToday = (p) => todayPending(p) && stillUpcoming(p.date);
+        setInPlay(rows
+          .filter((p) => todayPending(p) && !stillUpcoming(p.date))
+          .sort((a, b) => new Date(b.date) - new Date(a.date)));
         setPasses((d.predictions || [])
           .filter((p) => ledgerNoCall(p) && onToday(p))
           .sort((a, b) => b.favProb - a.favProb));
@@ -48,7 +59,7 @@ export default function useTodayCard() {
         setAwaiting(rows.filter((p) => p.status === 'pending').length);
         setAll(rows.filter(onToday).sort((a, b) => b.favProb - a.favProb));
       })
-      .catch(() => { if (live) { setAll([]); setGraded([]); setPasses([]); } });
+      .catch(() => { if (live) { setAll([]); setGraded([]); setPasses([]); setInPlay([]); } });
     return () => { live = false; };
   }, []);
 
@@ -60,5 +71,5 @@ export default function useTodayCard() {
   const legs = useMemo(() => all || [], [all]);
   const noCalls = useMemo(() => passes, [passes]);
 
-  return { all, legs, noCalls, graded, awaiting };
+  return { all, legs, noCalls, inPlay, graded, awaiting };
 }
