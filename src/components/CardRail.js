@@ -41,10 +41,26 @@ export default function CardRail({
         <div className="card-rail-sub">
           {rows.length === 0
             ? 'Everything on the card is in your picks.'
-            : interactive
-              ? `${rows.length} more ${rows.length === 1 ? 'match' : 'matches'} today. Drag one across, or tick it.`
-              : `${rows.length} more ${rows.length === 1 ? 'match' : 'matches'} today. Switch the plan to Custom to add any of them.`}
+            : (
+              <>
+                {rows.length} more {rows.length === 1 ? 'match' : 'matches'} today.
+                {' '}
+                {interactive
+                  ? 'Drag one across, or hit +.'
+                  : 'The plan picks these for you right now.'}
+              </>
+            )}
         </div>
+        {/* Said plainly, not implied by a disabled control. The bench looked
+            broken in Recommended: the rows were there, the pluses were not,
+            and nothing on screen connected that to the Custom tab further
+            down the page. */}
+        {!interactive && rows.length > 0 && (
+          <div className="card-rail-lockmsg">
+            <span className="card-rail-lockkey">Custom</span>
+            Switch the plan above to <strong>Custom</strong> to add matches yourself.
+          </div>
+        )}
       </div>
 
       {onTourView && tourCounts && (

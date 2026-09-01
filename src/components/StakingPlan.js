@@ -109,7 +109,12 @@ export default function StakingPlan({
   const menuLegs = cardLegs && cardLegs.length ? cardLegs : legs;
 
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
-  const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
+  // Unticked until you tick it. This defaulted to TRUE, which meant a match
+  // dragged over from the bench walked straight into the parlay: the picks
+  // are yours to assemble, and a leg you never chose quietly multiplying
+  // against the others is the opposite of that. The recommendation builds its
+  // own parlay through activeParlayLegs and is unaffected.
+  const isIn = (l) => (inParlay[l.id] === true) && oddsOf(l) > 1;
   // Which legs the parlay WOULD cover, versus which it actually does. The
   // master switch only empties the second: the per-leg ticks stay live so
   // switching the parlay back on restores exactly the combination you built.

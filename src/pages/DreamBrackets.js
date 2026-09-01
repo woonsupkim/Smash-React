@@ -1,5 +1,5 @@
 // src/pages/DreamBrackets.js
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import Select from 'react-select';
@@ -257,12 +257,12 @@ export default function DreamBrackets({ tour = 'atp' }) {
   };
 
   const [tournament, setTournament] = useState(DEFAULT_TOURNAMENT);
-  // Named, not indexed. This was STAGES[1] with a comment saying "default to
-  // Quarter-Finals", which stopped being true the moment the full-draw stages
-  // were added to the front of the list - the page silently began opening on a
-  // 32-slot bracket. Defaulting to the quick one is deliberate: a full draw is
-  // 64 picks, which is a choice to opt into rather than a landing state.
-  const [stage, setStage] = useState('qf');
+  // The full draw is the landing state. It used to be Quarter-Finals, on the
+  // reasoning that 64 picks is a lot to ask of someone who has just arrived -
+  // true when every slot had to be chosen by hand, and no longer true now
+  // that a live slam fills the whole thing on arrival. Starting at the
+  // quarters would throw away three rounds of the real bracket.
+  const [stage, setStage] = useState('r64');
   const stageConfig = STAGES.find(s => s.value === stage);
   const tournamentConfig = TOURNAMENTS.find(t => t.value === tournament);
   // Views are the sub-brackets on offer; `view` is the one on screen. The
@@ -867,7 +867,7 @@ export default function DreamBrackets({ tour = 'atp' }) {
     return () => { live = false; };
   }, [tour]);
 
-  const runLiveDrawImport = async () => {
+  const runLiveDrawImport = async ({ auto = false } = {}) => {
     setIsImporting(true);
     try {
       const res = await fetch(process.env.PUBLIC_URL + '/data/title_odds.json');
@@ -924,15 +924,36 @@ export default function DreamBrackets({ tour = 'atp' }) {
       const note = per > 1
         ? `${entry.event}: the ${field.length}-player draw reduced to ${stageConfig.slots}, top seed per section.`
         : `${entry.event}: the live ${field.length}-player draw, in bracket order.`;
-      toast(matchedCount < stageConfig.slots
+      // A prefill announces itself once and quietly; a requested one confirms
+      // what it did. Nobody needs a warning toast for something they did not
+      // ask for and can see on the screen in front of them.
+      toast(matchedCount < stageConfig.slots && !auto
         ? { type: 'warning', title: `Filled ${matchedCount}/${stageConfig.slots} slots`, message: `${note} The rest are not on our roster.`, duration: 7000 }
-        : { type: 'success', title: 'Bracket filled from the live draw', message: note });
+        : { type: 'success', title: auto ? `Filled from the ${entry.event} draw` : 'Bracket filled from the live draw', message: note });
     } catch (err) {
-      toast({ type: 'error', title: 'Could not fill from the draw', message: err.message, duration: 7000 });
+      // A prefill that cannot find a draw says nothing: the reader did not ask
+      // for it, and an error toast on arrival reads as the page being broken.
+      if (!auto) toast({ type: 'error', title: 'Could not fill from the draw', message: err.message, duration: 7000 });
     } finally {
       setIsImporting(false);
     }
   };
+
+  // Prefill on arrival, once, while a slam is being played and the bracket is
+  // still untouched. The button below does the same thing on demand; this is
+  // what makes the page mirror the tournament rather than merely offer to.
+  // Guarded three ways - an empty bracket, a live draw, and a ref so a
+  // re-render never re-runs it - because silently overwriting a bracket
+  // somebody is halfway through building would be far worse than not filling
+  // one at all.
+  const autoFilled = useRef(false);
+  useEffect(() => {
+    if (autoFilled.current || !liveSlam) return;
+    if (!slots.length || slots.some(Boolean)) return;
+    autoFilled.current = true;
+    runLiveDrawImport({ auto: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveSlam, slots]);
 
   const runEspnImport = async (url) => {
     const parsed = parseEspnUrl(url);

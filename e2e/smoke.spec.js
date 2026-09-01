@@ -280,14 +280,11 @@ test('dream brackets: a full draw renders a quarter at a time', async ({ page })
   const errors = collectErrors(page);
   await page.goto('/dream-brackets');
 
-  // Small draws must be untouched by segmentation: no tabs, and the columns
-  // run straight from the starting round to the champion.
   await expect(page.locator('.bracket-col h6').first()).toBeVisible({ timeout: 20000 });
-  expect(await page.locator('.bracket-view-tab').count()).toBe(0);
 
-  // Switch to the full draw. Found by its options rather than by position, so
-  // reordering the stage list cannot silently retarget this (the same
-  // index-based assumption already moved the page's default once).
+  // The stage control, found by its options rather than by position, so
+  // reordering the list cannot silently retarget this (an index-based
+  // assumption already moved the page's default once).
   const selects = page.locator('select.dark-select');
   let stage = null;
   for (let i = 0; i < await selects.count(); i++) {
@@ -295,6 +292,19 @@ test('dream brackets: a full draw renders a quarter at a time', async ({ page })
     if (values.includes('r64')) { stage = selects.nth(i); break; }
   }
   expect(stage).not.toBeNull();
+
+  // The page lands on the full draw, so that a slam in progress fills the
+  // whole bracket rather than throwing away three rounds of the real one.
+  await expect(stage).toHaveValue('r64');
+
+  // Small draws must be untouched by segmentation: no tabs, and the columns
+  // run straight from the starting round to the champion. Asserted on a stage
+  // this test SELECTS rather than on whatever the page happens to open with -
+  // that assumption is exactly what broke when the default moved.
+  await stage.selectOption('qf');
+  await expect(page.locator('.bracket-col h6').first()).toBeVisible({ timeout: 20000 });
+  expect(await page.locator('.bracket-view-tab').count()).toBe(0);
+
   await stage.selectOption('r64');
 
   // Four quarters and a finals view, not one 4,200px column.
