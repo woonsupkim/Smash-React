@@ -112,3 +112,6 @@
 }
 
 /* Weekly digest signup lives in DigestSignup.css, with its component. */
+
+/* The follow, under the digest signup in the brand column. */
+.site-footer-follow { margin-top: 0.75rem; }

@@ -1,0 +1,60 @@
+/* The Instagram follow. Two shapes: a quiet inline link for footers, and a
+   real CTA band for the places that have just delivered something. */
+.follow-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-3, #7c8698);
+  text-decoration: none;
+  font-size: 0.84rem;
+  transition: color 0.12s ease;
+}
+.follow-cta:hover,
+.follow-cta:focus-visible { color: var(--accent-brand, #c8f560); }
+.follow-cta:focus-visible {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.follow-glyph { flex: 0 0 auto; }
+
+/* The band. Same furniture as the other CTAs on the page rather than a
+   platform-branded gradient: this is a link to somewhere we post, not an
+   advertisement for Instagram. */
+.follow-cta.band {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-lg, 16px);
+  color: var(--text-1, #fff);
+}
+.follow-cta.band:hover,
+.follow-cta.band:focus-visible {
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 8%, transparent);
+  color: var(--text-1, #fff);
+}
+.follow-cta.band .follow-glyph { color: var(--accent-brand, #c8f560); }
+.follow-cta-text { display: flex; flex-direction: column; min-width: 0; }
+.follow-cta.band .follow-cta-main { font-size: 0.92rem; font-weight: 800; }
+.follow-cta-sub {
+  font-size: 0.76rem;
+  color: var(--text-3, #7c8698);
+  line-height: 1.4;
+}
+.follow-cta-go {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--text-3, #7c8698);
+  font-size: 1rem;
+}
+.follow-cta.band:hover .follow-cta-go { color: var(--accent-brand, #c8f560); }
+
+@media (max-width: 560px) {
+  .follow-cta.band { align-items: flex-start; }
+  .follow-cta-go { display: none; }
+}

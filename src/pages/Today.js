@@ -15,6 +15,7 @@ import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, localStartTime, localDayLabel, localZoneLabel, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import { ledgerNoCall } from '../utils/deployedPick';
 import PushToggle from '../components/PushToggle';
+import FollowCta from '../components/FollowCta';
 import useDocMeta from '../utils/useDocMeta';
 import { surfaceBgClass } from '../utils/surfaceBg';
 import './Today.css';
@@ -234,6 +235,17 @@ export default function Today() {
             {inPlay.map((p) => renderRow(p, true))}
           </div>
         </section>
+      )}
+
+      {/* This page is the landing target for every social post - somebody who
+          arrived from a story is already here. It is the reader who found it
+          another way that the follow is for, and the end of the card is where
+          they have just been given the thing worth following for. */}
+      {all && all.length > 0 && (
+        <div className="today-follow">
+          <FollowCta variant="band"
+            sub="Today's card and how yesterday's landed, posted every morning" />
+        </div>
       )}
 
       <div className="today-footer">

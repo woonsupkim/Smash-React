@@ -218,3 +218,14 @@
 @media (max-width: 900px) {
   .parlay-work { grid-template-columns: minmax(0, 1fr); gap: 1.1rem; }
 }
+
+/* Digest and follow, side by side: two ways to come back, neither of them
+   pretending to be the other. Stacks before they get cramped. */
+.parlay-signup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+@media (min-width: 900px) {
+  .parlay-signup { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; }
+}

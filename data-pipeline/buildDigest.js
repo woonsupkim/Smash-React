@@ -55,6 +55,10 @@ const PHOTO_SRC = { atp: path.join(ROOT, 'src', 'assets', 'players'), wta: path.
 const PHOTO_OUT = path.join(DATA, 'digest', 'players');
 
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
+// The Instagram handle, in the footer rather than in the body: these go to
+// people who already subscribed, so the email owes them the day's calls
+// first and a second ask last. Mirrors src/components/FollowCta.js.
+const INSTAGRAM_URL = 'https://www.instagram.com/smash.tennis.simulator/';
 
 // The email wears the product's own skin. It used to be a light grey page
 // with a white 14px-rounded card, system UI type and pastel callouts, which
@@ -1494,6 +1498,7 @@ async function main() {
     `${ctaText}: ${ctaHref}`,
     '',
     'Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.',
+    `Instagram: ${INSTAGRAM_URL}`,
     '%%UNSUB_TXT%%',
   ].join('\n');
 
@@ -1542,6 +1547,7 @@ async function main() {
             not a tip sheet: the season number is a benchmark (today's engines replayed over the
             whole season) and only the forward-test rows were locked before play.
             <br /><a href="${SITE}" style="color:${MUTED};">${esc(SITE.replace(/^https?:\/\//, ''))}</a>
+            &nbsp;&middot;&nbsp; <a href="${INSTAGRAM_URL}" style="color:${MUTED};">Instagram</a>
             &nbsp;&middot;&nbsp; %%UNSUB_HTML%%
           </td>
         </tr>

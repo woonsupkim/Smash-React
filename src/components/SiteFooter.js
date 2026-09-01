@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MODEL_VERSION } from '../data/changelog';
 import DigestSignup from './DigestSignup';
+import FollowCta from './FollowCta';
 import './SiteFooter.css';
 
 export default function SiteFooter() {
@@ -58,6 +59,13 @@ export default function SiteFooter() {
             )}
           </p>
           <DigestSignup />
+          {/* The one placement that is on every page. Under the digest rather
+              than beside it: email is the ask that actually delivers the
+              plan, and this is the lighter alternative for someone who will
+              not hand over an address. */}
+          <div className="site-footer-follow">
+            <FollowCta />
+          </div>
         </div>
 
         {/* Columns mirror the top nav's pillars exactly, in the same order.

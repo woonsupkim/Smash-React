@@ -443,3 +443,40 @@ test('every page names one authoritative URL', async ({ page }) => {
 
   expect(errors).toEqual([]);
 });
+
+test('the Instagram follow appears where it should, and nowhere it should not', async ({ page }) => {
+  const errors = collectErrors(page);
+  const URL = 'https://www.instagram.com/smash.tennis.simulator/';
+
+  // Site-wide in the footer, so it is always findable without ever being in
+  // the way. Every page gets exactly one.
+  for (const route of ['/', '/track-record', '/edge', '/model']) {
+    await page.goto(route);
+    await page.waitForTimeout(400);
+    const inline = page.locator('.site-footer a.follow-cta');
+    // eslint-disable-next-line jest/valid-expect
+    expect(await inline.count(), `${route} footer follow`).toBe(1);
+    await expect(inline).toHaveAttribute('href', URL);
+    // A new tab that cannot reach back through window.opener, and no referrer.
+    await expect(inline).toHaveAttribute('rel', /noopener/);
+    await expect(inline).toHaveAttribute('rel', /noreferrer/);
+    // And not a banner on every page: the band is for pages that have just
+    // delivered something.
+    // eslint-disable-next-line jest/valid-expect
+    expect(await page.locator('a.follow-cta.band').count(), `${route} should have no band`).toBe(0);
+  }
+
+  // The two pages that HAVE just delivered something get the band as well.
+  for (const route of ['/today', '/risk']) {
+    await page.goto(route);
+    await page.waitForSelector('.today-row, .stake-plan, .today-empty, .parlay-empty', { timeout: 20000 });
+    await page.waitForTimeout(600);
+    const band = page.locator('a.follow-cta.band');
+    if (await band.count() > 0) {
+      await expect(band.first()).toHaveAttribute('href', URL);
+      await expect(band.first()).toContainText(/instagram/i);
+    }
+  }
+
+  expect(errors).toEqual([]);
+});
