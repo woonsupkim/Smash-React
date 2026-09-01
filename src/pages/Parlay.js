@@ -461,7 +461,17 @@ export default function Parlay() {
                   emptyPicks={pickedLegs.length + pickedNoCalls.length === 0}
                   riskSlot={(
                     <div className="parlay-risk" id="risk">
-                      <RiskLab legs={pickedLegs} graded={graded} noCalls={pickedNoCalls} plan={plan} />
+                      {/* cardCount is the same denominator the plan card above
+                          prints: the pool the plan was allowed to draw from.
+                          In Recommended that is the calls; Custom opens the
+                          no-calls up too. The two panels sat one above the
+                          other saying "today's 16 matches" and "today's 22
+                          matches" about the same day. */}
+                      <RiskLab legs={pickedLegs} graded={graded} noCalls={pickedNoCalls}
+                        cardCount={planMode === 'mine'
+                          ? viewLegs.length + viewNoCalls.length
+                          : viewLegs.length}
+                        plan={plan} />
                     </div>
                   )} />
               </div>

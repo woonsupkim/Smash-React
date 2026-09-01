@@ -207,6 +207,18 @@ export default function StakingPlan({
     [mode, rec, bets, parStake, activeParlayLegs]
   );
 
+  // What the rows on this table ADD UP TO, which is not quite what the
+  // optimiser staked: every stake is published and printed to the cent, and
+  // four of those roundings put the plan card a penny above the Risk Lab
+  // directly below it. Two totals for one plan, a cent apart, reads as a bug
+  // whatever the cause, so both surfaces now print the sum of the cents.
+  const stakedShown = useMemo(() => {
+    const cents = stakeable.reduce((t, l) => t + Math.round((singleFor(l) || 0) * 100), 0)
+      + Math.round((parStake || 0) * 100);
+    return cents / 100;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stakeable, mode, rec, stakes, parStake]);
+
   // The even split follows the picks while they are still ours to set. Keyed
   // on the pick ids rather than the array, so re-rendering does not re-spread
   // and wipe out a number someone is halfway through typing.
@@ -383,10 +395,14 @@ export default function StakingPlan({
         <div className="stake-best">
           <div className="stake-best-head">
             <span className="stake-cap">{mode === 'budget' ? 'Recommended plan' : 'Your plan'}</span>
+            {/* The count is the whole CARD, not the picks. `legs` is what the
+                plan funded, so this read "from today's 4 matches" on a
+                twenty-two match Tuesday: it claims the plan chose from four
+                when choosing from four is the thing it just did. */}
             <span className="stake-best-sub">
               {mode === 'budget'
-                ? <>{composition(rec)}, from today&apos;s {legs.length} match{legs.length === 1 ? '' : 'es'} · {money(analysis.staked)} staked</>
-                : <>{money(analysis.staked)} staked · edit anything below and these numbers follow</>}
+                ? <>{composition(rec)}, from today&apos;s {menuLegs.length} match{menuLegs.length === 1 ? '' : 'es'} · {money(stakedShown)} staked</>
+                : <>{money(stakedShown)} staked · edit anything below and these numbers follow</>}
             </span>
           </div>
 
@@ -431,7 +447,7 @@ export default function StakingPlan({
                 and it is the number a reader instinctively compares. */}
             <div className="stake-best-metric">
               <span className={`stake-best-v${analysis.ev >= 0 ? ' pos' : ' neg'}`}>{pctSigned(analysis.roi)}</span>
-              <span className="stake-best-l">expected return <em>on the {money(analysis.staked)} staked</em></span>
+              <span className="stake-best-l">expected return <em>on the {money(stakedShown)} staked</em></span>
             </div>
             <div className="stake-best-metric">
               <span className={`stake-best-v${analysis.ev >= 0 ? ' pos' : ' neg'}`}>{money(analysis.ev)}</span>
@@ -491,9 +507,11 @@ export default function StakingPlan({
               through it first. */}
           <p className="stake-best-why">
             <strong>
-              {money(analysis.staked)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}.
-              {mode === 'budget' && analysis.staked < (Number(budget) || 0) - 0.5
-                ? ` The other ${money((Number(budget) || 0) - analysis.staked)} stays in your pocket, on purpose.`
+              {money(stakedShown)} across {stakedCount} match{stakedCount === 1 ? '' : 'es'}.
+              {/* Off stakedShown too, so the two halves of the sentence add
+                  back up to the budget the reader typed in. */}
+              {mode === 'budget' && stakedShown < (Number(budget) || 0) - 0.5
+                ? ` The other ${money((Number(budget) || 0) - stakedShown)} stays in your pocket, on purpose.`
                 : ''}
             </strong>{' '}
             We expect {expWinners.toFixed(1)} to land, returning {money(expReturn)}
@@ -507,7 +525,11 @@ export default function StakingPlan({
               crowding. */}
           {mode === 'budget' && (
             <details className="stake-why">
-              <summary>How this plan gets chosen{rec ? ` (and why it is ${rec.label.toLowerCase()})` : ''}</summary>
+              {/* The label is a title ("Comfortable day", "Best of a bad card"), so
+                  lowercasing it mid-sentence produced "why it is comfortable day".
+                  Quoted instead: it is the name of the verdict above, not a
+                  description that has to agree with the grammar around it. */}
+              <summary>How this plan gets chosen{rec ? ` (and why today reads as "${rec.label}")` : ''}</summary>
               <div className="stake-why-body">
                 <p>
                   Every plan on the menu is scored on <strong>return per dollar staked</strong>, not on

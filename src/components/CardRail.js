@@ -45,9 +45,12 @@ export default function CardRail({
               <>
                 {rows.length} more {rows.length === 1 ? 'match' : 'matches'} today.
                 {' '}
+                {/* These are the matches the plan did NOT fund, so "the plan
+                    picks these for you" said the opposite of what the list
+                    is. */}
                 {interactive
                   ? 'Drag one across, or hit +.'
-                  : 'The plan picks these for you right now.'}
+                  : 'The plan left these out.'}
               </>
             )}
         </div>

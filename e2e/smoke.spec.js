@@ -346,6 +346,52 @@ test('today: every row carries its start time, and the page says which day it is
   expect(errors).toEqual([]);
 });
 
+test('today splits the tours into two columns, and every call survives the split', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 1400, height: 1000 });
+  await page.goto('/today');
+  await page.waitForSelector('.today-row, .today-empty', { timeout: 20000 });
+
+  const cols = page.locator('.today-col');
+  const nCols = await cols.count();
+  if (nCols === 0) {
+    // A one-tour day, or an empty one. The single list is the correct render.
+    expect(errors).toEqual([]);
+    return;
+  }
+
+  expect(nCols).toBe(2);
+  await expect(cols.nth(0).locator('.today-col-tour')).toHaveText(/^(ATP|WTA)$/);
+  await expect(cols.nth(1).locator('.today-col-tour')).toHaveText(/^(ATP|WTA)$/);
+
+  // Side by side, not stacked: the whole point of the layout.
+  const a = await cols.nth(0).boundingBox();
+  const b = await cols.nth(1).boundingBox();
+  expect(b.x).toBeGreaterThan(a.x + a.width / 2);
+
+  // The heading count and the rows under it agree, and nothing was dropped on
+  // the way from the single list into the two columns.
+  let total = 0;
+  for (let i = 0; i < 2; i++) {
+    const claimed = Number((await cols.nth(i).locator('.today-col-n').innerText()).replace(/\D+/g, ''));
+    const actual = await cols.nth(i).locator('.today-row').count();
+    expect(actual).toBe(claimed);
+    total += actual;
+  }
+  const shown = Number((await page.locator('.today-count').innerText()).replace(/^\D*(\d+).*$/s, '$1'));
+  expect(total).toBe(shown);
+
+  // The tour is the column heading, so it is not repeated on every row.
+  await expect(cols.nth(0).locator('.today-meta').first()).not.toHaveText(/^(ATP|WTA)/);
+
+  // Narrow: one column, headings kept.
+  await page.setViewportSize({ width: 700, height: 1000 });
+  const na = await cols.nth(0).boundingBox();
+  const nb = await cols.nth(1).boundingBox();
+  expect(Math.round(nb.x)).toBe(Math.round(na.x));
+  expect(errors).toEqual([]);
+});
+
 test('a started call stays visible instead of vanishing, on every surface', async ({ page }) => {
   const errors = collectErrors(page);
 

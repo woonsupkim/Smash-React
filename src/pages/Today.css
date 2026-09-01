@@ -224,3 +224,64 @@
 /* Full width, so it lines up with the match rows underneath. Capped at 520px
    it read as a floating card rather than part of the page. */
 .today-follow { margin: 1.6rem 0 0.4rem; }
+
+/* ATP and WTA side by side. A full slam day is forty rows in one stack; the
+   two tours are separate cards a reader rarely compares across, so splitting
+   them halves the scroll without hiding anything. */
+.today-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+}
+.today-col { min-width: 0; }
+.today-col-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding-bottom: 0.45rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+}
+.today-col-tour {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-1, #fff);
+}
+.today-col-n { font-size: 0.74rem; color: var(--text-3, #7c8698); }
+
+/* One column below the point where two would squeeze the rows: a match row
+   carries two names, a percentage and a time, and none of that survives a
+   300px column. */
+@media (max-width: 900px) {
+  .today-cols { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+}
+
+/* Rows inside a half-width column. The row was designed to run the page's
+   full width, so at 470px the names wrapped to three lines and the meta to
+   four. Everything shrinks a step and the percentage block stops reserving
+   room it does not need. */
+.today-cols .today-row { gap: 0.65rem; padding: 0.65rem 0.75rem; }
+.today-cols .today-faces img { width: 32px; height: 32px; }
+.today-cols .today-match { font-size: 0.88rem; }
+.today-cols .today-meta { font-size: 0.66rem; letter-spacing: 0.02em; }
+.today-cols .today-pct { font-size: 1.35rem; }
+.today-cols .today-pick { font-size: 0.62rem; }
+.today-cols .today-call { flex-shrink: 0; }
+.today-cols .today-nocall-tag { font-size: 0.58rem; }
+
+/* Two columns need room. The page is a 640px reading column, which split in
+   half gave each match 288px: names ran to three lines and the meta to four,
+   so the "more compact" layout was taller than the single list it replaced.
+   Above the split's own breakpoint the page widens to fit both columns, and
+   the prose keeps a readable measure instead of running the full width. */
+@media (min-width: 1100px) {
+  .today-page { max-width: 1060px; }
+  .today-date,
+  .today-season { max-width: 62ch; }
+}
+/* "too close - we lean Struff 52%" is the longest string in the row, and in a
+   column it took enough width to push a three-word name onto three lines.
+   Capped so it wraps in its own corner instead. */
+.today-cols .today-call.nocall { max-width: 8.5rem; }

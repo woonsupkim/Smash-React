@@ -239,7 +239,7 @@ function KellyGauge({ ratio }) {
 
 // onDrop(leg) takes a match off the card entirely. Supplied when this is the
 // page's own control surface rather than a panel reading someone else's list.
-export default function RiskLab({ legs, graded = [], noCalls = [], plan = null }) {
+export default function RiskLab({ legs, graded = [], noCalls = [], cardCount = 0, plan = null }) {
   const [tab, setTab] = useState('slip');
   const [days, setDays] = useState(30);
 
@@ -364,7 +364,11 @@ export default function RiskLab({ legs, graded = [], noCalls = [], plan = null }
           <p className="risk-sub">
             {money0(staked)} of your {money0(bank)} on{' '}
             {card.filter((l) => stakeOf(l) > 0).length} of today&apos;s{' '}
-            {legs.length + noCalls.length} matches
+            {/* The day's card, not the picks. `legs` here is what the plan
+                funded, so this read "4 of today's 4 matches" - a ratio that is
+                always 1 and tells the reader nothing about how selective the
+                plan was being. */}
+            {cardCount || (legs.length + noCalls.length)} matches
             {parStake > 0 ? `, ${money0(parStake)} of it on the parlay` : ''}.
             Change the plan above and everything here follows.
           </p>

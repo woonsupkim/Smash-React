@@ -79,12 +79,27 @@ export default function Today() {
       .sort(SORTS[sort].fn);
   }, [all, tour, event, sort]);
 
+  // [['atp', rows], ['wta', rows]] when both tours are on the card and the
+  // reader has not narrowed to one, otherwise null for the single list.
+  const splitByTour = useMemo(() => {
+    if (!shown || tour !== 'all') return null;
+    const byTour = new Map();
+    for (const p of shown) {
+      if (!byTour.has(p.tour)) byTour.set(p.tour, []);
+      byTour.get(p.tour).push(p);
+    }
+    if (byTour.size < 2) return null;
+    return [...byTour.entries()].sort(([a], [b]) => a.localeCompare(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, tour]);
+
+
   // Only show a control when it can actually change something.
   const showFilters = !!all && all.length > 1 && (tours.length > 1 || events.length > 1);
 
   // One row, two lists. Extracted when the in-play section arrived: the
   // alternative was a second copy of forty lines that would drift.
-  const renderRow = (p, started = false) => {
+  const renderRow = (p, started = false, compact = false) => {
     const when = timeUntil(p.date);
     const start = localStartTime(p.date);
     const favIsP1 = p.favorite === p.p1;
@@ -100,7 +115,11 @@ export default function Today() {
           <span className="today-vs"> vs </span>
           <span className={!favIsP1 ? 'fav' : ''}>{p.name2}</span>
           <span className="today-meta">
-            {p.tour.toUpperCase()} · {p.event} · {p.surface}
+            {/* The tour is dropped when it is already the section heading:
+                repeating "WTA" on thirteen consecutive WTA rows costs width
+                the names need. The headings survive the narrow breakpoint
+                where the two columns stack, so this stays right there too. */}
+            {compact ? '' : `${p.tour.toUpperCase()} · `}{p.event} · {p.surface}
             {/* The scheduled start, then how long until it. The countdown
                 alone answered "when" only for someone reading at that exact
                 minute, and it says nothing at all once the match is under way. */}
@@ -218,10 +237,31 @@ export default function Today() {
         </div>
       )}
 
+      {/* Two tours, two columns. A slam Tuesday is forty rows in one stack,
+          which is a long scroll to answer "what is on today" - and the two
+          tours are separate cards a reader is rarely comparing across. Split
+          only when BOTH are showing and there is room: filtered to one tour,
+          or on a phone, a two-column grid with one empty side is worse than
+          the list it replaced. The tour meta on each row stays, because the
+          columns collapse and the row has to stand on its own. */}
       {shown && shown.length > 0 && (
-        <div className="today-list">
-          {shown.map((p) => renderRow(p))}
-        </div>
+        splitByTour ? (
+          <div className="today-cols">
+            {splitByTour.map(([tourKey, rows]) => (
+              <section className="today-col" key={tourKey} aria-label={`${tourKey.toUpperCase()} calls`}>
+                <div className="today-col-head">
+                  <span className="today-col-tour">{tourKey.toUpperCase()}</span>
+                  <span className="today-col-n">{rows.length} {rows.length === 1 ? 'call' : 'calls'}</span>
+                </div>
+                <div className="today-list">{rows.map((p) => renderRow(p, false, true))}</div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="today-list">
+            {shown.map((p) => renderRow(p))}
+          </div>
+        )
       )}
 
       {/* Started, waiting on a result. The same rows, dimmed, under their own
