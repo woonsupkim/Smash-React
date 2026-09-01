@@ -1,0 +1,145 @@
+/* The bench: today's card minus your picks. Quieter than the table beside it
+   on purpose - this is a list you scan, not one you work in. */
+.card-rail {
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 16px);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+/* Not sticky. The app scrolls on `body` rather than the document element, and
+   a sticky rail inside that never engaged - it needs a scroll container this
+   page does not have, and rebuilding the page's scrolling to pin a side list
+   is a poor trade. The list caps its own height instead, so a forty-match
+   Tuesday scrolls inside the rail rather than pushing the plan off screen. */
+
+/* The head, the filters and the footer never give up height: only the LIST
+   scrolls. Without this the flex column shrank them to fit the max-height and
+   the "On the bench" heading was quietly clipped off the top. */
+.card-rail-head,
+.card-rail-filters,
+.card-rail-check,
+.card-rail-all,
+.card-rail-note { flex: 0 0 auto; }
+
+.card-rail-cap {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+}
+.card-rail-sub {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-3, #7c8698);
+}
+
+.card-rail-filters {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.75rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+.card-rail-filters button {
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  color: var(--text-3, #7c8698);
+  background: transparent;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  cursor: pointer;
+}
+.card-rail-filters button:hover { color: var(--text-1, #fff); border-color: var(--border-2, rgba(255, 255, 255, 0.24)); }
+.card-rail-filters button:focus-visible { outline: 2px solid var(--accent-brand, #c8f560); outline-offset: 2px; }
+.card-rail-filters button.on {
+  color: var(--accent-brand, #c8f560);
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 12%, transparent);
+}
+
+.card-rail-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  color: var(--text-3, #7c8698);
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+.card-rail-check input { width: 14px; height: 14px; accent-color: var(--accent-brand, #c8f560); }
+
+.card-rail-list {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 60vh;
+}
+.card-rail-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.5rem 0.35rem;
+  border-bottom: 1px solid var(--border-1, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-sm, 8px);
+  cursor: grab;
+}
+.card-rail-item:last-child { border-bottom: none; }
+.card-rail-item:hover { background: rgba(255, 255, 255, 0.04); }
+.card-rail-item:active { cursor: grabbing; }
+.card-rail-tick input { width: 15px; height: 15px; accent-color: var(--accent-brand, #c8f560); cursor: pointer; }
+.card-rail-body { display: flex; flex-direction: column; min-width: 0; }
+.card-rail-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-1, #fff);
+}
+.card-rail-name a { color: inherit; text-decoration: none; }
+.card-rail-name a:hover { text-decoration: underline; }
+.card-rail-meta {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--text-3, #7c8698);
+}
+.card-rail-item.pass .card-rail-name a { color: var(--text-3, #7c8698); }
+.card-rail-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.14));
+  border-radius: 999px;
+  padding: 0.02rem 0.35rem;
+}
+
+.card-rail-all {
+  margin-top: 0.6rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  color: var(--text-3, #7c8698);
+  background: transparent;
+  border: 1px dashed var(--border-1, rgba(255, 255, 255, 0.18));
+  border-radius: var(--radius-md, 12px);
+  cursor: pointer;
+}
+.card-rail-all:hover { color: var(--text-1, #fff); border-color: var(--border-2, rgba(255, 255, 255, 0.3)); }
+.card-rail-note { margin: 0.6rem 0 0; font-size: 0.76rem; color: var(--text-3, #7c8698); }
+
+/* Stacked on narrow screens, and no longer sticky: a pinned rail on a phone
+   eats the screen the table needs. */
+@media (max-width: 900px) {
+  .card-rail-list { max-height: 260px; }
+}

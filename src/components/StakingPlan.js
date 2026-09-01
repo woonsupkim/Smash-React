@@ -57,7 +57,7 @@ function composition(p) {
 // refuses to claim a match and then funds it is saying two things at once.
 export default function StakingPlan({
   legs, graded = [], noCalls = [], onDrop = null, onPlanChange = null, riskSlot = null,
-  tourView = 'all', tourCounts = null, onTourView = null,
+  emptyPicks = false,
 }) {
   // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
   // the recommendation: it needs no input to be useful.
@@ -68,12 +68,10 @@ export default function StakingPlan({
   const [useParlay, setUseParlay] = useState(true); // master switch: singles only when off
   const [parlayStake, setParlayStake] = useState(0);
   const [budget, setBudget] = useState(100);
-  // How the table is VIEWED. The tour filter is NOT here: it narrows the card
-  // itself, so the page owns it and hands down an already-filtered `legs`.
-  // These two genuinely only move rows around - a pass is never staked, and
-  // the plan is keyed by match id rather than by row order - so neither can
-  // reach a number.
-  const [hidePasses, setHidePasses] = useState(false);
+  // How the table is ORDERED. Filtering left with the browsing: this table
+  // holds your picks and nothing else, so there is no longer a haystack in it
+  // to narrow. Sorting only moves rows around - the plan is keyed by match id,
+  // not by row order - so it can never reach a number.
   const [sortBy, setSortBy] = useState('prob');
 
   // What the user is allowed to stake, which is not the same as what the plan
@@ -257,7 +255,7 @@ export default function StakingPlan({
       ...legs.map((l) => ({ l, call: true })),
       ...noCalls.map((l) => ({ l, call: false })),
     ];
-    const shown = tagged.filter(({ call }) => !(hidePasses && !call));
+    const shown = tagged;
     const key = {
       prob: ({ l }) => l.favProb,
       odds: ({ l }) => oddsOf(l) || 0,
@@ -276,7 +274,7 @@ export default function StakingPlan({
     // entire purpose is the plan.
     return [...shown].sort((a, b) => (key(b) - key(a)) || (Number(b.call) - Number(a.call)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legs, noCalls, hidePasses, sortBy, oddsOverride, rel.lambda]);
+  }, [legs, noCalls, sortBy, oddsOverride, rel.lambda]);
 
   const anyPriced = legs.some((l) => oddsOf(l) > 1);
   const evClass = analysis.breakEven ? 'pos' : 'neg';
@@ -560,18 +558,6 @@ export default function StakingPlan({
       )}
 
       <div className="stake-filters">
-        {/* Tour scopes the CARD: the plan below is re-derived on whatever is
-            showing, so picking ATP prices an ATP plan rather than dimming
-            half a plan built on both. */}
-        {onTourView && tourCounts && (
-          <div className="stake-filter-set" role="group" aria-label="Tour">
-            {[['all', 'Both tours'], ['atp', `ATP (${tourCounts.atp})`], ['wta', `WTA (${tourCounts.wta})`]]
-              .map(([id, label]) => (
-                <button key={id} type="button" aria-pressed={tourView === id}
-                  className={tourView === id ? 'on' : ''} onClick={() => onTourView(id)}>{label}</button>
-              ))}
-          </div>
-        )}
         <div className="stake-filter-set" role="group" aria-label="Order by">
           <span className="stake-filter-cap">Order by</span>
           {[['prob', 'Our %'], ['odds', 'Odds'], ['edge', 'Edge']].map(([id, label]) => (
@@ -579,12 +565,9 @@ export default function StakingPlan({
               className={sortBy === id ? 'on' : ''} onClick={() => setSortBy(id)}>{label}</button>
           ))}
         </div>
-        {noCalls.length > 0 && (
-          <label className="stake-filter-check">
-            <input type="checkbox" checked={hidePasses} onChange={() => setHidePasses((v) => !v)} />
-            Hide the matches we do not call
-          </label>
-        )}
+        <span className="stake-filter-count">
+          {rows.length} {rows.length === 1 ? 'pick' : 'picks'}
+        </span>
       </div>
 
       <div className={`stake-table${useParlay ? '' : ' no-parlay'}${onDrop ? ' has-drop' : ''}`} role="table">
@@ -602,9 +585,9 @@ export default function StakingPlan({
         {rows.length === 0 && (
           <div className="stake-row stake-row-none" role="row">
             <span role="cell">
-              {legs.length === 0 && noCalls.length === 0
-                ? 'No matches on this tour today.'
-                : 'Every match here is one we would not call. Untick the box above to see them.'}
+              {emptyPicks
+                ? 'No picks yet. Drag a match across from the bench, or tick one.'
+                : 'Nothing on this tour is in your picks.'}
             </span>
           </div>
         )}
@@ -674,8 +657,8 @@ export default function StakingPlan({
               </span>
               {onDrop && (
                 <span className="stake-drop" role="cell">
-                  <button type="button" title={`Take ${lastName(l.favName)} off the card`}
-                    aria-label={`Remove ${lastName(l.favName)} from the card`}
+                  <button type="button" title={`Put ${lastName(l.favName)} back on the bench`}
+                    aria-label={`Remove ${lastName(l.favName)} from your picks`}
                     onClick={() => onDrop(l)}>&times;</button>
                 </span>
               )}

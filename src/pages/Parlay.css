@@ -190,3 +190,24 @@
   border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
   scroll-margin-top: 5rem;
 }
+
+/* Bench on the left, your picks on the right. The bench is fixed-width
+   because it is a list you scan; the plan takes the rest because it is where
+   the work happens. Stacks under 900px, bench first, so a phone still sees
+   what it can add before the table telling it what that costs. */
+.parlay-work {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 1.2rem;
+}
+.parlay-plan { min-width: 0; }
+/* Only a real match drag lights this up: the handler checks the payload type
+   before it calls preventDefault, so dragging a file or a link over the page
+   is not offered a drop it cannot honour. */
+.parlay-plan:has(.stake-plan) { border-radius: var(--radius-lg, 16px); }
+
+@media (max-width: 900px) {
+  .parlay-work { grid-template-columns: minmax(0, 1fr); gap: 1.1rem; }
+}

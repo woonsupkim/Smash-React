@@ -20,11 +20,12 @@
 // When the market's price is longer than ours, the market rates our picks
 // worse than we do. That is the same disagreement The Edge grades all
 // season, priced per selection instead of per match.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import RiskLab from '../components/RiskLab';
+import CardRail, { DRAG_TYPE } from '../components/CardRail';
 import useTodayCard, { legKey } from '../utils/useTodayCard';
 import DigestSignup from '../components/DigestSignup';
 import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
@@ -99,7 +100,7 @@ export default function Parlay() {
     "Risk Lab · Today's Calls | Smash",
     "How much to stake on today's calls, and what that plan does to your budget: the spread of outcomes, how often a bad day arrives, and whether you are betting past the size that grows a bankroll rather than shrinking it."
   );
-  const { all, legs, noCalls, graded, awaiting, dropped, setDropped, toggle, restore } = useTodayCard();
+  const { all, legs, noCalls, graded, awaiting } = useTodayCard();
 
   // Whatever the staking plan currently has on its table, published upward so
   // the risk lab below describes THIS plan. One allocation on the page, read
@@ -111,6 +112,18 @@ export default function Parlay() {
   // re-derived on whatever is showing, and the risk read follows the plan. A
   // control that scopes the money has to sit with the thing it scopes.
   const [tourView, setTourView] = useState('all');
+  const [hidePasses, setHidePasses] = useState(false);
+
+  // YOUR PICKS, by match id. The table prices these and nothing else.
+  //
+  // The selection used to run the other way: the whole card was in and you
+  // took matches out, which on a slam Tuesday meant the four matches you were
+  // working on sat inside forty you were not. Picks invert that, and the page
+  // lands on the recommendation's own choices so it is useful before you
+  // touch anything. `null` means not seeded yet, which is different from an
+  // empty selection.
+  const [picked, setPicked] = useState(null);
+  const seeded = useRef(false);
   const viewLegs = useMemo(
     () => legs.filter((l) => tourView === 'all' || l.tour === tourView),
     [legs, tourView]
@@ -119,6 +132,59 @@ export default function Parlay() {
     () => noCalls.filter((l) => tourView === 'all' || l.tour === tourView),
     [noCalls, tourView]
   );
+  // Seeded once, from the recommendation over the WHOLE card. Running it here
+  // rather than reading it back out of the table avoids a circle: the table
+  // prices the picks, so the picks cannot come from the table's own plan.
+  useEffect(() => {
+    if (seeded.current || !legs.length) return;
+    seeded.current = true;
+    const rel = reliability(graded);
+    const odds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2) || 0;
+    const bets = legs
+      .map((l) => ({ key: l.id, p: l.favProb, o: odds(l) }))
+      .filter((b) => b.o > 1 && b.p > 0);
+    let ids = [];
+    try {
+      const f = planFrontier(bets, PLAN_BUDGET, { lambda: rel.lambda });
+      const rec = f.plans.find((pl) => pl.id === f.recommendedId) || f.plans[0];
+      if (rec) {
+        ids = [...new Set([
+          ...Object.entries(rec.singles || {}).filter(([, v]) => v > 0).map(([k]) => k),
+          ...(rec.parlayLegs || []),
+        ])];
+      }
+    } catch { /* fall through to the whole card */ }
+    // Nothing worth backing today still has to leave something on screen, or
+    // the page arrives empty and looks broken rather than cautious.
+    setPicked(new Set(ids.length ? ids : legs.map((l) => l.id)));
+  }, [legs, graded]);
+
+  const isPicked = (l) => !!picked && picked.has(l.id);
+  const split = (rows) => {
+    const inPicks = (l) => !!picked && picked.has(l.id);
+    return [rows.filter(inPicks), rows.filter((l) => !inPicks(l))];
+  };
+  const [pickedLegs, benchLegs] = useMemo(() => split(viewLegs),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewLegs, picked]);
+  const [pickedNoCalls, benchNoCalls] = useMemo(() => split(viewNoCalls),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewNoCalls, picked]);
+
+  const togglePick = (l) => setPicked((prev) => {
+    const next = new Set(prev || []);
+    if (next.has(l.id)) next.delete(l.id); else next.add(l.id);
+    return next;
+  });
+  const pickAll = () => setPicked(new Set([...viewLegs, ...viewNoCalls].map((l) => l.id)));
+  // A drop carries a match id. Anything else on the card is ignored rather
+  // than trusted: the payload comes from the DOM and this is the only place
+  // that acts on it.
+  const pickById = (id) => {
+    const l = [...legs, ...noCalls].find((x) => x.id === id);
+    if (l && !isPicked(l)) togglePick(l);
+  };
+
   const tourCounts = useMemo(() => {
     const both = [...legs, ...noCalls];
     return {
@@ -319,7 +385,7 @@ export default function Parlay() {
   // set gets dropped.
   const applySuggestion = (keys) => {
     const keep = new Set(keys);
-    setDropped(new Set((all || []).map(legKey).filter((k) => !keep.has(k))));
+    setPicked(new Set((all || []).filter((l) => keep.has(legKey(l))).map((l) => l.id)));
     // Scroll the plan back into view. The chips sit BELOW the plan they
     // rewrite, so clicking one changed the page above the reader's viewport
     // and looked, from where they were sitting, like nothing had happened.
@@ -337,10 +403,10 @@ export default function Parlay() {
   // this a chip gives no sign it is the one in force, and a chip that would
   // change nothing still looks like a live control.
   const activeSuggestionId = useMemo(() => {
-    const inSlip = new Set(legs.map(legKey));
+    const inSlip = new Set(pickedLegs.map(legKey));
     const same = (keys) => keys.length === inSlip.size && keys.every((k) => inSlip.has(k));
     return (suggestions.find((s) => same(s.keys)) || {}).id || null;
-  }, [legs, suggestions]);
+  }, [pickedLegs, suggestions]);
 
   return (
     <div className={`page-background ${surfaceBgClass()}`}>
@@ -410,30 +476,43 @@ export default function Parlay() {
 
       {all && all.length > 0 && (
         <>
-          {/* Everything is in by default, so an empty slip means you took the
-              last leg out - offer the way back rather than a generic prompt. */}
-          {legs.length === 0 && (
-            <p className="parlay-slip-empty">
-              You've taken every leg out, so there's nothing left to price.{' '}
-              <button type="button" className="parlay-restore" onClick={restore}>
-                Put today's {all.length} calls back
-              </button>
-            </p>
-          )}
-
-          {/* ONE table, not two. There used to be a checkbox list of the same
-              calls above this, which meant every match was on screen twice and
-              you picked in one place then priced in another. The staking plan
-              already names every leg, so it took over the dropping too. */}
+          {/* Two surfaces, because browsing a card and pricing a slip are two
+              jobs. The bench on the left is the day; the table on the right is
+              your picks and nothing else. They were one list for a long time,
+              which meant the four matches you were working on sat inside the
+              forty you were not. */}
           {legs.length > 0 && (
-            <StakingPlan legs={viewLegs} graded={graded} noCalls={viewNoCalls}
-              tourView={tourView} tourCounts={tourCounts} onTourView={setTourView}
-              onDrop={toggle} onPlanChange={setPlan}
-              riskSlot={(
-                <div className="parlay-risk" id="risk">
-                  <RiskLab legs={viewLegs} graded={graded} noCalls={viewNoCalls} plan={plan} />
-                </div>
-              )} />
+            <div className="parlay-work">
+              <CardRail
+                legs={benchLegs} noCalls={benchNoCalls}
+                picked={pickedLegs.length + pickedNoCalls.length}
+                onPick={togglePick} onPickAll={pickAll}
+                tourView={tourView} tourCounts={tourCounts} onTourView={setTourView}
+                hidePasses={hidePasses} onHidePasses={setHidePasses} />
+
+              <div className="parlay-plan"
+                onDragOver={(e) => {
+                  if (e.dataTransfer.types.includes(DRAG_TYPE)) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                  }
+                }}
+                onDrop={(e) => {
+                  const id = e.dataTransfer.getData(DRAG_TYPE);
+                  if (!id) return;
+                  e.preventDefault();
+                  pickById(id);
+                }}>
+                <StakingPlan legs={pickedLegs} graded={graded} noCalls={pickedNoCalls}
+                  onDrop={togglePick} onPlanChange={setPlan}
+                  emptyPicks={pickedLegs.length + pickedNoCalls.length === 0}
+                  riskSlot={(
+                    <div className="parlay-risk" id="risk">
+                      <RiskLab legs={pickedLegs} graded={graded} noCalls={pickedNoCalls} plan={plan} />
+                    </div>
+                  )} />
+              </div>
+            </div>
           )}
 
           {/* The conversion point that actually makes sense on this page: the
@@ -463,10 +542,10 @@ export default function Parlay() {
                     </button>
                   );
                 })}
-                {dropped.size > 0 && (
-                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={restore}>
-                    <span className="parlay-chip-title">All {all.length} back</span>
-                    <span className="parlay-chip-sub">put today's whole card in</span>
+                {benchLegs.length + benchNoCalls.length > 0 && (
+                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={pickAll}>
+                    <span className="parlay-chip-title">Everything today</span>
+                    <span className="parlay-chip-sub">put the whole card in your picks</span>
                   </button>
                 )}
               </div>

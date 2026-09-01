@@ -140,80 +140,87 @@ test('/parlay still resolves, for every link already published', async ({ page }
   expect(errors).toEqual([]);
 });
 
-test('the card table shows the whole day, and each control scopes exactly what it claims to', async ({ page }) => {
+test('the table holds your picks, the bench holds the rest, and together they are the card', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
   if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
 
-  const rows = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay)');
-  const passes = page.locator('.stake-row.pass');
-  const total = await rows.count();
-  expect(total).toBeGreaterThan(0);
+  const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
+  const bench = page.locator('.card-rail-item');
+  const nPicks = await picks.count();
+  const nBench = await bench.count();
 
-  // THE INVARIANT. Passes are on the table because the card is the card, and
-  // they are never staked, never priced, never in a single number above. If
-  // hiding them can move the exposure figure, a match we refuse to call has
-  // found its way into the plan. (Tour is different, and checked below: that
-  // one is meant to re-price.)
-  const exposure = async () => page.locator('.risk-exposure-cap').innerText();
-  const before = await exposure();
+  // The landing state is the recommendation's own choices, so the page is
+  // useful before anyone touches it. Nothing else is in the table.
+  expect(nPicks).toBeGreaterThan(0);
+  const card = nPicks + nBench;
 
-  const hide = page.getByText('Hide the matches we do not call');
-  if (await hide.count() > 0) {
-    expect(await passes.count()).toBeGreaterThan(0);
-    // Every pass reads "no call" and offers nothing to stake.
-    await expect(passes.first().locator('.stake-pass-tag')).toBeVisible();
-    await expect(passes.first().locator('input[type="checkbox"]')).toBeDisabled();
+  // Ticking a bench item moves it across. Both surfaces have to move, or one
+  // of them is lying about what is in the slip.
+  if (nBench > 0) {
+    await bench.first().locator('input[type="checkbox"]').click();
+    await expect(picks).toHaveCount(nPicks + 1);
+    await expect(bench).toHaveCount(nBench - 1);
 
-    await hide.click();
-    await expect(passes).toHaveCount(0);
-    expect(await exposure()).toBe(before);
-    await hide.click();
-    await expect(passes).toHaveCount(await passes.count());
+    // And the x sends it back rather than deleting it from the day.
+    await page.locator('.stake-drop button').first().click();
+    await expect(picks).toHaveCount(nPicks);
+    await expect(bench).toHaveCount(nBench);
   }
 
-  // Tour is the one control that DOES scope the plan: picking a tour prices
-  // a plan on that tour rather than dimming half a plan built on both. The
-  // exposure has to follow it, and the two tours have to add up to the whole
-  // card rather than quietly dropping matches between them.
+  // Nothing is lost between the two: picks plus bench is always the card.
+  expect((await picks.count()) + (await bench.count())).toBe(card);
+
+  // Ordering applies to the picks and moves nothing else. Bigger first.
+  await page.getByRole('button', { name: 'Our %', exact: true }).click();
+  const probs = (await picks.locator('.stake-pick em').allInnerTexts())
+    .map((t) => parseFloat((t.match(/([\d.]+)%/) || [])[1]));
+  for (let i = 1; i < probs.length; i++) expect(probs[i]).toBeLessThanOrEqual(probs[i - 1] + 1e-9);
+
+  // Every row says when it starts, on both surfaces.
+  for (const sel of [picks.locator('.stake-pick em'), bench.locator('.card-rail-meta')]) {
+    for (const t of await sel.allInnerTexts()) expect(t).toMatch(/(\d{1,2}:\d{2}\s?(AM|PM)|time TBD)/);
+  }
+
+  expect(errors).toEqual([]);
+});
+
+test('the tour filter scopes the card, and the plan with it', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+
+  const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
+  const bench = page.locator('.card-rail-item');
+  const total = (await picks.count()) + (await bench.count());
+  // Count first. Filtering to a tour can legitimately empty the picks, and
+  // then the lab does not render at all - innerText() on a missing element
+  // waits out the full timeout rather than failing fast, which read as the
+  // click having hung.
+  const exposure = async () => {
+    const el = page.locator('.risk-exposure-cap');
+    return (await el.count()) ? el.innerText() : '';
+  };
+  const before = await exposure();
+
+  // Tour is the one control that re-prices: picking a tour prices a plan on
+  // that tour rather than dimming half a plan built on both. The two tours
+  // account for the whole card between them. A tour holding none of your
+  // picks correctly prices nothing, so the exposure can be blank there.
   let partition = 0;
   const perTour = [];
   for (const t of [/^ATP/, /^WTA/]) {
-    await page.getByRole('button', { name: t }).click();
-    const n = await rows.count();
-    partition += n;
-    expect(n).toBeLessThanOrEqual(total);
-    perTour.push(await page.locator('.risk-exposure-cap').innerText().catch(() => ''));
+    await page.locator('.card-rail-filters').getByRole('button', { name: t }).click();
+    partition += (await picks.count()) + (await bench.count());
+    perTour.push(await exposure());
   }
-  // The two tours account for the whole card between them, and at least one
-  // of them prices differently from the pair. Asserted this way round rather
-  // than "each tour must differ": a tour whose share of the card carries no
-  // qualifying bet correctly stakes nothing, and demanding a different figure
-  // there would be demanding the plan invent one.
   expect(partition).toBe(total);
   if (total > 1) expect(perTour.some((x) => x !== before)).toBe(true);
-  await page.getByRole('button', { name: 'Both tours' }).click();
-  await expect(rows).toHaveCount(total);
-  expect(await exposure()).toBe(before);
 
-  // Every row says when it starts. A plan for today is a plan for a running
-  // clock, and half these matches are over by dinner.
-  const metas = await rows.locator('.stake-pick em').allInnerTexts();
-  for (const m of metas) expect(m).toMatch(/(\d{1,2}:\d{2}\s?(AM|PM)|time TBD)/);
-
-  // Each ordering has to actually order by what it names, descending.
-  const read = (sel) => rows.locator(sel).allInnerTexts();
-  await page.getByRole('button', { name: 'Our %', exact: true }).click();
-  const probs = (await read('.stake-pick em')).map((t) => parseFloat((t.match(/([\d.]+)%/) || [])[1]));
-  for (let i = 1; i < probs.length; i++) expect(probs[i]).toBeLessThanOrEqual(probs[i - 1] + 1e-9);
-
-  await page.getByRole('button', { name: 'Edge', exact: true }).click();
-  // A pass has no edge to rank by, so it must sink rather than head a table
-  // sorted by a number its own row refuses to print.
-  const edgeRows = await rows.evaluateAll((els) => els.map((e) => e.classList.contains('pass')));
-  const firstPass = edgeRows.indexOf(true);
-  if (firstPass >= 0) expect(edgeRows.slice(firstPass).every(Boolean)).toBe(true);
+  await page.locator('.card-rail-filters').getByRole('button', { name: 'Both' }).click();
+  expect((await picks.count()) + (await bench.count())).toBe(total);
 
   expect(errors).toEqual([]);
 });
@@ -247,8 +254,14 @@ test('custom mode prices the matches we would not call, and the plan still will 
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
   if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  // The recommendation never funds a match we declined to call, so none is in
+  // the picks on arrival. Bring one across from the bench first.
+  const benchPass = page.locator('.card-rail-item.pass').first();
+  if (await benchPass.count() === 0) { expect(errors).toEqual([]); return; }
+  await benchPass.locator('input[type="checkbox"]').click();
+
   const pass = page.locator('.stake-row.pass').first();
-  if (await pass.count() === 0) { expect(errors).toEqual([]); return; }
+  await expect(pass).toBeVisible();
 
   // Recommended: no edge figure, nothing to stake. Our probability on a coin
   // flip is the number we have just said we do not trust.
@@ -268,6 +281,43 @@ test('custom mode prices the matches we would not call, and the plan still will 
   const before = await page.locator('.risk-exposure-cap').innerText();
   await pass.locator('.stake-single input').fill('12');
   await expect(page.locator('.risk-exposure-cap')).not.toHaveText(before);
+
+  expect(errors).toEqual([]);
+});
+
+test('dragging a match from the bench adds it to the picks', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+
+  const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
+  const bench = page.locator('.card-rail-item');
+  const n = await picks.count();
+  if (await bench.count() === 0) { expect(errors).toEqual([]); return; }
+
+  // Real DragEvents with a real DataTransfer, dispatched at the elements.
+  // Playwright's synthesized mouse cannot drive Chromium's native drag loop -
+  // dragstart fires and no dragover ever reaches the drop zone - so a mouse
+  // drag here would prove nothing about this code either way. This exercises
+  // the parts we own: the payload the rail puts on the wire, the drop zone
+  // accepting it, and the match moving across.
+  const wire = await page.evaluate(() => {
+    const item = document.querySelector('.card-rail-item');
+    const zone = document.querySelector('.stake-table');
+    const dt = new DataTransfer();
+    item.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    const over = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt });
+    zone.dispatchEvent(over);
+    zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    return { types: [...dt.types], accepted: over.defaultPrevented };
+  });
+
+  // The drop zone must say yes, or the browser shows a "no entry" cursor and
+  // silently drops nothing.
+  expect(wire.accepted).toBe(true);
+  expect(wire.types).toContain('application/x-smash-match');
+  await expect(picks).toHaveCount(n + 1);
 
   expect(errors).toEqual([]);
 });

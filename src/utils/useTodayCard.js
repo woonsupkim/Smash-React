@@ -27,9 +27,6 @@ export default function useTodayCard() {
   // the same bets rather than two versions of them.
   const [graded, setGraded] = useState([]);
   const [awaiting, setAwaiting] = useState(0);
-  // Everything is in by default and you take legs OUT: a page that starts
-  // empty makes you click N times before it can tell you anything.
-  const [dropped, setDropped] = useState(() => new Set());
 
   useEffect(() => {
     let live = true;
@@ -55,29 +52,13 @@ export default function useTodayCard() {
     return () => { live = false; };
   }, []);
 
-  const legs = useMemo(
-    () => (all || []).filter((p) => !dropped.has(legKey(p))),
-    [all, dropped]
-  );
+  // The whole day, both lists, unfiltered. Which of them a reader has picked
+  // is the page's business, not this hook's: the selection model changed from
+  // "everything is in, take legs out" to "these are my picks, the rest is on
+  // the bench", and a loader that also owned a dropped-set would have had to
+  // change with it. It loads the card. That is all it does.
+  const legs = useMemo(() => all || [], [all]);
+  const noCalls = useMemo(() => passes, [passes]);
 
-  // Droppable on the same terms as everything else on the card: a reader
-  // clearing matches they will not watch should not have one stick around
-  // just because we declined to call it.
-  const noCalls = useMemo(
-    () => passes.filter((p) => !dropped.has(legKey(p))),
-    [passes, dropped]
-  );
-
-  const toggle = (l) => setDropped((prev) => {
-    const next = new Set(prev);
-    const k = legKey(l);
-    if (next.has(k)) next.delete(k); else next.add(k);
-    return next;
-  });
-
-  const restore = () => setDropped(new Set());
-
-  // setDropped is exposed for the builder's "narrow the card to these"
-  // suggestions, which replace the whole selection rather than nudging it.
-  return { all, legs, noCalls, graded, awaiting, dropped, setDropped, toggle, restore };
+  return { all, legs, noCalls, graded, awaiting };
 }
