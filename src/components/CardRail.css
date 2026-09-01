@@ -146,3 +146,99 @@
   .card-rail { position: static; max-height: none; }
   .card-rail-list { max-height: 260px; }
 }
+
+/* The add control. The stock checkbox rendered as a white square - the
+   brightest object on a dark page, and attached to something that can never
+   actually show as checked, since the row leaves the bench when you use it.
+   A plus reads as "add", which is what it does. */
+.card-rail-tick { position: relative; display: block; width: 20px; height: 20px; }
+.card-rail-tick input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.card-rail-plus {
+  /* Decorative. The input underneath owns the interaction, and without this
+     the span sits on top of it and swallows the click - the <label> still
+     forwards a real user's tap, but nothing can reach the control directly,
+     which is a fragile way to be correct. */
+  pointer-events: none;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.18));
+  border-radius: 6px;
+  background: transparent;
+  position: relative;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.card-rail-plus::before,
+.card-rail-plus::after {
+  content: '';
+  position: absolute;
+  background: var(--text-3, #7c8698);
+  border-radius: 1px;
+  transition: background 0.12s ease;
+}
+.card-rail-plus::before { left: 5px; right: 5px; top: 9px; height: 2px; }
+.card-rail-plus::after { top: 5px; bottom: 5px; left: 9px; width: 2px; }
+.card-rail-item:hover .card-rail-plus,
+.card-rail-tick input:focus-visible + .card-rail-plus {
+  border-color: var(--accent-brand, #c8f560);
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 14%, transparent);
+}
+.card-rail-item:hover .card-rail-plus::before,
+.card-rail-item:hover .card-rail-plus::after,
+.card-rail-tick input:focus-visible + .card-rail-plus::before,
+.card-rail-tick input:focus-visible + .card-rail-plus::after {
+  background: var(--accent-brand, #c8f560);
+}
+.card-rail-tick input:focus-visible + .card-rail-plus {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 2px;
+}
+
+/* Recommended mode: the plan owns the selection, so the bench is a list to
+   read rather than one to act on. */
+.card-rail-item.locked { cursor: default; }
+.card-rail-item.locked:hover { background: none; }
+.card-rail-item.locked .card-rail-tick { visibility: hidden; }
+
+/* The other checkbox on this panel, matched to the same language. */
+/* The panel's other checkbox, matched to the same language as the table's. */
+.card-rail-check input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.2));
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  position: relative;
+}
+.card-rail-check input:hover { border-color: var(--accent-brand, #c8f560); }
+.card-rail-check input:checked {
+  background: var(--accent-brand, #c8f560);
+  border-color: var(--accent-brand, #c8f560);
+}
+.card-rail-check input:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid #0b0d10;
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+.card-rail-check input:focus-visible {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 2px;
+}

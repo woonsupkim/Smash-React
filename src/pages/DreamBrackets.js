@@ -284,6 +284,9 @@ export default function DreamBrackets({ tour = 'atp' }) {
   const [playersPool, setPlayersPool] = useState([]);
   const [simsPerMatch, setSimsPerMatch] = useState(DEFAULT_SIMS_PER_MATCHUP);
   const [isImporting, setIsImporting] = useState(false);
+  // The slam in progress for this tour, if any. Drives whether the live-draw
+  // button is offered at all.
+  const [liveSlam, setLiveSlam] = useState(null);
   // Prediction engine drives every matchup (see src/engines.js). The Hot
   // Streak engine loads the heavy-recency 7-day CSV; the others use the
   // season CSV and blend in Elo/ranking.
@@ -835,6 +838,102 @@ export default function DreamBrackets({ tour = 'atp' }) {
     runEspnImport(espnUrl.trim());
   };
 
+  // Fill the bracket from the slam that is actually being played.
+  //
+  // The ESPN import already existed but needs a pasted link, and it reaches
+  // out through a proxy that ESPN can rate-limit or reshape at any time. The
+  // live draw is data this app already builds and ships: title_odds.json
+  // carries `draw.field`, the real bracket in draw order, and it is refreshed
+  // on the same cadence as everything else. During a slam that is a better
+  // source than a screen-scrape of the same tournament.
+  //
+  // The field shrinks as the event progresses, so it is only ever reduced,
+  // never padded. When it is larger than the chosen stage - a 128 draw against
+  // a 64-slot bracket - each contiguous section of the draw contributes its
+  // highest-ranked survivor, which keeps every quarter represented and is the
+  // same projection the Draw page's simulation makes. Inventing entrants to
+  // fill a bracket whose whole point is choosing them would be worse than
+  // saying the stage does not fit.
+  useEffect(() => {
+    let live = true;
+    fetch(process.env.PUBLIC_URL + '/data/title_odds.json')
+      .then((r) => r.json())
+      .then((j) => {
+        if (!live) return;
+        const e = j?.events?.[tour];
+        setLiveSlam(e && e.status === 'live' && (e.draw?.field || []).length ? e : null);
+      })
+      .catch(() => { if (live) setLiveSlam(null); });
+    return () => { live = false; };
+  }, [tour]);
+
+  const runLiveDrawImport = async () => {
+    setIsImporting(true);
+    try {
+      const res = await fetch(process.env.PUBLIC_URL + '/data/title_odds.json');
+      if (!res.ok) throw new Error(`title odds returned ${res.status}`);
+      const json = await res.json();
+      const entry = json?.events?.[tour];
+      if (!entry || entry.status !== 'live') {
+        throw new Error('No grand slam is being played right now. This fills from the live draw.');
+      }
+      const field = entry.draw?.field || [];
+      if (field.length < stageConfig.slots) {
+        throw new Error(
+          `${entry.event} is down to ${field.length} players, fewer than this bracket's ${stageConfig.slots} slots. `
+          + 'Pick a later round.'
+        );
+      }
+      // One survivor per section, highest rank first. `rank` is missing on
+      // qualifiers, so those sink rather than winning a section by accident.
+      const per = field.length / stageConfig.slots;
+      const names = [];
+      for (let i = 0; i < stageConfig.slots; i++) {
+        const section = field.slice(i * per, (i + 1) * per);
+        const best = section.reduce(
+          (a, b) => ((Number(b.rank) || 9999) < (Number(a.rank) || 9999) ? b : a),
+          section[0]
+        );
+        names.push(best?.name);
+      }
+
+      const csvFile = (TOURNAMENTS.find((t) => t.surfaceKey === entry.surface) || {}).value;
+      const targetPool = await new Promise((resolve) => {
+        Papa.parse(process.env.PUBLIC_URL + dataDir + '/' + (csvFile || tournament), {
+          header: true,
+          download: true,
+          complete: ({ data: rows }) => {
+            resolve(rows.filter((r) => Number(r.us_rd) === 2).map((r) => ({
+              ...r,
+              probabilities: [Number(r.p1), Number(r.p2), Number(r.p3), Number(r.p4), Number(r.p5), Number(r.p6) || 0],
+            })));
+          },
+        });
+      });
+
+      const matched = names.map((name) => (name ? matchPlayerByName(name, targetPool) : null));
+      const matchedCount = matched.filter(Boolean).length;
+      if (!matchedCount) {
+        throw new Error('Could not match any of the draw to our roster.');
+      }
+
+      if (csvFile && csvFile !== tournament) setTournament(csvFile);
+      setSlots(matched);
+      setRounds([]);
+      setProgress(0);
+      const note = per > 1
+        ? `${entry.event}: the ${field.length}-player draw reduced to ${stageConfig.slots}, top seed per section.`
+        : `${entry.event}: the live ${field.length}-player draw, in bracket order.`;
+      toast(matchedCount < stageConfig.slots
+        ? { type: 'warning', title: `Filled ${matchedCount}/${stageConfig.slots} slots`, message: `${note} The rest are not on our roster.`, duration: 7000 }
+        : { type: 'success', title: 'Bracket filled from the live draw', message: note });
+    } catch (err) {
+      toast({ type: 'error', title: 'Could not fill from the draw', message: err.message, duration: 7000 });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const runEspnImport = async (url) => {
     const parsed = parseEspnUrl(url);
     if (!parsed) {
@@ -1107,6 +1206,18 @@ export default function DreamBrackets({ tour = 'atp' }) {
             )}
             <div className="bracket-actions-secondary">
               <Button variant="outline-light" size="sm" onClick={handleRandomizeAll} disabled={isRunning || fieldLocked}>Random fill</Button>
+              {/* Only offered while a slam is actually being played: a button
+                  that fills from "the live draw" when nothing is live is a
+                  button that exists to disappoint. */}
+              {liveSlam && (
+                <Button variant="outline-light" size="sm" onClick={runLiveDrawImport}
+                  disabled={isRunning || isImporting || fieldLocked}
+                  title={`Fill this bracket from the ${liveSlam.event} draw`}>
+                  {isImporting
+                    ? <><Spinner animation="border" size="sm" /> Filling…</>
+                    : <><ClipboardList size={14} style={{ marginRight: 5, verticalAlign: -2 }} />Live draw</>}
+                </Button>
+              )}
               <Button variant="outline-light" size="sm" onClick={handleEspnImport} disabled={isRunning || isImporting || fieldLocked} title="Paste an ESPN bracket link to auto-fill players">
                 {isImporting ? <><Spinner animation="border" size="sm" /> Importing…</> : <><ClipboardList size={14} style={{ marginRight: 5, verticalAlign: -2 }} />ESPN</>}
               </Button>

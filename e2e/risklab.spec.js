@@ -165,9 +165,19 @@ test('the table holds your picks, the bench holds the rest, and together they ar
   expect(nPicks).toBeGreaterThan(0);
   const card = nPicks + nBench;
 
-  // Ticking a bench item moves it across. Both surfaces have to move, or one
-  // of them is lying about what is in the slip.
+  // In Recommended the plan owns the selection, so the bench is a list to
+  // read rather than one to act on: a control that edits a choice the next
+  // recommendation is about to overwrite is a trap.
   if (nBench > 0) {
+    await expect(bench.first()).toHaveClass(/locked/);
+    await expect(bench.first().locator('input[type="checkbox"]')).toBeDisabled();
+  }
+
+  // Ticking a bench item in Custom moves it across. Both surfaces have to
+  // move, or one of them is lying about what is in the slip.
+  await page.getByRole('tab', { name: 'Custom' }).click();
+  if (nBench > 0) {
+    await expect(bench.first()).not.toHaveClass(/locked/);
     await bench.first().locator('input[type="checkbox"]').click();
     await expect(picks).toHaveCount(nPicks + 1);
     await expect(bench).toHaveCount(nBench - 1);
@@ -264,13 +274,18 @@ test('custom mode prices the matches we would not call, and the plan still will 
   await page.goto('/risk');
   if (await skipUnlessPriced(page, errors)) return;
   // The recommendation never funds a match we declined to call, so none is in
-  // the picks on arrival. Bring one across from the bench first.
+  // the picks on arrival, and the bench only accepts picks in Custom. Switch
+  // first, bring one across, then step back to Recommended to check what it
+  // says about a pass it did not choose.
   const benchPass = page.locator('.card-rail-item.pass').first();
   if (await benchPass.count() === 0) { expect(errors).toEqual([]); return; }
+  await page.getByRole('tab', { name: 'Custom' }).click();
   await benchPass.locator('input[type="checkbox"]').click();
 
   const pass = page.locator('.stake-row.pass').first();
   await expect(pass).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Recommended' }).click();
 
   // Recommended: no edge figure, nothing to stake. Our probability on a coin
   // flip is the number we have just said we do not trust.
@@ -302,8 +317,11 @@ test('dragging a match from the bench adds it to the picks', async ({ page }) =>
 
   const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
   const bench = page.locator('.card-rail-item');
-  const n = await picks.count();
   if (await bench.count() === 0) { expect(errors).toEqual([]); return; }
+  // Dragging is a Custom gesture: in Recommended the drop zone refuses, so
+  // the bench cannot edit a selection the plan is about to rewrite.
+  await page.getByRole('tab', { name: 'Custom' }).click();
+  const n = await picks.count();
 
   // Real DragEvents with a real DataTransfer, dispatched at the elements.
   // Playwright's synthesized mouse cannot drive Chromium's native drag loop -

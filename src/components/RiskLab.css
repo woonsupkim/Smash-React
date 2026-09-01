@@ -246,9 +246,16 @@
    only sees the first column should still see what they stand to make. */
 .risk-two-up {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem 2rem;
+  /* Two columns, always, until the screen genuinely cannot hold them. This
+     was auto-fit at minmax(280px), which needs 592px to seat a pair - and the
+     plan column is 548px once the bench takes its share, so the two ladders
+     silently stacked and the panel grew by the height of one of them. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
   margin-top: 1.2rem;
+}
+@media (max-width: 560px) {
+  .risk-two-up { grid-template-columns: minmax(0, 1fr); }
 }
 .risk-two-up .risk-chart-block { margin: 0; }
 .risk-two-up .risk-ladder { margin-top: 0.4rem; }

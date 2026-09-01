@@ -427,3 +427,61 @@
   font-weight: 700;
   color: var(--text-3, #7c8698);
 }
+
+/* Checkboxes, in the app's own language rather than the browser's.
+   The stock control paints a white or grey square, which on a dark table is
+   the brightest thing in the row and draws the eye to the least important
+   column in it. Same shape and accent as the bench's add control, so the two
+   surfaces read as one product. */
+.stake-inpar input[type="checkbox"],
+.stake-parlay-master input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--border-1, rgba(255, 255, 255, 0.2));
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.stake-inpar input[type="checkbox"]:hover:not(:disabled),
+.stake-parlay-master input[type="checkbox"]:hover:not(:disabled) {
+  border-color: var(--accent-brand, #c8f560);
+}
+.stake-inpar input[type="checkbox"]:checked,
+.stake-parlay-master input[type="checkbox"]:checked {
+  background: var(--accent-brand, #c8f560);
+  border-color: var(--accent-brand, #c8f560);
+}
+/* The tick, drawn rather than borrowed: a glyph would inherit the page font
+   and shift between platforms. */
+.stake-inpar input[type="checkbox"]:checked::after,
+.stake-parlay-master input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #0b0d10;
+  border-width: 0 2px 2px 0;
+  transform: rotate(42deg);
+}
+.stake-inpar input[type="checkbox"]:focus-visible,
+.stake-parlay-master input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 2px;
+}
+/* Disabled reads as "not yours to set" without going invisible: in
+   Recommended the box reports the plan's choice rather than driving it. */
+.stake-inpar input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.stake-inpar input[type="checkbox"]:disabled:checked {
+  background: color-mix(in srgb, var(--accent-brand, #c8f560) 55%, transparent);
+  border-color: transparent;
+}

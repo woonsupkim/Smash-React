@@ -185,11 +185,15 @@
    answer, not a related module, and boxing it would put it at the same level
    as the sign-up band. */
 .parlay-risk {
-  margin-top: 2.2rem;
-  padding-top: 1.6rem;
+  /* One separator, not three. This carried a margin and a padding of its own
+     while .risk-lab added a third underneath, stacking to 68px of dead space
+     between the picks and the panel that describes them. */
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
   scroll-margin-top: 5rem;
 }
+.parlay-risk .risk-lab { margin-top: 0; }
 
 /* Bench on the left, your picks on the right. The bench is fixed-width
    because it is a list you scan; the plan takes the rest because it is where

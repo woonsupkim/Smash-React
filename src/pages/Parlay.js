@@ -26,9 +26,8 @@ import useDocMeta from '../utils/useDocMeta';
 import StakingPlan from '../components/StakingPlan';
 import RiskLab from '../components/RiskLab';
 import CardRail, { DRAG_TYPE } from '../components/CardRail';
-import useTodayCard, { legKey } from '../utils/useTodayCard';
+import useTodayCard from '../utils/useTodayCard';
 import DigestSignup from '../components/DigestSignup';
-import { GAP_FLOOR, GAP_CEIL, BAND } from '../utils/marketGap';
 import { planFrontier, reliability } from '../utils/staking';
 import { surfaceBgClass } from '../utils/surfaceBg';
 import './Parlay.css';
@@ -77,14 +76,6 @@ function PlanCurve({ values, market }) {
 
 // The market's own view of our pick, with the bookmaker's margin divided
 // out - the like-for-like comparison against our probability (same
-// vig-stripping as the Edge board).
-function marketProb(p) {
-  if (!(p.lockOdd1 > 1) || !(p.lockOdd2 > 1)) return null;
-  const q1 = 1 / p.lockOdd1, q2 = 1 / p.lockOdd2;
-  const share = (p.favorite === p.p1 ? q1 : q2) / (q1 + q2);
-  return share;
-}
-const pct = (v) => `${Math.round(v * 100)}%`;
 // Return as a share of money staked. The dollar figure alone is unreadable
 // without the stake beside it: the plan deliberately stakes a different
 // amount every day, so "-$17" could be a rout or a rounding error.
@@ -124,6 +115,11 @@ export default function Parlay() {
   // empty selection.
   const [picked, setPicked] = useState(null);
   const seeded = useRef(false);
+  // Which mode the plan is in, mirrored up from the table. The bench is a
+  // Custom control: in Recommended the plan owns the selection, and a bench
+  // you could drag from would be offering to edit something the next
+  // recommendation is about to overwrite.
+  const [planMode, setPlanMode] = useState('budget');
   const viewLegs = useMemo(
     () => legs.filter((l) => tourView === 'all' || l.tour === tourView),
     [legs, tourView]
@@ -199,45 +195,6 @@ export default function Parlay() {
   // independent, which is close enough for separate matches on one day and is
   // stated rather than buried: correlated legs would make the true number
   // LOWER, not higher, so the honest error is the conservative one.
-
-  // ── Suggestions. Named for what they are, never for what they might win.
-  const suggestions = useMemo(() => {
-    if (!all || all.length < 2) return [];
-    const out = [];
-    // No no-call filter needed here any more: `all` is already calls only.
-    const byConfidence = [...all].sort((a, b) => b.favProb - a.favProb);
-    for (const n of [2, 3, 5]) {
-      if (byConfidence.length < n) continue;
-      const set = byConfidence.slice(0, n);
-      const prob = set.reduce((m, x) => m * x.favProb, 1);
-      out.push({
-        id: `safe-${n}`,
-        title: `Our ${n} most confident`,
-        sub: `lands ${pct(prob)} of the time`,
-        keys: set.map(legKey),
-      });
-    }
-    // Legs inside the band where disagreeing with the market has actually
-    // paid off historically - deliberately NOT the biggest gaps on the
-    // board, which is where our record is worst (see GAP_CEIL).
-    const disagreements = all
-      .map((p) => ({ p, mkt: marketProb(p) }))
-      .filter((x) => x.mkt != null && x.p.favProb - x.mkt >= GAP_FLOOR && x.p.favProb - x.mkt < GAP_CEIL)
-      .sort((a, b) => (b.p.favProb - b.mkt) - (a.p.favProb - a.mkt))
-      .slice(0, 3);
-    if (disagreements.length >= 2) {
-      const set = disagreements.map((x) => x.p);
-      const prob = set.reduce((m, x) => m * x.favProb, 1);
-      out.push({
-        id: 'value',
-        title: `Against the market (${set.length})`,
-        sub: `lands ${pct(prob)}; calls like these have landed ${pct(BAND.hitRate)} of the time against a market that gave them ${pct(BAND.marketImplied)}`,
-        keys: set.map(legKey),
-      });
-    }
-    return out;
-  }, [all]);
-
   // How the recommended plan has actually been doing, day by day.
   //
   // The follower's first question is not "what is today's plan" but "does
@@ -381,33 +338,6 @@ export default function Parlay() {
     };
   }, [graded]);
 
-  // A suggestion narrows the card down to its own legs  // A suggestion narrows the card down to its own legs: everything not in the
-  // set gets dropped.
-  const applySuggestion = (keys) => {
-    const keep = new Set(keys);
-    setPicked(new Set((all || []).filter((l) => keep.has(legKey(l))).map((l) => l.id)));
-    // Scroll the plan back into view. The chips sit BELOW the plan they
-    // rewrite, so clicking one changed the page above the reader's viewport
-    // and looked, from where they were sitting, like nothing had happened.
-    // Reported as "clicking on it doesn't do anything"; the click always
-    // worked, the feedback never arrived.
-    if (typeof document !== 'undefined') {
-      const target = document.querySelector('.stake-plan');
-      if (target && target.scrollIntoView) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  };
-
-  // Which suggestion, if any, the current selection already matches. Without
-  // this a chip gives no sign it is the one in force, and a chip that would
-  // change nothing still looks like a live control.
-  const activeSuggestionId = useMemo(() => {
-    const inSlip = new Set(pickedLegs.map(legKey));
-    const same = (keys) => keys.length === inSlip.size && keys.every((k) => inSlip.has(k));
-    return (suggestions.find((s) => same(s.keys)) || {}).id || null;
-  }, [pickedLegs, suggestions]);
-
   return (
     <div className={`page-background ${surfaceBgClass()}`}>
       <div className="overlay">
@@ -505,25 +435,29 @@ export default function Parlay() {
                 legs={benchLegs} noCalls={benchNoCalls}
                 picked={pickedLegs.length + pickedNoCalls.length}
                 onPick={togglePick} onPickAll={pickAll}
+                interactive={planMode === 'mine'}
                 tourView={tourView} tourCounts={tourCounts} onTourView={setTourView}
                 hidePasses={hidePasses} onHidePasses={setHidePasses} />
               </div>
 
               <div className="parlay-plan"
                 onDragOver={(e) => {
-                  if (e.dataTransfer.types.includes(DRAG_TYPE)) {
+                  if (planMode === 'mine' && e.dataTransfer.types.includes(DRAG_TYPE)) {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'copy';
                   }
                 }}
                 onDrop={(e) => {
+                  if (planMode !== 'mine') return;
                   const id = e.dataTransfer.getData(DRAG_TYPE);
                   if (!id) return;
                   e.preventDefault();
                   pickById(id);
                 }}>
-                <StakingPlan legs={pickedLegs} graded={graded} noCalls={pickedNoCalls}
+                <StakingPlan legs={pickedLegs} cardLegs={viewLegs} graded={graded} noCalls={pickedNoCalls}
                   onDrop={togglePick} onPlanChange={setPlan}
+                  onUsePlan={(ids) => setPicked(new Set(ids))}
+                  onModeChange={setPlanMode}
                   emptyPicks={pickedLegs.length + pickedNoCalls.length === 0}
                   riskSlot={(
                     <div className="parlay-risk" id="risk">
@@ -541,33 +475,6 @@ export default function Parlay() {
           {legs.length > 0 && (
             <div className="parlay-signup">
               <DigestSignup variant="band" />
-            </div>
-          )}
-
-          {suggestions.length > 0 && (
-            <div className="parlay-suggest">
-              <div className="parlay-suggest-cap">
-                Rather build your own? Narrow the card to one of these, then the plan above re-prices it
-              </div>
-              <div className="parlay-suggest-row">
-                {suggestions.map((s) => {
-                  const on = s.id === activeSuggestionId;
-                  return (
-                    <button key={s.id} type="button" aria-pressed={on}
-                      className={`parlay-chip${on ? ' on' : ''}`}
-                      onClick={() => applySuggestion(s.keys)}>
-                      <span className="parlay-chip-title">{s.title}{on ? ' ✓' : ''}</span>
-                      <span className="parlay-chip-sub">{on ? 'this is what the plan is priced on now' : s.sub}</span>
-                    </button>
-                  );
-                })}
-                {benchLegs.length + benchNoCalls.length > 0 && (
-                  <button type="button" className="parlay-chip parlay-chip-clear" onClick={pickAll}>
-                    <span className="parlay-chip-title">Everything today</span>
-                    <span className="parlay-chip-sub">put the whole card in your picks</span>
-                  </button>
-                )}
-              </div>
             </div>
           )}
 

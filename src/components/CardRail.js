@@ -25,7 +25,7 @@ const defaultOdds = (l) => Number(l.favorite === l.p1 ? l.lockOdd1 : l.lockOdd2)
 export const DRAG_TYPE = 'application/x-smash-match';
 
 export default function CardRail({
-  legs = [], noCalls = [], picked = 0, onPick, onPickAll,
+  legs = [], noCalls = [], picked = 0, onPick, onPickAll, interactive = true,
   tourView = 'all', tourCounts = null, onTourView = null,
   hidePasses = false, onHidePasses = null,
 }) {
@@ -41,7 +41,9 @@ export default function CardRail({
         <div className="card-rail-sub">
           {rows.length === 0
             ? 'Everything on the card is in your picks.'
-            : `${rows.length} more ${rows.length === 1 ? 'match' : 'matches'} today. Drag one across, or tick it.`}
+            : interactive
+              ? `${rows.length} more ${rows.length === 1 ? 'match' : 'matches'} today. Drag one across, or tick it.`
+              : `${rows.length} more ${rows.length === 1 ? 'match' : 'matches'} today. Switch the plan to Custom to add any of them.`}
         </div>
       </div>
 
@@ -67,17 +69,26 @@ export default function CardRail({
           const start = localStartTime(l.date);
           return (
             <li key={l.id}
-              className={`card-rail-item${call ? '' : ' pass'}`}
-              draggable
+              className={`card-rail-item${call ? '' : ' pass'}${interactive ? '' : ' locked'}`}
+              draggable={interactive}
               onDragStart={(e) => {
+                if (!interactive) { e.preventDefault(); return; }
                 e.dataTransfer.setData(DRAG_TYPE, l.id);
                 // Some browsers refuse a drag with no text/plain payload.
                 e.dataTransfer.setData('text/plain', l.id);
                 e.dataTransfer.effectAllowed = 'copy';
               }}>
+              {/* A tick that ADDS rather than one that reports a state: it
+                  never shows checked, because the row leaves the bench the
+                  moment you use it. Styled as a plus for that reason - a
+                  checkbox that can never be checked is a small lie, and the
+                  stock control's white square was the loudest thing on a dark
+                  page besides. */}
               <label className="card-rail-tick">
-                <input type="checkbox" checked={false} onChange={() => onPick(l)}
+                <input type="checkbox" checked={false} disabled={!interactive}
+                  onChange={() => interactive && onPick(l)}
                   aria-label={`Add ${lastName(l.favName)} over ${lastName(l.favorite === l.p1 ? l.name2 : l.name1)} to your picks`} />
+                <span className="card-rail-plus" aria-hidden="true" />
               </label>
               <span className="card-rail-body">
                 <span className="card-rail-name">
@@ -100,7 +111,7 @@ export default function CardRail({
         })}
       </ul>
 
-      {rows.length > 0 && onPickAll && (
+      {rows.length > 0 && onPickAll && interactive && (
         <button type="button" className="card-rail-all" onClick={onPickAll}>
           Add all {rows.length} to picks
         </button>

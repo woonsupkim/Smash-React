@@ -76,7 +76,6 @@ const NAV_GROUPS = [
       // the budget behind it.
       { to: '/risk', label: 'Risk Lab', tourAgnostic: true },
       { to: '/draw', label: 'The Draw · Title Odds', tourAgnostic: true },
-      { to: '/form', label: 'The Form Chart', tourAgnostic: true },
     ],
   },
   {
@@ -87,6 +86,10 @@ const NAV_GROUPS = [
     items: [
       { to: '/h2h', label: 'H2H Studio · Price Any Matchup' },
       { to: '/compare', label: 'Compare Players & Rivalries', tourAgnostic: true },
+      // Form belongs with the matchup tools rather than with today's card:
+      // it answers "who is playing well", which is a question you bring TO a
+      // matchup rather than one about what is on right now.
+      { to: '/form', label: 'The Form Chart', tourAgnostic: true },
     ],
   },
   {

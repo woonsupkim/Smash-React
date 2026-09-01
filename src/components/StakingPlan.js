@@ -55,9 +55,19 @@ function composition(p) {
 // table so the card is the whole card, and they are never staked, never
 // priced into the plan, and never enter a single number above: a product that
 // refuses to claim a match and then funds it is saying two things at once.
+// `legs` are the PICKS - what the table prices and what the risk read below
+// describes. `cardLegs` is the whole day's calls, and it is what the plan menu
+// is built on.
+//
+// Those were the same list until now, and it made the menu lie: every option
+// was derived from whatever "Up on a typical day" happened to fund, so "Back
+// every call" backed a handful of matches rather than the card, and each plan
+// was really a re-slicing of one plan's leftovers. The menu now answers the
+// question it appears to answer - what would each of these policies do with
+// today - and choosing one sets your picks to the matches it funds.
 export default function StakingPlan({
-  legs, graded = [], noCalls = [], onDrop = null, onPlanChange = null, riskSlot = null,
-  emptyPicks = false,
+  legs, cardLegs = null, graded = [], noCalls = [], onDrop = null, onPlanChange = null,
+  onUsePlan = null, onModeChange = null, riskSlot = null, emptyPicks = false,
 }) {
   // 'budget' = show a recommendation, 'mine' = the user's own stakes. Opens on
   // the recommendation: it needs no input to be useful.
@@ -73,6 +83,10 @@ export default function StakingPlan({
   // to narrow. Sorting only moves rows around - the plan is keyed by match id,
   // not by row order - so it can never reach a number.
   const [sortBy, setSortBy] = useState('prob');
+  // Whether the reader has typed a stake of their own. While false, the even
+  // split follows the picks as they change; the moment they edit one, their
+  // numbers stand and nothing re-spreads underneath them.
+  const [touchedStakes, setTouchedStakes] = useState(false);
 
   // What the user is allowed to stake, which is not the same as what the plan
   // is allowed to recommend.
@@ -88,6 +102,11 @@ export default function StakingPlan({
     () => (mode === 'mine' ? [...legs, ...noCalls] : legs),
     [mode, legs, noCalls]
   );
+
+  // Every call on the day, which is what the menu is priced on. Falls back to
+  // the picks when a caller does not supply one, so the component still works
+  // standalone.
+  const menuLegs = cardLegs && cardLegs.length ? cardLegs : legs;
 
   const oddsOf = (l) => (oddsOverride[l.id] != null ? oddsOverride[l.id] : defaultOdds(l));
   const isIn = (l) => (inParlay[l.id] != null ? inParlay[l.id] : true) && oddsOf(l) > 1;
@@ -123,9 +142,9 @@ export default function StakingPlan({
   // Not every match gets money, and a funded single need not be in the parlay -
   // both fall out of what clears its price. See utils/staking planFrontier.
   const frontier = useMemo(
-    () => planFrontier(priceBets(() => 0, legs), Number(budget) || 0, { lambda: rel.lambda }),
+    () => planFrontier(priceBets(() => 0, menuLegs), Number(budget) || 0, { lambda: rel.lambda }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [legs, oddsOverride, budget, rel.lambda]
+    [menuLegs, oddsOverride, budget, rel.lambda]
   );
   // Which recommendation is on screen. `null` means "whatever the frontier
   // recommends", so the default tracks the card instead of being frozen at
@@ -141,6 +160,20 @@ export default function StakingPlan({
     || frontier.plans.find((p) => p.id === frontier.recommendedId)
     || frontier.plans[0]
     || null;
+
+  // Picking a plan from the menu also sets the picks to the matches it funds.
+  // The menu is priced on the whole card, so a plan can name a match that is
+  // not currently picked; leaving the table showing the old selection while
+  // the headline described the new plan was the confusion this removes.
+  const choosePlan = (p) => {
+    setPlanId(p.id);
+    if (!onUsePlan) return;
+    const ids = [...new Set([
+      ...Object.entries(p.singles || {}).filter(([, v]) => v > 0).map(([k]) => k),
+      ...(p.parlayLegs || []),
+    ])];
+    onUsePlan(ids);
+  };
 
   const singleFor = (l) => (mode === 'budget' ? (rec?.singles[l.id] || 0) : (Number(stakes[l.id]) || 0));
   // The reliability adjustment belongs to the MODEL, not to a mode. Custom
@@ -169,6 +202,18 @@ export default function StakingPlan({
     [mode, rec, bets, parStake, activeParlayLegs]
   );
 
+  // The even split follows the picks while they are still ours to set. Keyed
+  // on the pick ids rather than the array, so re-rendering does not re-spread
+  // and wipe out a number someone is halfway through typing.
+  useEffect(() => { if (onModeChange) onModeChange(mode); }, [mode, onModeChange]);
+
+  const pickKey = [...legs, ...noCalls].map((l) => l.id).sort().join(',');
+  useEffect(() => {
+    if (mode !== 'mine' || touchedStakes) return;
+    setStakes(evenSplit([...legs, ...noCalls], Number(budget) || 0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickKey, budget, mode, touchedStakes]);
+
   // Publish the allocation to whoever is listening, currently the risk lab
   // directly below. Keyed on a signature rather than the object, because a
   // fresh object every render would re-fire the effect forever.
@@ -192,12 +237,26 @@ export default function StakingPlan({
 
   // Start a custom plan FROM the recommendation on screen rather than from
   // zero: the point is to adjust a good answer, not to rebuild one.
+  // Custom starts from YOUR budget spread evenly across YOUR picks, with no
+  // parlay. It used to seed from the recommendation, which meant "Custom"
+  // opened on somebody else's answer - stakes you did not choose, on matches
+  // you did not choose, with a parlay you did not ask for. An even split is
+  // the thing a person would do by hand, and it is the honest starting point
+  // for a mode whose whole premise is that the slip is yours.
+  const evenSplit = (rows, total) => {
+    const priced = rows.filter((l) => oddsOf(l) > 1);
+    if (!priced.length || !(total > 0)) return {};
+    const each = +(total / priced.length).toFixed(2);
+    return Object.fromEntries(rows.map((l) => [l.id, oddsOf(l) > 1 ? each : 0]));
+  };
+
   const customise = () => {
     const all = [...legs, ...noCalls];
-    setStakes(Object.fromEntries(all.map((l) => [l.id, +(rec?.singles[l.id] || 0).toFixed(2)])));
-    setParlayStake(+(rec?.parlayStake || 0).toFixed(2));
-    setInParlay(Object.fromEntries(all.map((l) => [l.id, (rec?.parlayLegs || []).includes(l.id)])));
-    setUseParlay((rec?.parlayStake || 0) > 0);
+    setStakes(evenSplit(all, Number(budget) || 0));
+    setParlayStake(0);
+    setInParlay(Object.fromEntries(all.map((l) => [l.id, false])));
+    setUseParlay(false);
+    setTouchedStakes(false);
     setMode('mine');
   };
   // Priced off the legs you ticked, not off what is switched on, so the row
@@ -342,7 +401,7 @@ export default function StakingPlan({
               {frontier.plans.map((p) => (
                 <button key={p.id} type="button" role="radio" aria-checked={p.id === rec.id}
                   className={`stake-best-opt${p.id === rec.id ? ' on' : ''}`}
-                  onClick={() => setPlanId(p.id)}>
+                  onClick={() => choosePlan(p)}>
                   <span className="stake-best-opt-l">
                     {p.label}
                     {p.id === frontier.recommendedId && <span className="stake-best-opt-rec">recommended</span>}
@@ -558,15 +617,18 @@ export default function StakingPlan({
         </div>
       )}
 
-      {mode === 'budget' && (
-        <label className="stake-budget">
-          Total to stake
-          <span className="stake-budget-in">$<input type="number" min="0" step="5" value={budget} onChange={(e) => setBudget(e.target.value)} /></span>
-          <span className="stake-budget-note">
-            Split evenly across every match the plan backs.
-          </span>
-        </label>
-      )}
+      <label className="stake-budget">
+        Total to stake
+        <span className="stake-budget-in">$<input type="number" min="0" step="5" value={budget}
+          onChange={(e) => { setBudget(e.target.value); if (mode === 'mine') setTouchedStakes(false); }} /></span>
+        <span className="stake-budget-note">
+          {mode === 'budget'
+            ? 'Split evenly across every match the plan backs.'
+            : touchedStakes
+              ? 'Your own stakes are in charge. Change the budget to spread it evenly again.'
+              : 'Spread evenly across your picks, and it follows as you add or remove them.'}
+        </span>
+      </label>
 
       <div className="stake-filters">
         <div className="stake-filter-set" role="group" aria-label="Order by">
@@ -657,7 +719,7 @@ export default function StakingPlan({
                   ? <span className="stake-suggest">{call && stake > 0 ? money(stake) : '–'}</span>
                   : <input type="number" min="0" step="1" value={stakes[l.id] ?? ''} placeholder="0"
                       disabled={!(o > 1)}
-                      onChange={(e2) => setStakes((s2) => ({ ...s2, [l.id]: e2.target.value }))} />}
+                      onChange={(e2) => { setTouchedStakes(true); setStakes((s2) => ({ ...s2, [l.id]: e2.target.value })); }} />}
               </span>
               <span className="stake-inpar" role="cell">
                 {/* In budget mode the optimiser owns this choice, so the box
