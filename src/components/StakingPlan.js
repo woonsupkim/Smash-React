@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { matchSlug, localStartTime } from '../utils/matchTime';
-import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb } from '../utils/staking';
+import { analyzeSlip, recommendStakes, edgePerDollar, parlayCombo, planFrontier, reliability, adjustProb, cappedProb, EDGE_CAP } from '../utils/staking';
 import BACKTEST from '../data/planBacktest.json';
 import './StakingPlan.css';
 
@@ -149,7 +149,7 @@ export default function StakingPlan({
   // reported different numbers for the very same allocation. planFrontier
   // adjusts internally off raw input, so the adjustment is applied here only
   // for the paths that score a slip directly.
-  const bets = priceBets(singleFor).map((b) => ({ ...b, p: adjustProb(b.p, rel.lambda) }));
+  const bets = priceBets(singleFor).map((b) => ({ ...b, p: cappedProb(b.p, b.o, { lambda: rel.lambda }) }));
   const parStake = mode === 'budget'
     ? (rec?.parlayStake || 0)
     : (useParlay ? (Number(parlayStake) || 0) : 0);
@@ -210,7 +210,16 @@ export default function StakingPlan({
     : combo;
   // Probabilities everything below is sized on: always the reliability-adjusted
   // number, so the Edge column agrees with the money in both modes.
-  const probOf = (l) => adjustProb(l.favProb, rel.lambda);
+  // The probability the money is sized on, cap included, so the Edge column
+  // shows what is actually being staked rather than a number the plan has
+  // quietly declined to act on. The raw model probability stays on the match
+  // page, where it is a prediction rather than a bet.
+  const probOf = (l) => cappedProb(l.favProb, oddsOf(l), { lambda: rel.lambda });
+  // Whether the edge cap is what is holding this row down. The row prints our
+  // real probability, so without a marker the Edge column would not reconcile
+  // with it on a calculator - and a number that does not add up is worse than
+  // one that needs a word of explanation.
+  const capped = (l) => probOf(l) < adjustProb(l.favProb, rel.lambda) - 1e-9;
   const inActiveParlay = (l) => activeParlayLegs.includes(l.id);
 
   // The same money spread evenly over every priced match. This is what the
@@ -526,6 +535,8 @@ export default function StakingPlan({
             {mode === 'budget'
               ? <>Every bet the recommendation funds, and what it puts on each. Edge is <strong>your odds × our win probability − 1</strong>. A match can carry a negative edge and still be worth backing here, so long as the spread as a whole still returns the stake. Switch to Custom to change any of it.</>
               : <>Set your own stakes, tick which matches go in the parlay, and edit any price to your book. Every number above updates as you go.</>}
+            {' '}Edge is capped at {Math.round(EDGE_CAP * 100)}%: bigger ones have not held up on the
+            record, so a row marked <em>capped</em> is staked as if its edge were that.
           </p>
         </div>
         <div className="stake-modes" role="tablist" aria-label="Recommended plan or your own">
@@ -632,6 +643,12 @@ export default function StakingPlan({
                     <>
                       {pctSigned(e)}
                       {!call && <span className="stake-pass-note">no call</span>}
+                      {call && capped(l) && (
+                        <span className="stake-pass-note"
+                          title={`We rate this further ahead of the price than that, but edges above ${Math.round(EDGE_CAP * 100)}% have not held up on the record, so it is staked as if it were ${Math.round(EDGE_CAP * 100)}%.`}>
+                          capped
+                        </span>
+                      )}
                     </>
                   )}
               </span>

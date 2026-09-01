@@ -242,6 +242,47 @@ export function reliability(graded, { minSample = 60 } = {}) {
 export const adjustProb = (p, lambda = 1) =>
   (lambda === 1 ? p : clamp(0.5 + lambda * (p - 0.5), 0.001, 0.999));
 
+/**
+ * The most edge this app will SIZE a bet on, however much it thinks it sees.
+ *
+ * The reliability haircut above is uniform: it shrinks every probability by
+ * the same lambda, which is right for a model that is a little overconfident
+ * everywhere. It is the wrong shape for what the record actually shows.
+ * Graded, priced calls, bucketed by the edge we claimed at lock time:
+ *
+ *     claimed edge    n     we said    it did      gap     flat ROI
+ *      0 to  5%      27      73.6%      74.1%    +0.5pt      +2.3%
+ *      5 to 10%      15      72.6%      73.3%    +0.7pt      +6.7%
+ *     10 to 20%      18      76.0%      66.7%    -9.4pt      +4.7%
+ *     20%+           13      66.9%      46.2%   -20.8pt     -10.5%
+ *
+ * Small edges are honest and profitable. Large ones are mostly estimation
+ * error: at 20%+ the model claims 67% and delivers 46%, which does not even
+ * clear the 50% those prices need. And because Kelly sizing scales with edge,
+ * the biggest stakes land on exactly the least reliable estimates - ranking
+ * by estimated edge preferentially selects the estimation errors.
+ *
+ * The cap says: act on at most this much edge. A bet we rate at +32% is
+ * staked as if it were +12%, which is what a real mispricing of that size
+ * would more likely be. This is deliberately a PRIOR, not a curve fitted to
+ * those four rows - n is 13 in the bucket that matters most, far too few to
+ * fit anything. An edge above roughly a tenth against a liquid market is rare
+ * enough that our own arithmetic is the likelier explanation.
+ *
+ * Applied as a probability, not as a stake multiplier, so one number flows
+ * through sizing, expected value, the median and the risk read alike. The
+ * model's raw probability is untouched everywhere it is a PREDICTION - the
+ * match pages, the Edge board, every accuracy claim. This is only about money.
+ */
+export const EDGE_CAP = 0.12;
+
+export const cappedProb = (p, o, { lambda = 1, edgeCap = EDGE_CAP } = {}) => {
+  const adj = adjustProb(p, lambda);
+  if (!(o > 1) || !(edgeCap >= 0)) return adj;
+  // p * o - 1 <= cap  =>  p <= (1 + cap) / o
+  return Math.min(adj, (1 + edgeCap) / o);
+};
+
 // Every +EV combination of 2..maxLegs legs, best-edge first. The parlay's
 // universe is every combination of the day's matches, not a subset someone
 // ticked, because a combination can clear its price when its legs do not:
@@ -291,9 +332,9 @@ function parlayCandidates(priced, maxLegs, maxSearch) {
  * @param {{key:string,p:number,o:number}[]} bets  p should already be adjusted
  * @param {number} budget  split equally across whatever is taken
  */
-export function spreadPlan(bets, budget, { lambda = 1 } = {}) {
+export function spreadPlan(bets, budget, { lambda = 1, edgeCap = EDGE_CAP } = {}) {
   const adj = (bets || [])
-    .map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }))
+    .map((b) => ({ ...b, pStated: b.p, p: cappedProb(b.p, b.o, { lambda, edgeCap }) }))
     .filter((b) => b.o > 1 && b.p > 0);
   const ranked = [...adj].sort((a, b) => (b.p * b.o) - (a.p * a.o));
 
@@ -522,10 +563,10 @@ const REC_SCALES = [0.04, 0.07, 0.1, 0.14, 0.18, 0.24, 0.3, 0.38, 0.5];
 // How many of the best-priced bets to include.
 const REC_WIDTHS = [1, 2, 3, 4, 5, 6, 8, 10, 14, 20];
 
-export function recommendedPlan(bets, budget, { lambda = 1, maxSearch = 12 } = {}) {
+export function recommendedPlan(bets, budget, { lambda = 1, maxSearch = 12, edgeCap = EDGE_CAP } = {}) {
   const B = Number(budget) || 0;
   if (!(B > 0)) return null;
-  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: cappedProb(b.p, b.o, { lambda, edgeCap }) }));
   const priced = adj.filter((b) => b.o > 1 && b.p > 0);
 
   // Only bets that beat their own price can carry a plan whose typical day is
@@ -647,8 +688,8 @@ export function recommendedPlan(bets, budget, { lambda = 1, maxSearch = 12 } = {
   };
 }
 
-export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12 } = {}) {
-  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: adjustProb(b.p, lambda) }));
+export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxSearch = 12, edgeCap = EDGE_CAP } = {}) {
+  const adj = (bets || []).map((b) => ({ ...b, pStated: b.p, p: cappedProb(b.p, b.o, { lambda, edgeCap }) }));
   const priced = adj.filter((b) => b.o > 1 && b.p > 0);
   const B = Number(budget) || 0;
 
@@ -673,7 +714,7 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
 
   // The spread is the headline: a flat stake on as much of the card as can
   // still cover itself. Everything else is measured against it.
-  const spread = spreadPlan(bets, B, { lambda });
+  const spread = spreadPlan(bets, B, { lambda, edgeCap });
   const combos = parlayCandidates(priced, maxParlayLegs, maxSearch);
 
   // How many legs the parlay should have is decided by the PLAN it lands in,
@@ -794,7 +835,7 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   // best expected growth. It leads the menu because it is the answer; the
   // policy plans below it stay on offer for anyone who wants a different
   // trade, and the page shows every one of them the same numbers.
-  const best = recommendedPlan(bets, B, { lambda, maxSearch });
+  const best = recommendedPlan(bets, B, { lambda, maxSearch, edgeCap });
   if (best) {
     plans.push({
       id: 'best',

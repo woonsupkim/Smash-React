@@ -24,7 +24,7 @@
 // you can be right about every price and still go broke by sizing. Nothing
 // else in the app says that, and it is not a matter of taste.
 import React, { useMemo, useState } from 'react';
-import { analyzeSlip, parlayCombo, reliability, adjustProb } from '../utils/staking';
+import { analyzeSlip, parlayCombo, reliability, cappedProb } from '../utils/staking';
 import { lossExceedance, gainExceedance, twoSidedExceedance, amountAtExceedance, kellyCheck, simulateBankroll, expectedLosingStreak, outcomePairs } from '../utils/riskLab';
 import './RiskLab.css';
 
@@ -266,7 +266,7 @@ export default function RiskLab({ legs, graded = [], noCalls = [], plan = null }
 
   const bets = useMemo(() => card.map((l) => ({
     key: l.id,
-    p: adjustProb(l.favProb, rel.lambda),
+    p: cappedProb(l.favProb, defaultOdds(l), { lambda: rel.lambda }),
     o: defaultOdds(l),
     single: stakeOf(l),
   })),

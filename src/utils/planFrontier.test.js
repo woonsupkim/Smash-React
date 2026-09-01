@@ -10,7 +10,7 @@
 // The worked example that defines the spread lives in spreadPlan.test.js.
 import { describe, it, expect } from 'vitest';
 import {
-  planFrontier, edgePerDollar, analyzeSlip, expectedLogGrowth,
+  planFrontier, edgePerDollar, analyzeSlip, expectedLogGrowth, cappedProb, adjustProb, EDGE_CAP,
 } from './staking';
 
 const bet = (key, p, o) => ({ key, p, o });
@@ -242,8 +242,11 @@ describe('the parlay length is chosen by the plan, not by the parlay alone', () 
     const sharp = planFrontier(card, 100, { lambda: 1 }).plans.find((p) => p.id === 'sharp');
     expect(sharp).toBeTruthy();
     // Kelly-in-isolation always shortens the parlay, because odds compound
-    // faster than edge. Anything past 2 here can only come from plan scoring.
-    expect(sharp.parlayLegs.length).toBe(3);
+    // faster than edge. Anything past 2 here can only come from plan scoring,
+    // and that is the whole claim - the exact count was never the point. It
+    // was pinned at 3 and moved to 6 when the edge cap landed, which is a
+    // change in what the legs are worth, not in who chooses them.
+    expect(sharp.parlayLegs.length).toBeGreaterThan(2);
   });
 
   it('never picks a parlay another length beats on both axes', () => {
@@ -405,5 +408,60 @@ describe('expected log growth', () => {
       analyzeSlip(bets.map((b) => ({ ...b, single: 8 * k })), null).dist, 100 * k
     );
     expect(g(1)).toBeCloseTo(g(10), 3);
+  });
+});
+
+describe('the edge cap', () => {
+  it('never lets a bet be sized on more edge than the cap allows', () => {
+    // The record says edges past ~10% are mostly estimation error, and Kelly
+    // sizing scales with edge, so without this the biggest stakes land on the
+    // least reliable numbers.
+    for (const [p, o] of [[0.63, 2.0], [0.9, 1.5], [0.75, 1.9], [0.55, 2.4]]) {
+      const capped = cappedProb(p, o, { lambda: 1 });
+      expect(capped * o - 1).toBeLessThanOrEqual(EDGE_CAP + 1e-9);
+    }
+  });
+
+  it('leaves an honest edge alone', () => {
+    // Only the extremes are shrunk. A bet already inside the cap must come
+    // through untouched, or the cap is just a second reliability haircut.
+    const p = 0.70, o = 1.55;                       // edge 8.5%, inside the cap
+    expect(p * o - 1).toBeLessThan(EDGE_CAP);
+    expect(cappedProb(p, o, { lambda: 1 })).toBeCloseTo(p, 9);
+  });
+
+  it('never raises a probability, and composes with the reliability haircut', () => {
+    for (const lambda of [0.8, 1, 1.2]) {
+      for (const [p, o] of [[0.63, 2.0], [0.70, 1.55], [0.86, 1.22]]) {
+        const capped = cappedProb(p, o, { lambda });
+        expect(capped).toBeLessThanOrEqual(adjustProb(p, lambda) + 1e-12);
+        expect(capped * o - 1).toBeLessThanOrEqual(EDGE_CAP + 1e-9);
+      }
+    }
+  });
+
+  it('is a no-op with no cap, and safe on an unpriced bet', () => {
+    expect(cappedProb(0.63, 2.0, { lambda: 1, edgeCap: Infinity })).toBeCloseTo(0.63, 9);
+    expect(cappedProb(0.63, 0, { lambda: 1 })).toBeCloseTo(0.63, 9);
+  });
+
+  it('holds every bet the recommendation funds inside the cap', () => {
+    // The property that actually matters: not that the helper works, but that
+    // no plan the page offers is sized on an edge we do not trust.
+    const wild = [
+      { key: 'a', p: 0.63, o: 2.4 },   // claims +51%
+      { key: 'b', p: 0.70, o: 1.55 },  // claims +8.5%
+      { key: 'c', p: 0.80, o: 1.45 },  // claims +16%
+      { key: 'd', p: 0.66, o: 1.62 },  // claims +7%
+    ];
+    const { plans, recommendedId } = planFrontier(wild, 100);
+    const rec = plans.find((p) => p.id === recommendedId);
+    expect(rec).toBeTruthy();
+    for (const [key, stake] of Object.entries(rec.singles)) {
+      if (!(stake > 0)) continue;
+      const bet = wild.find((b) => b.key === key);
+      const used = cappedProb(bet.p, bet.o, { lambda: 1 });
+      expect(used * bet.o - 1).toBeLessThanOrEqual(EDGE_CAP + 1e-9);
+    }
   });
 });
