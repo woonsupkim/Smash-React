@@ -89,3 +89,39 @@
   .digest-signup.band .digest-signup-row input { flex: 1 1 100%; }
   .digest-signup.band .digest-signup-row button { flex: 1 1 100%; }
 }
+
+/* Email and Instagram in one highlight. The email keeps the primary position
+   because it is the ask that actually delivers the plan; the follow sits
+   under a rule so it reads as an alternative rather than a second field. */
+.digest-band-asks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  /* Hug the form. As a stretched grid child the column filled the row height
+     and pushed the follow to the very bottom, leaving a hole between the two
+     asks that read as a layout bug rather than a separation. */
+  align-self: start;
+  flex: 1 1 18rem;
+  max-width: 26rem;
+}
+/* The form's own `flex: 1 1 18rem` was written for a horizontal parent. In
+   this vertical column it grows the form's HEIGHT instead of its width,
+   which is where the 189px hole above the divider came from. */
+.digest-band-asks .digest-signup.band { flex: 0 0 auto; max-width: none; }
+.digest-band-or {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3, #7c8698);
+}
+.digest-band-or::before,
+.digest-band-or::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border-1, rgba(255, 255, 255, 0.12));
+}

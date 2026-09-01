@@ -260,6 +260,7 @@
   border: 1px solid color-mix(in srgb, var(--accent-brand, #c8f560) 26%, transparent);
   border-radius: var(--radius-md, 12px);
 }
+.card-rail-lockcopy { min-width: 0; }
 .card-rail-lockmsg strong { color: var(--accent-brand, #c8f560); font-weight: 800; }
 .card-rail-lockkey {
   flex: 0 0 auto;

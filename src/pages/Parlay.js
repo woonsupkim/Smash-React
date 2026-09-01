@@ -28,7 +28,6 @@ import RiskLab from '../components/RiskLab';
 import CardRail, { DRAG_TYPE } from '../components/CardRail';
 import useTodayCard from '../utils/useTodayCard';
 import DigestSignup from '../components/DigestSignup';
-import FollowCta from '../components/FollowCta';
 import { planFrontier, reliability } from '../utils/staking';
 import { surfaceBgClass } from '../utils/surfaceBg';
 import './Parlay.css';
@@ -476,8 +475,6 @@ export default function Parlay() {
           {legs.length > 0 && (
             <div className="parlay-signup">
               <DigestSignup variant="band" />
-              <FollowCta variant="band"
-                sub="The plan every morning, and the receipts after" />
             </div>
           )}
 

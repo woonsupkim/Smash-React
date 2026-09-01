@@ -460,10 +460,18 @@ test('the Instagram follow appears where it should, and nowhere it should not', 
     // A new tab that cannot reach back through window.opener, and no referrer.
     await expect(inline).toHaveAttribute('rel', /noopener/);
     await expect(inline).toHaveAttribute('rel', /noreferrer/);
-    // And not a banner on every page: the band is for pages that have just
-    // delivered something.
-    // eslint-disable-next-line jest/valid-expect
-    expect(await page.locator('a.follow-cta.band').count(), `${route} should have no band`).toBe(0);
+    // And never a free-floating banner. A band is allowed, but only inside a
+    // surface that earns it: the combined subscribe highlight, or Today's own
+    // placement under the record. Anything else means the follow has started
+    // interrupting the page rather than sitting at the end of it.
+    const bands = page.locator('a.follow-cta.band');
+    for (let i = 0; i < await bands.count(); i++) {
+      const housed = await bands.nth(i).evaluate(
+        (el) => !!el.closest('.digest-band, .today-follow')
+      );
+      // eslint-disable-next-line jest/valid-expect
+      expect(housed, `${route} has a loose follow band`).toBe(true);
+    }
   }
 
   // The two pages that HAVE just delivered something get the band as well.

@@ -14,7 +14,6 @@ import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
 import { timeUntil, localStartTime, localDayLabel, localZoneLabel, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import { ledgerNoCall } from '../utils/deployedPick';
-import PushToggle from '../components/PushToggle';
 import FollowCta from '../components/FollowCta';
 import useDocMeta from '../utils/useDocMeta';
 import { surfaceBgClass } from '../utils/surfaceBg';
@@ -142,7 +141,6 @@ export default function Today() {
       <p className="today-date">
         {localDayLabel()}{zone ? <> · all times {zone}</> : null}
       </p>
-      <PushToggle />
       {season && (
         <p className="today-season">
           Season benchmark: {season.correct.toLocaleString()} of {season.n.toLocaleString()} winners
@@ -150,6 +148,15 @@ export default function Today() {
           See where we <Link to="/edge">disagree with the bookmakers</Link>, and who was right.
         </p>
       )}
+
+      {/* Above the card, not after it. This page is the landing target for
+          every social post, so the reader who arrived another way should meet
+          the follow while they still have the page's attention - underneath
+          the record, which is the reason to want it. */}
+      <div className="today-follow">
+        <FollowCta variant="band"
+          sub="Today's card and how yesterday's landed, posted every morning" />
+      </div>
 
       {all === null && <div className="skeleton today-skel" />}
 
@@ -235,17 +242,6 @@ export default function Today() {
             {inPlay.map((p) => renderRow(p, true))}
           </div>
         </section>
-      )}
-
-      {/* This page is the landing target for every social post - somebody who
-          arrived from a story is already here. It is the reader who found it
-          another way that the follow is for, and the end of the card is where
-          they have just been given the thing worth following for. */}
-      {all && all.length > 0 && (
-        <div className="today-follow">
-          <FollowCta variant="band"
-            sub="Today's card and how yesterday's landed, posted every morning" />
-        </div>
       )}
 
       <div className="today-footer">

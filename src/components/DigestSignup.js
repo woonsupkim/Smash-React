@@ -21,6 +21,7 @@
 // token, so it should not be the promise on the form.
 import React, { useId, useState } from 'react';
 import { supabase, cloudEnabled } from '../lib/supabase';
+import FollowCta from './FollowCta';
 import './DigestSignup.css';
 
 export default function DigestSignup({ variant = 'footer' }) {
@@ -101,7 +102,21 @@ export default function DigestSignup({ variant = 'footer' }) {
           same record this whole site is graded on. Mondays, and every day once a slam starts.
         </p>
       </div>
-      {form}
+      <div className="digest-band-asks">
+        {form}
+        {/* Two ways to come back, in one highlight rather than two competing
+            blocks. The email is the ask that actually delivers the plan, so
+            it keeps the primary position; the follow is the lighter one for
+            somebody who will not hand over an address, and it sits under a
+            rule rather than beside the form so it cannot be mistaken for a
+            second field. */}
+        <div className="digest-band-or">
+          <span>or</span>
+        </div>
+        <FollowCta variant="band"
+          label="Follow on Instagram"
+          sub="The card every morning, and how it landed" />
+      </div>
     </section>
   );
 }

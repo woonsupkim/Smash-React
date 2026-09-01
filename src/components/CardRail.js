@@ -58,7 +58,13 @@ export default function CardRail({
         {!interactive && rows.length > 0 && (
           <div className="card-rail-lockmsg">
             <span className="card-rail-lockkey">Custom</span>
-            Switch the plan above to <strong>Custom</strong> to add matches yourself.
+            {/* The whole sentence in ONE element. Bare text either side of the
+                <strong> became its own anonymous flex item, so the browser
+                laid the message out as three narrow columns instead of a
+                line of prose. */}
+            <span className="card-rail-lockcopy">
+              Switch the plan above to <strong>Custom</strong> to add matches yourself.
+            </span>
           </div>
         )}
       </div>

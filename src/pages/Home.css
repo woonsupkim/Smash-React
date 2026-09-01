@@ -902,3 +902,14 @@
 .home-stat-trend.down { color: #ff8f8f; }
 
 /* The hero's live plan-return line was removed; .hero-live went with it. */
+
+/* The plan card is one link. It carried a button at the bottom that everyone
+   aimed for while the rest of the card - the part with the actual numbers -
+   sat inert under the cursor. */
+a.home-plan { display: block; text-decoration: none; color: inherit; }
+a.home-plan:hover { border-color: var(--accent-brand, #c8f560); }
+a.home-plan:hover .home-plan-cta { color: var(--accent-brand, #c8f560); }
+a.home-plan:focus-visible {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 3px;
+}

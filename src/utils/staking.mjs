@@ -839,7 +839,7 @@ export function planFrontier(bets, budget, { lambda = 1, maxParlayLegs = 6, maxS
   if (best) {
     plans.push({
       id: 'best',
-      label: best.typicalUp ? 'Up on a typical day' : 'Best of a bad card',
+      label: best.typicalUp ? 'Comfortable day' : 'Best of a bad card',
       ...shape(best.singles, best.combo, best.parlayStake),
       growth: best.growth,
       typicalUp: best.typicalUp,

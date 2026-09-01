@@ -750,7 +750,7 @@ export default function Home() {
                 through. The menu shows all the plans it offers today with the
                 recommended one marked, so the choice is visible here too. */}
             {plan && (
-              <aside className="home-plan" aria-label="Recommended staking plan">
+              <Link to="/risk" className="home-plan" aria-label="Today's recommended plan: open the Risk Lab">
                 <div className="home-plan-cap">Today&apos;s recommended plan</div>
                 {plan.done ? (
                   <>
@@ -759,7 +759,7 @@ export default function Home() {
                       calls have started, so there is nothing left to stake. They grade overnight
                       onto the Ledger, and tomorrow&apos;s lock as the order of play is published.
                     </p>
-                    <Link to="/track-record" className="home-plan-cta">See how they land →</Link>
+                    <span className="home-plan-cta">See how they land →</span>
                   </>
                 ) : plan.none ? (
                   <>
@@ -768,7 +768,7 @@ export default function Home() {
                       stacked, so the plan is to stake nothing. That is the answer more
                       often than anyone selling picks will admit.
                     </p>
-                    <Link to="/risk" className="home-plan-cta">See why for each call →</Link>
+                    <span className="home-plan-cta">See why for each call →</span>
                   </>
                 ) : (
                   <>
@@ -819,10 +819,10 @@ export default function Home() {
                         the risk lab back when those were separate pages; they
                         are one page now, so a second button under the first
                         just promised somewhere else to go. */}
-                    <Link to="/risk" className="home-plan-cta">Open the Risk Lab →</Link>
+                    <span className="home-plan-cta">Open the Risk Lab →</span>
                   </>
                 )}
-              </aside>
+              </Link>
             )}
           </div>
           )}
