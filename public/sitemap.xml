@@ -261,6 +261,27 @@
   <url><loc>https://smash-react.vercel.app/match/luca-van-assche-vs-denis-shapovalov-182773</loc></url>
   <url><loc>https://smash-react.vercel.app/match/karolina-muchova-vs-katie-boulter-182531</loc></url>
   <url><loc>https://smash-react.vercel.app/match/sofia-kenin-vs-jessica-pegula-182550</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/kamil-majchrzak-vs-valentin-vacherot-182693</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karen-khachanov-vs-felix-auger-aliassime-182698</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alejandro-tabilo-vs-alexei-popyrin-182709</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/dalibor-svrcina-vs-luciano-darderi-182713</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/mariano-navone-vs-matteo-berrettini-182720</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/marco-trungelliti-vs-alexander-blockx-182726</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/hubert-hurkacz-vs-ben-shelton-182730</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alex-michelsen-vs-brandon-nakashima-182746</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/carlos-alcaraz-vs-jaime-faria-182764</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/adrian-mannarino-vs-alexander-bublik-182779</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/sorana-cirstea-vs-diane-parry-182544</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/maya-joint-vs-elina-svitolina-182546</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/caty-mcnally-vs-emma-navarro-182547</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-lanlana-tararudee-182552</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/taylah-preston-vs-taylor-townsend-182567</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/katerina-siniakova-vs-naomi-osaka-182568</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/kamilla-rakhimova-vs-oksana-selekhmeteva-182569</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/diana-shnaider-vs-karolina-pliskova-182575</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/amanda-anisimova-vs-lilli-tagger-182579</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/donna-vekic-vs-ann-li-182584</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-kimberly-birrell-182587</loc></url>
   <url><loc>https://smash-react.vercel.app/match/lorenzo-sonego-vs-alexander-zverev-182660</loc></url>
   <url><loc>https://smash-react.vercel.app/match/cori-gauff-vs-zeynep-sonmez-182645</loc></url>
   <url><loc>https://smash-react.vercel.app/match/ignacio-buse-vs-marcos-giron-182750</loc></url>
@@ -275,6 +296,7 @@
   <url><loc>https://smash-react.vercel.app/match/jessica-bouzas-maneiro-vs-darja-vidmanova-182601</loc></url>
   <url><loc>https://smash-react.vercel.app/match/jelena-ostapenko-vs-tatjana-maria-182648</loc></url>
   <url><loc>https://smash-react.vercel.app/match/tereza-valentova-vs-anastasia-potapova-182650</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/darja-semenistaja-vs-anastasia-potapova-182650</loc></url>
   <url><loc>https://smash-react.vercel.app/match/jan-lennard-struff-vs-camilo-ugo-carabelli-182694</loc></url>
   <url><loc>https://smash-react.vercel.app/match/lorenzo-musetti-vs-arthur-fery-182702</loc></url>
   <url><loc>https://smash-react.vercel.app/match/alina-korneeva-vs-madison-keys-182611</loc></url>
@@ -707,4 +729,5 @@
   <url><loc>https://smash-react.vercel.app/event/wimbledon</loc></url>
   <url><loc>https://smash-react.vercel.app/event/national-bank-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/cincinnati-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/u-s-open</loc></url>
 </urlset>
