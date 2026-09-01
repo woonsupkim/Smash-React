@@ -9,15 +9,24 @@ async function openCard(page) {
   return (await page.locator('.risk-lab').count()) > 0;
 }
 
+// Three honest states this page can be in, and only the first has a lab to
+// test: a live card with something worth staking; a live card where every
+// remaining price is against us, which happens late in the day once the good
+// matches have started; and no card at all. The suite used to assume an empty
+// card was the only alternative and failed on the middle one.
+async function skipUnlessPriced(page, errors) {
+  if (await openCard(page)) return false;
+  const quiet = page.locator('.parlay-empty, .parlay-slip-empty, .stake-noplan, .stake-note.muted');
+  await expect(quiet.first()).toBeVisible();
+  expect(errors).toEqual([]);
+  return true;
+}
+
 test('risk lab: reads the plan on the page, and switches views', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) {
-    await expect(page.locator('.parlay-empty, .parlay-slip-empty').first()).toBeVisible();
-    expect(errors).toEqual([]);
-    return;
-  }
+  if (await skipUnlessPriced(page, errors)) return;
 
   const lab = page.locator('.risk-lab');
   await expect(lab).toBeVisible();
@@ -77,7 +86,7 @@ test('risk lab: changing the plan moves the risk numbers', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   // This is the whole premise of merging the two: one allocation, read by both
   // surfaces. If the lab can disagree with the table above it, the merge has
@@ -104,7 +113,7 @@ test('risk lab: staking the whole budget reads as riskier than the plan', async 
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   // Kelly's bands, coldest first. The budget is now the bankroll, so a
   // recommendation sized to it cannot be reckless by construction - but
@@ -144,7 +153,7 @@ test('the table holds your picks, the bench holds the rest, and together they ar
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
   const bench = page.locator('.card-rail-item');
@@ -190,7 +199,7 @@ test('the tour filter scopes the card, and the plan with it', async ({ page }) =
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
   const bench = page.locator('.card-rail-item');
@@ -229,7 +238,7 @@ test('the recommended plan finishes up on a typical day, and never buries the bu
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   // The headline promise of the objective. Read off the lab, which prices
   // exactly what the plan above put on the table.
@@ -253,7 +262,7 @@ test('custom mode prices the matches we would not call, and the plan still will 
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
   // The recommendation never funds a match we declined to call, so none is in
   // the picks on arrival. Bring one across from the bench first.
   const benchPass = page.locator('.card-rail-item.pass').first();
@@ -289,7 +298,7 @@ test('dragging a match from the bench adds it to the picks', async ({ page }) =>
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/risk');
-  if (!(await openCard(page))) { expect(errors).toEqual([]); return; }
+  if (await skipUnlessPriced(page, errors)) return;
 
   const picks = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay):not(.stake-row-none)');
   const bench = page.locator('.card-rail-item');

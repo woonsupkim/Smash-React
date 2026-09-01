@@ -483,12 +483,14 @@ export default function Parlay() {
               forty you were not. */}
           {legs.length > 0 && (
             <div className="parlay-work">
+              <div className="parlay-bench">
               <CardRail
                 legs={benchLegs} noCalls={benchNoCalls}
                 picked={pickedLegs.length + pickedNoCalls.length}
                 onPick={togglePick} onPickAll={pickAll}
                 tourView={tourView} tourCounts={tourCounts} onTourView={setTourView}
                 hidePasses={hidePasses} onHidePasses={setHidePasses} />
+              </div>
 
               <div className="parlay-plan"
                 onDragOver={(e) => {

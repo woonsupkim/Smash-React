@@ -70,7 +70,6 @@
   color: var(--text-2);
   background: var(--surface-1);
 }
-.changelog-date { font-size: 0.78rem; color: var(--text-3); }
 
 .changelog-entry-title {
   font-family: var(--font-ui);

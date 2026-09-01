@@ -99,7 +99,18 @@ body {
   font-family: var(--font-ui);
   background-color: #111;
   color: #fff;
+  /* `hidden` on ONE axis silently makes the other axis `auto`, which turns
+     body into a scroll container - and a scroll container disables
+     position: sticky for everything inside it. That is why the Risk Lab's
+     bench would not pin: nothing was wrong with the bench.
+     `clip` does the same horizontal clipping WITHOUT creating a scroll
+     container, so sticky works again. Kept behind @supports with the old
+     value as the fallback: a browser without `clip` keeps today's behaviour
+     rather than losing the clipping entirely. */
   overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  body { overflow-x: clip; }
 }
 
 /* Numbers align in columns wherever they appear (records, percentages) */

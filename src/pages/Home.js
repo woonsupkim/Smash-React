@@ -7,7 +7,7 @@ import { Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoHome from '../assets/ball.png';
 import { playerPhoto } from '../utils/playerPhotos';
-import { timeUntil, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
+import { timeUntil, localStartTime, matchSlug, isToday, stillUpcoming } from '../utils/matchTime';
 import { pickCorrect, pickFavorite, pickNoCall, ledgerNoCall } from '../utils/deployedPick';
 import { planFrontier, reliability } from '../utils/staking';
 import { nextSlam, prevSlam } from '../utils/slamCalendar';
@@ -685,6 +685,11 @@ export default function Home() {
             <div className="home-board-grid">
               {picks.list.map((p) => {
                 const when = timeUntil(p.date);
+                // The scheduled start, alongside how long until it. The
+                // countdown alone answered "when" only for someone reading at
+                // that exact minute, and its fallback label is the word
+                // "today", which on a board of today's matches says nothing.
+                const start = localStartTime(p.date);
                 return (
                   <Link key={`${p.tour}-${p.p1}-${p.p2}-${p.date}`} to={`/match/${matchSlug(p)}`} className="home-board-card">
                     <div className="home-board-top">
@@ -693,11 +698,10 @@ export default function Home() {
                       {p.tier && p.tier !== 'slam' && (
                         <span className="home-board-event">{p.event}</span>
                       )}
-                      {when && (
-                        <span className={`home-board-when${when.soon ? ' soon' : ''}${when.past ? ' past' : ''}`}>
-                          {when.label}
-                        </span>
-                      )}
+                      <span className={`home-board-when${when && when.soon ? ' soon' : ''}${when && when.past ? ' past' : ''}`}>
+                        {start || 'time TBD'}
+                        {when && when.label !== 'today' ? ` · ${when.label}` : ''}
+                      </span>
                     </div>
                     <div className="home-board-players">
                       <span className={`home-board-player${p.favorite === p.p1 ? ' fav' : ''}`}>
@@ -854,26 +858,30 @@ export default function Home() {
         <section className="home-nav">
           <div className="home-section-head">
             <h2 className="home-section-title">Where to go next</h2>
-            <span className="home-section-sub">the proof, then the tools</span>
+            <span className="home-section-sub">the tools, then the proof</span>
           </div>
+          {/* Ordered by what a visitor can DO, then by what backs it up.
+              The Risk Lab leads because it is the thing that answers "so what
+              do I do with this", and the two record pages that used to open
+              the list are the last word rather than the first. */}
           <div className="home-nav-grid">
-            <Link to="/edge" className="home-nav-card">
+            <Link to="/risk" className="home-nav-card">
               <div className="home-nav-num">01</div>
-              <div className="home-nav-name">The Edge</div>
-              <p className="home-nav-desc">Where we split from the market, and who was right.</p>
-              <span className="home-nav-go">See the splits →</span>
-            </Link>
-            <Link to="/track-record" className="home-nav-card">
-              <div className="home-nav-num">02</div>
-              <div className="home-nav-name">The Ledger</div>
-              <p className="home-nav-desc">Every call, locked before play and scored after.</p>
-              <span className="home-nav-go">View the record →</span>
+              <div className="home-nav-name">Risk Lab</div>
+              <p className="home-nav-desc">What to stake on today's card, and what a bad day costs.</p>
+              <span className="home-nav-go">Size your day →</span>
             </Link>
             <Link to="/h2h" className="home-nav-card">
-              <div className="home-nav-num">03</div>
+              <div className="home-nav-num">02</div>
               <div className="home-nav-name">H2H Studio</div>
               <p className="home-nav-desc">Any two players, any surface, played out point by point.</p>
               <span className="home-nav-go">Open the studio →</span>
+            </Link>
+            <Link to="/dream-brackets" className="home-nav-card">
+              <div className="home-nav-num">03</div>
+              <div className="home-nav-name">Dream Brackets</div>
+              <p className="home-nav-desc">Seed your own draw and simulate it to a champion.</p>
+              <span className="home-nav-go">Build yours →</span>
             </Link>
             <Link to="/draw" className="home-nav-card">
               <div className="home-nav-num">04</div>
@@ -881,17 +889,17 @@ export default function Home() {
               <p className="home-nav-desc">The bracket simulated 2,000 times, re-priced daily.</p>
               <span className="home-nav-go">Read the bracket →</span>
             </Link>
-            <Link to="/dream-brackets" className="home-nav-card">
+            <Link to="/edge" className="home-nav-card">
               <div className="home-nav-num">05</div>
-              <div className="home-nav-name">Dream Brackets</div>
-              <p className="home-nav-desc">Seed your own draw and simulate it to a champion.</p>
-              <span className="home-nav-go">Build yours →</span>
+              <div className="home-nav-name">The Edge</div>
+              <p className="home-nav-desc">Where we split from the market, and who was right.</p>
+              <span className="home-nav-go">See the splits →</span>
             </Link>
-            <Link to="/model" className="home-nav-card">
+            <Link to="/track-record" className="home-nav-card">
               <div className="home-nav-num">06</div>
-              <div className="home-nav-name">The Engine Room</div>
-              <p className="home-nav-desc">Five engines, one deployed per surface, all monitored.</p>
-              <span className="home-nav-go">Look under the hood →</span>
+              <div className="home-nav-name">The Ledger</div>
+              <p className="home-nav-desc">Every call, locked before play and scored after.</p>
+              <span className="home-nav-go">View the record →</span>
             </Link>
           </div>
         </section>

@@ -7,12 +7,13 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  /* Follows the scroll. Clears the fixed header, and never grows past the
+     screen: the LIST scrolls inside the rail once the day is long, so the
+     bench stays reachable without ever hiding the plan behind it. */
+  position: sticky;
+  top: 5.5rem;
+  max-height: calc(100vh - 7.5rem);
 }
-/* Not sticky. The app scrolls on `body` rather than the document element, and
-   a sticky rail inside that never engaged - it needs a scroll container this
-   page does not have, and rebuilding the page's scrolling to pin a side list
-   is a poor trade. The list caps its own height instead, so a forty-match
-   Tuesday scrolls inside the rail rather than pushing the plan off screen. */
 
 /* The head, the filters and the footer never give up height: only the LIST
    scrolls. Without this the flex column shrank them to fit the max-height and
@@ -79,7 +80,6 @@
   padding: 0;
   overflow-y: auto;
   min-height: 0;
-  max-height: 60vh;
 }
 .card-rail-item {
   display: grid;
@@ -140,6 +140,9 @@
 
 /* Stacked on narrow screens, and no longer sticky: a pinned rail on a phone
    eats the screen the table needs. */
+/* Stacked on a phone, and no longer pinned: a sticky rail there would eat
+   the screen the plan needs. */
 @media (max-width: 900px) {
+  .card-rail { position: static; max-height: none; }
   .card-rail-list { max-height: 260px; }
 }

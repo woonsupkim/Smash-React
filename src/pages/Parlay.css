@@ -199,9 +199,12 @@
   display: grid;
   grid-template-columns: 268px minmax(0, 1fr);
   gap: 1.5rem;
-  align-items: start;
   margin-top: 1.2rem;
 }
+/* Deliberately NOT align-items: start on the grid. The bench cell has to
+   stretch to the row height, or the sticky rail inside it is exactly as tall
+   as its own content and has no distance to travel. */
+.parlay-bench { min-width: 0; }
 .parlay-plan { min-width: 0; }
 /* Only a real match drag lights this up: the handler checks the payload type
    before it calls preventDefault, so dragging a file or a link over the page
