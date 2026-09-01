@@ -10,6 +10,43 @@ export const MODEL_VERSION = '4.2';
 
 export const CHANGELOG = [
   {
+    version: '4.2.9',
+    date: '2026-09-01',
+    type: 'product',
+    title: 'One page for what to stake, and what it costs',
+    notes: [
+      'THE PARLAY BUILDER AND THE RISK LAB WERE THE SAME QUESTION ASKED TWICE, AND THEY ARE ONE PAGE NOW. The builder said what to stake; a separate page said what staking it does to you. Two surfaces, two copies of the card, two sets of stakes, and nothing stopping them pricing the same day differently - which is the one disagreement a staking tool cannot afford. They are merged under the name that describes the job: the Risk Lab. The old /parlay URL still answers, because it is linked from every share asset already posted and every digest already sent.',
+      'THE TABLE HOLDS YOUR PICKS, AND THE REST OF THE DAY SITS BESIDE IT. On a slam Tuesday the plan funds four matches out of forty, and all forty were in the table - the four you were working on buried in the thirty-six you were not. The card is now a bench on the left that you drag from or tick, and the table on the right holds your picks and nothing else. It lands on the recommendation\'s own choices, so it is useful before you touch anything. Both directions work with a keyboard, because a drag that only responds to a mouse is not a control, it is a demo.',
+      'THE OUTCOME CHART IS ONE SHAPE INSTEAD OF TWO. Wins and losses were drawn as separate charts, which made you compare heights across a gap and hold two pictures at once. They are one curve now: losses left of break-even, gains right, height meaning "how likely you are to get at least this far in this direction". The two heights where they meet are the headline pair - the chance of losing anything and the chance of winning anything - and they need no legend to read. The ladders underneath stop at the 2% outcome rather than the theoretical extreme, because anchoring at "everything lands" spent most of the rungs printing 0.0%.',
+      'AND THE WHOLE DAY IS IN THE TABLE, INCLUDING WHAT WE WILL NOT CALL. Matches the model declines to call appear on the card, tagged, unstakeable, and excluded from every number - the card is the card, and a table that silently omits a third of the day makes a reader wonder what else is missing. In Custom they become stakeable and carry their real edge with the caveat attached: we will not tell you to back a coin flip, but refusing to price one you have already decided on just moves the arithmetic somewhere we cannot see it.',
+    ],
+  },
+  {
+    version: '4.2.8',
+    date: '2026-09-01',
+    type: 'model',
+    title: 'The recommended plan now has to win on a typical day',
+    notes: [
+      'THE OLD RECOMMENDATION LOST MONEY ON THE DAY YOU ACTUALLY LIVED. It was pinned to one policy - quarter-Kelly on the calls that beat their price - chosen by a walk-forward tournament, on the reasoning that a daily follower needs one consistent rule. It won on return per dollar risked and lost on the median: on a thin card it funded two bets, needed both, and its middle outcome was a LOSS of $5.56 against an expected profit of $4.53. Expected value is an average over many days; somebody following a plan every morning experiences the middle one.',
+      'IT IS NOW SEARCHED PER CARD, AGAINST TWO REQUIREMENTS IN ORDER. First, a typical day must finish up: the median outcome has to be positive, and that is a hard gate rather than a term in a score. Second, among the plans that clear it, the one with the best expected LOG growth wins - Kelly\'s own measure, which rewards return and punishes swings in a single number so that earning more and risking less stop being a trade-off weighed by eye. Where two plans are level on growth, the better typical day breaks the tie. A day at the 5th percentile is held inside 15% of the budget.',
+      'THREE THINGS FALL OUT OF THAT RATHER THAN BEING IMPOSED. It does not spend the budget, because growth turns down past the optimal fraction and the rest is worth more tomorrow. It often carries no parlay at all, since no parlay is always one of the candidates and usually the better one. And no single match takes more than a tenth of the budget or half its own Kelly stake, so putting real money to work means spreading it across the card. Across the settled record the plan went from ten days up in nineteen to twelve, with a worst day a third of the alternatives\' and a drawdown a fifth of the whole-card plan\'s.',
+      'AND THE EDGE WE ACT ON IS NOW CAPPED AT 12%. Bucketing every graded, priced call by the edge we claimed at lock time: from 0 to 10% the model hits within a point of what it says and makes money. Past 20% it claims 66.9% and delivers 46.2% - not even the 50% those prices need. Because Kelly sizing scales with edge, the biggest stakes were landing on exactly the least reliable numbers. A bet we rate at +32% is now staked as if it were +12%. This is a prior rather than a curve fitted to those rows: an edge above a tenth against a liquid market is rare enough that our own arithmetic is the likelier explanation. Every cap between 5% and 20% turns the settled record positive; the shipped figure was set before the sweep was run, not after.',
+    ],
+  },
+  {
+    version: '4.2.7',
+    date: '2026-09-01',
+    type: 'ops',
+    title: 'Matches stopped disappearing at teatime',
+    notes: [
+      'A CALL USED TO VANISH FIVE AND A HALF HOURS AFTER ITS START, AND TURN UP NOWHERE UNTIL MORNING. Today\'s Calls and the staking surfaces hide a match once it is under way, which is right for a page about what to bet and wrong for a page whose whole claim is that calls are locked before play. From about half past four each afternoon the card emptied one match at a time, and those calls existed nowhere on the site until overnight grading put them on the Ledger. They now sit in an "in play, awaiting result" section instead, dimmed and clearly not bettable.',
+      'AND THE PAGES SAY WHICH KIND OF NOTHING THEY HAVE. An empty card drew "no plan worth staking today" whether the prices were bad or the day was simply over - a judgement about prices, and on most evenings a false one. The Risk Lab now distinguishes them, and the home plan card says "today\'s card is done" rather than silently disappearing, which is what it did the moment fewer than two priced calls remained. The home board is HAPPENING TODAY, today only: it filtered on "today or later", so a quiet evening filled it with tomorrow\'s matches under a heading claiming they were happening now.',
+      'EVERY MATCH NOW SAYS WHEN IT STARTS, AND EVERY PAGE SAYS WHICH DAY IT IS. Start times in the viewer\'s own timezone across Today\'s Calls, the home board and the plan table, with an honest "time TBD" where the order of play is unpublished rather than an invented midnight. Today\'s Calls carries the date and the timezone, so a reader landing on a cached copy can tell what they are looking at.',
+      'THE SITE NAMES ONE URL PER PAGE. There was no canonical tag anywhere, while /women/track-record served byte-identical markup and an identical title to /track-record - and both were submitted in the sitemap, along with three more pairs. Search engines were being told about pairs of URLs with nothing to choose between them. Five aliases now carry a canonical pointing at the page that owns the content and are gone from the sitemap; they still resolve, because old links depend on it. The two /women routes that genuinely render WTA content are untouched.',
+      'AND CI STOPPED FAILING ON A SCHEDULE. A test re-derived the call thresholds from the live record and demanded byte-equality with a file the tuner regenerates four times a year. The record moves every day of a slam, so the build went red a few days into every tournament with no commit to blame. The test was written to catch hand-edits and now does that with a tolerance, while a separate check reports staleness as itself. Fixed alongside it: the plan table ran wider than a phone and clipped the remove button out of reach.',
+    ],
+  },
+  {
     version: '4.2.6',
     date: '2026-08-23',
     type: 'model',
