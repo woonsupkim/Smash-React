@@ -23,7 +23,7 @@
  *   milestone / perfect-day / streak
  *
  * MISSES - owning the ones we got wrong:
- *   autopsy.png            a seed we had, and lost
+ *   autopsy.png            a seed falls, and who saw it coming
  *
  * WEEKLY:
  *   weekly.png             the week's record
@@ -394,11 +394,16 @@ const STADIUMS = {
 const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 const last = (n) => String(n || '').trim().split(' ').pop();
 const pctTxt = (p) => `${Math.round(p * 100)}%`;
-const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+// Formatted at the VENUE, not on the build machine. Without a timeZone this
+// printed whatever zone the builder ran in, so a 02:30Z night session read
+// "Sep 1" for a local rebuild in New York and "Sep 2" for CI in UTC - and the
+// story cards were selected on one and captioned with the other.
+const fmtDate = (iso) => fmtEventDate(iso, { month: 'short', day: 'numeric' });
 
 // "Yesterday", said only when it is true - see lib/recapDay.js for why the
 // three recap cards must not each pick their own last day.
 const { recapDay } = require('./lib/recapDay');
+const { eventDay, todayEvent, fmtEventDate } = require('./lib/eventDay');
 
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -1345,10 +1350,16 @@ async function upsetCallCard(p, file) {
     headline2: 'UNDERDOG',
     stats: [
       { value: `${Math.round(p.favProb * 100)}%`, label: `we say ${last(p.favName)}` },
-      { value: `${Math.round(mkt * 100)}%`, label: 'the market says the same player' },
+      // "the market says the same player" described the mechanic and buried
+      // the point. The card exists because the two numbers CONFLICT, so the
+      // label names the conflict.
+      { value: `${Math.round(mkt * 100)}%`, label: 'the market disagrees' },
       { value: `$${(STAKE * o).toFixed(2)}`, label: `what $${STAKE} returns if it lands` },
     ],
-    footNote: 'our pick is not the favourite · longer ticket, same conviction',
+    // The stakes of the disagreement, stated. Two numbers this far apart on
+    // one match cannot both be right, and saying so is the whole reason the
+    // card is worth posting.
+    footNote: 'one of us has to be wrong · we publish which, either way',
     file,
     accent: PAL.edge.key,
     cta: 'EVERY DISAGREEMENT  →',
@@ -1669,8 +1680,15 @@ async function streakCard(streak, file) {
   await render(file, base);
 }
 
-// ── MOMENTS: upset autopsy ─────────────────────────────────────────────────
-// After a seed falls: what we said, what the market said, side by side.
+// ── MOMENTS: when a seed falls ─────────────────────────────────────────────
+// What we said, what the market said, side by side.
+//
+// The card used to shout "UPSET". That is the trade's filing term for any
+// result against the odds - a 55/45 going the 45 way is an upset - so on a
+// card built around a genuine shock it undersold the thing it was reporting,
+// and it read as jargon besides. The headline now says what actually
+// happened; "nobody saw it coming" is the claim the three rows underneath
+// then substantiate, one source at a time.
 async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const wName = m.winner === m.p1 ? m.name1 : m.name2;
   const lName = m.winner === m.p1 ? m.name2 : m.name1;
@@ -1682,15 +1700,15 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const comps = [{ input: await circlePhoto(photoPath(tour, wid), 156), left: SQ / 2 - 78, top: 262 }];
   const matchup = `${last(wName).toUpperCase()} D. ${last(lName).toUpperCase()}`;
   const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
-  ${sStage(a, SQ, SQ, { ghost: 'UPSET' })}
-  ${sMast(SQ, `${m.event || 'Tour'} · Seed Down`, a)}
-  ${T('anton', 'UPSET', SQ / 2, 232, 116, { anchor: 'middle', fill: a.key }).svg}
+  ${sStage(a, SQ, SQ, { ghost: 'SHOCK' })}
+  ${sMast(SQ, `${m.event || 'Tour'} · The Shock`, a)}
+  ${T('anton', 'SHOCK', SQ / 2, 232, 116, { anchor: 'middle', fill: a.key }).svg}
   ${T('anton', matchup, SQ / 2, 494, fitT('anton', matchup, 58, SQ - 140), { anchor: 'middle', fill: C_WHITE }).svg}
   ${T('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, SQ / 2, 540, fitT('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, 28, SQ - 160), { anchor: 'middle', fill: C_MUTE }).svg}
   ${statRow(632, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ${last(lName).toUpperCase()}`, weCalled ? '#3ddc84' : '#ff5c5c')}
   ${statRow(712, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled == null ? C_WHITE : marketCalled ? '#3ddc84' : '#ff5c5c')}
   ${statRow(792, 'THE RANKINGS', 'NEVER SAW IT', '#ff5c5c')}
-  ${sBar(SQ, SQ, 'GRADED EITHER WAY  →', a, { sub: "THAT'S THE WHOLE POINT" })}
+  ${sBar(SQ, SQ, 'GRADED EITHER WAY  →', a, { sub: 'NOBODY SAW THIS COMING' })}
   </svg>`;
   await render(file, base, comps);
 }
@@ -2102,10 +2120,34 @@ async function run() {
   // surfaces the oldest ungraded pending row first, and the flagship cover /
   // match / parlay / tape cards end up built around days-old #100-ranked
   // coin-flips instead of the day's real headliners.
+  //
+  // Anchored to a DAY rather than to an instant. `date >= NOW` has no notion
+  // of a card at all: run in the evening it silently rolled onto the next
+  // day's matches while every caption still said "today", which is how the
+  // story cards ended up built from one day's rows and captioned with
+  // another's. The card is now named, and if it has to roll forward the copy
+  // rolls with it.
   const NOW = Date.now();
-  const picks = (preds.predictions || [])
-    .filter((p) => p.status === 'pending' && !ledgerNoCall(p) && ['slam', '1000'].includes(p.tier || 'slam')
-      && new Date(p.date).getTime() >= NOW)
+  const eligible = (preds.predictions || [])
+    .filter((p) => p.status === 'pending' && !ledgerNoCall(p) && ['slam', '1000'].includes(p.tier || 'slam'));
+
+  const TODAY_EVENT = todayEvent();
+  const unstarted = eligible.filter((p) => new Date(p.date).getTime() >= NOW);
+  // Today's card while any of it is still to come; otherwise the next day
+  // that has one. Nothing older is ever eligible - these cards are a "called
+  // before play" showcase, and yesterday's ungraded straggler is neither.
+  const CARD_DAY = unstarted.some((p) => eventDay(p.date) === TODAY_EVENT)
+    ? TODAY_EVENT
+    : [...new Set(unstarted.map((p) => eventDay(p.date)))].sort()[0] || TODAY_EVENT;
+  const CARD = {
+    day: CARD_DAY,
+    isToday: CARD_DAY === TODAY_EVENT,
+    // Used wherever the copy would otherwise assert "today" on faith.
+    word: CARD_DAY === TODAY_EVENT ? 'today' : 'tomorrow',
+  };
+
+  const picks = unstarted
+    .filter((p) => eventDay(p.date) === CARD.day)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, MAX_MATCH_CARDS)
     .map(decorate);
@@ -2119,7 +2161,7 @@ async function run() {
     const mult = picks.reduce((m, x) => m * (1 / x.favProb), 1);
     const evName = picks[0].event;
     captions.today = [
-      `${evName}${roundLabel(picks) ? ` ${roundLabel(picks)}` : ''}: here are the ${picks.length} match${picks.length === 1 ? '' : 'es'} we are calling today, every one locked before a ball is struck.`,
+      `${evName}${roundLabel(picks) ? ` ${roundLabel(picks)}` : ''}: here are the ${picks.length} match${picks.length === 1 ? '' : 'es'} we are calling ${CARD.word}, every one locked before a ball is struck.`,
       upsetPicks.length
         ? `One you would not expect: we have ${upsetPicks[0].favName} over ${upsetPicks[0].favorite === upsetPicks[0].p1 ? upsetPicks[0].name2 : upsetPicks[0].name1} at ${pctTxt(upsetPicks[0].favProb)}, against the market.`
         : '',
@@ -2131,11 +2173,11 @@ async function run() {
     ].filter(Boolean).join('\n\n');
 
     await coverCard(picks, sc, 'cover.png');
-    add('cover.png', 'carousel-cover', 'square', 'today', `Today's calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`,
-      `Today's Calls cover card: ${picks.length} locked predictions at the ${picks[0].event}.`);
+    add('cover.png', 'carousel-cover', 'square', 'today', `${CARD.isToday ? "Today's" : "Tomorrow's"} calls at the ${picks[0].event}: ${picks.length} matches, locked before play. Swipe for every pick. ${sc.proofLine[0].toUpperCase()}${sc.proofLine.slice(1)}. All of today: ${todayLink()} ${tags}`,
+      `${CARD.isToday ? "Today's" : "Tomorrow's"} Calls cover card: ${picks.length} locked predictions at the ${picks[0].event}.`);
     await coverPortrait(picks, sc, 'cover-45.png');
-    add('cover-45.png', 'carousel-cover', 'portrait', 'today', `Today's calls at the ${picks[0].event}, 4:5 feed format. ${todayLink()} ${tags}`,
-      `Today's Calls cover card in portrait format for the ${picks[0].event}.`);
+    add('cover-45.png', 'carousel-cover', 'portrait', 'today', `${CARD.isToday ? "Today's" : "Tomorrow's"} calls at the ${picks[0].event}, 4:5 feed format. ${todayLink()} ${tags}`,
+      `${CARD.isToday ? "Today's" : "Tomorrow's"} Calls cover card in portrait format for the ${picks[0].event}.`);
 
     // Career h2h + our pair record enrich every match card.
     const h2hAll = fs.existsSync(path.join(DATA, 'h2h.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'h2h.json'), 'utf8')) : {};
@@ -2179,7 +2221,7 @@ async function run() {
     }
 
     await slateStory(picks, sc, 'slate-story.png');
-    add('slate-story.png', 'slate', 'story', 'story', `The full slate for ${fmtDate(picks[0].date)}: every call with win probability and flags. All of today: ${todayLink()} ${tags}`);
+    add('slate-story.png', 'slate', 'story', 'story', `The full slate for ${fmtDate(CARD.day)}: every call with win probability and flags. All of today: ${todayLink()} ${tags}`);
 
     // The poll runs the night before, so it asks about TOMORROW - a story
     // posted today about a match starting in an hour is a poll nobody can
@@ -2312,7 +2354,7 @@ async function run() {
     const ledger = settledLedger;
     const when = RECAP;
     const lastDay = when?.day;
-    const dayRows = lastDay ? ledger.filter((p) => String(p.date).slice(0, 10) === lastDay) : [];
+    const dayRows = lastDay ? ledger.filter((p) => eventDay(p.date) === lastDay) : [];
     const run = stakeRun(dayRows);
     if (run.staked > 0) {
       await dayMoneyCard(run, lastDay, 'day-money.png', when);
@@ -2324,15 +2366,18 @@ async function run() {
     // Today's calls, and the ones where we take the underdog. Both can be
     // legitimately empty - a card with nothing on it is not shipped, and the
     // restraint card in promo is the honest thing to post instead.
-    const NOW = Date.now();
+    // The same card the cards above are built from, plus anything that has
+    // started within the last six hours: a match in progress is still on
+    // today's board, and dropping it made the count disagree with the site.
     const todays = (preds.predictions || []).filter((p) => p.status === 'pending'
-      && !ledgerNoCall(p) && new Date(p.date).getTime() >= NOW - 6 * 3600e3);
+      && !ledgerNoCall(p) && eventDay(p.date) === CARD.day
+      && new Date(p.date).getTime() >= NOW - 6 * 3600e3);
     if (todays.length) {
       const byConf = [...todays].sort((a, b) => b.favProb - a.favProb);
       await todaysCallsCard(byConf, 'todays-calls.png');
       add('todays-calls.png', 'todays-calls', 'square', 'today',
-        `${todays.length} call${todays.length === 1 ? '' : 's'} locked before play today, top of the card ${last(byConf[0].favName)} at ${Math.round(byConf[0].favProb * 100)}%. Every one timestamped now and graded automatically when the result lands. ${SITE}/today ${tags}`,
-        `Today's ${todays.length} locked calls with their stated probabilities.`);
+        `${todays.length} call${todays.length === 1 ? '' : 's'} locked before play ${CARD.word}, top of the card ${last(byConf[0].favName)} at ${Math.round(byConf[0].favProb * 100)}%. Every one timestamped now and graded automatically when the result lands. ${SITE}/today ${tags}`,
+        `${CARD.isToday ? "Today's" : "Tomorrow's"} ${todays.length} locked calls with their stated probabilities.`);
 
       const splits = todays.filter(marketDisagrees)
         .sort((a, b) => marketProbOfOurPick(a) - marketProbOfOurPick(b));
@@ -2340,7 +2385,7 @@ async function run() {
         const u = splits[0];
         await upsetCallCard(u, 'upset-call.png');
         add('upset-call.png', 'upset-call', 'square', 'moments',
-          `Upset watch: we have ${last(u.favName)} at ${Math.round(u.favProb * 100)}% where the market has them at ${Math.round(marketProbOfOurPick(u) * 100)}%. Our pick is not the favourite, so we are on the longer ticket - $${STAKE} returns $${(STAKE * ourPrice(u)).toFixed(2)} if it lands. An upset is a disagreement, not a surprise. ${SITE}/edge ${tags}`,
+          `Upset watch: we have ${last(u.favName)} at ${Math.round(u.favProb * 100)}% where the market has them at ${Math.round(marketProbOfOurPick(u) * 100)}%. Our pick is not the favourite, so we are on the longer ticket - $${STAKE} returns $${(STAKE * ourPrice(u)).toFixed(2)} if it lands. One of us has to be wrong, and you will see which. ${SITE}/edge ${tags}`,
           `Upset call: our pick is the market's underdog at ${ourPrice(u).toFixed(2)}.`);
       }
     }
@@ -2464,7 +2509,7 @@ async function run() {
     // card prints a losing week as plainly as a winning one - that honesty is
     // the product, and the caption says which it was.
     {
-      const days = [...new Set(weekMs.map((m) => String(m.date).slice(0, 10)))].sort();
+      const days = [...new Set(weekMs.map((m) => eventDay(m.date)))].sort();
       const totals = new Map();
       let recTotal = 0, recDays = 0;
       for (const dayISO of days) {
@@ -2502,8 +2547,8 @@ async function run() {
     // contradiction rather than as the point.
     {
       const ledger = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
-      const days = [...new Set(ledger.map((p) => String(p.date).slice(0, 10)))].sort().slice(-7);
-      const wkRows = ledger.filter((p) => days.includes(String(p.date).slice(0, 10)));
+      const days = [...new Set(ledger.map((p) => eventDay(p.date)))].sort().slice(-7);
+      const wkRows = ledger.filter((p) => days.includes(eventDay(p.date)));
       const wk = stakeRun(wkRows);
       if (wk.staked > 0) {
         await weekMoneyCard(wk, 'week-money.png');
@@ -2642,7 +2687,7 @@ async function run() {
       const gWhen = RECAP;
       const gDay = gWhen?.day;
       const misses = graded
-        .filter((p) => String(p.date).slice(0, 10) === gDay && p.status === 'lost')
+        .filter((p) => eventDay(p.date) === gDay && p.status === 'lost')
         .sort((a, b) => b.favProb - a.favProb);
       const shock = misses[0];
       if (shock && shock.favProb >= (Number(process.env.SHOCK_MIN) || 0.70)) {
@@ -2741,8 +2786,8 @@ async function run() {
     // and lost - and an upset in the sense this account uses the word is a
     // disagreement with the market, which is a different card entirely
     // (upset-call.png). Filing them together made "upset" mean two things.
-    add('autopsy.png', 'seed-autopsy', 'square', 'moments', `Seed autopsy: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
-      `Seed autopsy card: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
+    add('autopsy.png', 'seed-autopsy', 'square', 'moments', `Nobody saw this coming: No. ${bu.wR} ${last(wName)} takes down No. ${bu.lR}. What we said, what the market said, graded in public either way. ${SITE}/track-record ${tags}`,
+      `A seed falls: rank ${bu.wR} beat rank ${bu.lR}, with our call and the market's.`);
   }
 
   // ── EDGE: us vs the betting market (new collection) ─────────────────────
@@ -2811,7 +2856,7 @@ async function run() {
       // A fixed per-match stake would have the baseline risking several times
       // the plan's money, which makes its absolute profit meaningless next to
       // the plan's. Per-match stake is derived, not assumed.
-      const rows = ledger.filter((m) => days.includes(String(m.date).slice(0, 10)) && m.lockOdd1 > 1 && m.lockOdd2 > 1);
+      const rows = ledger.filter((m) => days.includes(eventDay(m.date)) && m.lockOdd1 > 1 && m.lockOdd2 > 1);
       const perMatch = rows.length ? run.staked / rows.length : 0;
       let mktStaked = 0, mktProfit = 0;
       for (const m of rows) {

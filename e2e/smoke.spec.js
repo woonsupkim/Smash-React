@@ -357,7 +357,9 @@ test('today splits the tours into two columns, and every call survives the split
   await page.goto('/today');
   await page.waitForSelector('.today-row, .today-empty', { timeout: 20000 });
 
-  const cols = page.locator('.today-col');
+  // Scoped to the MAIN card. The in-play section below splits the same way, so
+  // an unscoped .today-col now matches both and counts four.
+  const cols = page.locator('.today-page > .today-cols .today-col');
   const nCols = await cols.count();
   if (nCols === 0) {
     // A one-tour day, or an empty one. The single list is the correct render.
@@ -385,9 +387,36 @@ test('today splits the tours into two columns, and every call survives the split
   }
   const shown = Number((await page.locator('.today-count').innerText()).replace(/^\D*(\d+).*$/s, '$1'));
   expect(total).toBe(shown);
+  // The count above the card describes the card, not the in-play list below.
+  expect(total).toBe(await page.locator('.today-page > .today-cols .today-row').count());
 
   // The tour is the column heading, so it is not repeated on every row.
   await expect(cols.nth(0).locator('.today-meta').first()).not.toHaveText(/^(ATP|WTA)/);
+
+  // The in-play section gets the same treatment: a reader should not meet two
+  // different shapes for the same kind of list on one page.
+  const inplay = page.locator('.today-inplay');
+  if (await inplay.count() > 0) {
+    const icols = inplay.locator('.today-col');
+    const n = await icols.count();
+    // Zero is legitimate: a single-tour set of in-play calls renders as a list.
+    if (n > 0) {
+      expect(n).toBe(2);
+      let iTotal = 0;
+      for (let i = 0; i < 2; i++) {
+        const claimed = Number((await icols.nth(i).locator('.today-col-n').innerText()).replace(/\D+/g, ''));
+        const actual = await icols.nth(i).locator('.today-row').count();
+        expect(actual).toBe(claimed);
+        iTotal += actual;
+      }
+      expect(iTotal).toBe(await inplay.locator('.today-row').count());
+      const ia = await icols.nth(0).boundingBox();
+      const ib = await icols.nth(1).boundingBox();
+      expect(ib.x).toBeGreaterThan(ia.x + ia.width / 2);
+    }
+    // Started calls stay marked as started wherever they are rendered.
+    await expect(inplay.locator('.today-row').first()).toHaveClass(/started/);
+  }
 
   // Narrow: one column, headings kept.
   await page.setViewportSize({ width: 700, height: 1000 });

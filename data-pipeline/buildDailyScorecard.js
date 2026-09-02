@@ -16,6 +16,7 @@ const path = require('path');
 const Papa = require('papaparse');
 const { rowNoCall } = require('./lib/noCall');
 const { recapDay, yesterdayISO, dayISOof } = require('./lib/recapDay');
+const { prevDay, todayEvent } = require('./lib/eventDay');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
 
@@ -105,8 +106,10 @@ function run(now = new Date()) {
     // feed was behind (or the tour did not play), and the copy above these
     // numbers must not say "yesterday".
     isYesterday: !!when && when.isYesterday,
+    // Counted from the VENUE's today, so an evening build does not report a
+    // day-old recap as two days old.
     daysAgo: Math.max(0, Math.round(
-      (Date.parse(`${dayISOof(now.toISOString())}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 864e5
+      (Date.parse(`${todayEvent(now)}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 864e5
     )),
     n: dayMatches.length,
     correct: hits.length,

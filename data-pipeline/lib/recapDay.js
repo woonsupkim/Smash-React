@@ -14,15 +14,15 @@
 // build when there are results for it, otherwise the most recent day there
 // ARE results for, flagged so the copy can name it instead of lying.
 //
-// UTC buckets, matching the timeZone: 'UTC' that every date stamp on these
-// cards already formats in.
-const dayISOof = (v) => String(v).slice(0, 10);
+// Buckets are VENUE days, not UTC ones. A night session finishing at 10:30pm
+// in New York is stamped 02:30Z the following day, so UTC bucketing filed it
+// under tomorrow: that is how a one-match phantom "Aug 30" appeared in the
+// record when Aug 30 had not been played yet. See lib/eventDay.js.
+const { eventDay, yesterdayEvent, fmtEventDate } = require('./eventDay');
 
-const yesterdayISO = (now = new Date()) =>
-  dayISOof(new Date(Date.parse(`${dayISOof(now.toISOString())}T00:00:00Z`) - 864e5).toISOString());
-
-const weekdayOf = (day) =>
-  new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+const dayISOof = eventDay;
+const yesterdayISO = yesterdayEvent;
+const weekdayOf = (day) => fmtEventDate(day, { weekday: 'long' });
 
 /**
  * @param days iterable of ISO stamps or YYYY-MM-DD strings that have
@@ -48,7 +48,7 @@ function recapDay(days, now = new Date()) {
     // For a caption that has room to be unambiguous.
     long: isYesterday
       ? 'yesterday'
-      : new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+      : fmtEventDate(day, { weekday: 'long', month: 'long', day: 'numeric' }),
   };
 }
 

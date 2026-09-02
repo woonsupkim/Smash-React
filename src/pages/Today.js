@@ -8,7 +8,7 @@
 //
 // Scope is strictly the viewer's calendar day (see isToday): a page called
 // Today that shows tomorrow night's matches is lying about its own name.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';
 import { Link } from 'react-router-dom';
 import { playerPhoto } from '../utils/playerPhotos';
@@ -81,18 +81,43 @@ export default function Today() {
 
   // [['atp', rows], ['wta', rows]] when both tours are on the card and the
   // reader has not narrowed to one, otherwise null for the single list.
-  const splitByTour = useMemo(() => {
-    if (!shown || tour !== 'all') return null;
+  // Shared by the main card and the in-play section below it, so the two
+  // always agree about when a split is worth doing. Null means "render the
+  // plain list": one tour on the card, or the reader has already filtered to
+  // one, and a two-column grid with an empty side is worse than a list.
+  const splitTours = useCallback((list) => {
+    if (!list || tour !== 'all') return null;
     const byTour = new Map();
-    for (const p of shown) {
+    for (const p of list) {
       if (!byTour.has(p.tour)) byTour.set(p.tour, []);
       byTour.get(p.tour).push(p);
     }
     if (byTour.size < 2) return null;
     return [...byTour.entries()].sort(([a], [b]) => a.localeCompare(b));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, tour]);
+  }, [tour]);
 
+  const splitByTour = useMemo(() => splitTours(shown), [splitTours, shown]);
+  const splitInPlay = useMemo(() => splitTours(inPlay), [splitTours, inPlay]);
+
+
+  // One card, rendered either as two tour columns or as a plain list. Both the
+  // main card and the in-play section use it, so a reader never meets two
+  // different shapes for the same kind of list on one page.
+  const renderCard = (rows, split, started) => (split ? (
+    <div className="today-cols">
+      {split.map(([tourKey, list]) => (
+        <section className="today-col" key={tourKey} aria-label={`${tourKey.toUpperCase()} calls`}>
+          <div className="today-col-head">
+            <span className="today-col-tour">{tourKey.toUpperCase()}</span>
+            <span className="today-col-n">{list.length} {list.length === 1 ? 'call' : 'calls'}</span>
+          </div>
+          <div className="today-list">{list.map((p) => renderRow(p, started, true))}</div>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <div className="today-list">{rows.map((p) => renderRow(p, started))}</div>
+  ));
 
   // Only show a control when it can actually change something.
   const showFilters = !!all && all.length > 1 && (tours.length > 1 || events.length > 1);
@@ -244,25 +269,7 @@ export default function Today() {
           or on a phone, a two-column grid with one empty side is worse than
           the list it replaced. The tour meta on each row stays, because the
           columns collapse and the row has to stand on its own. */}
-      {shown && shown.length > 0 && (
-        splitByTour ? (
-          <div className="today-cols">
-            {splitByTour.map(([tourKey, rows]) => (
-              <section className="today-col" key={tourKey} aria-label={`${tourKey.toUpperCase()} calls`}>
-                <div className="today-col-head">
-                  <span className="today-col-tour">{tourKey.toUpperCase()}</span>
-                  <span className="today-col-n">{rows.length} {rows.length === 1 ? 'call' : 'calls'}</span>
-                </div>
-                <div className="today-list">{rows.map((p) => renderRow(p, false, true))}</div>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <div className="today-list">
-            {shown.map((p) => renderRow(p))}
-          </div>
-        )
-      )}
+      {shown && shown.length > 0 && renderCard(shown, splitByTour, false)}
 
       {/* Started, waiting on a result. The same rows, dimmed, under their own
           heading: the call was locked before play and stays readable, but
@@ -278,9 +285,7 @@ export default function Today() {
               <Link to="/track-record">the Ledger</Link>.
             </span>
           </div>
-          <div className="today-list">
-            {inPlay.map((p) => renderRow(p, true))}
-          </div>
+          {renderCard(inPlay, splitInPlay, true)}
         </section>
       )}
 
