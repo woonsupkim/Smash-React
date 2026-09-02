@@ -1,51 +1,48 @@
-SMASH DAILY - Tuesday, September 1
+SMASH DAILY - Wednesday, September 2
 
-1 from 2 yesterday. Half right, which means half wrong, and both halves are below. 15 more are locked for today at US Open, every one of them public before a ball is struck, plus 6 coin flips we are sitting out.
+21 from 25 yesterday. We will take that. 17 more are locked for today at US Open, every one of them public before a ball is struck, plus 5 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 1 from 2 (50%)
-  The one that stings: Tereza Valentova (we said 62%) - Katie Volynets had other ideas
-  US OPEN SO FAR: +$17.38 (+41.7% on $41.64, 2/2 days up)
+YESTERDAY, GRADED: 21 from 25 (84%)
+  The one that stings: Liudmila Samsonova (we said 72%) - Maya Joint had other ideas
+  Meanwhile, at the bookmakers - same 10 priced matches: us 70%, them 80%
+  If you had actually followed along ($100 in): Comfortable day +$11.78 (recommended); Follow the edge +$11.84; Back every call +$15.40; Spread plus a parlay +$21.55; Whole card, weighted +$15.55 | US OPEN SO FAR: +$17.89 (+34.7% on $51.50, 3/3 days up)
 
 ON COURT TODAY
-  [ US Open - ATP ]
-  Ruud over Cerundolo - 75%
-    Call: https://smash-react.vercel.app/match/casper-ruud-vs-juan-manuel-cerundolo-182710
-    Compare: https://smash-react.vercel.app/compare/atp/casper-ruud-vs-juan-manuel-cerundolo
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=ruud&b=cerun1
-  Cobolli over Comesana - 74%
-    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-francisco-comesana-182721
-    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-francisco-comesana
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=comes
   [ US Open - WTA ]
-  Starodubtseva over Seidel - 74%
-    Call: https://smash-react.vercel.app/match/ella-seidel-vs-yuliia-starodubtseva-182598
-    Compare: https://smash-react.vercel.app/compare/wta/ella-seidel-vs-yuliia-starodubtseva
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=seide&b=staro
-  Bencic over Putintseva - 85%
-    Call: https://smash-react.vercel.app/match/belinda-bencic-vs-yulia-putintseva-182615
-    Compare: https://smash-react.vercel.app/compare/wta/belinda-bencic-vs-yulia-putintseva
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=benci&b=putin
-  Keys over Korneeva - 66%
-    Call: https://smash-react.vercel.app/match/alina-korneeva-vs-madison-keys-182611
-    Compare: https://smash-react.vercel.app/compare/wta/alina-korneeva-vs-madison-keys
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=korne&b=keys
+  Pegula over Kenin - 92%
+    Call: https://smash-react.vercel.app/match/sofia-kenin-vs-jessica-pegula-182550
+    Compare: https://smash-react.vercel.app/compare/wta/sofia-kenin-vs-jessica-pegula
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=kenin&b=pegul
+  Cirstea over Parry - 62%
+    Call: https://smash-react.vercel.app/match/sorana-cirstea-vs-diane-parry-182544
+    Compare: https://smash-react.vercel.app/compare/wta/sorana-cirstea-vs-diane-parry
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=cirst&b=parry
+  Townsend over Preston - 68%
+    Call: https://smash-react.vercel.app/match/taylah-preston-vs-taylor-townsend-182567
+    Compare: https://smash-react.vercel.app/compare/wta/taylah-preston-vs-taylor-townsend
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=prest&b=towns
+  Shnaider over Pliskova - 85%
+    Call: https://smash-react.vercel.app/match/diana-shnaider-vs-karolina-pliskova-182575
+    Compare: https://smash-react.vercel.app/compare/wta/diana-shnaider-vs-karolina-pliskova
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=shnai&b=plisk
+  [ US Open - ATP ]
+  Shelton over Hurkacz - 68%
+    Call: https://smash-react.vercel.app/match/hubert-hurkacz-vs-ben-shelton-182730
+    Compare: https://smash-react.vercel.app/compare/atp/hubert-hurkacz-vs-ben-shelton
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=hurka&b=shelt
 
 THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
-  $5.80 on Ostapenko (70% @ 1.60)
-  $5.71 on Starodubtseva (74% @ 1.47)
-  $3.60 on Buse (64% @ 2.00)
-  $2.78 on Bencic (85% @ 1.20)
-  $4.79 on the parlay
-  Total $22.68; we expect 2.8 to land, returning $25.38; 52% chance of finishing ahead
-  Bad day $-14.28 | typical $6.26 | good day $16.79
+  $10.00 on Ostapenko (70% @ 1.60)
+  Total $10.00; we expect 0.7 to land, returning $11.20; 70% chance of finishing ahead
+  Bad day $-10.00 | typical $6.00 | good day $6.00
   Build your own slip and size it: https://smash-react.vercel.app/risk
 
-COMING UP: 139 days to the Australian Open (hard)
-  ATP: Carlos Alcaraz 29%, Alexander Zverev 12%, Novak Djokovic 10%
-  WTA: Iga Swiatek 17%, Aryna Sabalenka 15%, Elena Rybakina 15%
+COMING UP: 138 days to the Australian Open (hard)
+  ATP: Carlos Alcaraz 26%, Alexander Zverev 12%, Novak Djokovic 11%
+  WTA: Iga Swiatek 17%, Jessica Pegula 14%, Cori Gauff 12%
   https://smash-react.vercel.app/draw
 
-SEASON: 74% (1,578 of 2,121)
+SEASON: 75% (1,610 of 2,160)
 
 See today's full card: https://smash-react.vercel.app/today
 
