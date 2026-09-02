@@ -1699,16 +1699,25 @@ async function upsetAutopsyCard(m, wRank, lRank, tour, file) {
   const wid = m.winner === m.p1 ? m.p1 : m.p2;
   const comps = [{ input: await circlePhoto(photoPath(tour, wid), 156), left: SQ / 2 - 78, top: 262 }];
   const matchup = `${last(wName).toUpperCase()} D. ${last(lName).toUpperCase()}`;
+  // 62 is what the two lines fit in vertically between the masthead rule and
+  // the photo; fitT only ever shrinks it further if the type is wider than
+  // the canvas.
+  const autopsyTitleSize = fitT('anton', 'THIS COMING', 62, SQ - 160);
   const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
-  ${sStage(a, SQ, SQ, { ghost: 'SHOCK' })}
-  ${sMast(SQ, `${m.event || 'Tour'} · The Shock`, a)}
-  ${T('anton', 'SHOCK', SQ / 2, 232, 116, { anchor: 'middle', fill: a.key }).svg}
+  ${sStage(a, SQ, SQ, { ghost: 'SEED DOWN' })}
+  ${sMast(SQ, `${m.event || 'Tour'} · Seed Down`, a)}
+  ${/* Two lines, not one. The headline slot was built for a single word at
+       116pt; the sentence is the better title but it cannot be set that way,
+       so it takes the same block as a stacked pair, sized off the LONGER line
+       so the two always match. The block still clears the photo below it. */''}
+  ${T('anton', 'NOBODY SAW', SQ / 2, 186, autopsyTitleSize, { anchor: 'middle', fill: C_WHITE }).svg}
+  ${T('anton', 'THIS COMING', SQ / 2, 250, autopsyTitleSize, { anchor: 'middle', fill: a.key }).svg}
   ${T('anton', matchup, SQ / 2, 494, fitT('anton', matchup, 58, SQ - 140), { anchor: 'middle', fill: C_WHITE }).svg}
   ${T('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, SQ / 2, 540, fitT('body', `No. ${wRank} beats No. ${lRank}${m.score ? ` · ${m.score}` : ''}`, 28, SQ - 160), { anchor: 'middle', fill: C_MUTE }).svg}
   ${statRow(632, 'OUR CALL', weCalled ? `CALLED IT · ${wePct}% ${last(wName).toUpperCase()}` : `MISSED · ${wePct}% ${last(lName).toUpperCase()}`, weCalled ? '#3ddc84' : '#ff5c5c')}
   ${statRow(712, 'THE MARKET', marketCalled == null ? 'NO LINE' : marketCalled ? 'SAW IT COMING' : 'FOOLED TOO', marketCalled == null ? C_WHITE : marketCalled ? '#3ddc84' : '#ff5c5c')}
   ${statRow(792, 'THE RANKINGS', 'NEVER SAW IT', '#ff5c5c')}
-  ${sBar(SQ, SQ, 'GRADED EITHER WAY  →', a, { sub: 'NOBODY SAW THIS COMING' })}
+  ${sBar(SQ, SQ, 'GRADED EITHER WAY  →', a, { sub: "THAT'S THE WHOLE POINT" })}
   </svg>`;
   await render(file, base, comps);
 }
