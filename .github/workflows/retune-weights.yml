@@ -16,14 +16,23 @@ concurrency:
 
 on:
   workflow_dispatch: {}
-  # ~4-7 days before play starts at each slam, 05:00 UTC (an hour ahead of
-  # the daily data refresh). Dates shift a little year to year; these sit
-  # safely inside the pre-tournament week.
+  # ~4-7 days before play starts at each slam, one hour ahead of that venue's
+  # data refresh so the two never contend. The refresh is no longer a single
+  # 09:00 UTC slot - it is 08:37 local at whichever venue is playing - so
+  # these follow it per venue rather than sharing one hour.
+  #
+  # Off the hour for the same reason as the other workflows: :00 is the most
+  # oversubscribed slot on GitHub's scheduler and runs there are dropped
+  # rather than delayed. These fire once a year each, so a dropped run means
+  # a slam played on unretuned weights with nothing in the log to show it.
+  #
+  # Dates shift a little year to year; these sit safely inside the
+  # pre-tournament week.
   schedule:
-    - cron: '0 5 10 1 *'   # before the Australian Open
-    - cron: '0 5 20 5 *'   # before the French Open
-    - cron: '0 5 24 6 *'   # before Wimbledon
-    - cron: '0 5 20 8 *'   # before the US Open
+    - cron: '37 20 10 1 *'  # before the Australian Open (AO refresh: 21:37 UTC)
+    - cron: '37 5 20 5 *'   # before the French Open (RG refresh: 06:37 UTC)
+    - cron: '37 6 24 6 *'   # before Wimbledon (refresh: 07:37 UTC)
+    - cron: '37 11 20 8 *'  # before the US Open (refresh: 12:37 UTC)
 
 permissions:
   contents: write

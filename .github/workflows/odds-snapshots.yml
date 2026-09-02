@@ -12,9 +12,15 @@ name: Odds snapshots (closing-line value)
 
 on:
   workflow_dispatch: {}
+  # Off the hour, for the same reason as refresh-data: every cron here fired
+  # at :00, the most oversubscribed slot on GitHub's scheduler, and both
+  # workflows stopped firing entirely in late August - dropped rather than
+  # delayed, so nothing appeared in the Actions log at all. The hours are
+  # unchanged: these are timed against play (first ball and mid-session at
+  # the US Open), not against a venue's morning.
   schedule:
-    - cron: '0 15 * * *'
-    - cron: '0 21 * * *'
+    - cron: '23 15 * * *'
+    - cron: '23 21 * * *'
 
 permissions:
   contents: write

@@ -6,7 +6,7 @@
 // Masters Thursday can put forty matches on this page and an undifferentiated
 // list of forty is not a card, it's a wall.
 //
-// Scope is strictly the viewer's calendar day (see isToday): a page called
+// Scope is strictly the tournament's calendar day (see isToday): a page called
 // Today that shows tomorrow night's matches is lying about its own name.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { lastName } from '../utils/names';

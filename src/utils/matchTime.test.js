@@ -1,17 +1,33 @@
 import { describe, it, expect } from 'vitest';
 import {
   isPlaceholderTime, isToday, timeUntil, localStartTime, localDayLabel, localZoneLabel,
+  eventDayOf,
 } from './matchTime';
 
 // Schedules carry a midnight-ish UTC placeholder time until the order of play
 // is published. These lock the handling that keeps such matches on the right
 // day and off a bogus countdown - the root of "matches that didn't play today".
 describe('matchTime placeholder handling', () => {
-  it('flags only the midnight-ish UTC stamps as placeholders', () => {
+  it('flags midnight AT THE VENUE as a placeholder, and nothing else', () => {
+    // 04:00Z is midnight in New York on EDT dates: the marker ESPN stamps
+    // while the order of play is unpublished.
     expect(isPlaceholderTime('2026-08-11T04:00:00Z')).toBe(true);
-    expect(isPlaceholderTime('2026-08-11T00:30:00Z')).toBe(true);
     expect(isPlaceholderTime('2026-08-11T18:00:00Z')).toBe(false);
     expect(isPlaceholderTime('2026-08-11T23:00:00Z')).toBe(false);
+  });
+
+  it('a real night session is not a placeholder', () => {
+    // The regression. 00:30Z is 8:30pm at the venue - a genuine night match,
+    // with a real start time someone can plan around. The old test read the
+    // UTC hour, called it a placeholder, and then pinned it to its UTC date:
+    // the NEXT day. That is how a match played last night turned up on
+    // today's card.
+    expect(isPlaceholderTime('2026-09-02T00:30:00Z')).toBe(false);
+    expect(localStartTime('2026-09-02T00:30:00Z')).not.toBe(null);
+    // Its day is the day it was played, not the day UTC had rolled over to.
+    expect(eventDayOf('2026-09-02T00:30:00Z')).toBe('2026-09-01');
+    expect(isToday('2026-09-02T00:30:00Z', new Date('2026-09-02T14:00:00Z'))).toBe(false);
+    expect(isToday('2026-09-02T00:30:00Z', new Date('2026-09-01T22:00:00Z'))).toBe(true);
   });
 
   it('timeUntil gives a TBD "today" for placeholders, a real countdown otherwise', () => {
@@ -22,11 +38,21 @@ describe('matchTime placeholder handling', () => {
     expect(real.tbd).toBeUndefined();
   });
 
-  it('isToday pins a placeholder match to its UTC calendar date (no timezone slip)', () => {
-    const now = new Date(2026, 7, 11, 12, 0, 0); // local Aug 11
+  it('isToday pins a placeholder match to the day the schedule means', () => {
+    const now = new Date('2026-08-11T16:00:00Z'); // noon at the venue
     expect(isToday('2026-08-11T04:00:00Z', now)).toBe(true);
     expect(isToday('2026-08-12T04:00:00Z', now)).toBe(false);
     expect(isToday('2026-08-10T04:00:00Z', now)).toBe(false);
+  });
+
+  it('the card does not change composition late in the evening', () => {
+    // 8pm at the venue: UTC has already rolled over to the next date. The old
+    // test compared a UTC date against a LOCAL one, so in exactly this window
+    // tomorrow's placeholders appeared and tonight's matches vanished.
+    const evening = new Date('2026-09-02T00:10:00Z'); // 8:10pm Sep 1 at venue
+    expect(isToday('2026-09-01T04:00:00Z', evening)).toBe(true);   // today's card
+    expect(isToday('2026-09-02T04:00:00Z', evening)).toBe(false);  // tomorrow's
+    expect(isToday('2026-09-02T00:30:00Z', evening)).toBe(true);   // tonight's
   });
 });
 
@@ -45,7 +71,6 @@ describe('the printed start time', () => {
     // been published. Printing "12:00 AM" from it would invent a start time
     // someone could plan around.
     expect(localStartTime('2026-09-02T04:00Z')).toBe(null);
-    expect(localStartTime('2026-09-02T00:30Z')).toBe(null);
     expect(localStartTime('not a date')).toBe(null);
   });
 

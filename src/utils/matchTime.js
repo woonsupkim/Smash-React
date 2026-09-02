@@ -3,16 +3,39 @@
 // Pre-match time helpers: "in 3h 20m" countdowns for the Happening Now
 // cards and match pages, plus a viewer-local kickoff time.
 
-// ESPN stamps a midnight-ish UTC placeholder time on a match until its order
-// of play is published. Those stamps are DATE markers, not real kickoffs -
-// their hour is meaningless - so we neither imply a countdown from them nor
-// let them slip a calendar day across timezones. Real kickoffs for the tours
-// this app covers are >= 05:00 UTC; anything earlier is treated as a
-// placeholder (a rare real late-night match is only ever KEPT by this, never
-// wrongly hidden).
+// The tournament's own calendar. A night session finishing at 11pm is that
+// day's play, not the next day's, and the order of play is published against
+// the venue's date - so that is the calendar every "which day is this match
+// on" question is answered in.
+export const EVENT_TZ = 'America/New_York';
+
+const VENUE_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: EVENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+});
+const VENUE_CLOCK = new Intl.DateTimeFormat('en-GB', {
+  timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
+/** The YYYY-MM-DD this stamp belongs to at the venue. '' when unparseable. */
+export function eventDayOf(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : VENUE_DAY.format(d);
+}
+
+// ESPN stamps MIDNIGHT AT THE VENUE on a match until its order of play is
+// published. Those stamps are DATE markers, not real kickoffs - their hour is
+// meaningless - so we neither imply a countdown from them nor treat them as a
+// real start.
+//
+// This used to test `getUTCHours() < 5`, an approximation of venue midnight
+// that also swallowed every genuine evening match: a real 8:30pm start is
+// stamped 00:30Z, read as a placeholder, and then pinned to its UTC date -
+// the NEXT day - so last night's night session appeared on today's card.
+// Midnight at the venue is the thing being detected, so it is what we test.
 export function isPlaceholderTime(iso) {
   const d = new Date(iso);
-  return !Number.isNaN(d.getTime()) && d.getUTCHours() < 5;
+  if (Number.isNaN(d.getTime())) return false;
+  return VENUE_CLOCK.format(d) === '00:00';
 }
 
 export function timeUntil(iso, now = Date.now()) {
@@ -39,29 +62,22 @@ export function timeUntil(iso, now = Date.now()) {
   return { past: true, label: 'awaiting result' };
 }
 
-// Is this match on the viewer's calendar day? "Today" has to mean today,
-// not "within 24 hours" - a 9pm match tomorrow is not on today's card.
+// Is this match on today's card? "Today" has to mean today, not "within 24
+// hours" - a 9pm match tomorrow is not on today's card.
 //
-// Deliberately the VIEWER's local day, not UTC and not the tournament's:
-// the page is called Today, and the visitor's own calendar is the only one
-// they can check it against. Caveat worth knowing: schedules often carry a
-// midnight placeholder until the order of play is published, so a match
-// stamped 04:00 UTC can land on the previous evening for viewers well west
-// of the venue. The placeholder is the imprecise part, not this test.
+// The TOURNAMENT's day, not the viewer's and not UTC. This used to compare a
+// placeholder's UTC date against the viewer's LOCAL date - two different
+// calendars in one equality - so between 8pm and midnight in New York, where
+// those calendars disagree, the card silently changed composition: last
+// night's 8:30pm match appeared on today's, and genuine next-day matches
+// popped in at midnight.
+//
+// It also means every viewer sees the same card. "What is on today at the US
+// Open" has one answer, and it is not a function of where you are reading
+// from; the same venue day now drives the site and the share assets both.
 export function isToday(iso, now = new Date()) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return false;
-  if (isPlaceholderTime(d)) {
-    // Compare the placeholder's UTC calendar date to the viewer's date, so a
-    // match the schedule intends for "the 11th" shows on the 11th for everyone,
-    // instead of slipping onto the 10th's card for viewers west of the venue.
-    return d.getUTCFullYear() === now.getFullYear()
-      && d.getUTCMonth() === now.getMonth()
-      && d.getUTCDate() === now.getDate();
-  }
-  return d.getFullYear() === now.getFullYear()
-    && d.getMonth() === now.getMonth()
-    && d.getDate() === now.getDate();
+  const day = eventDayOf(iso);
+  return !!day && day === eventDayOf(now);
 }
 
 // A real-timed match that kicked off well over a match-length ago has already

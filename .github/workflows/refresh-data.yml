@@ -1,6 +1,7 @@
 name: Refresh player stats
 
-# Triggered three ways: daily on a schedule during grand slam windows (below),
+# Triggered three ways: daily on a schedule during grand slam windows (below,
+# at 08:37 local time at whichever venue is playing),
 # manually from the Home page's "Update Data" button (via
 # api/trigger-refresh.js), or directly from the GitHub Actions tab. Runs the
 # full data-pipeline refresh and commits the regenerated CSVs/h2h.json back
@@ -16,39 +17,72 @@ on:
         type: boolean
         required: false
         default: true
-  # Daily at 09:00 UTC, but only inside generous windows around each slam
-  # (cron can't span month boundaries, so slams that straddle one get two
-  # entries). Exact tournament dates shift a little year to year; the
-  # windows are padded so they stay covered without annual edits. Outside
-  # these windows the refresh stays manual-only.
+  # 08:37 LOCAL AT THE VENUE, inside generous windows around each event.
+  #
+  # Two things fixed here, both of which had been silently costing runs.
+  #
+  # 1. The hour is now per venue, not one global 09:00 UTC. The refresh has to
+  #    land in the gap between the previous night's last result posting and
+  #    the day's first ball, and the four slams sit in four timezones - so a
+  #    single UTC hour cannot serve them. 09:00 UTC was 8pm in Melbourne (the
+  #    day's play already over, so nothing was "locked before play" at all)
+  #    and 11am in Paris (exactly first ball). 08:00 local puts it about six
+  #    hours after the last night-session result and three before first ball,
+  #    with the day's order of play already published so start times arrive
+  #    real instead of TBD.
+  #
+  # 2. The minute is :37, not :00. Every cron here fired on the hour, which is
+  #    the most oversubscribed slot on GitHub's scheduler; scheduled runs are
+  #    delayed or DROPPED under load, and a dropped run leaves no trace in the
+  #    Actions log. Both this workflow and odds-snapshots (also on the hour)
+  #    stopped firing entirely in late August. Off-the-hour is the documented
+  #    mitigation.
+  #
+  # cron can't span month boundaries, so events that straddle one get two
+  # entries. Dates are padded for year-to-year drift. Outside these windows
+  # the refresh stays manual-only. Every window sits wholly inside its
+  # venue's DST period, so the offsets below are constant within each.
   schedule:
-    - cron: '0 9 8-31 1 *'    # Australian Open: Jan 8-31
-    - cron: '0 9 1-2 2 *'     # Australian Open spillover: Feb 1-2
-    - cron: '0 9 18-31 5 *'   # French Open: May 18-31
-    - cron: '0 9 1-10 6 *'    # French Open: Jun 1-10
-    - cron: '0 9 22-30 6 *'   # Wimbledon: Jun 22-30
-    - cron: '0 9 1-15 7 *'    # Wimbledon: Jul 1-15
-    - cron: '0 9 18-31 8 *'   # US Open: Aug 18-31
-    - cron: '0 9 1-15 9 *'    # US Open: Sep 1-15
+    # Australian Open - Melbourne, AEDT (UTC+11). 08:37 local is 21:37 UTC the
+    # PREVIOUS day, so these ranges are shifted back one from the local dates:
+    # UTC Jan 7-31 covers local Jan 8 - Feb 1, and UTC Feb 1 covers local Feb 2.
+    - cron: '37 21 7-31 1 *'   # Australian Open: local Jan 8 - Feb 1
+    - cron: '37 21 1 2 *'      # Australian Open spillover: local Feb 2
+    # Roland Garros - Paris, CEST (UTC+2). 08:37 local = 06:37 UTC.
+    - cron: '37 6 18-31 5 *'   # French Open: May 18-31
+    - cron: '37 6 1-10 6 *'    # French Open: Jun 1-10
+    # Wimbledon - London, BST (UTC+1). 08:37 local = 07:37 UTC.
+    - cron: '37 7 22-30 6 *'   # Wimbledon: Jun 22-30
+    - cron: '37 7 1-15 7 *'    # Wimbledon: Jul 1-15
+    # US Open - New York, EDT (UTC-4). 08:37 local = 12:37 UTC.
+    - cron: '37 12 18-31 8 *'  # US Open: Aug 18-31
+    - cron: '37 12 1-15 9 *'   # US Open: Sep 1-15
     # Combined ATP/WTA 1000s (forward test covers these too; windows padded
     # for year-to-year date drift, and Madrid-Rome runs into the French
     # window / Canada-Cincinnati into the US Open window for continuous
-    # daily coverage across each swing)
-    - cron: '0 9 1-20 3 *'    # Indian Wells: Mar 1-20
-    - cron: '0 9 21-31 3 *'   # Miami: Mar 21-31
-    - cron: '0 9 1-6 4 *'     # Miami spillover: Apr 1-6
-    - cron: '0 9 20-30 4 *'   # Madrid: Apr 20-30
-    - cron: '0 9 1-17 5 *'    # Madrid finish + Rome: May 1-17
-    - cron: '0 9 25-31 7 *'   # Canada: Jul 25-31
-    - cron: '0 9 1-17 8 *'    # Canada finish + Cincinnati: Aug 1-17
+    # daily coverage across each swing). Same rule, each at its own venue.
+    # Indian Wells - California. PST (UTC-8) until DST, PDT (UTC-7) after;
+    # 15:37 UTC is 07:37 or 08:37 local, and comfortably before an 11am first
+    # ball either way, so one entry covers the whole window.
+    - cron: '37 15 1-20 3 *'   # Indian Wells: Mar 1-20
+    # Miami - Florida, EDT (UTC-4).
+    - cron: '37 12 21-31 3 *'  # Miami: Mar 21-31
+    - cron: '37 12 1-6 4 *'    # Miami spillover: Apr 1-6
+    # Madrid and Rome - CEST (UTC+2), same as Roland Garros.
+    - cron: '37 6 20-30 4 *'   # Madrid: Apr 20-30
+    - cron: '37 6 1-17 5 *'    # Madrid finish + Rome: May 1-17
+    # Canada and Cincinnati - EDT (UTC-4), same as the US Open.
+    - cron: '37 12 25-31 7 *'  # Canada: Jul 25-31
+    - cron: '37 12 1-17 8 *'   # Canada finish + Cincinnati: Aug 1-17
     # Off-season heartbeat: Mondays year-round. Keeps the stats current with
     # non-slam tournaments (the summer hard-court swing feeds the US Open
     # model), re-prices the projected title odds, grows the season track
     # record, and lands the same day the weekly recap share card generates.
+    # No venue to anchor to out of season, so it takes the Eastern hour.
     # On Mondays inside a slam window this fires alongside the daily cron;
     # the concurrency group below serializes the two, and the second run is
     # cheap (the fetch cache is under 24h old, so it skips every player).
-    - cron: '0 9 * * 1'       # Off-season: every Monday
+    - cron: '37 12 * * 1'      # Off-season: every Monday
 
 # The default GITHUB_TOKEN is read-only on contents unless explicitly
 # elevated - without this, the final "git push" step fails with exit 1.
