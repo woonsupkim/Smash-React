@@ -485,3 +485,32 @@
   background: color-mix(in srgb, var(--accent-brand, #c8f560) 55%, transparent);
   border-color: transparent;
 }
+
+/* The menu's conclusion, standing in for the menu itself. One line where five
+   plans and twenty figures used to compete with the recommendation. */
+.stake-best-beat {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-3, #7c8698);
+}
+.stake-best-beat-link {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-brand, #c8f560);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.stake-best-beat-link:hover { text-decoration-thickness: 2px; }
+.stake-best-beat-link:focus-visible {
+  outline: 2px solid var(--accent-brand, #c8f560);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Inside the disclosure the menu is a comparison table, not the page's lead,
+   so it gets room to breathe under the summary rather than sitting flush. */
+.stake-why-body .stake-best-pick { margin: 0 0 1rem; }

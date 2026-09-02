@@ -396,8 +396,10 @@ const last = (n) => String(n || '').trim().split(' ').pop();
 const pctTxt = (p) => `${Math.round(p * 100)}%`;
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-// Every caption ends with a destination. SITE_URL (repo variable / env) makes
-// links absolute; without it they stay as site-relative paths.
+// "Yesterday", said only when it is true - see lib/recapDay.js for why the
+// three recap cards must not each pick their own last day.
+const { recapDay } = require('./lib/recapDay');
+
 const SITE = (process.env.SITE_URL || 'https://smash-react.vercel.app').replace(/\/$/, '');
 const slugify = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const matchLink = (p) => `${SITE}/match/${slugify(p.name1)}-vs-${slugify(p.name2)}-${p.id}`;
@@ -919,9 +921,9 @@ async function resultsCard(sc, file) {
   const base = `<svg width="${SQ}" height="${SQ}" xmlns="http://www.w3.org/2000/svg"><defs>${sDefs(a)}</defs>
   ${sStage(a, SQ, SQ, { ghost: 'RECEIPTS' })}
   ${sMast(SQ, `Receipts · ${y?.date ? fmtDate(y.date) : ''}`, a)}
-  ${T('bebas', 'YESTERDAY, GRADED IN PUBLIC', SQ / 2, 192, 40, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
+  ${T('bebas', `${y?.isYesterday === false ? 'LAST GRADED DAY' : 'YESTERDAY'}, GRADED IN PUBLIC`, SQ / 2, 192, 40, { anchor: 'middle', fill: a.sub, tracking: 5 }).svg}
   ${y ? `<g filter="url(#glow)" opacity="0.5">${hero.svg}</g>${hero.svg}` : ''}
-  ${T('body', "winners called on yesterday's matches", SQ / 2, 524, 32, { anchor: 'middle', fill: C_MUTE }).svg}
+  ${T('body', `winners called on ${y?.isYesterday === false ? `${fmtDate(y.date)}'s` : "yesterday's"} matches`, SQ / 2, 524, 32, { anchor: 'middle', fill: C_MUTE }).svg}
   ${lines.map((l, i) => `<rect x="176" y="${596 + i * 60 - 23}" width="9" height="34" rx="2" fill="${l.color}"/>${T('body', l.txt, 208, 596 + i * 60, fitT('body', l.txt, 31, SQ - 260), { fill: l.color }).svg}`).join('')}
   ${sBar(SQ, SQ, '', a)}
   </svg>`;
@@ -1288,7 +1290,7 @@ function stakeRun(rows) {
 // DAILY: what yesterday's calls did to a wallet. Deliberately separate from
 // the record card - "did we call it right" and "what did it pay" are two
 // questions and the money is the one that gets buried.
-async function dayMoneyCard(run, dayISO, file) {
+async function dayMoneyCard(run, dayISO, file, when = null) {
   const up = run.profit >= 0;
   // The PERCENTAGE leads, not the dollar figure.
   //
@@ -1300,7 +1302,7 @@ async function dayMoneyCard(run, dayISO, file) {
   // Tuesday as on a fifteen-match Saturday.
   const back = 10 * (1 + run.roi / 100);
   await reportCard({
-    eyebrowText: `Yesterday's calls · ${dayISO}`,
+    eyebrowText: `${when && !when.isYesterday ? `${when.poss} calls` : "Yesterday's calls"} · ${dayISO}`,
     headline1: pctOf(run.roi),
     headline2: 'ON THE DAY',
     stats: [
@@ -2278,7 +2280,26 @@ async function run() {
     }
   }
 
-  if (sc.yesterday?.n > 0) {
+  // ── One day for the whole recap section ────────────────────────────────
+  //
+  // The record, the settled ledger and the graded picks are three files that
+  // can be at three different points, so letting each card fall back to its
+  // own last day produced a "recap" carrying an Aug 29 results card beside an
+  // Aug 22 money card under one caption. The section picks ONE day - the day
+  // before the build when anything covers it, otherwise the most recent day
+  // anything does - and a card that cannot speak to that day is left out
+  // rather than dragged in from a week earlier.
+  const settledLedger = (preds.predictions || [])
+    .filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
+  const gradedPicks = (preds.predictions || [])
+    .filter((p) => (p.status === 'won' || p.status === 'lost'));
+  const RECAP = recapDay([
+    ...(sc.yesterday?.n > 0 ? [sc.yesterday.date] : []),
+    ...settledLedger.map((p) => p.date),
+    ...gradedPicks.map((p) => p.date),
+  ]);
+
+  if (sc.yesterday?.n > 0 && sc.yesterday.date === RECAP?.day) {
     await resultsCard(sc, 'results.png');
     add('results.png', 'results', 'square', 'recap', `Receipts from ${sc.yesterday.date}: called ${sc.yesterday.correct} of ${sc.yesterday.n} winners. Season benchmark: ${sc.season.acc}%. Wins and misses, all public. ${tags}`);
   }
@@ -2288,16 +2309,16 @@ async function run() {
   // "what did it pay" are different questions, and a single card answering
   // both buries the second one.
   {
-    const ledger = (preds.predictions || []).filter((p) => (p.status === 'won' || p.status === 'lost') && !ledgerNoCall(p));
-    const settled = [...new Set(ledger.map((p) => String(p.date).slice(0, 10)))].sort();
-    const lastDay = settled[settled.length - 1];
+    const ledger = settledLedger;
+    const when = RECAP;
+    const lastDay = when?.day;
     const dayRows = lastDay ? ledger.filter((p) => String(p.date).slice(0, 10) === lastDay) : [];
     const run = stakeRun(dayRows);
     if (run.staked > 0) {
-      await dayMoneyCard(run, lastDay, 'day-money.png');
+      await dayMoneyCard(run, lastDay, 'day-money.png', when);
       add('day-money.png', 'day-money', 'square', 'recap',
         `Every call we made on ${lastDay}, backed flat: ${pctOf(run.roi)} on the day, ${run.hits} of ${run.n} landed. $10 spread across the card comes back $${(10 * (1 + run.roi / 100)).toFixed(2)}. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
-        `Yesterday's calls returned ${pctOf(run.roi)} on the day.`);
+        `${when.poss.charAt(0).toUpperCase()}${when.poss.slice(1)} calls returned ${pctOf(run.roi)} on the day.`);
     }
 
     // Today's calls, and the ones where we take the underdog. Both can be
@@ -2617,10 +2638,9 @@ async function run() {
     // flip is exactly the kind of thing this whole product exists not to do.
     // Most days there is no card here, which is correct.
     {
-      const graded = (preds.predictions || [])
-        .filter((p) => (p.status === 'won' || p.status === 'lost'));
-      const gDays = [...new Set(graded.map((p) => String(p.date).slice(0, 10)))].sort();
-      const gDay = gDays[gDays.length - 1];
+      const graded = gradedPicks;
+      const gWhen = RECAP;
+      const gDay = gWhen?.day;
       const misses = graded
         .filter((p) => String(p.date).slice(0, 10) === gDay && p.status === 'lost')
         .sort((a, b) => b.favProb - a.favProb);
@@ -2634,7 +2654,7 @@ async function run() {
         const mkt = marketProbOfOurPick(shock);
         const declined = ledgerNoCall(shock);
         await reportCard({
-          eyebrowText: `Yesterday · ${gDay}`,
+          eyebrowText: `${gWhen.isYesterday ? 'Yesterday' : gWhen.cap.charAt(0) + gWhen.cap.slice(1).toLowerCase()} · ${gDay}`,
           headline1: loser.toUpperCase(),
           headline2: 'WENT OUT',
           stats: [
@@ -2940,8 +2960,11 @@ async function run() {
   const recapCards = assets.filter((a) => a.category === 'recap');
   if (recapCards.length) {
     const hadShock = assets.some((a) => a.file === 'unexpected.png');
+    // Named off the same anchor as the cards it introduces, so the caption
+    // and the eyebrows on the images agree about which day this is.
+    const rDay = RECAP ? RECAP.long : 'yesterday';
     captions.recap = [
-      `How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.`,
+      `How ${rDay} actually went - the calls, the misses, and what backing every one of them would have returned.`,
       hadShock
         ? 'Including the one nobody saw coming.'
         : 'We publish the bad days on the same schedule as the good ones.',

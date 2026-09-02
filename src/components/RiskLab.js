@@ -410,40 +410,13 @@ export default function RiskLab({ legs, graded = [], noCalls = [], cardCount = 0
 
       {!nothingStaked && tab === 'slip' && (
         <div className="risk-panel">
-          <div className="risk-grid">
-            <div className="risk-metric">
-              <span className="risk-metric-v">{analysis.pcts ? money(analysis.pcts.p50) : '-'}</span>
-              <span className="risk-metric-l">a typical day (median)</span>
-            </div>
-            <div className="risk-metric">
-              <span className="risk-metric-v neg">{analysis.pcts ? money(analysis.pcts.p05) : '-'}</span>
-              <span className="risk-metric-l">a bad day (1 in 20)</span>
-            </div>
-            <div className="risk-metric">
-              <span className="risk-metric-v pos">{analysis.pcts ? money(analysis.pcts.p95) : '-'}</span>
-              <span className="risk-metric-l">a good day (1 in 20)</span>
-            </div>
-            <div className="risk-metric">
-              <span className="risk-metric-v">{analysis.pProfit != null ? pct0(analysis.pProfit) : '-'}</span>
-              <span className="risk-metric-l">chance you finish ahead</span>
-            </div>
-            {/* The two numbers the panel was missing: what it is worth on
-                average, and the ceiling. A page that only ever quantified the
-                floor was answering half the question. */}
-            <div className="risk-metric">
-              <span className={`risk-metric-v ${analysis.ev >= 0 ? 'pos' : 'neg'}`}>{money(analysis.ev)}</span>
-              <span className="risk-metric-l">
-                expected profit ({analysis.staked > 0 ? `${analysis.roi >= 0 ? '+' : ''}${(analysis.roi * 100).toFixed(1)}% of stake` : 'per day'})
-              </span>
-            </div>
-            <div className="risk-metric">
-              <span className="risk-metric-v pos">{money(analysis.best)}</span>
-              <span className="risk-metric-l">
-                if everything lands{pBest > 0 ? ` · ${pBest < 0.001 ? 'under 0.1' : (pBest * 100).toFixed(1)}% chance` : ''}
-              </span>
-            </div>
-          </div>
-
+          {/* The six-metric grid that stood here is gone. It restated the plan
+              card's numbers one screen up - the same distribution, computed a
+              second time off the republished cent-rounded stakes, so the two
+              blocks printed a different bad day and a different chance of
+              finishing ahead for one plan. The plan card owns the summary
+              now; this panel keeps what only it can show, which is the shape
+              of the day rather than five points from it. */}
           <div className="risk-chart-block">
             <div className="risk-chart-cap">How far the day can go, and how likely</div>
             <OutcomeCurve series={curve} pcts={analysis.pcts} staked={staked} />
@@ -465,6 +438,21 @@ export default function RiskLab({ legs, graded = [], noCalls = [], cardCount = 0
                   <strong className="gain">{s.prob < 0.001 && s.prob > 0 ? '<0.1%' : pct1(s.prob)}</strong>
                 </li>
               ))}
+              {/* The ceiling, where the upside ladder ends rather than as a
+                  headline metric. It used to sit in the grid printing the same
+                  dollar figure as "a good day (1 in 20)" beside a completely
+                  different probability, which reads as a bug even though both
+                  are right: one is the 95th percentile, this is every bet in
+                  the slip landing at once. */}
+              {/* Suppressed when the ladder already says it. On a one-bet slip
+                  every rung carries the same probability, so a ceiling rung
+                  would just repeat the row above it. */}
+              {pBest > 0 && !upLadder.some((s2) => Math.abs(s2.prob - pBest) < 0.005) && (
+                <li className="risk-ladder-cap">
+                  <span>Everything lands</span>
+                  <strong className="gain">{pBest < 0.001 ? '<0.1%' : pct1(pBest)}</strong>
+                </li>
+              )}
               </ul>
             </div>
             <div className="risk-ladder-col">

@@ -262,3 +262,11 @@
 .risk-chart-cap.up { color: #5cbf8d; }
 .risk-chart-cap.down { color: #ff8f8f; }
 
+
+/* The ceiling rung, set apart from the round-dollar rungs above it: it is a
+   different kind of statement (every bet landing, not a threshold). */
+.risk-ladder-cap {
+  border-top: 1px solid var(--border-1, rgba(255, 255, 255, 0.1));
+  margin-top: 0.2rem;
+  padding-top: 0.45rem;
+}

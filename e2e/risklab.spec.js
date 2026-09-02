@@ -53,11 +53,15 @@ test('risk lab: reads the plan on the page, and switches views', async ({ page }
   // "This slip": the combined outcome curve and both ladders.
   await expect(page.locator('.risk-chart.wide')).toHaveCount(1);
   await expect(page.locator('.risk-two-up .risk-ladder')).toHaveCount(2);
-  // Scoped: the staking plan above says "expected profit" too, which is the
-  // point - both surfaces describe one allocation - but an unscoped query
-  // matches all of them.
-  await expect(lab.getByText('expected profit', { exact: false }).first()).toBeVisible();
-  await expect(lab.getByText('if everything lands', { exact: false })).toBeVisible();
+  // The summary is stated ONCE, in the plan card. The lab used to print its
+  // own grid of the same six figures off the republished cent-rounded stakes,
+  // so one plan showed two chances of finishing ahead and two bad days a cent
+  // apart. The lab now keeps only what the plan card cannot show: the shape.
+  await expect(lab.locator('.risk-grid')).toHaveCount(0);
+  await expect(page.locator('.stake-best-grid').getByText('expected profit', { exact: false }).first())
+    .toBeVisible();
+  await expect(page.locator('.stake-best-grid').getByText('a typical day', { exact: false }).first())
+    .toBeVisible();
 
   // Bigger losses are never more likely than smaller ones, and neither are
   // bigger wins - each ladder must read as a non-increasing column, which is
@@ -92,6 +96,14 @@ test('risk lab: changing the plan moves the risk numbers', async ({ page }) => {
   // surfaces. If the lab can disagree with the table above it, the merge has
   // bought nothing and cost a page.
   const before = await page.locator('.risk-sub').innerText();
+  // The menu moved out of the headline and into the "How this plan gets
+  // chosen" disclosure, behind a "Compare them" link: five plans and twenty
+  // figures were competing with the one recommendation they surrounded.
+  const compare = page.locator('.stake-best-beat-link');
+  if (await compare.count() > 0) {
+    await compare.click();
+    await expect(page.locator('.stake-why')).toHaveJSProperty('open', true);
+  }
   const cards = page.locator('.stake-best-opt');
   if (await cards.count() > 1) {
     await cards.nth(1).click();
@@ -250,20 +262,28 @@ test('the recommended plan finishes up on a typical day, and never buries the bu
   await page.goto('/risk');
   if (await skipUnlessPriced(page, errors)) return;
 
-  // The headline promise of the objective. Read off the lab, which prices
-  // exactly what the plan above put on the table.
-  const typical = await page.locator('.risk-metric').first().innerText();
-  const dollars = parseFloat(typical.replace(/[^0-9.\-]/g, ''));
-  expect(typical).not.toMatch(/^-/);
-  expect(dollars).toBeGreaterThan(0);
+  // The headline promise of the objective. Located by its LABEL rather than
+  // by position: these metrics live in the plan card now (the lab's duplicate
+  // grid is gone) and the order within the grid is a layout decision, not a
+  // contract.
+  const metric = (label) => page.locator('.stake-best-metric')
+    .filter({ hasText: label }).first().locator('.stake-best-v');
+  const money = async (label) => {
+    const txt = await metric(label).innerText();
+    return { txt, n: parseFloat(txt.replace(/[^0-9.\-]/g, '')) };
+  };
+
+  const typical = await money('a typical day');
+  expect(typical.txt).not.toMatch(/^-/);
+  expect(typical.n).toBeGreaterThan(0);
 
   // It is a plan, not a punt: the whole budget never goes on the table, and a
   // bad day stays inside its ceiling.
   const exposure = await page.locator('.risk-exposure-cap').innerText();
   const pct = parseFloat((exposure.match(/([\d.]+)% of your/) || [])[1]);
   expect(pct).toBeLessThan(100);
-  const bad = await page.locator('.risk-metric').nth(1).innerText();
-  expect(Math.abs(parseFloat(bad.replace(/[^0-9.\-]/g, '')))).toBeLessThanOrEqual(15.5);
+  const bad = await money('a bad day');
+  expect(Math.abs(bad.n)).toBeLessThanOrEqual(15.5);
 
   expect(errors).toEqual([]);
 });

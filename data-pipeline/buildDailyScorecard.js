@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { rowNoCall } = require('./lib/noCall');
+const { recapDay, yesterdayISO, dayISOof } = require('./lib/recapDay');
 
 const DATA = path.join(__dirname, '..', 'public', 'data');
 
@@ -51,7 +52,7 @@ function upsetReason(p, favRank, oppRank) {
   }
 }
 
-function run() {
+function run(now = new Date()) {
   const track = JSON.parse(fs.readFileSync(path.join(DATA, 'track_record.json'), 'utf8'));
   const preds = fs.existsSync(path.join(DATA, 'predictions.json'))
     ? JSON.parse(fs.readFileSync(path.join(DATA, 'predictions.json'), 'utf8'))
@@ -75,10 +76,17 @@ function run() {
     acc: ms.length ? Math.round((ms.filter((m) => pickCorrect(m)).length / ms.length) * 100) : 0,
   };
 
-  // "Yesterday" = the most recent day with completed matches in the record.
-  const latestDate = ms.reduce((max, m) => (m.date > max ? m.date : max), '');
-  const day = latestDate.slice(0, 10);
-  const dayMatches = ms.filter((m) => m.date.slice(0, 10) === day);
+  // "Yesterday" is anchored to the DAY THIS RAN, not to whatever happens to be
+  // last in the file. Those are different questions, and the old code answered
+  // the second one while every caller printed the answer under the word
+  // "Yesterday": a build on Sept 1 whose results feed had only reached Aug 29
+  // labelled three-day-old matches as yesterday's, with nothing saying so.
+  //
+  // Shared with the share-asset cards so the whole pipeline agrees on which
+  // day it is describing. See lib/recapDay.js.
+  const when = recapDay(ms.map((m) => m.date), now);
+  const day = when ? when.day : yesterdayISO(now);
+  const dayMatches = ms.filter((m) => dayISOof(m.date) === day);
   const fav = (m) => (pickFav(m) === m.p1 ? m.name1 : m.name2);
   const dog = (m) => (pickFav(m) === m.p1 ? m.name2 : m.name1);
   const favProb = (m) => Math.max(pickProbP1(m), 1 - pickProbP1(m));
@@ -93,6 +101,13 @@ function run() {
 
   const yesterday = {
     date: day,
+    // Whether `date` really is the day before this build. False means the
+    // feed was behind (or the tour did not play), and the copy above these
+    // numbers must not say "yesterday".
+    isYesterday: !!when && when.isYesterday,
+    daysAgo: Math.max(0, Math.round(
+      (Date.parse(`${dayISOof(now.toISOString())}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 864e5
+    )),
     n: dayMatches.length,
     correct: hits.length,
     beatBookies: beatBookies.map((m) => ({
@@ -127,7 +142,10 @@ function run() {
   // Ready-to-post text for the optional social webhook.
   const lines = [];
   if (dayMatches.length) {
-    lines.push(`Yesterday's scorecard (${day}): called ${hits.length} of ${dayMatches.length} winners.`);
+    // postText goes straight out as a social post, so it must not call a
+    // three-day-old day "yesterday" either.
+    const scope = yesterday.isYesterday ? "Yesterday's scorecard" : 'Last graded day';
+    lines.push(`${scope} (${day}): called ${hits.length} of ${dayMatches.length} winners.`);
     if (beatBookies.length) lines.push(`Beat the bookies on: ${beatBookies.map((m) => m.call).join('; ')}.`);
     if (worstMiss) lines.push(`The one we own: ${yesterday.worstMiss.call} lost.`);
   }
@@ -137,7 +155,7 @@ function run() {
   }
 
   const out = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: now.toISOString(),
     yesterday,
     season,
     upsetWatch,
@@ -149,4 +167,6 @@ function run() {
   console.log(out.postText);
 }
 
-run();
+if (require.main === module) run();
+
+module.exports = { run };

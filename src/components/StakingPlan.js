@@ -17,7 +17,7 @@
 // out to their match pages - so the slip above can stay a verdict on value
 // while this answers what to actually stake.
 // All the math lives in utils/staking; this is just the controls and readout.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lastName } from '../utils/names';
 import { matchSlug, localStartTime } from '../utils/matchTime';
@@ -206,6 +206,18 @@ export default function StakingPlan({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode, rec, bets, parStake, activeParlayLegs]
   );
+
+  // "Compare them" is a link to somewhere further down the page, so it has to
+  // open the disclosure AND move the reader there: toggling a <details> that
+  // is off screen looks like a dead button.
+  const whyRef = useRef(null);
+  const openMenu = () => {
+    const el = whyRef.current;
+    if (!el) return;
+    el.open = true;
+    // After the browser has laid out the newly revealed content.
+    requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
 
   // What the rows on this table ADD UP TO, which is not quite what the
   // optimiser staked: every stake is published and printed to the cent, and
@@ -406,45 +418,37 @@ export default function StakingPlan({
             </span>
           </div>
 
-          {/* The menu now leads with RETURN PER DOLLAR, and says what each
-              plan stakes right next to it.
-              Both of the old columns - chance of finishing ahead, and expected
-              profit in dollars - mechanically reward shovelling the whole
-              budget onto the table, because more bets means more ways to end
-              the day up and more capital means more expected dollars. The
-              recommended plan deliberately stakes about a third of the budget,
-              so it lost on both columns and appeared, on the page's own
-              numbers, to be the worst thing on the menu. It is not: it is the
-              best return on the money actually at risk, which is the axis a
-              follower with a fixed daily budget should be reading. */}
-          {mode === 'budget' && frontier.plans.length > 1 && (
-            <div className="stake-best-pick" role="radiogroup" aria-label="Which recommended plan">
-              {frontier.plans.map((p) => (
-                <button key={p.id} type="button" role="radio" aria-checked={p.id === rec.id}
-                  className={`stake-best-opt${p.id === rec.id ? ' on' : ''}`}
-                  onClick={() => choosePlan(p)}>
-                  <span className="stake-best-opt-l">
-                    {p.label}
-                    {p.id === frontier.recommendedId && <span className="stake-best-opt-rec">recommended</span>}
-                  </span>
-                  <span className="stake-best-opt-v">
-                    {p.metrics.staked > 0 ? pctSigned(p.metrics.ev / p.metrics.staked) : '–'} on the money staked
-                  </span>
-                  <span className="stake-best-opt-k">
-                    stakes {money(p.metrics.staked)} of {money(Number(budget) || 0)} · {composition(p)}
-                    {/* Never `pProfit || 0`: a missing probability is not a
-                        zero one, and printing "0.0%" for it stated the most
-                        discouraging possible number with total confidence. */}
-                    {p.metrics.pProfit != null ? ` · ${pct(p.metrics.pProfit)} to finish ahead` : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
+          {/* The menu used to sit here: five plans, four figures each, twenty
+              numbers competing with the one recommendation they surround -
+              and four of the five exist to be rejected. The reader arriving
+              at this page wants "what should I bet", not a comparison table,
+              so the comparison moved into the disclosure that already
+              explains how the plan is picked, and its conclusion stays here
+              as one line. */}
+          {mode === 'budget' && frontier.plans.length > 1 && rec && (
+            <p className="stake-best-beat">
+              Best return per dollar staked of the {frontier.plans.length} plans considered.{' '}
+              <button type="button" className="stake-best-beat-link" onClick={openMenu}>
+                Compare them
+              </button>
+            </p>
           )}
+          {/* The ONE summary of what this plan does. The Risk Lab below used to
+              print its own six-metric grid off the republished allocation:
+              the same distribution described twice, a screen apart, with the
+              rounding making them disagree ("50.6%" against "51%", a bad day
+              of -$14.48 against -$14.47). One block, computed once, sitting
+              where the reader first asks the question. */}
           <div className="stake-best-grid">
             {/* Percentage first, dollars second. The raw dollar figure is
                 not comparable between plans that stake different amounts,
                 and it is the number a reader instinctively compares. */}
+            {analysis.pcts && (
+              <div className="stake-best-metric">
+                <span className={`stake-best-v${analysis.pcts.p50 >= 0 ? ' pos' : ' neg'}`}>{money(analysis.pcts.p50)}</span>
+                <span className="stake-best-l">a typical day <em>(the middle outcome)</em></span>
+              </div>
+            )}
             <div className="stake-best-metric">
               <span className={`stake-best-v${analysis.ev >= 0 ? ' pos' : ' neg'}`}>{pctSigned(analysis.roi)}</span>
               <span className="stake-best-l">expected return <em>on the {money(stakedShown)} staked</em></span>
@@ -524,13 +528,48 @@ export default function StakingPlan({
               without the reasoning. Collapsed so it informs without
               crowding. */}
           {mode === 'budget' && (
-            <details className="stake-why">
+            <details className="stake-why" ref={whyRef}>
               {/* The label is a title ("Comfortable day", "Best of a bad card"), so
                   lowercasing it mid-sentence produced "why it is comfortable day".
                   Quoted instead: it is the name of the verdict above, not a
                   description that has to agree with the grammar around it. */}
               <summary>How this plan gets chosen{rec ? ` (and why today reads as "${rec.label}")` : ''}</summary>
               <div className="stake-why-body">
+                {/* The menu now leads with RETURN PER DOLLAR, and says what each
+                    plan stakes right next to it.
+                    Both of the old columns - chance of finishing ahead, and expected
+                    profit in dollars - mechanically reward shovelling the whole
+                    budget onto the table, because more bets means more ways to end
+                    the day up and more capital means more expected dollars. The
+                    recommended plan deliberately stakes about a third of the budget,
+                    so it lost on both columns and appeared, on the page's own
+                    numbers, to be the worst thing on the menu. It is not: it is the
+                    best return on the money actually at risk, which is the axis a
+                    follower with a fixed daily budget should be reading. */}
+                {mode === 'budget' && frontier.plans.length > 1 && (
+                  <div className="stake-best-pick" role="radiogroup" aria-label="Which recommended plan">
+                    {frontier.plans.map((p) => (
+                      <button key={p.id} type="button" role="radio" aria-checked={p.id === rec.id}
+                        className={`stake-best-opt${p.id === rec.id ? ' on' : ''}`}
+                        onClick={() => choosePlan(p)}>
+                        <span className="stake-best-opt-l">
+                          {p.label}
+                          {p.id === frontier.recommendedId && <span className="stake-best-opt-rec">recommended</span>}
+                        </span>
+                        <span className="stake-best-opt-v">
+                          {p.metrics.staked > 0 ? pctSigned(p.metrics.ev / p.metrics.staked) : '–'} on the money staked
+                        </span>
+                        <span className="stake-best-opt-k">
+                          stakes {money(p.metrics.staked)} of {money(Number(budget) || 0)} · {composition(p)}
+                          {/* Never `pProfit || 0`: a missing probability is not a
+                              zero one, and printing "0.0%" for it stated the most
+                              discouraging possible number with total confidence. */}
+                          {p.metrics.pProfit != null ? ` · ${pct(p.metrics.pProfit)} to finish ahead` : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p>
                   Every plan on the menu is scored on <strong>return per dollar staked</strong>, not on
                   total dollars. A plan that puts the whole budget down will almost always show a bigger

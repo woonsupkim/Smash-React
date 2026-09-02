@@ -632,9 +632,16 @@ export default function Home() {
                 {new Set(picks.list.map((p) => p.event)).size === 1 ? picks.list[0].event : 'on tour this week'}
               </span>
             )}
+            {/* The scorecard's "yesterday" is the day before the build only
+                when the results feed has reached it; when it has not, the
+                block still carries the last graded day and says so rather
+                than calling three-day-old matches yesterday's. */}
             {scorecard?.yesterday?.n > 0 && (
               <Link to="/track-record" className="home-board-yday">
-                Yesterday: {scorecard.yesterday.correct}/{scorecard.yesterday.n} ✓
+                {scorecard.yesterday.isYesterday === false
+                  ? new Date(`${scorecard.yesterday.date}T12:00:00Z`)
+                    .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+                  : 'Yesterday'}: {scorecard.yesterday.correct}/{scorecard.yesterday.n} ✓
               </Link>
             )}
           </div>

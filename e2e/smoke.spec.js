@@ -167,7 +167,12 @@ test('risk lab: the plan prices today\'s card and dropping a leg re-prices it', 
     expect(errors).toEqual([]);
     return;
   }
-  await expect(headline).toHaveText(/%/, { timeout: 15000 });
+  // A money figure or a percentage: the grid now leads with the typical day
+  // in dollars, with the return per dollar beside it. Both are real numbers
+  // rather than the em-dash placeholder, which is what this guards.
+  await expect(headline).toHaveText(/(\$|%)/, { timeout: 15000 });
+  await expect(page.locator('.stake-best-grid').getByText('expected return', { exact: false }).first())
+    .toBeVisible();
 
   const rows = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay)');
   const startCount = await rows.count();
