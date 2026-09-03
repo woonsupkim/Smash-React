@@ -195,3 +195,19 @@
 }
 .edge-diverge-swatch.us { background: var(--accent-brand, #c8f560); }
 .edge-diverge-swatch.mkt { background: #8b93a1; }
+
+/* The $1 test now states staked, back and profit rather than profit alone,
+   so each side is a small stack instead of one line. */
+.edge-money-cell { display: flex; flex-direction: column; gap: 0.1rem; }
+.edge-money-who {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.edge-money-flow { font-size: 0.95rem; color: var(--text-2); }
+.edge-money-roi { font-size: 0.78rem; color: var(--text-3); }
+.edge-money-cell.pos .edge-money-roi { color: var(--accent-positive); }
+.edge-money-cell.neg .edge-money-roi { color: var(--accent-negative); }
+.edge-money-cell.us.pos .edge-money-roi { color: var(--accent-brand); }

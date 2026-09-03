@@ -165,6 +165,11 @@ export default function EdgeBoard() {
       mktRight,
       usAcc: dis.length ? Math.round((usRight / dis.length) * 100) : 0,
       mktAcc: dis.length ? Math.round((mktRight / dis.length) * 100) : 0,
+      // Both halves, because the card prints both. `usReturn` is what comes
+      // BACK on the winning tickets (decimal odds already include the
+      // stake); the net is that minus everything staked.
+      usBack: usReturn,
+      mktBack: mktReturn,
       usNet: usReturn - dis.length,
       mktNet: mktReturn - dis.length,
       // The reason the money can diverge while the hit rates cannot: on a
@@ -211,16 +216,31 @@ export default function EdgeBoard() {
               read a doubled gap into what is a single measurement. The bar
               worth clearing is zero: flat-staking anything at bookmakers'
               prices loses money on average, which is how they stay open. */}
-          <div className="edge-money-label">THE $1 TEST · ${stats.disagreements} staked on each side of every split</div>
+          {/* Staked, back, profit - in that order, all three stated.
+              The card used to print the profit alone under a heading naming
+              the stake, so "$213 staked -> +$28" read as if $28 were what
+              came back. What a reader wants first from a $1 test is the
+              RETURN on those tickets; the profit is the difference, and
+              saying so leaves nothing to infer. */}
+          <div className="edge-money-label">
+            THE $1 TEST · $1 on each of the {stats.disagreements} splits, settled at the closing price
+          </div>
           <div className="edge-money-row">
-            <span className={`edge-money-cell us ${stats.usNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on our picks → <strong>{stats.usNet >= 0 ? '+' : '-'}${Math.abs(stats.usNet).toFixed(0)}</strong>
-              <span className="edge-money-roi"> ({stats.usNet >= 0 ? '+' : '-'}{Math.abs((100 * stats.usNet) / Math.max(1, stats.disagreements)).toFixed(0)}%)</span>
-            </span>
-            <span className={`edge-money-cell ${stats.mktNet >= 0 ? 'pos' : 'neg'}`}>
-              $1 on the market&apos;s → <strong>{stats.mktNet >= 0 ? '+' : '-'}${Math.abs(stats.mktNet).toFixed(0)}</strong>
-              <span className="edge-money-roi"> ({stats.mktNet >= 0 ? '+' : '-'}{Math.abs((100 * stats.mktNet) / Math.max(1, stats.disagreements)).toFixed(0)}%)</span>
-            </span>
+            {[
+              { k: 'us', name: 'our picks', back: stats.usBack, net: stats.usNet },
+              { k: 'mkt', name: "the market's", back: stats.mktBack, net: stats.mktNet },
+            ].map((r) => (
+              <span key={r.k} className={`edge-money-cell ${r.k === 'us' ? 'us ' : ''}${r.net >= 0 ? 'pos' : 'neg'}`}>
+                <span className="edge-money-who">$1 on {r.name}</span>
+                <span className="edge-money-flow">
+                  ${stats.disagreements} staked → <strong>${r.back.toFixed(0)} back</strong>
+                </span>
+                <span className="edge-money-roi">
+                  {r.net >= 0 ? '+' : '-'}${Math.abs(r.net).toFixed(0)} profit
+                  {' '}({r.net >= 0 ? '+' : '-'}{Math.abs((100 * r.net) / Math.max(1, stats.disagreements)).toFixed(0)}%)
+                </span>
+              </span>
+            ))}
           </div>
         </div>
       )}

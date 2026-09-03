@@ -16,6 +16,17 @@ describe('matchTime placeholder handling', () => {
     expect(isPlaceholderTime('2026-08-11T23:00:00Z')).toBe(false);
   });
 
+  it('detects venue midnight however the engine renders the hour', () => {
+    // hour12:false resolves to h24 on some engines, rendering midnight as
+    // "24:00". Node says "00:00", so this can only fail in a browser - and
+    // only on the stamps the function exists to catch. Asserted on the
+    // numeric parts so the h23/h24 split cannot reach the result.
+    expect(isPlaceholderTime('2026-09-02T04:00:00Z')).toBe(true);   // EDT midnight
+    expect(isPlaceholderTime('2026-01-15T05:00:00Z')).toBe(true);   // EST midnight
+    expect(isPlaceholderTime('2026-09-02T04:01:00Z')).toBe(false);  // a minute past
+    expect(isPlaceholderTime('2026-09-02T03:59:00Z')).toBe(false);  // a minute before
+  });
+
   it('a real night session is not a placeholder', () => {
     // The regression. 00:30Z is 8:30pm at the venue - a genuine night match,
     // with a real start time someone can plan around. The old test read the

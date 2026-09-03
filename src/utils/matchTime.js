@@ -12,9 +12,28 @@ export const EVENT_TZ = 'America/New_York';
 const VENUE_DAY = new Intl.DateTimeFormat('en-CA', {
   timeZone: EVENT_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
 });
-const VENUE_CLOCK = new Intl.DateTimeFormat('en-GB', {
-  timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit', hour12: false,
+// hourCycle h23, stated explicitly. `hour12: false` alone is the classic
+// portability trap: some engines resolve it to h24 and render midnight as
+// "24:00" rather than "00:00". Node renders "00:00", so a unit test would
+// never see it - the failure would appear only in a browser, and only for
+// exactly the stamps this function exists to detect.
+//
+// formatToParts rather than a formatted string, so the comparison is on
+// numbers and cannot be broken by a locale's separator or a stray marker.
+const VENUE_CLOCK = new Intl.DateTimeFormat('en-US', {
+  timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
+
+function venueHourMinute(d) {
+  let h = null; let m = null;
+  for (const part of VENUE_CLOCK.formatToParts(d)) {
+    if (part.type === 'hour') h = Number(part.value);
+    if (part.type === 'minute') m = Number(part.value);
+  }
+  // h24 renders midnight as 24; fold it back so either resolution agrees.
+  if (h === 24) h = 0;
+  return { h, m };
+}
 
 /** The YYYY-MM-DD this stamp belongs to at the venue. '' when unparseable. */
 export function eventDayOf(iso) {
@@ -35,7 +54,8 @@ export function eventDayOf(iso) {
 export function isPlaceholderTime(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return false;
-  return VENUE_CLOCK.format(d) === '00:00';
+  const { h, m } = venueHourMinute(d);
+  return h === 0 && m === 0;
 }
 
 export function timeUntil(iso, now = Date.now()) {
