@@ -260,6 +260,26 @@ jobs:
           SITE_URL: ${{ vars.SITE_URL }}
         run: npm run build-sitemap
 
+      # ORDER MATTERS: both of these produce files the DIGEST reads, so they
+      # run before it. They used to sit after, which meant every email was
+      # built from the PREVIOUS run's scorecard - the Sep 2 digest led with
+      # Aug 31's card, a day behind, and its title odds were a day stale too.
+      # They stay continue-on-error: a cosmetic generator must not discard a
+      # successful refresh, and the digest degrades gracefully without them.
+      # Championship odds: simulate the live slam draw to completion and
+      # append today's snapshot to the odds history.
+      - name: Compute championship title odds
+        id: title_odds
+        continue-on-error: true
+        run: npm run build-title-odds
+
+      # The day's shareable artifact: yesterday's scorecard + upset watch.
+      - name: Build the daily scorecard
+        id: scorecard
+        continue-on-error: true
+        run: npm run build-daily-scorecard
+
+
       # Email digest, every run. The script picks its own edition: the weekly
       # recap on Mondays (UTC), the short daily otherwise - so this lands
       # daily through the tournament windows and weekly off-season, matching
@@ -312,19 +332,6 @@ jobs:
       # uncommitted behind it (yesterday's cosmetic files simply persist).
       # The alert step after the commit still opens an issue when any of
       # them failed, so nothing rots silently.
-
-      # Championship odds: simulate the live slam draw to completion and
-      # append today's snapshot to the odds history.
-      - name: Compute championship title odds
-        id: title_odds
-        continue-on-error: true
-        run: npm run build-title-odds
-
-      # The day's shareable artifact: yesterday's scorecard + upset watch.
-      - name: Build the daily scorecard
-        id: scorecard
-        continue-on-error: true
-        run: npm run build-daily-scorecard
 
       # Season rewind: the /season page's JSON (archives last year's file
       # automatically on the first run of a new year).

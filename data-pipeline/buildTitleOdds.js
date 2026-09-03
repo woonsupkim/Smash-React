@@ -83,7 +83,30 @@ function pairProb(ctx, a, b, surface) {
 // Also tracks round-by-round survival: advance[playerIdx][r] counts sims
 // where the player won their round-r match, so the draw page can show
 // "makes the QF 61% / wins it all 24%" for every line of the bracket.
-function simulateTitles(ctx, field, surface) {
+// decided: Map(roundIndex -> [names in draw order, 'TBD' where undecided]),
+// i.e. the rounds ESPN has already filled in below `field`. A round that is
+// only PARTLY played is still useful - every slot in it that carries a real
+// name is a result, and a result is not something to simulate.
+// ESPN writes later rounds with its own spelling of a name, so the winner is
+// matched against the two players who could possibly be there rather than
+// looked up globally. Returns null when neither matches, and the caller then
+// simulates - a name we cannot resolve must not silently eliminate both.
+function matchName(name, a, b) {
+  const norm = (v) => String(v || '').toLowerCase().normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, '').trim();
+  const n = norm(name);
+  if (!n) return null;
+  const last = (v) => norm(v).split(' ').filter(Boolean).pop() || '';
+  for (const p of [a, b]) {
+    if (norm(p.name) === n) return p;
+  }
+  for (const p of [a, b]) {
+    if (last(p.name) && last(p.name) === last(name)) return p;
+  }
+  return null;
+}
+
+function simulateTitles(ctx, field, surface, decided = new Map()) {
   // field: [{id, name, rostered}] in draw order, power-of-two length
   const memo = new Map();
   const prob = (a, b) => {
@@ -99,9 +122,18 @@ function simulateTitles(ctx, field, surface) {
     let cur = field;
     let r = 0;
     while (cur.length > 1) {
+      const known = decided.get(r) || null;
       const next = [];
       for (let i = 0; i < cur.length; i += 2) {
-        const winner = Math.random() < prob(cur[i], cur[i + 1]) ? cur[i] : cur[i + 1];
+        // A match that has been played is forced, not sampled. Without this
+        // the whole round was re-simulated the moment ANY match in it was
+        // still outstanding, so a player who had already lost kept a title
+        // chance - Djokovic sat at 9.4% having gone out to Navone.
+        const settled = known && known[i / 2] && known[i / 2] !== 'TBD'
+          ? matchName(known[i / 2], cur[i], cur[i + 1])
+          : null;
+        const winner = settled
+          || (Math.random() < prob(cur[i], cur[i + 1]) ? cur[i] : cur[i + 1]);
         advance[idx.get(winner.id)][r]++;
         next.push(winner);
       }
@@ -157,7 +189,16 @@ async function buildTour(tour) {
       : { id: `x${i}:${n}`, name: n, rostered: false };
   });
 
-  const { odds, survival } = simulateTitles(ctx, field, slam.surface);
+  // Every round BELOW the one we simulate from, as far as ESPN has filled it
+  // in. Round index r of the simulation produces a field of fieldSize/2^(r+1),
+  // so that is the key to look up.
+  const decided = new Map();
+  for (let r = 0, size = fieldSize / 2; size >= 1; r++, size /= 2) {
+    const names = draw.fields.get(size);
+    if (names && names.length === size) decided.set(r, names);
+  }
+
+  const { odds, survival } = simulateTitles(ctx, field, slam.surface, decided);
   const ranks = ctx.statsBySurface[slam.surface];
   return {
     event: slam.label, tour, surface: slam.surface, status: 'live',

@@ -11,6 +11,10 @@
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { ledgerNoCall } = require('./noCall');
+// Venue days, matching every caller. These functions receive a day string
+// picked by recapDay/eventDay, so bucketing by the UTC slice here compared
+// two different calendars and silently settled the wrong day's slip.
+const { eventDay } = require('./eventDay');
 
 const stakingReady = import(pathToFileURL(path.join(__dirname, '..', '..', 'src', 'utils', 'staking.mjs')).href);
 let staking = null;
@@ -44,7 +48,7 @@ function ledgerGraded(preds) {
 function lockedBets(preds, dayISO) {
   const bets = [];
   for (const m of ledgerGraded(preds)) {
-    if (String(m.date).slice(0, 10) !== dayISO) continue;
+    if (eventDay(m.date) !== dayISO) continue;
     const favIsP1 = m.favorite === m.p1;
     const o = Number(favIsP1 ? m.lockOdd1 : m.lockOdd2);
     if (!(o > 1) || typeof m.favProb !== 'number') continue;
@@ -86,7 +90,7 @@ function planReturns(preds, dayISO) {
   if (!staking) throw new Error('planSettle: call ready() before planReturns()');
   const bets = lockedBets(preds, dayISO);
   if (bets.length < 2) return null;
-  const history = ledgerGraded(preds).filter((m) => String(m.date).slice(0, 10) < dayISO);
+  const history = ledgerGraded(preds).filter((m) => eventDay(m.date) < dayISO);
   const rel = staking.reliability(history);
   const frontier = staking.planFrontier(bets.map(({ key, p, o }) => ({ key, p, o })), PLAN_BUDGET, { lambda: rel.lambda });
   if (!frontier.plans.length) return null;
@@ -118,7 +122,7 @@ function eventDayOwner(preds) {
   for (const m of ledgerGraded(preds)) {
     const reg = matchEvent(m.event);
     if (!reg) continue;
-    const day = String(m.date).slice(0, 10);
+    const day = eventDay(m.date);
     if (!tally.has(day)) tally.set(day, new Map());
     const t = tally.get(day);
     t.set(reg.label, (t.get(reg.label) || 0) + 1);

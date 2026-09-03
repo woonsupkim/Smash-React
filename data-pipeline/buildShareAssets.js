@@ -1816,8 +1816,13 @@ async function taleOfTheTape(p, ctx, forms, file) {
   const PW = 330, PH = 430, PY = 356, aX = 64, bX = SQ - 64 - PW;
   const bg = await duoStage(p.surface, SQ, SQ);
   const [aImg, bImg] = await Promise.all([
-    duoPanel(photoPath(p.tour, p.p1), PW, PH, favIsP1 ? 'winner' : 'loser'),
-    duoPanel(photoPath(p.tour, p.p2), PW, PH, favIsP1 ? 'loser' : 'winner'),
+    // Both in colour. The tape is a COMPARISON - two players set side by
+    // side on equal terms - and greying one of them out announced the verdict
+    // before the reader had read a single row. Our pick is already marked by
+    // the numbers and the accent; it does not also need the other player
+    // drained of colour to make the point.
+    duoPanel(photoPath(p.tour, p.p1), PW, PH, 'winner'),
+    duoPanel(photoPath(p.tour, p.p2), PW, PH, 'winner'),
   ]);
   const f1 = forms.get(p.p1), f2 = forms.get(p.p2);
   // Row pitch 76 fits five rows inside the panel column; value size drops
@@ -2249,10 +2254,25 @@ async function run() {
         return t >= startOfTomorrow.getTime() && t < endOfTomorrow.getTime();
       })
       .map(decorate);
-    const pollPool = tomorrow.length ? tomorrow : picks;
-    const pollPick = [...pollPool].sort((a, b) => importance(a) - importance(b))[0];
-    await pollCard(pollPick, 'poll.png');
-    add('poll.png', 'poll', 'square', 'story', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}${tomorrow.length ? ', tomorrow' : ''}? Our model has already picked a side. ${matchLink(pollPick)} ${tags}`);
+    // TODAY's card leads. The poll used to prefer tomorrow's matches whenever
+    // any existed, so the story section asked readers about a match a day
+    // away while the rest of the kit was about today - and on a card built in
+    // the evening that is the only poll they got.
+    const todayPool = picks.filter((p) => eventDay(p.date) === CARD.day);
+    const pollPick = [...(todayPool.length ? todayPool : picks)]
+      .sort((a, b) => importance(a) - importance(b))[0];
+    if (pollPick) {
+      await pollCard(pollPick, 'poll.png');
+      add('poll.png', 'poll', 'square', 'story', `${last(pollPick.name1)} or ${last(pollPick.name2)} at the ${pollPick.event}? Our model has already picked a side. ${matchLink(pollPick)} ${tags}`);
+    }
+
+    // Tomorrow gets its own card rather than displacing today's, for anyone
+    // posting a look-ahead in the evening.
+    const aheadPick = [...tomorrow].sort((a, b) => importance(a) - importance(b))[0];
+    if (aheadPick && (!pollPick || aheadPick.id !== pollPick.id)) {
+      await pollCard(aheadPick, 'poll-tomorrow.png');
+      add('poll-tomorrow.png', 'poll-tomorrow', 'square', 'story', `${last(aheadPick.name1)} or ${last(aheadPick.name2)} at the ${aheadPick.event}, tomorrow? Our model has already picked a side. ${matchLink(aheadPick)} ${tags}`);
+    }
 
     // Tale of the tape: the marquee matchup (best combined ranking) gets the
     // full split-screen stat treatment.

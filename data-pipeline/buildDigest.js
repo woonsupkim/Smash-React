@@ -48,6 +48,13 @@ const fs = require('fs');
 const path = require('path');
 const Papa = require('papaparse');
 const { rowNoCall, ledgerNoCall } = require('./lib/noCall');
+// Every day boundary in this file is the VENUE's, not UTC's. A night
+// session finishing at 11pm is stamped past midnight UTC, so UTC buckets
+// filed it under the next day: the scorecard headline (venue days, via
+// recapDay) and the match list below it (UTC days) then described two
+// different sets, and the Sep 2 email listed Aug 31's matches under a
+// Sep 1 heading.
+const { eventDay, todayEvent, fmtEventDate } = require('./lib/eventDay');
 
 const ROOT = path.join(__dirname, '..');
 const DATA = path.join(ROOT, 'public', 'data');
@@ -312,7 +319,14 @@ function titleProb(oddsDoc, tour, id) {
   return hit ? (hit.prob || 0) : 0;
 }
 
-function pickHero(card, h2hDoc, oddsDoc) {
+// funded: Set of prediction ids the recommended plan actually stakes. The
+// email features one match and then stakes one match, and when those were
+// chosen independently they were usually different matches - the reader was
+// shown a tale of the tape for a match the money section never mentioned.
+// Preferring a funded match makes the two agree without distorting either:
+// the plan is still the optimiser's, the hero is still the best story among
+// the matches it backs.
+function pickHero(card, h2hDoc, oddsDoc, funded = null) {
   let best = null;
   for (const pr of card) {
     const h = h2hFor(h2hDoc, pr.tour, pr.p1, pr.p2);
@@ -321,7 +335,14 @@ function pickHero(card, h2hDoc, oddsDoc) {
     const rivalry = Math.min(meetings, 10) / 10;
     const star = Math.min(stature, 0.6) / 0.6;
     const close = 1 - Math.min(1, Math.abs((pr.favProb || 0.5) - 0.5) * 2);
-    const score = 0.40 * rivalry + 0.35 * star + 0.25 * close;
+    // ATP breaks a tie, and only a tie. The weight is smaller than the
+    // smallest gap the three real signals can produce, so a genuine rivalry
+    // or a title-favourite matchup on the WTA side still wins outright -
+    // this only decides the days where nothing stands out.
+    const atpNudge = (pr.tour || 'atp') !== 'wta' ? 0.02 : 0;
+    // Being on the plan outranks all of it: see the note on `funded`.
+    const onPlan = funded && funded.has(pr.id) ? 1 : 0;
+    const score = onPlan + 0.40 * rivalry + 0.35 * star + 0.25 * close + atpNudge;
     // Why it won, in the reader's terms rather than as a score.
     const why = meetings >= 5 ? `their ${meetings + 1}${[, 'st', 'nd', 'rd'][((meetings + 1) % 100 - (meetings + 1) % 10 !== 10) && (meetings + 1) % 10] || 'th'} meeting`
       : star > 0.5 ? 'two of the title favourites'
@@ -492,7 +513,12 @@ function groupCard(rows) {
   const at = (g) => Math.min(...g.rows.map((r) => new Date(r.date).getTime() || Infinity));
   const out = [...groups.values()];
   for (const g of out) g.rows.sort((a, b) => new Date(a.date) - new Date(b.date));
-  return out.sort((a, b) => (at(a) - at(b)) || a.event.localeCompare(b.event) || a.tour.localeCompare(b.tour));
+  // ATP first, then WTA, then by event and start. Ordering groups by whichever
+  // happened to be scheduled earliest made the running order flip day to day,
+  // so a reader could not learn where to look.
+  const tourRank = (t) => ((t || 'atp') === 'wta' ? 1 : 0);
+  return out.sort((a, b) => tourRank(a.tour) - tourRank(b.tour)
+    || a.event.localeCompare(b.event) || (at(a) - at(b)));
 }
 
 // Tour badge: a filled block, because a coloured word is not enough of a
@@ -704,8 +730,8 @@ async function main() {
   if (asOf) console.log(`  (building as of ${now.toISOString().slice(0, 10)})`);
   const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
   const isWeekly = MODE === 'weekly';
-  const dateLabel = now.toISOString().slice(0, 10);
-  const prettyDate = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  const dateLabel = todayEvent(now);
+  const prettyDate = fmtEventDate(now.toISOString(), { weekday: 'long', month: 'long', day: 'numeric' });
 
   const season = scorecard && scorecard.season ? scorecard.season : null;
   const yday = scorecard && scorecard.yesterday ? scorecard.yesterday : null;
@@ -736,15 +762,21 @@ async function main() {
     // ── DAILY ───────────────────────────────────────────────────────────────
     const todayISO = dateLabel;
     const upcoming = preds
-      .filter((pr) => pr.status === 'pending' && String(pr.date || '').slice(0, 10) >= todayISO)
+      .filter((pr) => pr.status === 'pending' && eventDay(pr.date) >= todayISO)
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-    const todays = upcoming.filter((pr) => String(pr.date || '').slice(0, 10) === todayISO);
+    const todays = upcoming.filter((pr) => eventDay(pr.date) === todayISO);
     // `card` is the staking universe (the builder prices no-calls too);
     // `calls` is what we CLAIM, and the passes get named, not hidden.
     const card = todays.length ? todays : upcoming.slice(0, 6);
     const calls = card.filter((pr) => !ledgerNoCall(pr));
     const passes = card.filter((pr) => ledgerNoCall(pr));
-    const shown = calls.slice(0, 5);
+    // Only matches carrying a price make the list. An unpriced row has no
+    // market to disagree with and cannot be staked, so it is a claim with
+    // nothing to check it against - those stay on the site's full card.
+    // Falls back to the unpriced calls only if pricing has not landed at all,
+    // so a pre-dawn edition is never empty.
+    const priced = calls.filter((pr) => marketProb(pr) != null);
+    const shown = (priced.length ? priced : calls).slice(0, 5);
     const events = [...new Set(card.map((pr) => pr.event).filter(Boolean))];
     const splits = card.filter((pr) => {
       const mk = marketProb(pr);
@@ -816,7 +848,9 @@ async function main() {
     // Yesterday, graded.
     if (yday && yday.n) {
       const ypct = pct(yday.correct, yday.n);
-      const ydayAll = graded.filter((m) => String(m.date).slice(0, 10) === String(yday.date).slice(0, 10));
+      // yday.date is already a venue day (recapDay picks it), so the match
+      // list has to be bucketed the same way or the two disagree.
+      const ydayAll = graded.filter((m) => eventDay(m.date) === eventDay(yday.date));
       const ydayRows = ydayAll.slice(0, 6);
 
       // How the bookmakers' own favourite did on the same matches. Only the
@@ -859,12 +893,24 @@ async function main() {
       // at the odds stamped before play. All of them, not just the winner:
       // yesterday's email recommended one, but a reader who preferred another
       // deserves to see what their choice did too.
-      const settled = planReturns(preds, String(yday.date).slice(0, 10));
+      const settled = planReturns(preds, eventDay(yday.date));
       let planBlock = '';
       let planTxt = '';
       if (settled && settled.plans.length) {
         const money = (v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
-        const best = settled.plans.reduce((a, b) => (b.profit > a.profit ? b : a));
+        const plainMoney = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
+        // RETURN PER DOLLAR, not dollars. Each plan stakes a different amount
+        // out of the same budget - the recommendation deliberately stakes the
+        // least - so ranking them by profit rewarded whichever one put the
+        // most money on the table. A percentage is the only figure that
+        // compares them, and it is the same axis the Risk Lab ranks on.
+        const roi = (pl) => (pl.staked > 0
+          ? `${pl.profit >= 0 ? '+' : '-'}${Math.abs((pl.profit / pl.staked) * 100).toFixed(1)}%`
+          : 'no stake');
+        const best = settled.plans.reduce((a, b) => {
+          const r = (x) => (x.staked > 0 ? x.profit / x.staked : -Infinity);
+          return r(b) > r(a) ? b : a;
+        });
         const rows = settled.plans.map((pl) => {
           const isRec = pl.id === settled.recommendedId;
           const up = pl.profit >= 0;
@@ -875,7 +921,8 @@ async function main() {
               <span style="display:block;font-size:12px;color:${MUTED};">${pl.hits} of ${pl.n} singles landed${pl.parlay ? `, parlay ${pl.parlay.won ? 'hit' : 'missed'}` : ''}</span>
             </td>
             <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${up ? WIN : LOSS};white-space:nowrap;">
-              ${money(pl.profit)}
+              ${roi(pl)}
+              <span style="display:block;font-size:11px;font-weight:600;color:${MUTED};">on ${plainMoney(pl.staked)} staked</span>
             </td>
           </tr>`;
         }).join('');
@@ -883,7 +930,7 @@ async function main() {
           <div style="margin-top:14px;padding:16px 18px;background:${PANEL};border-left:3px solid ${best.profit >= 0 ? WIN : LOSS};">
             ${kicker('If you had actually followed along')}
             <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:${BODY};">
-              Each plan the builder offered yesterday morning, $${settled.budget} in, settled at the odds we stamped before play.
+              Each plan the builder offered yesterday morning, $${settled.budget} available, settled at the odds we stamped before play. Ranked by return on what each actually staked, since they do not all stake the same amount.
             </p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
@@ -891,7 +938,7 @@ async function main() {
             </p>
           </div>`;
         planTxt = 'If you had actually followed along ($' + settled.budget + ' in): '
-          + settled.plans.map((pl) => `${pl.label} ${money(pl.profit)}${pl.id === settled.recommendedId ? ' (recommended)' : ''}`).join('; ');
+          + settled.plans.map((pl) => `${pl.label} ${roi(pl)} (${money(pl.profit)} on ${plainMoney(pl.staked)})${pl.id === settled.recommendedId ? ' [recommended]' : ''}`).join('; ');
 
       }
 
@@ -958,6 +1005,35 @@ async function main() {
       if (planTxt) txtLines.push(`  ${planTxt}`);
       txtLines.push('');
     }
+    // Staking plan: the ACTUAL recommendation for today's card, not a
+    // description of the tool that makes it. Same maths the builder runs,
+    // mirrored above and pinned by digestStaking.test.js.
+    const rel = staking.reliability(ledgerGraded(preds));
+    // Built from CALLS, not from the raw card. `card` still carries the
+    // no-calls so the section above can name what we are sitting out - and
+    // feeding it to the staking plan quietly put money on them, which is the
+    // exact contradiction this policy change removed everywhere else. The
+    // mail was recommending stakes on a 57% and a 51% on a day the same mail
+    // said "no calls - the whole card is inside our coin-flip band".
+    const planBets = calls
+      .map((pr) => {
+        const favIsP1 = pr.favorite === pr.p1;
+        const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
+        return { pr, key: pr.id, p: pr.favProb, o: o > 1 ? o : 0 };
+      })
+      .filter((b) => b.o > 1 && b.p > 0);
+    const byKey = new Map(planBets.map((b) => [String(b.key), b]));
+    const frontier = planBets.length >= 2
+      ? staking.planFrontier(planBets.map(({ key, p, o }) => ({ key: String(key), p, o })), PLAN_BUDGET, { lambda: rel.lambda })
+      : { plans: [] };
+    const todayPlan = frontier.plans.find((pl) => pl.id === frontier.recommendedId) || frontier.plans[0] || null;
+
+  // The ids the plan actually stakes, so the match this email FEATURES and the
+  // match it stakes are the same one wherever possible. Computed here rather
+  // than in the money section below because the hero is chosen first.
+  const fundedIds = new Set(Object.entries((todayPlan && todayPlan.singles) || {})
+    .filter(([, v]) => Number(v) > 0).map(([k]) => k));
+
 
     // Today's card. This section is ALWAYS emitted, even with nothing to
     // show. It used to be gated on `shown.length`, so on a day with no
@@ -979,7 +1055,7 @@ async function main() {
     }
     if (shown.length) {
       // One match carries the section; the rest are a list under it.
-      const hero = pickHero(shown, h2hDoc, oddsDoc);
+      const hero = pickHero(shown, h2hDoc, oddsDoc, fundedIds);
       const rest = hero ? shown.filter((pr) => pr.id !== hero.pr.id) : shown;
       const heroRead = hero ? matchRead(hero.pr, upsetById.get(hero.pr.id)) : '';
 
@@ -1009,28 +1085,6 @@ async function main() {
       txtLines.push('');
     }
 
-    // Staking plan: the ACTUAL recommendation for today's card, not a
-    // description of the tool that makes it. Same maths the builder runs,
-    // mirrored above and pinned by digestStaking.test.js.
-    const rel = staking.reliability(ledgerGraded(preds));
-    // Built from CALLS, not from the raw card. `card` still carries the
-    // no-calls so the section above can name what we are sitting out - and
-    // feeding it to the staking plan quietly put money on them, which is the
-    // exact contradiction this policy change removed everywhere else. The
-    // mail was recommending stakes on a 57% and a 51% on a day the same mail
-    // said "no calls - the whole card is inside our coin-flip band".
-    const planBets = calls
-      .map((pr) => {
-        const favIsP1 = pr.favorite === pr.p1;
-        const o = Number(favIsP1 ? pr.lockOdd1 : pr.lockOdd2);
-        return { pr, key: pr.id, p: pr.favProb, o: o > 1 ? o : 0 };
-      })
-      .filter((b) => b.o > 1 && b.p > 0);
-    const byKey = new Map(planBets.map((b) => [String(b.key), b]));
-    const frontier = planBets.length >= 2
-      ? staking.planFrontier(planBets.map(({ key, p, o }) => ({ key: String(key), p, o })), PLAN_BUDGET, { lambda: rel.lambda })
-      : { plans: [] };
-    const todayPlan = frontier.plans.find((pl) => pl.id === frontier.recommendedId) || frontier.plans[0] || null;
 
     if (todayPlan) {
       // Whole amounts read better without the cents in prose ($100, not
@@ -1185,12 +1239,35 @@ async function main() {
     if (slam && slamDays != null) {
       const logo = mirrorLogo(slam.label);
       const odds = readJson(path.join(DATA, 'title_odds.json'));
+      // A slam in progress is not "coming up". When the draw is live the
+      // section names the ROUND being played and shows who is still standing;
+      // the countdown only makes sense between events.
+      const liveEv = ['atp', 'wta']
+        .map((t) => odds && odds.events && odds.events[t])
+        .find((e) => e && e.status === 'live' && e.fieldSize > 1);
+      const isLive = !!liveEv;
+      // fieldSize is how many players remain, so it names the round directly.
+      const ROUND = { 128: 'First round', 64: 'Round of 64', 32: 'Round of 32', 16: 'Round of 16', 8: 'Quarter-finals', 4: 'Semi-finals', 2: 'Final' };
+      const roundName = isLive ? (ROUND[liveEv.fieldSize] || `Last ${liveEv.fieldSize}`) : null;
+      const liveLabel = isLive ? (liveEv.event || slam.label) : null;
+
       const contenders = [];
       for (const t of ['atp', 'wta']) {
         const ev = odds && odds.events && odds.events[t];
         if (!ev || !Array.isArray(ev.odds)) continue;
         const top = ev.odds.filter((x) => x.id).slice(0, 3);
-        if (top.length) contenders.push({ tour: t, top });
+        // Movement against the previous snapshot, the same figure the site's
+        // title-odds board shows. Keyed by NAME because that is what the
+        // history stores; a player absent from it is new to the top three and
+        // gets no arrow rather than a fabricated one.
+        const hist = Array.isArray(ev.history) ? ev.history : [];
+        const prevOdds = hist.length >= 2 ? hist[hist.length - 2].odds || {} : {};
+        const withMove = top.map((x) => {
+          const before = prevOdds[x.name];
+          const delta = typeof before === 'number' ? (x.prob || 0) - before : null;
+          return { ...x, delta };
+        });
+        if (top.length) contenders.push({ tour: t, top: withMove });
       }
 
       const contenderTable = contenders.map(({ tour, top }) => `
@@ -1209,29 +1286,34 @@ async function main() {
                 <td style="padding:6px 0;font-size:14px;font-weight:700;color:${INK};">${esc(x.name)}</td>
                 <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, LIME, 8)}</td>
                 <td width="42" style="padding:6px 0 6px 8px;text-align:right;font-size:14px;font-weight:800;color:${INK};">${prob < 1 ? '<1' : prob}%</td>
+                <td width="52" style="padding:6px 0 6px 6px;text-align:right;font-size:12px;font-weight:700;font-family:${MONO};color:${x.delta == null ? MUTED : (x.delta >= 0 ? WIN : LOSS)};white-space:nowrap;">${x.delta == null ? '' : `${x.delta >= 0 ? '&#9650;' : '&#9660;'}${Math.abs(Math.round(x.delta * 100))}`}</td>
               </tr>`;
   }).join('')}
           </table>
         </div>`).join('');
 
       blocks.push(section(`
-        ${kicker('Coming up')}
+        ${kicker(isLive ? 'Still standing' : 'Coming up')}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           <tr>
             ${logo ? `<td width="72" style="padding-right:16px;vertical-align:middle;"><img src="${logo}" width="64" alt="${esc(slam.label)}" style="display:block;width:64px;height:auto;" /></td>` : ''}
             <td style="vertical-align:middle;">
-              ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
-              <div style="font-size:14px;color:${MUTED};margin-top:-6px;">On ${esc(slam.surface)}.</div>
+              ${h2(isLive ? `${roundName} at the ${liveLabel}` : (slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`))}
+              <div style="font-size:14px;color:${MUTED};margin-top:-6px;">On ${esc(isLive ? (liveEv.surface || slam.surface) : slam.surface)}.</div>
             </td>
           </tr>
         </table>
-        ${p(`Until the real draw lands we simulate a seeded field from current rankings, two thousand times over, and re-price it with every refresh. It is the closest thing to a look at the tournament before the tournament exists.`, 'padding-top:14px;')}
+        ${p(isLive
+    ? `We play the remaining draw out two thousand times after every refresh. Anyone already beaten is gone from the field, so these are the players still standing, and the arrow is the move since yesterday.`
+    : `Until the real draw lands we simulate a seeded field from current rankings, two thousand times over, and re-price it with every refresh. It is the closest thing to a look at the tournament before the tournament exists.`, 'padding-top:14px;')}
         ${contenderTable}
-        <div style="padding-top:18px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
+        <div style="padding-top:18px;">${button(`${SITE}/draw`, isLive ? 'See the full draw' : 'See the projected draw')}</div>
       `));
-      txtLines.push(`COMING UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
+      txtLines.push(isLive
+        ? `STILL STANDING: ${roundName} at the ${liveLabel} (${liveEv.surface || slam.surface})`
+        : `COMING UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`} (${slam.surface})`);
       for (const { tour, top } of contenders) {
-        txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%`).join(', ')}`);
+        txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%${x.delta == null ? '' : ` (${x.delta >= 0 ? '+' : '-'}${Math.abs(Math.round(x.delta * 100))})`}`).join(', ')}`);
       }
       txtLines.push(`  ${SITE}/draw`, '');
     }
@@ -1287,8 +1369,8 @@ async function main() {
       const days = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
-        const key = d.toISOString().slice(0, 10);
-        const rows = week.filter((m) => String(m.date).slice(0, 10) === key);
+        const key = eventDay(d.toISOString());
+        const rows = week.filter((m) => eventDay(m.date) === key);
         if (rows.length) {
           days.push({
             label: d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
@@ -1365,7 +1447,7 @@ async function main() {
       // ever exist one day at a time. The daily prints one day, where it
       // proves nothing; over a week it starts to mean something, which is the
       // whole reason a weekly exists.
-      const weekDays = [...new Set(week.map((m) => String(m.date).slice(0, 10)))].sort();
+      const weekDays = [...new Set(week.map((m) => eventDay(m.date)))].sort();
       // Two different questions, and they need two different day sets.
       //
       // What a FOLLOWER got is the recommendation on every settleable day in
