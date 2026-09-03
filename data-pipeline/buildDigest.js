@@ -964,6 +964,21 @@ async function main() {
       // yesterday's email recommended one, but a reader who preferred another
       // deserves to see what their choice did too.
       const settled = planReturns(preds, eventDay(yday.date));
+      // HOW MUCH OF THE DAY THE PLAN COULD EVEN SEE.
+      //
+      // A plan can only stake a call carrying a price stamped before play, so
+      // the block should say how much of the day it could see. But coverage is
+      // rarely the interesting part: the reading this block keeps inviting is a
+      // day like 2026-09-01, where 8 of 9 priced calls won and all five plans
+      // still finished red. Pricing was fine there (9 of 10 calls). What did it
+      // was concentration - the plans back only calls priced above our own
+      // number, that day there were two, one of them lost, and the same two sat
+      // in the parlay four of the five plans carried. A high hit rate on a card
+      // the plan mostly declines to stake is not a profit, and saying so is
+      // cheaper than letting the reader conclude the maths is broken.
+      const dayISOsettled = eventDay(yday.date);
+      const pricedN = planSettle.lockedBets(preds, dayISOsettled).length;
+      const calledN = ledgerGraded(preds).filter((m) => eventDay(m.date) === dayISOsettled).length;
       let planBlock = '';
       let planTxt = '';
       if (settled && settled.plans.length) {
@@ -1002,12 +1017,15 @@ async function main() {
             <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:${BODY};">
               Each plan the builder offered yesterday morning, $${settled.budget} available, settled at the odds we stamped before play. Ranked by return on what each actually staked, since they do not all stake the same amount.
             </p>
+            <p style="margin:0 0 8px;font-size:12px;line-height:1.6;color:${MUTED};">
+              Built on the ${pricedN} of ${calledN} call${calledN === 1 ? '' : 's'} that carried a price before play. The plans stake only where the price beats our own number, so a day can call most of its winners and still finish red here: what matters is which calls were worth backing, not how many landed.
+            </p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
             <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
               One good day proves nothing. Neither does one bad one, which is why you get all of them, every day.
             </p>
           </div>`;
-        planTxt = 'If you had actually followed along ($' + settled.budget + ' in): '
+        planTxt = 'If you had actually followed along ($' + settled.budget + ' in, ' + pricedN + ' of ' + calledN + ' calls priced): '
           + settled.plans.map((pl) => `${pl.label} ${roi(pl)} (${money(pl.profit)} on ${plainMoney(pl.staked)})${pl.id === settled.recommendedId ? ' [recommended]' : ''}`).join('; ');
 
       }

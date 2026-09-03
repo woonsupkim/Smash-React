@@ -1306,13 +1306,27 @@ async function dayMoneyCard(run, dayISO, file, when = null) {
   // rebased onto a fixed $10 so they mean the same thing on a three-match
   // Tuesday as on a fifteen-match Saturday.
   const back = 10 * (1 + run.roi / 100);
+  // TWO NUMBERS ON TWO BASES, and the labels have to say which is which.
+  //
+  // The headline is NET: profit over stake, so a losing day carries a minus
+  // sign. The dollar stat is GROSS: stake returned plus winnings, which is the
+  // same fact rebased. They are not in conflict, but "-2.7%" sitting beside
+  // "$9.73" invites the reader to check the arithmetic and conclude one of
+  // them is broken, so each label now names its own basis.
+  //
+  // The count is PRICED LEDGER CALLS, which is a smaller population than the
+  // results card's. That card reads track_record.json, which grades every
+  // match the model scored; this one reads the forward ledger and then keeps
+  // only rows carrying a stampable price, because a call with no price cannot
+  // move a wallet. Same day, honestly different denominators - so this one
+  // says which it is rather than both claiming the word "calls".
   await reportCard({
     eyebrowText: `${when && !when.isYesterday ? `${when.poss} calls` : "Yesterday's calls"} · ${dayISO}`,
     headline1: pctOf(run.roi),
-    headline2: 'ON THE DAY',
+    headline2: 'RETURN ON STAKE',
     stats: [
-      { value: `$${back.toFixed(2)}`, label: 'back on $10 spread across every call' },
-      { value: `${run.hits}/${run.n}`, label: 'calls that landed' },
+      { value: `$${back.toFixed(2)}`, label: 'back on every $10 staked, stake included' },
+      { value: `${run.hits}/${run.n}`, label: 'priced calls that landed' },
     ],
     footNote: 'hypothetical · settled at the price stamped before play · not betting advice',
     file,
@@ -2388,7 +2402,7 @@ async function run() {
     if (run.staked > 0) {
       await dayMoneyCard(run, lastDay, 'day-money.png', when);
       add('day-money.png', 'day-money', 'square', 'recap',
-        `Every call we made on ${lastDay}, backed flat: ${pctOf(run.roi)} on the day, ${run.hits} of ${run.n} landed. $10 spread across the card comes back $${(10 * (1 + run.roi / 100)).toFixed(2)}. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
+        `Every priced call we made on ${lastDay}, backed flat: ${pctOf(run.roi)} on the day, ${run.hits} of ${run.n} priced calls landed. $10 staked comes back $${(10 * (1 + run.roi / 100)).toFixed(2)}, stake included. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. ${SITE}/track-record ${tags}`,
         `${when.poss.charAt(0).toUpperCase()}${when.poss.slice(1)} calls returned ${pctOf(run.roi)} on the day.`);
     }
 
@@ -2873,10 +2887,22 @@ async function run() {
       try { return require('./lib/events'); } catch { return {}; }
     })();
     const ledger = planSettle.ledgerGraded(preds.predictions || []);
-    const recent = ledger.filter((m) => (Date.now() - new Date(m.date).getTime()) < 21 * 864e5);
-    const counts = new Map();
-    for (const m of recent) if (m.event) counts.set(m.event, (counts.get(m.event) || 0) + 1);
-    const liveEvent = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    // THE LIVE EVENT IS THE MOST RECENT ONE, NOT THE BIGGEST ONE.
+    //
+    // This used to count graded rows per event across a 21-day window and take
+    // the largest. A finished tournament outvotes the running one for as long
+    // as it stays in the window: with Cincinnati at 95 graded rows and the US
+    // Open at 45, the card headlined "CINCINNATI" through the first week of a
+    // slam. Volume is the wrong signal twice over, because the live event is
+    // also the one whose most recent days are still ungraded, so it is always
+    // the smaller count while it matters most.
+    //
+    // Ownership of the LATEST settled day is the right signal, and it reuses
+    // the same majority rule planSettle already partitions days with, so this
+    // card and the tournament totals can never name different events for the
+    // same day. Mirrors what buildDigest does off yesterday's card.
+    const owner = planSettle.eventDayOwner(preds.predictions || []);
+    const liveEvent = [...owner.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))[0]?.[1] || null;
     const days = liveEvent ? planSettle.eventDays(preds.predictions || [], liveEvent) : [];
     const run = days.length ? planSettle.planRun(preds.predictions || [], days) : null;
     if (run && run.days >= 3 && run.staked > 0) {
