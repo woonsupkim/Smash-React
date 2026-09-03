@@ -300,6 +300,7 @@ jobs:
       # the cache and this job still succeeds. Without the check, subscribers
       # got the same card every morning for the length of the outage.
       - name: Build and send the email digest
+        id: digest
         continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL }}
@@ -332,6 +333,20 @@ jobs:
       # uncommitted behind it (yesterday's cosmetic files simply persist).
       # The alert step after the commit still opens an issue when any of
       # them failed, so nothing rots silently.
+
+      # Whether the digest actually MAILED, stated in the run summary.
+      #
+      # The step above is continue-on-error and every skip path inside it
+      # returns cleanly, so a digest that quietly stopped reaching subscribers
+      # was indistinguishable from one that worked: green run, committed HTML,
+      # no signal anywhere. The HTML file proves it was built, never that it
+      # was delivered. This reads the marker the builder writes and fails the
+      # step when a send we INTENDED did not happen - a deliberate skip (stale
+      # data, dry run, nothing to say) stays quiet, because those are correct.
+      - name: Report whether the digest was delivered
+        id: digest_sent
+        continue-on-error: true
+        run: npm run report-digest-send
 
       # Season rewind: the /season page's JSON (archives last year's file
       # automatically on the first run of a new year).
@@ -466,13 +481,13 @@ jobs:
       # The cosmetic generators are continue-on-error so a card-render crash
       # can't discard the data commit - but their failures still surface here.
       - name: Open an issue if a cosmetic generator failed
-        if: steps.predictions.outcome == 'failure' || steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.season_rewind.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure'
+        if: steps.predictions.outcome == 'failure' || steps.title_odds.outcome == 'failure' || steps.scorecard.outcome == 'failure' || steps.season_rewind.outcome == 'failure' || steps.share_assets.outcome == 'failure' || steps.motion_assets.outcome == 'failure' || steps.digest.outcome == 'failure' || steps.digest_sent.outcome == 'failure'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TITLE="Cosmetic generator failed in data refresh"
-          BODY="The data refresh committed fine, but a fault-isolated step failed on $(date -u +%Y-%m-%d): predictions=${{ steps.predictions.outcome }}, title_odds=${{ steps.title_odds.outcome }}, scorecard=${{ steps.scorecard.outcome }}, season_rewind=${{ steps.season_rewind.outcome }}, share_assets=${{ steps.share_assets.outcome }}, motion_assets=${{ steps.motion_assets.outcome }}. See the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="The data refresh committed fine, but a fault-isolated step failed on $(date -u +%Y-%m-%d): predictions=${{ steps.predictions.outcome }}, title_odds=${{ steps.title_odds.outcome }}, scorecard=${{ steps.scorecard.outcome }}, season_rewind=${{ steps.season_rewind.outcome }}, share_assets=${{ steps.share_assets.outcome }}, motion_assets=${{ steps.motion_assets.outcome }}, digest=${{ steps.digest.outcome }}, digest_delivered=${{ steps.digest_sent.outcome }}. See the run log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' --repo "${{ github.repository }}")
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body "$BODY" --repo "${{ github.repository }}"

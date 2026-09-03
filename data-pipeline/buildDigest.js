@@ -689,6 +689,28 @@ function pickTransport() {
   return null;
 }
 
+
+// ── Did it actually go out? ────────────────────────────────────────────────
+//
+// Every skip path in this file logs a warning and returns 0, and the workflow
+// step runs with continue-on-error, so a digest that silently stopped mailing
+// looked exactly like one that mailed fine: a green run and a committed HTML
+// file. The file being written proves the digest was BUILT, never that anyone
+// received it.
+//
+// This writes the outcome where CI can read it, so the run summary can say so
+// and a real failure can raise an issue. `deliberate` separates the skips we
+// choose (stale data, dry run, nothing to say) from the ones that mean
+// something is broken (no transport, no recipients, sends failing).
+function recordSendStatus(status) {
+  try {
+    const dir = path.join(__dirname, 'raw');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'digest-status.json'),
+      JSON.stringify({ at: new Date().toISOString(), ...status }, null, 2));
+  } catch { /* never let bookkeeping break the run */ }
+}
+
 async function main() {
   // The staking module the whole plan machinery below runs on. Resolved once;
   // a failure here should kill the build loudly rather than mail a digest
@@ -1569,6 +1591,7 @@ async function main() {
 
   if (!blocks.length) {
     console.log(`[${MODE}] Nothing worth mailing today; wrote no files and skipped send.`);
+    recordSendStatus({ sent: 0, skipped: true, deliberate: true, reason: 'nothing worth mailing' });
     return;
   }
 
@@ -1697,6 +1720,7 @@ async function main() {
       + `\n    This is deliberate: mailing a stale card every morning during an API`
       + `\n    outage is worse than skipping a day. Set DIGEST_FORCE=1 to override.`
     );
+    recordSendStatus({ sent: 0, skipped: true, deliberate: true, reason: `stale data: ${staleReasons.join('; ')}` });
     return;
   }
   if (staleReasons.length) {
@@ -1718,6 +1742,7 @@ async function main() {
       + '    Everything above was built and saved; the send was skipped on purpose.\n'
       + '    Unset DIGEST_DRY_RUN to mail normally.'
     );
+    recordSendStatus({ sent: 0, skipped: true, deliberate: true, reason: 'DIGEST_DRY_RUN=1' });
     return;
   }
 
@@ -1745,8 +1770,15 @@ async function main() {
   // who is ALSO in DIGEST_TO overwrites the null, so they get a live link.
   const owners = new Set((process.env.DIGEST_TO || '').split(',').map((s) => s.trim()).filter(Boolean));
   const recipients = new Map([...owners].map((e) => [e, null]));
+  // How the subscriber list went, recorded separately from the mail count.
+  // "Sent to 1 recipient" is indistinguishable between a healthy list of one
+  // and a list that was never read - and the second is the failure that
+  // matters, because the owner keeps receiving the mail either way and
+  // nothing looks wrong.
+  const listState = { configured: false, read: false, subscribers: 0, problem: null };
   const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    listState.configured = true;
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/digest_subscribers?select=email,unsubscribe_token`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
@@ -1755,7 +1787,22 @@ async function main() {
         const rows = await res.json();
         for (const r of rows) recipients.set(r.email, r.unsubscribe_token || null);
         const tokenless = rows.filter((r) => !r.unsubscribe_token).length;
+        listState.read = true;
+        listState.subscribers = rows.length;
         console.log(`Subscribers: ${rows.length} from digest_subscribers, ${owners.size} from DIGEST_TO, ${recipients.size} unique.`);
+        // An EMPTY list on a 200 is the quietest failure of the lot: the anon
+        // key can SELECT nothing (the table allows anon INSERT only), so a
+        // wrong key reads back zero rows and reports success. A live signup
+        // form with nobody behind it is worth a shout either way.
+        if (rows.length === 0) {
+          listState.problem = 'digest_subscribers returned 0 rows';
+          console.warn(
+            '  ! digest_subscribers returned ZERO rows, so only DIGEST_TO is being mailed.\n'
+            + '    If anyone has signed up, this is the symptom of using the ANON key:\n'
+            + '    the table allows anon INSERT but no anon SELECT, so it reads back\n'
+            + '    empty with an HTTP 200. SUPABASE_SERVICE_KEY must be service-role.'
+          );
+        }
         if (tokenless) {
           console.warn(
             `  ! ${tokenless} subscriber(s) have no unsubscribe_token, so they get the\n`
@@ -1763,6 +1810,7 @@ async function main() {
           );
         }
       } else {
+        listState.problem = `digest_subscribers read failed (HTTP ${res.status})`;
         console.warn(
           `  ! Could not read digest_subscribers (HTTP ${res.status}), so ONLY DIGEST_TO is being mailed.\n`
           + '    SUPABASE_SERVICE_KEY must be the service-role key: the table allows anon\n'
@@ -1770,9 +1818,11 @@ async function main() {
         );
       }
     } catch (err) {
+      listState.problem = `subscriber fetch threw: ${err.message}`;
       console.warn(`  ! Subscriber fetch failed, mailing DIGEST_TO only (non-fatal): ${err.message}`);
     }
   } else {
+    listState.problem = 'SUPABASE_URL / SUPABASE_SERVICE_KEY not set';
     // Silent-skipping this is how you mail yourself, see "sent to 1 recipient",
     // and never learn that real subscribers were dropped on the floor.
     console.warn(
@@ -1822,6 +1872,10 @@ async function main() {
     await new Promise((r) => setTimeout(r, 600)); // stay under provider rate limits
   }
   console.log(`Digest sent to ${sent} recipient(s)${failed ? `, ${failed} failed` : ''}. ${oneClick} carried a one-click unsubscribe.`);
+  // Zero delivered when we meant to deliver is a failure, not a skip.
+  recordSendStatus({
+    sent, failed, recipients: recipients.size, skipped: false, deliberate: false, list: listState,
+  });
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

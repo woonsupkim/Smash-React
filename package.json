@@ -73,7 +73,8 @@
     "build-season-rewind": "node data-pipeline/buildSeasonRewind.js",
     "report-api-usage": "node data-pipeline/reportApiUsage.js",
     "send-push": "node data-pipeline/sendPush.js",
-    "post-social": "node data-pipeline/postSocial.js"
+    "post-social": "node data-pipeline/postSocial.js",
+    "report-digest-send": "node data-pipeline/reportDigestSend.js"
   },
   "eslintConfig": {
     "extends": [
