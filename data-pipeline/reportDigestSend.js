@@ -48,18 +48,35 @@ say(`- Digest: **sent to ${s.sent}** of ${s.recipients} recipient(s)${failed ? `
 // or was never read at all - and in the second case the owner keeps getting
 // the mail every morning, so nothing ever looks wrong.
 if (list.read) {
-  say(`- Subscribers: **${list.subscribers}** read from digest_subscribers`);
+  const role = list.keyRole && list.keyRole !== 'service_role'
+    ? ` - but the key is a **"${list.keyRole}"** key, which cannot SELECT this table`
+    : '';
+  say(`- Subscribers: **${list.subscribers}** read from digest_subscribers${role}`);
 } else if (list.configured) {
   say(`- Subscribers: **NOT READ** - ${list.problem || 'unknown error'}. Only DIGEST_TO was mailed.`);
 } else {
   say('- Subscribers: **NOT READ** - SUPABASE_URL / SUPABASE_SERVICE_KEY are not set on this run. Only DIGEST_TO was mailed.');
 }
 
+if (s.sandboxSender) {
+  say("- Sender: **Resend sandbox (`onboarding@resend.dev`)** - only the Resend account owner can receive. Every other subscriber is rejected 403.");
+} else if (s.transport) {
+  say(`- Sender: ${s.transport}`);
+}
+
 const problems = [];
+if (s.sandboxSender) problems.push('DIGEST_FROM is the Resend sandbox sender, which can only reach the account owner');
 if (!s.sent) problems.push('nobody received it');
 if (failed) problems.push(`${failed} send(s) failed`);
 if (!list.read) problems.push(`the subscriber list was never read (${list.problem || 'not configured'})`);
-if (list.read && list.subscribers === 0) problems.push('digest_subscribers returned zero rows');
+if (list.read && list.keyRole && list.keyRole !== 'service_role') {
+  problems.push(`SUPABASE_SERVICE_KEY is a "${list.keyRole}" key, not service_role`);
+} else if (list.read && list.subscribers === 0) {
+  // Not necessarily broken - the table may simply be empty - but it is worth
+  // surfacing, because "nobody signed up" and "we cannot read the list" are
+  // the same observation until someone checks.
+  problems.push('digest_subscribers returned zero rows (table empty, or unreadable)');
+}
 
 if (problems.length) {
   console.error(`Digest delivery is not healthy: ${problems.join('; ')}. ${JSON.stringify(s)}`);

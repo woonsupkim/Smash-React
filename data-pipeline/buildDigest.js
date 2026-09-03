@@ -672,9 +672,26 @@ function pickTransport() {
 
   const key = process.env.RESEND_API_KEY;
   if (key) {
+    const from = process.env.DIGEST_FROM || 'smash@updates.local';
+    // Resend's shared sandbox sender. It works, which is the trap: mail to
+    // the Resend account's OWN address is delivered normally and everything
+    // looks healthy, while every other recipient is rejected 403 with
+    // "You can only send testing emails to your own email address". Each
+    // rejection is caught per-recipient below, so the run stays green and
+    // the owner keeps receiving a digest nobody else gets.
+    const sandbox = /@resend\.dev/i.test(from);
+    if (sandbox) {
+      console.warn(
+        `  ! DIGEST_FROM is Resend's sandbox sender (${from}). It can ONLY deliver to`
+        + '\n    the address that owns the Resend account - every other subscriber is'
+        + '\n    rejected with a 403. Verify a domain in Resend and set DIGEST_FROM to'
+        + '\n    an address on it, or configure GMAIL_USER + GMAIL_APP_PASSWORD instead.'
+      );
+    }
     return {
-      label: 'Resend API',
-      from: process.env.DIGEST_FROM || 'smash@updates.local',
+      label: `Resend API${sandbox ? ' (SANDBOX SENDER)' : ''}`,
+      sandbox,
+      from,
       cap: 90, // free tier is 100/day; leave headroom for alert mail
       async send({ from, to, subject, html, text, headers }) {
         const res = await fetch('https://api.resend.com/emails', {
@@ -689,6 +706,28 @@ function pickTransport() {
   return null;
 }
 
+
+
+// Which Supabase key is this? A legacy Supabase key is a JWT whose payload
+// carries a `role` claim, and the ROLE IS NOT A SECRET - only the signature
+// is. Reading it lets us tell the two failure modes apart, which the row
+// count alone cannot: an anon key SELECTs nothing (the table allows anon
+// INSERT only) and a service-role key on an empty table also returns nothing.
+// Both look like "0 subscribers"; only one of them is a bug.
+//
+// Never logs the key. Returns null for the newer `sb_secret_*` / `sb_publishable_*`
+// formats, which are opaque - absence of an answer is not an accusation.
+function supabaseKeyRole(key) {
+  try {
+    const parts = String(key || '').split('.');
+    if (parts.length !== 3) return null;
+    const json = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const role = JSON.parse(json).role;
+    return typeof role === 'string' ? role : null;
+  } catch {
+    return null;
+  }
+}
 
 // ── Did it actually go out? ────────────────────────────────────────────────
 //
@@ -1779,6 +1818,19 @@ async function main() {
   const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = process.env;
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     listState.configured = true;
+    // Checked BEFORE the request, because the wrong key does not error - it
+    // returns an empty list with a 200 and looks like a quiet day.
+    const role = supabaseKeyRole(SUPABASE_SERVICE_KEY);
+    listState.keyRole = role;
+    if (role && role !== 'service_role') {
+      listState.problem = `SUPABASE_SERVICE_KEY carries role "${role}", not service_role`;
+      console.warn(
+        `  ! SUPABASE_SERVICE_KEY is a "${role}" key, not the service-role key.`
+        + '\n    digest_subscribers allows anon INSERT but no anon SELECT, so this key'
+        + '\n    reads back an EMPTY list with an HTTP 200 - indistinguishable from'
+        + '\n    having no subscribers. Supabase - Project Settings - API - service_role.'
+      );
+    }
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/digest_subscribers?select=email,unsubscribe_token`, {
         headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
@@ -1795,7 +1847,9 @@ async function main() {
         // wrong key reads back zero rows and reports success. A live signup
         // form with nobody behind it is worth a shout either way.
         if (rows.length === 0) {
-          listState.problem = 'digest_subscribers returned 0 rows';
+          listState.problem = role && role !== 'service_role'
+            ? `digest_subscribers returned 0 rows, and the key is a "${role}" key`
+            : 'digest_subscribers returned 0 rows (the key looks right, so the table may genuinely be empty)';
           console.warn(
             '  ! digest_subscribers returned ZERO rows, so only DIGEST_TO is being mailed.\n'
             + '    If anyone has signed up, this is the symptom of using the ANON key:\n'
@@ -1875,6 +1929,11 @@ async function main() {
   // Zero delivered when we meant to deliver is a failure, not a skip.
   recordSendStatus({
     sent, failed, recipients: recipients.size, skipped: false, deliberate: false, list: listState,
+    transport: transport.label,
+    // A sandbox sender delivers to exactly one address no matter how healthy
+    // everything else looks, so it is recorded as a delivery fault in its own
+    // right rather than left to be inferred from a pile of 403s.
+    sandboxSender: !!transport.sandbox,
   });
 }
 
