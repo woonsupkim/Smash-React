@@ -1396,7 +1396,8 @@ async function main() {
     }
   } else {
     // ── WEEKLY ──────────────────────────────────────────────────────────────
-    const weekAgo = now.getTime() - 7 * 86400000;
+    // DIGEST_WEEK_DAYS widens the window for testing only; production is 7.
+    const weekAgo = now.getTime() - (Number(process.env.DIGEST_WEEK_DAYS) || 7) * 86400000;
     const week = graded.filter((m) => {
       const t = Date.parse(m.date);
       return Number.isFinite(t) && t >= weekAgo && t <= now.getTime();
@@ -1510,6 +1511,111 @@ async function main() {
         txtLines.push('');
       }
 
+      // ── The week's big moments ────────────────────────────────────────
+      //
+      // About the TOURNAMENT, not about us. Every other section on this page
+      // grades our own calls; this one is the week's tennis - the seed that
+      // went out, the match nobody expected, the marathon. A weekly recap
+      // that only ever talks about its own scoreboard is a report card, not
+      // a read.
+      //
+      // Each moment must be a different match, and each is chosen by a
+      // measurable property rather than picked by hand, so the section either
+      // has something real to show or does not appear.
+      {
+        const seedOf = (tour, id) => rankBook[tour === 'wta' ? 'wta' : 'atp'].get(id) || null;
+        const loserOf = (m) => (m.winner === m.p1 ? m.p2 : m.p1);
+        const nameOf = (m, id) => (id === m.p1 ? m.name1 : m.name2);
+        const setsIn = (score) => String(score || '').trim().split(/\s+/).filter(Boolean).length;
+
+        const used = new Set();
+        const moments = [];
+        const take = (m, kind, headline, detail) => {
+          if (!m || used.has(m.id)) return;
+          used.add(m.id);
+          moments.push({ m, kind, headline, detail, winner: m.winner });
+        };
+
+        // 1. A seed goes out. Ranked by how far apart the two were, and only
+        //    counted when a genuinely high seed lost.
+        let fell = null;
+        for (const m of week) {
+          const lo = loserOf(m);
+          const wS = seedOf(m.tour, m.winner);
+          const lS = seedOf(m.tour, lo);
+          if (!lS || lS > 12) continue;
+          const gap = wS ? wS - lS : 40; // unseeded winner: treat as a wide gap
+          if (gap < 8) continue;
+          if (!fell || gap > fell.gap) fell = { m, gap, wS, lS, lo };
+        }
+        if (fell) {
+          take(fell.m, 'shock',
+            `${lastName(nameOf(fell.m, fell.m.winner))} takes out ${lastName(nameOf(fell.m, fell.lo))}`,
+            `${fell.wS ? `No. ${fell.wS}` : 'An unseeded player'} beats No. ${fell.lS}${fell.m.score ? ` &middot; ${esc(fell.m.score)}` : ''}. Nobody had this one.`);
+        }
+
+        // 2. The biggest price to come in: the longest odds that won. This is
+        //    the market being wrong, measured in money rather than opinion.
+        let longest = null;
+        for (const m of week) {
+          if (!(m.od1 > 1 && m.od2 > 1)) continue;
+          const winOdds = m.winner === m.p1 ? m.od1 : m.od2;
+          if (winOdds < 2.5) continue;
+          if (!longest || winOdds > longest.odds) longest = { m, odds: winOdds };
+        }
+        if (longest) {
+          take(longest.m, 'price',
+            `${lastName(nameOf(longest.m, longest.m.winner))} at ${longest.odds.toFixed(2)}`,
+            `The longest price to land all week. $10 on it came back $${(10 * longest.odds).toFixed(2)}${longest.m.score ? ` &middot; ${esc(longest.m.score)}` : ''}.`);
+        }
+
+        // 3. The marathon: most sets played, five-setters only.
+        let marathon = null;
+        for (const m of week) {
+          const sets = setsIn(m.score);
+          if (sets < 5) continue;
+          if (!marathon || sets > marathon.sets) marathon = { m, sets };
+        }
+        if (marathon) {
+          take(marathon.m, 'marathon',
+            `${lastName(nameOf(marathon.m, marathon.m.winner))} survives ${marathon.sets}`,
+            `${marathon.sets} sets against ${lastName(nameOf(marathon.m, loserOf(marathon.m)))}${marathon.m.score ? ` &middot; ${esc(marathon.m.score)}` : ''}.`);
+        }
+
+        if (moments.length) {
+          const cards = moments.slice(0, 3).map(({ m, headline, detail }) => {
+            const ph = mirrorPhoto(m.tour, m.winner);
+            return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:14px;">
+                <tr>
+                  <td width="76" style="padding:0 14px 0 0;vertical-align:top;">
+                    ${ph
+    ? `<img src="${ph}" width="68" height="68" alt="${esc(lastName(nameOf(m, m.winner)))}" style="display:block;width:68px;height:68px;border-radius:3px;border:1px solid ${LINE_HI};object-fit:cover;" />`
+    : `<div style="width:68px;height:68px;border-radius:3px;background:${TRACK};"></div>`}
+                  </td>
+                  <td style="vertical-align:top;">
+                    <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(m.event || '')} &middot; ${m.tour ? m.tour.toUpperCase() : ''}</div>
+                    <div style="font-size:17px;font-weight:800;color:${INK};line-height:1.25;padding:3px 0 2px;">${headline}</div>
+                    <div style="font-size:13px;line-height:1.55;color:${BODY};">${detail}</div>
+                  </td>
+                </tr>
+              </table>`;
+          }).join('');
+          blocks.push(section(`
+            ${kicker('The week in moments')}
+            ${h2(moments.length === 1 ? 'The one everyone talked about' : 'What actually happened out there')}
+            ${p('Not our calls. The week\u2019s tennis: the seed that went out, the price nobody saw coming, the one that would not end.')}
+            ${cards}
+          `));
+          txtLines.push('THE WEEK IN MOMENTS');
+          for (const { headline, detail } of moments.slice(0, 3)) {
+            txtLines.push(`  - ${headline.replace(/<[^>]+>/g, '')}: ${detail.replace(/<[^>]+>/g, '').replace(/&middot;/g, '-').replace(/&nbsp;/g, ' ')}`);
+          }
+          txtLines.push('');
+        }
+      }
+
+
       // What following each plan would have returned across the whole week,
       // settled the way a reader would actually have done it: $100 into that
       // day's plan each morning, day after day. Not one plan over the week's
@@ -1559,27 +1665,131 @@ async function main() {
           <tr>
             <td style="padding:9px 0;border-bottom:1px solid ${LINE};font-size:14px;color:${BODY};">
               <strong style="color:${INK};">${esc(t.label)}</strong>
-              <span style="display:block;font-size:12px;color:${MUTED};">${t.hits} of ${t.n} singles landed · $${t.staked.toFixed(0)} staked · ${t.staked > 0 ? `${t.profit >= 0 ? '+' : '-'}${Math.abs((100 * t.profit) / t.staked).toFixed(1)}%` : '-'} on the money</span>
+              <span style="display:block;font-size:12px;color:${MUTED};">${t.hits} of ${t.n} singles landed over ${plural(t.days, 'day', 'days')}</span>
             </td>
             <td align="right" style="padding:9px 0 9px 14px;border-bottom:1px solid ${LINE};font-family:${MONO};font-size:15px;font-weight:700;color:${t.profit >= 0 ? WIN : LOSS};white-space:nowrap;">
-              ${money(t.profit)}
+              ${t.staked > 0 ? `${t.profit >= 0 ? '+' : '-'}${Math.abs((100 * t.profit) / t.staked).toFixed(1)}%` : 'no stake'}
+              <span style="display:block;font-size:11px;font-weight:600;color:${MUTED};">${money(t.profit)} on $${t.staked.toFixed(0)}</span>
             </td>
           </tr>`).join('');
+        // Running total for the tournament in progress, the same figure the
+        // daily edition carries. A week is a small sample in both directions,
+        // and a reader who only ever sees one week cannot tell a bad week from
+        // a bad strategy.
+        let eventRun = '';
+        {
+          const { matchEvent } = require('./lib/events');
+          const tally = new Map();
+          for (const m of week) {
+            const hit = matchEvent(m.event);
+            if (hit) tally.set(hit.label, (tally.get(hit.label) || 0) + 1);
+          }
+          const liveEvent = tally.size
+            ? [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+            : null;
+          const evDays = liveEvent ? planSettle.eventDays(preds, liveEvent) : [];
+          const run = evDays.length >= 2 ? planSettle.planRun(preds, evDays) : null;
+          if (run && run.staked > 0) {
+            const roiPct = `${run.profit >= 0 ? '+' : '-'}${Math.abs(run.roi * 100).toFixed(1)}%`;
+            eventRun = `${liveEvent.toUpperCase()} so far: ${roiPct} (${run.profit >= 0 ? '+' : '-'}$${Math.abs(run.profit).toFixed(2)} on $${run.staked.toFixed(2)}, ${run.up}/${run.days} days up).`;
+          }
+        }
+
+        // Return per dollar STAKED, not dollars, for the same reason the daily
+        // edition changed: the plans stake different amounts out of the same
+        // budget and the recommendation deliberately stakes least, so ranking
+        // by profit rewarded whichever one put the most money on the table.
+        const recStaked = byDay.reduce((sum, d) => {
+          const r = d.plans.find((pl) => pl.id === d.recommendedId);
+          return sum + (r ? r.staked : 0);
+        }, 0);
+        const recRoi = recStaked > 0
+          ? `${recTotal >= 0 ? '+' : '-'}${Math.abs((100 * recTotal) / recStaked).toFixed(1)}%`
+          : null;
         blocks.push(section(`
           ${kicker('If you had followed along all week')}
-          ${h2(`${money(recTotal)} taking the recommendation every day`)}
+          ${h2(recRoi ? `${recRoi} taking the recommendation every day` : `${money(recTotal)} taking the recommendation every day`)}
+          ${recRoi ? p(`${money(recTotal)} on ${`$${recStaked.toFixed(2)}`} actually staked${eventRun ? `. ${eventRun}` : '.'}`, `color:${INK};font-weight:600;`) : ''}
           ${p(`$${PLAN_BUDGET} into the recommended plan each morning, ${plural(recDays, 'day', 'days')} this week, every stake settled at the price we stamped before play. And because the builder offers more than one plan, here is what each of them did over the ${plural(comparableDays, 'day', 'days')} all of them were on the menu${partial ? ' - a like-for-like comparison, so it is a shorter window than the total above' : ''}:`)}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:4px 0 10px;">${rows}</table>
           ${p(`${recTotal >= 0 ? 'A good week does not make it a good strategy' : 'A bad week does not make it a bad one'}, and a week is still a small sample. The point is that you get the number either way, computed the same way every time.`, `color:${MUTED};font-size:13px;`)}
           <div style="padding-top:4px;">${button(`${SITE}/risk`, 'Size this week\'s card')}</div>
         `));
-        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK ($${PLAN_BUDGET} a day, recommended plan): ${money(recTotal)} over ${recDays} days`);
-        for (const [, t] of totals) txtLines.push(`  ${t.label}: ${money(t.profit)} (${t.hits}/${t.n} singles, ${t.days} days)`);
+        txtLines.push(`IF YOU HAD FOLLOWED ALONG ALL WEEK ($${PLAN_BUDGET} a day, recommended plan): ${recRoi || money(recTotal)} (${money(recTotal)} on $${recStaked.toFixed(2)} staked) over ${recDays} days${eventRun ? ` | ${eventRun}` : ''}`);
+        for (const [, t] of totals) {
+          const r = t.staked > 0 ? `${t.profit >= 0 ? '+' : '-'}${Math.abs((100 * t.profit) / t.staked).toFixed(1)}%` : 'no stake';
+          txtLines.push(`  ${t.label}: ${r} (${money(t.profit)} on $${t.staked.toFixed(0)}, ${t.hits}/${t.n} singles, ${t.days} days)`);
+        }
         txtLines.push('');
       }
 
       const priced = week.filter((m) => m.oddCorrect != null);
       if (priced.length >= 5) {
+        // The percentages above cover every priced match, and on most of them
+        // we and the market pick the SAME player - so those rows move both
+        // numbers together and say nothing about who is better. The split is
+        // where the disagreement lives.
+        //
+        // Always THIS WEEK's splits, never a season fallback: this is a weekly
+        // recap and a season number would be answering a different question
+        // under the same heading. A typical week produces one or two splits
+        // out of thirty priced matches, so the card leads with the TALLY -
+        // who was right - which is meaningful at any sample size. Money is
+        // only added once there are enough splits for a return to mean
+        // something; one match is a coin, not an ROI.
+        const splits = priced.filter((m) => pickFavorite(m) !== m.oddFav && m.od1 > 1 && m.od2 > 1);
+        const ROI_MIN = 5;
+        let splitBlock = '';
+        let splitTxt = '';
+        if (splits.length) {
+          let usBack = 0; let themBack = 0;
+          let usWon = 0; let themWon = 0;
+          for (const m of splits) {
+            const ourOdds = pickFavorite(m) === m.p1 ? m.od1 : m.od2;
+            const mktOdds = m.oddFav === m.p1 ? m.od1 : m.od2;
+            if (pickCorrect(m)) { usBack += ourOdds; usWon++; }
+            if (m.oddCorrect) { themBack += mktOdds; themWon++; }
+          }
+          const n = splits.length;
+          const showMoney = n >= ROI_MIN;
+          const roi = (back) => `${back - n >= 0 ? '+' : '-'}${Math.abs(((back - n) / n) * 100).toFixed(1)}%`;
+
+          // Same duel row the player tape uses: stronger side inked, the
+          // other muted, so it reads down the middle without the numbers.
+          const duel = (label, a, b, strong) => `
+            <tr>
+              <td width="34%" align="left" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:18px;font-weight:700;color:${strong === 1 ? INK : MUTED};">${esc(a)}</td>
+              <td width="32%" align="center" style="padding:10px 6px;border-top:1px solid ${LINE};font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};font-weight:700;">${esc(label)}</td>
+              <td width="34%" align="right" style="padding:10px 0;border-top:1px solid ${LINE};font-family:${MONO};font-size:18px;font-weight:700;color:${strong === 2 ? INK : MUTED};">${esc(b)}</td>
+            </tr>`;
+          const side = (x, y) => (x === y ? 0 : (x > y ? 1 : 2));
+
+          splitBlock = `
+            <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};margin-top:18px;">
+              <div style="padding:12px 20px;border-bottom:1px solid ${LINE};">
+                <span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${ACCENT_TEXT};font-weight:700;">Head to head</span>
+                <span style="font-size:11px;color:${MUTED};"> &nbsp;&middot;&nbsp; the ${plural(n, 'match', 'matches')} we disagreed on</span>
+              </div>
+              <div style="padding:18px 20px 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td width="40%" align="left" style="font-family:${DISPLAY};font-size:26px;font-weight:700;text-transform:uppercase;color:${INK};line-height:1.05;">Us</td>
+                    <td width="20%" align="center" style="font-family:${DISPLAY};font-size:20px;letter-spacing:2px;text-transform:uppercase;color:${MUTED};font-weight:700;">v</td>
+                    <td width="40%" align="right" style="font-family:${DISPLAY};font-size:26px;font-weight:700;text-transform:uppercase;color:${INK};line-height:1.05;">The book</td>
+                  </tr>
+                </table>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;">
+                  ${duel('Called right', `${usWon}`, `${themWon}`, side(usWon, themWon))}
+                  ${duel('Of', `${n}`, `${n}`, 0)}
+                  ${showMoney ? duel('$1 a side', roi(usBack), roi(themBack), side(usBack, themBack)) : ''}
+                </table>
+                <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:${MUTED};">
+                  We and the market backed the same player on the other ${plural(priced.length - n, 'match', 'matches')} this week, which settles nothing either way. One side has to win each split, so these two always add to ${n}.${showMoney ? ' The money can still diverge, because a split puts one of us on the longer ticket.' : ` At ${plural(n, 'match', 'matches')} that is a tally, not a trend - too few to price, so we are not pretending otherwise.`}
+                </p>
+              </div>
+            </div>`;
+          splitTxt = `  HEAD TO HEAD on the ${n} ${n === 1 ? 'match' : 'matches'} we disagreed on: us ${usWon} right, the book ${themWon}${showMoney ? ` | $1 a side: us ${roi(usBack)}, the book ${roi(themBack)}` : ''}`;
+        }
         const us = pct(priced.filter((m) => pickCorrect(m)).length, priced.length);
         const them = pct(priced.filter((m) => m.oddCorrect).length, priced.length);
         const verdict = us > them
@@ -1605,8 +1815,10 @@ async function main() {
               </td>
             </tr>
           </table>
+          ${splitBlock}
         `));
         txtLines.push(`US VS THE BOOKMAKERS: ${us}% vs ${them}% (${priced.length} priced matches)`, '');
+        if (splitTxt) txtLines.push(splitTxt, '');
       }
     }
 
@@ -1626,14 +1838,69 @@ async function main() {
       txtLines.push('');
     }
 
-    if (slam && slamDays != null) {
-      blocks.push(section(`
-        ${kicker('Next up')}
-        ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
-        ${p(`On ${esc(slam.surface)}. The projected field re-prices with every refresh until the real draw drops.`)}
-        <div style="padding-top:4px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
-      `));
-      txtLines.push(`NEXT UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`}`, '');
+    // A slam in progress is not "next up". Same rule as the daily edition:
+    // when the draw is live this names the ROUND and shows who is still
+    // standing, with the move since the last refresh; the countdown is only
+    // right between events. Mid-US-Open this was counting down to a
+    // tournament five months away.
+    {
+      const wOdds = readJson(path.join(DATA, 'title_odds.json'));
+      const wLive = ['atp', 'wta']
+        .map((t) => wOdds && wOdds.events && wOdds.events[t])
+        .find((e) => e && e.status === 'live' && e.fieldSize > 1);
+      const ROUND = { 128: 'First round', 64: 'Round of 64', 32: 'Round of 32', 16: 'Round of 16', 8: 'Quarter-finals', 4: 'Semi-finals', 2: 'Final' };
+
+      if (wLive) {
+        const roundName = ROUND[wLive.fieldSize] || `Last ${wLive.fieldSize}`;
+        const label = wLive.event || (slam && slam.label) || 'the draw';
+        const cols = [];
+        for (const t of ['atp', 'wta']) {
+          const ev = wOdds.events[t];
+          if (!ev || !Array.isArray(ev.odds)) continue;
+          const hist = Array.isArray(ev.history) ? ev.history : [];
+          const prevOdds = hist.length >= 2 ? hist[hist.length - 2].odds || {} : {};
+          const top = ev.odds.filter((x) => x.id).slice(0, 3).map((x) => {
+            const before = prevOdds[x.name];
+            return { ...x, delta: typeof before === 'number' ? (x.prob || 0) - before : null };
+          });
+          if (top.length) cols.push({ tour: t, top });
+        }
+        const table = cols.map(({ tour, top }) => `
+          <div style="padding-top:16px;">
+            <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:10px;">${tour.toUpperCase()} favourites</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+              ${top.map((x) => {
+    const prob = Math.round((x.prob || 0) * 100);
+    return `<tr>
+                  <td style="padding:6px 0;font-size:14px;font-weight:700;color:${INK};">${esc(x.name)}</td>
+                  <td width="120" style="padding:6px 0 6px 10px;">${bar(prob, LIME, 8)}</td>
+                  <td width="42" style="padding:6px 0 6px 8px;text-align:right;font-size:14px;font-weight:800;color:${INK};">${prob < 1 ? '<1' : prob}%</td>
+                  <td width="52" style="padding:6px 0 6px 6px;text-align:right;font-size:12px;font-weight:700;font-family:${MONO};color:${x.delta == null ? MUTED : (x.delta >= 0 ? WIN : LOSS)};white-space:nowrap;">${x.delta == null ? '' : `${x.delta >= 0 ? '&#9650;' : '&#9660;'}${Math.abs(Math.round(x.delta * 100))}`}</td>
+                </tr>`;
+  }).join('')}
+            </table>
+          </div>`).join('');
+        blocks.push(section(`
+          ${kicker('Still standing')}
+          ${h2(`${roundName} at the ${label}`)}
+          ${p(`On ${esc(wLive.surface || (slam && slam.surface) || 'hard')}. We play the remaining draw out two thousand times after every refresh. Anyone already beaten is gone from the field, so these are the players still in it, and the arrow is the move since the last run.`)}
+          ${table}
+          <div style="padding-top:18px;">${button(`${SITE}/draw`, 'See the full draw')}</div>
+        `));
+        txtLines.push(`STILL STANDING: ${roundName} at the ${label}`);
+        for (const { tour, top } of cols) {
+          txtLines.push(`  ${tour.toUpperCase()}: ${top.map((x) => `${x.name} ${Math.round(x.prob * 100)}%${x.delta == null ? '' : ` (${x.delta >= 0 ? '+' : '-'}${Math.abs(Math.round(x.delta * 100))})`}`).join(', ')}`);
+        }
+        txtLines.push('');
+      } else if (slam && slamDays != null) {
+        blocks.push(section(`
+          ${kicker('Next up')}
+          ${h2(slamDays === 0 ? `The ${slam.label} starts today` : `${plural(slamDays, 'day', 'days')} to the ${slam.label}`)}
+          ${p(`On ${esc(slam.surface)}. The projected field re-prices with every refresh until the real draw drops.`)}
+          <div style="padding-top:4px;">${button(`${SITE}/draw`, 'See the projected draw')}</div>
+        `));
+        txtLines.push(`NEXT UP: ${slamDays === 0 ? `the ${slam.label} starts today` : `${slamDays} days to the ${slam.label}`}`, '');
+      }
     }
   }
 
