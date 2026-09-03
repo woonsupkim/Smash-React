@@ -34,8 +34,8 @@ ON COURT TODAY
 THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
 STILL STANDING: Round of 64 at the US Open (hard)
-  ATP: Carlos Alcaraz 36% (+8), Alexander Zverev 13% (+1), Ben Shelton 7% (+2)
-  WTA: Iga Swiatek 20% (+5), Aryna Sabalenka 19% (+5), Elena Rybakina 18% (-2)
+  ATP: Carlos Alcaraz 38% (+10), Alexander Zverev 13% (+2), Daniil Medvedev 7% (+3)
+  WTA: Aryna Sabalenka 22% (+9), Elena Rybakina 16% (-4), Jessica Pegula 15% (+2)
   https://smash-react.vercel.app/draw
 
 SEASON: 75% (1,638 of 2,192)
