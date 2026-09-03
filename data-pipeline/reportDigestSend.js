@@ -48,10 +48,10 @@ say(`- Digest: **sent to ${s.sent}** of ${s.recipients} recipient(s)${failed ? `
 // or was never read at all - and in the second case the owner keeps getting
 // the mail every morning, so nothing ever looks wrong.
 if (list.read) {
-  const role = list.keyRole && list.keyRole !== 'service_role'
-    ? ` - but the key is a **"${list.keyRole}"** key, which cannot SELECT this table`
+  const key = list.keyPrivileged === false
+    ? ` - but SUPABASE_SERVICE_KEY is a **${list.keyKind}**, which RLS blocks from reading this table`
     : '';
-  say(`- Subscribers: **${list.subscribers}** read from digest_subscribers${role}`);
+  say(`- Subscribers: **${list.subscribers}** read from digest_subscribers${key}`);
 } else if (list.configured) {
   say(`- Subscribers: **NOT READ** - ${list.problem || 'unknown error'}. Only DIGEST_TO was mailed.`);
 } else {
@@ -69,8 +69,8 @@ if (s.sandboxSender) problems.push('DIGEST_FROM is the Resend sandbox sender, wh
 if (!s.sent) problems.push('nobody received it');
 if (failed) problems.push(`${failed} send(s) failed`);
 if (!list.read) problems.push(`the subscriber list was never read (${list.problem || 'not configured'})`);
-if (list.read && list.keyRole && list.keyRole !== 'service_role') {
-  problems.push(`SUPABASE_SERVICE_KEY is a "${list.keyRole}" key, not service_role`);
+if (list.read && list.keyPrivileged === false) {
+  problems.push(`SUPABASE_SERVICE_KEY is a ${list.keyKind}, which cannot read digest_subscribers`);
 } else if (list.read && list.subscribers === 0) {
   // Not necessarily broken - the table may simply be empty - but it is worth
   // surfacing, because "nobody signed up" and "we cannot read the list" are

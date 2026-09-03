@@ -708,25 +708,34 @@ function pickTransport() {
 
 
 
-// Which Supabase key is this? A legacy Supabase key is a JWT whose payload
-// carries a `role` claim, and the ROLE IS NOT A SECRET - only the signature
-// is. Reading it lets us tell the two failure modes apart, which the row
-// count alone cannot: an anon key SELECTs nothing (the table allows anon
-// INSERT only) and a service-role key on an empty table also returns nothing.
-// Both look like "0 subscribers"; only one of them is a bug.
+// Which Supabase key is this, and can it read the table?
 //
-// Never logs the key. Returns null for the newer `sb_secret_*` / `sb_publishable_*`
-// formats, which are opaque - absence of an answer is not an accusation.
-function supabaseKeyRole(key) {
+// Supabase has two key systems in play. The legacy pair are JWTs carrying a
+// `role` claim (anon / service_role); the current pair are opaque strings
+// distinguished by prefix (sb_publishable_* / sb_secret_*). In BOTH systems
+// one key is browser-safe and bound by RLS, and the other bypasses it.
+//
+// Only the browser-safe one is ever the bug here: digest_subscribers allows
+// anon INSERT but no anon SELECT, so a browser key reads the list back EMPTY
+// with an HTTP 200 - indistinguishable from having no subscribers.
+//
+// Nothing secret is inspected. A prefix is a public discriminator by design,
+// and a JWT's `role` claim is public too (the signature is the secret part).
+// The key itself is never logged. An unrecognised format returns null and
+// says nothing rather than guessing.
+function supabaseKeyKind(key) {
+  const k = String(key || '');
+  if (k.startsWith('sb_secret_')) return { label: 'secret key', privileged: true };
+  if (k.startsWith('sb_publishable_')) return { label: 'publishable key', privileged: false };
   try {
-    const parts = String(key || '').split('.');
-    if (parts.length !== 3) return null;
+    const parts = k.split('.');
+    if (parts.length !== 3) return { label: null, privileged: null };
     const json = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
     const role = JSON.parse(json).role;
-    return typeof role === 'string' ? role : null;
-  } catch {
-    return null;
-  }
+    if (role === 'service_role') return { label: 'legacy service_role key', privileged: true };
+    if (typeof role === 'string') return { label: `legacy ${role} key`, privileged: false };
+  } catch { /* not a JWT we understand */ }
+  return { label: null, privileged: null };
 }
 
 // ── Did it actually go out? ────────────────────────────────────────────────
@@ -1820,15 +1829,17 @@ async function main() {
     listState.configured = true;
     // Checked BEFORE the request, because the wrong key does not error - it
     // returns an empty list with a 200 and looks like a quiet day.
-    const role = supabaseKeyRole(SUPABASE_SERVICE_KEY);
-    listState.keyRole = role;
-    if (role && role !== 'service_role') {
-      listState.problem = `SUPABASE_SERVICE_KEY carries role "${role}", not service_role`;
+    const key = supabaseKeyKind(SUPABASE_SERVICE_KEY);
+    listState.keyKind = key.label;
+    listState.keyPrivileged = key.privileged;
+    if (key.privileged === false) {
+      listState.problem = `SUPABASE_SERVICE_KEY is a ${key.label}, which cannot read this table`;
       console.warn(
-        `  ! SUPABASE_SERVICE_KEY is a "${role}" key, not the service-role key.`
+        `  ! SUPABASE_SERVICE_KEY is a ${key.label} - a browser key, bound by RLS.`
         + '\n    digest_subscribers allows anon INSERT but no anon SELECT, so this key'
-        + '\n    reads back an EMPTY list with an HTTP 200 - indistinguishable from'
-        + '\n    having no subscribers. Supabase - Project Settings - API - service_role.'
+        + '\n    reads the list back EMPTY with an HTTP 200 - indistinguishable from'
+        + '\n    having no subscribers. Use the SECRET key (sb_secret_*), or the legacy'
+        + '\n    service_role key if this project has not migrated.'
       );
     }
     try {
@@ -1847,9 +1858,9 @@ async function main() {
         // wrong key reads back zero rows and reports success. A live signup
         // form with nobody behind it is worth a shout either way.
         if (rows.length === 0) {
-          listState.problem = role && role !== 'service_role'
-            ? `digest_subscribers returned 0 rows, and the key is a "${role}" key`
-            : 'digest_subscribers returned 0 rows (the key looks right, so the table may genuinely be empty)';
+          listState.problem = key.privileged === false
+            ? `digest_subscribers returned 0 rows, and the key is a ${key.label}`
+            : 'digest_subscribers returned 0 rows (the key can read, so the table may genuinely be empty)';
           console.warn(
             '  ! digest_subscribers returned ZERO rows, so only DIGEST_TO is being mailed.\n'
             + '    If anyone has signed up, this is the symptom of using the ANON key:\n'
