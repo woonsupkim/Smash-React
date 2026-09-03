@@ -1,9 +1,11 @@
 SMASH DAILY - Thursday, September 3
 
-1 from 1 yesterday. A clean sweep, and no, that is not the usual. 14 more are locked for today at US Open, every one of them public before a ball is struck, plus 1 coin flip we are sitting out.
+18 from 21 yesterday. We will take that. 19 more are locked for today at US Open, every one of them public before a ball is struck, plus 1 coin flip we are sitting out.
 
-YESTERDAY, GRADED: 1 from 1 (100%)
-  US OPEN SO FAR: +$16.86 (+30.0% on $56.16, 2/3 days up)
+YESTERDAY, GRADED: 18 from 21 (86%)
+  The one that stings: Rafael Jodar (we said 78%) - Bu Yunchaokete had other ideas
+  Meanwhile, at the bookmakers - same 11 priced matches: us 82%, them 82%
+  If you had actually followed along ($100 in): Comfortable day -100.0% (-$10.00 on $10) [recommended]; Follow the edge -100.0% (-$5.00 on $5); Back every call -41.5% (-$41.55 on $100); Spread plus a parlay -52.7% (-$52.68 on $100); Whole card, weighted -59.4% (-$59.35 on $100.00) | US OPEN SO FAR: +$9.34 (+14.3% on $65.28, 3/4 days up)
 
 ON COURT TODAY
   [ US Open - ATP ]
@@ -11,32 +13,32 @@ ON COURT TODAY
     Call: https://smash-react.vercel.app/match/karen-khachanov-vs-felix-auger-aliassime-182698
     Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-felix-auger-aliassime
     Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=auger
-  Tabilo over Popyrin - 69%
-    Call: https://smash-react.vercel.app/match/alejandro-tabilo-vs-alexei-popyrin-182709
-    Compare: https://smash-react.vercel.app/compare/atp/alejandro-tabilo-vs-alexei-popyrin
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tabil&b=popyr
-  Blockx over Trungelliti - 75%
-    Call: https://smash-react.vercel.app/match/marco-trungelliti-vs-alexander-blockx-182726
-    Compare: https://smash-react.vercel.app/compare/atp/marco-trungelliti-vs-alexander-blockx
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=trung&b=block
+  Cerundolo over Struff - 70%
+    Call: https://smash-react.vercel.app/match/francisco-cerundolo-vs-jan-lennard-struff-182725
+    Compare: https://smash-react.vercel.app/compare/atp/francisco-cerundolo-vs-jan-lennard-struff
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cerun&b=struf
   [ US Open - WTA ]
+  Keys over Bondar - 81%
+    Call: https://smash-react.vercel.app/match/anna-bondar-vs-madison-keys-182534
+    Compare: https://smash-react.vercel.app/compare/wta/anna-bondar-vs-madison-keys
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bonda&b=keys
+  Mertens over Timofeeva - 69%
+    Call: https://smash-react.vercel.app/match/elise-mertens-vs-maria-timofeeva-182574
+    Compare: https://smash-react.vercel.app/compare/wta/elise-mertens-vs-maria-timofeeva
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=merte&b=timof
   Osaka over Siniakova - 81%
     Call: https://smash-react.vercel.app/match/katerina-siniakova-vs-naomi-osaka-182568
     Compare: https://smash-react.vercel.app/compare/wta/katerina-siniakova-vs-naomi-osaka
     Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=sinia&b=osaka
-  Anisimova over Tagger - 79%
-    Call: https://smash-react.vercel.app/match/amanda-anisimova-vs-lilli-tagger-182579
-    Compare: https://smash-react.vercel.app/compare/wta/amanda-anisimova-vs-lilli-tagger
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=anisi&b=tagge
 
 THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
 STILL STANDING: Round of 64 at the US Open (hard)
   ATP: Carlos Alcaraz 36% (+8), Alexander Zverev 13% (+1), Ben Shelton 7% (+2)
-  WTA: Aryna Sabalenka 22% (+9), Iga Swiatek 19% (+4), Elena Rybakina 18% (-1)
+  WTA: Iga Swiatek 20% (+5), Aryna Sabalenka 19% (+5), Elena Rybakina 18% (-2)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,619 of 2,170)
+SEASON: 75% (1,638 of 2,192)
 
 See today's full card: https://smash-react.vercel.app/today
 
