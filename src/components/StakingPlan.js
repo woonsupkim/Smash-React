@@ -798,7 +798,20 @@ export default function StakingPlan({
                     : `Include ${lastName(l.favName)} in the parlay`}
                   checked={mode === 'budget' ? (call && inActiveParlay(l)) : isIn(l)}
                   disabled={mode === 'budget' || !(o > 1)}
-                  onChange={() => setInParlay((s2) => ({ ...s2, [l.id]: !isIn(l) }))} />
+                  onChange={() => {
+                    const next = !isIn(l);
+                    setInParlay((s2) => ({ ...s2, [l.id]: next }));
+                    // Ticking a leg INTO the parlay turns the parlay on.
+                    // Custom mode starts with the parlay off by design, and
+                    // the master switch also gates the parlay's stake box - so
+                    // building a parlay left it visible, priced, and
+                    // impossible to stake until you found a second checkbox
+                    // in a different row. Selecting legs IS the intent to
+                    // parlay; the master switch stays, but as a way to park a
+                    // built parlay rather than a gate in front of building
+                    // one.
+                    if (next) setUseParlay(true);
+                  }} />
               </span>
               {onDrop && (
                 <span className="stake-drop" role="cell">

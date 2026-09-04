@@ -184,15 +184,19 @@ test('risk lab: the plan prices today\'s card and dropping a leg re-prices it', 
   // so pinning a direction would be pinning a coincidence. What must hold is
   // that the card shrinks and the plan re-states itself over what is left.
   if (startCount > 1) {
-    // The subhead names the size of the card ("from today's N matches"), which
-    // moves whatever is dropped. The BACKED count is not safe to assert on:
-    // unpriced matches are never staked, so dropping one changes the card
-    // without changing the plan.
-    const subBefore = await page.locator('.stake-best-sub').first().textContent();
+    // Assert on the PICKS count, not the subhead. The subhead names the size
+    // of the whole card ("from today's N matches") and a dropped pick does
+    // not change the card. The staked total is no good either: unpriced
+    // matches are never staked, so on a card the provider has not priced yet
+    // dropping one changes nothing about the money.
+    const picksBefore = await page.locator('.stake-filter-count').first().textContent();
     await page.locator('.stake-drop button').first().click();
     await expect(rows).toHaveCount(startCount - 1);
-    await expect(headline).toHaveText(/%/);
-    await expect(page.locator('.stake-best-sub').first()).not.toHaveText(subBefore);
+    // Money or percentage: the grid leads with the typical day in dollars
+    // since the two metric blocks were merged. What matters is that it still
+    // states a real figure rather than the em-dash placeholder.
+    await expect(headline).toHaveText(/(\$|%)/);
+    await expect(page.locator('.stake-filter-count').first()).not.toHaveText(picksBefore);
   }
   expect(errors).toEqual([]);
 });

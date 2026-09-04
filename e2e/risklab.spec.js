@@ -329,6 +329,53 @@ test('custom mode prices the matches we would not call, and the plan still will 
   expect(errors).toEqual([]);
 });
 
+test('building a parlay in custom mode makes it stakeable', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/risk');
+  if (await skipUnlessPriced(page, errors)) return;
+
+  // The mode switch is a tablist, not plain buttons.
+  await page.locator('.stake-modes [role="tab"]').filter({ hasText: /^Custom$/ }).click();
+  await expect(page.locator('.stake-modes [role="tab"][aria-selected="true"]')).toHaveText(/Custom/);
+
+  const legBoxes = page.locator('.stake-row:not(.stake-row-head):not(.stake-row-parlay) .stake-inpar input');
+  if (await legBoxes.count() < 2) { expect(errors).toEqual([]); return; }
+
+  // Custom opens with the parlay off, so the row is not there yet.
+  await expect(page.locator('.stake-row-parlay')).toHaveCount(0);
+
+  // Ticking legs IS the intent to parlay. It used to leave the parlay built
+  // but unstakeable: the stake box stayed disabled behind a second checkbox
+  // in the parlay row, which is a different row from the one you just
+  // clicked.
+  await legBoxes.nth(0).check();
+  await legBoxes.nth(1).check();
+
+  const parlay = page.locator('.stake-row-parlay');
+  await expect(parlay).toHaveCount(1);
+  await expect(parlay).not.toHaveClass(/off/);
+  const stake = parlay.locator('.stake-single input');
+  await expect(stake).toBeEnabled();
+  await expect(parlay.locator('.stake-inpar input')).toBeChecked();
+
+  // And a stake typed there reaches the total.
+  const before = await page.locator('.stake-best-sub').innerText();
+  await stake.fill('7');
+  await expect(page.locator('.stake-best-sub')).not.toHaveText(before);
+
+  // The master switch still PARKS a built parlay rather than destroying it:
+  // the legs survive, so switching back restores the combination.
+  await parlay.locator('.stake-inpar input').uncheck();
+  await expect(stake).toBeDisabled();
+  expect(await legBoxes.nth(0).isChecked()).toBe(true);
+  await parlay.locator('.stake-inpar input').check();
+  await expect(stake).toBeEnabled();
+  await expect(stake).toHaveValue('7');
+
+  expect(errors).toEqual([]);
+});
+
 test('dragging a match from the bench adds it to the picks', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
