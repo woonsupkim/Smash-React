@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-03T16:40:44.295Z",
+  "generatedAt": "2026-09-04T02:14:21.810Z",
   "seasonN": 2192,
   "lastStreak": {
     "key": "atp|hard",
     "len": 11
   },
   "captions": {
-    "today": "US Open round of 16: here are the 8 matches we are calling today, every one locked before a ball is struck.\n\nIf every call hits, $10 at fair odds returns $135. Not betting advice, just the math on our own confidence.\n\nEvery call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
+    "today": "US Open round of 16: here are the 8 matches we are calling tomorrow, every one locked before a ball is struck.\n\nIf every call hits, $10 at fair odds returns $85. Not betting advice, just the math on our own confidence.\n\nEvery call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
     "weekly": "The week in calls: 6 of 13 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "story": "Stories for today: the slate, a poll on the biggest match coming up, and the tale of the tape.\n\nEvery call locked before play and graded after: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
     "recap": "How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.\n\nIncluding the one nobody saw coming.\n\nThe whole record: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
@@ -20,135 +20,144 @@
       "type": "carousel-cover",
       "format": "square",
       "category": "today",
-      "caption": "Today's calls at the US Open: 8 matches, locked before play. Swipe for every pick. 76% of winners called before play (192 of 252 verified, no take-backs). All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "caption": "Tomorrow's calls at the US Open: 8 matches, locked before play. Swipe for every pick. 76% of winners called before play (192 of 252 verified, no take-backs). All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
       "order": 1,
-      "alt": "Today's Calls cover card: 8 locked predictions at the US Open."
+      "alt": "Tomorrow's Calls cover card: 8 locked predictions at the US Open."
     },
     {
       "file": "cover-45.png",
       "type": "carousel-cover",
       "format": "portrait",
       "category": "today",
-      "caption": "Today's calls at the US Open, 4:5 feed format. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "caption": "Tomorrow's calls at the US Open, 4:5 feed format. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
       "order": 2,
-      "alt": "Today's Calls cover card in portrait format for the US Open."
+      "alt": "Tomorrow's Calls cover card in portrait format for the US Open."
     },
     {
       "file": "match-1.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " High confidence: Alexander Blockx over Marco Trungelliti at 75%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/marco-trungelliti-vs-alexander-blockx-182726 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Aryna Sabalenka over Kamilla Rakhimova at 89%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/kamilla-rakhimova-vs-aryna-sabalenka-182554 #tennis #atp #wta #tennisprediction",
       "order": 3,
-      "alt": " High confidence: Alexander Blockx over Marco Trungelliti at 75%, US Open (hard)."
+      "alt": " High confidence: Aryna Sabalenka over Kamilla Rakhimova at 89%, US Open (hard)."
     },
     {
       "file": "match-2.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " High confidence: Taylor Fritz over Mattia Bellucci at 80%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/mattia-bellucci-vs-taylor-fritz-182755 #tennis #atp #wta #tennisprediction",
+      "caption": " Marta Kostyuk over Ekaterina Alexandrova at 68%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-marta-kostyuk-182564 #tennis #atp #wta #tennisprediction",
       "order": 4,
-      "alt": " High confidence: Taylor Fritz over Mattia Bellucci at 80%, US Open (hard)."
+      "alt": " Marta Kostyuk over Ekaterina Alexandrova at 68%, US Open (hard)."
     },
     {
       "file": "match-3.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " High confidence: Alexandra Eala over Oleksandra Oliynykova at 73%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/alexandra-eala-vs-oleksandra-oliynykova-182556 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Jessica Pegula over Leylah Annie Fernandez at 87%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/leylah-annie-fernandez-vs-jessica-pegula-182545 #tennis #atp #wta #tennisprediction",
       "order": 5,
-      "alt": " High confidence: Alexandra Eala over Oleksandra Oliynykova at 73%, US Open (hard)."
+      "alt": " High confidence: Jessica Pegula over Leylah Annie Fernandez at 87%, US Open (hard)."
     },
     {
       "file": "match-4.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Alejandro Tabilo over Alexei Popyrin at 69%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/alejandro-tabilo-vs-alexei-popyrin-182709 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Daniil Medvedev over Arthur Rinderknech at 77%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/arthur-rinderknech-vs-daniil-medvedev-182687 #tennis #atp #wta #tennisprediction",
       "order": 6,
-      "alt": " Alejandro Tabilo over Alexei Popyrin at 69%, US Open (hard)."
+      "alt": " High confidence: Daniil Medvedev over Arthur Rinderknech at 77%, US Open (hard)."
     },
     {
       "file": "match-5.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " High confidence: Mirra Andreeva over Eva Lys at 87%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/eva-lys-vs-mirra-andreeva-182538 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Diana Shnaider over Taylor Townsend at 74%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/diana-shnaider-vs-taylor-townsend-182565 #tennis #atp #wta #tennisprediction",
       "order": 7,
-      "alt": " High confidence: Mirra Andreeva over Eva Lys at 87%, US Open (hard)."
+      "alt": " High confidence: Diana Shnaider over Taylor Townsend at 74%, US Open (hard)."
     },
     {
       "file": "match-6.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Nikola Bartunkova over Tatjana Maria at 69%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/tatjana-maria-vs-nikola-bartunkova-182542 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Karolina Muchova over Emma Navarro at 84%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/karolina-muchova-vs-emma-navarro-182537 #tennis #atp #wta #tennisprediction",
       "order": 8,
-      "alt": " Nikola Bartunkova over Tatjana Maria at 69%, US Open (hard)."
+      "alt": " High confidence: Karolina Muchova over Emma Navarro at 84%, US Open (hard)."
     },
     {
       "file": "match-7.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Maria Sakkari over Yuliia Starodubtseva at 64%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/yuliia-starodubtseva-vs-maria-sakkari-182577 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Linda Noskova over Ann Li at 71%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/linda-noskova-vs-ann-li-182543 #tennis #atp #wta #tennisprediction",
       "order": 9,
-      "alt": " Maria Sakkari over Yuliia Starodubtseva at 64%, US Open (hard)."
+      "alt": " High confidence: Linda Noskova over Ann Li at 71%, US Open (hard)."
     },
     {
       "file": "match-8.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Zizou Bergs over Jesper De Jong at 64%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/jesper-de-jong-vs-zizou-bergs-182695 #tennis #atp #wta #tennisprediction",
+      "caption": " Jiri Lehecka over Stefanos Tsitsipas at 66%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-jiri-lehecka-182747 #tennis #atp #wta #tennisprediction",
       "order": 10,
-      "alt": " Zizou Bergs over Jesper De Jong at 64%, US Open (hard)."
+      "alt": " Jiri Lehecka over Stefanos Tsitsipas at 66%, US Open (hard)."
+    },
+    {
+      "file": "rivalry.png",
+      "type": "rivalry",
+      "format": "square",
+      "category": "today",
+      "caption": "Tsitsipas vs Lehecka, meeting number 5. Career: 2-2. https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-jiri-lehecka-182747 #tennis #atp #wta #tennisprediction",
+      "order": 11,
+      "alt": "Tsitsipas vs Lehecka, meeting number 5."
     },
     {
       "file": "parlay.png",
       "type": "carousel-closer",
       "format": "square",
       "category": "today",
-      "caption": "If every call today hits, $10 at fair odds returns $135. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "order": 11,
-      "alt": "If every call today hits, $10 at fair odds returns $135."
+      "caption": "If every call today hits, $10 at fair odds returns $85. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "order": 12,
+      "alt": "If every call today hits, $10 at fair odds returns $85."
     },
     {
       "file": "slate-story.png",
       "type": "slate",
       "format": "story",
       "category": "story",
-      "caption": "The full slate for Sep 3: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "order": 12,
-      "alt": "The full slate for Sep 3: every call with win probability and flags."
+      "caption": "The full slate for Sep 4: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "order": 13,
+      "alt": "The full slate for Sep 4: every call with win probability and flags."
     },
     {
       "file": "poll.png",
       "type": "poll",
       "format": "square",
       "category": "story",
-      "caption": "Bellucci or Fritz at the US Open? Our model has already picked a side. https://smash-react.vercel.app/match/mattia-bellucci-vs-taylor-fritz-182755 #tennis #atp #wta #tennisprediction",
-      "order": 13,
-      "alt": "Bellucci or Fritz at the US Open? Our model has already picked a side."
+      "caption": "Fernandez or Pegula at the US Open? Our model has already picked a side. https://smash-react.vercel.app/match/leylah-annie-fernandez-vs-jessica-pegula-182545 #tennis #atp #wta #tennisprediction",
+      "order": 14,
+      "alt": "Fernandez or Pegula at the US Open? Our model has already picked a side."
     },
     {
       "file": "poll-tomorrow.png",
       "type": "poll-tomorrow",
       "format": "square",
       "category": "story",
-      "caption": "Fernandez or Pegula at the US Open, tomorrow? Our model has already picked a side. https://smash-react.vercel.app/match/leylah-annie-fernandez-vs-jessica-pegula-182545 #tennis #atp #wta #tennisprediction",
-      "order": 14,
-      "alt": "Fernandez or Pegula at the US Open, tomorrow? Our model has already picked a side."
+      "caption": "Kalinskaya or Svitolina at the US Open, tomorrow? Our model has already picked a side. https://smash-react.vercel.app/match/anna-kalinskaya-vs-elina-svitolina-182529 #tennis #atp #wta #tennisprediction",
+      "order": 15,
+      "alt": "Kalinskaya or Svitolina at the US Open, tomorrow? Our model has already picked a side."
     },
     {
       "file": "tape.png",
       "type": "tale-of-the-tape",
       "format": "square",
       "category": "story",
-      "caption": "Tale of the tape: Bellucci vs Fritz at the US Open. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. https://smash-react.vercel.app/match/mattia-bellucci-vs-taylor-fritz-182755 #tennis #atp #wta #tennisprediction",
-      "order": 15,
-      "alt": "Tale of the tape stat comparison for Mattia Bellucci vs Taylor Fritz."
+      "caption": "Tale of the tape: Fernandez vs Pegula at the US Open. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. https://smash-react.vercel.app/match/leylah-annie-fernandez-vs-jessica-pegula-182545 #tennis #atp #wta #tennisprediction",
+      "order": 16,
+      "alt": "Tale of the tape stat comparison for Leylah Annie Fernandez vs Jessica Pegula."
     },
     {
       "file": "title-odds-atp.png",
@@ -156,7 +165,7 @@
       "format": "square",
       "category": "contender",
       "caption": "US Open ATP title odds today: Alcaraz 38%, Zverev 13%, Medvedev 7%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "order": 16,
+      "order": 17,
       "alt": "US Open ATP title odds today: Alcaraz 38%, Zverev 13%, Medvedev 7%."
     },
     {
@@ -165,7 +174,7 @@
       "format": "square",
       "category": "contender",
       "caption": "US Open ATP odds movers: who rose and who slid overnight in our 2,000-run title simulation. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 17,
+      "order": 18,
       "alt": "Title odds movers card: overnight risers and fallers at the US Open."
     },
     {
@@ -174,7 +183,7 @@
       "format": "square",
       "category": "contender",
       "caption": "US Open WTA title odds today: Sabalenka 22%, Rybakina 16%, Pegula 15%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "order": 18,
+      "order": 19,
       "alt": "US Open WTA title odds today: Sabalenka 22%, Rybakina 16%, Pegula 15%."
     },
     {
@@ -183,7 +192,7 @@
       "format": "square",
       "category": "contender",
       "caption": "US Open WTA odds movers: who rose and who slid overnight in our 2,000-run title simulation. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 19,
+      "order": 20,
       "alt": "Title odds movers card: overnight risers and fallers at the US Open."
     },
     {
@@ -192,7 +201,7 @@
       "format": "square",
       "category": "recap",
       "caption": "Receipts from 2026-09-02: called 18 of 21 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "order": 20,
+      "order": 21,
       "alt": "Receipts from 2026-09-02: called 18 of 21 winners."
     },
     {
@@ -200,8 +209,8 @@
       "type": "day-money",
       "format": "square",
       "category": "recap",
-      "caption": "Every call we made on 2026-09-02, backed flat: -18.7% on the day, 2 of 3 landed. $10 spread across the card comes back $8.13. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 21,
+      "caption": "Every priced call we made on 2026-09-02, backed flat: -18.7% on the day, 2 of 3 priced calls landed. $10 staked comes back $8.13, stake included. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 22,
       "alt": "Yesterday's calls returned -18.7% on the day."
     },
     {
@@ -209,9 +218,9 @@
       "type": "todays-calls",
       "format": "square",
       "category": "today",
-      "caption": "19 calls locked before play today, top of the card Rybakina at 91%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "order": 22,
-      "alt": "Today's 19 locked calls with their stated probabilities."
+      "caption": "10 calls locked before play tomorrow, top of the card Sabalenka at 89%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "order": 23,
+      "alt": "Tomorrow's 10 locked calls with their stated probabilities."
     },
     {
       "file": "draw-road-atp.png",
@@ -219,7 +228,7 @@
       "format": "square",
       "category": "draw",
       "caption": "The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 23,
+      "order": 24,
       "alt": "The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily."
     },
     {
@@ -228,7 +237,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Carlos Alcaraz's path, round by round. The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 24,
+      "order": 25,
       "alt": "Carlos Alcaraz's path, round by round."
     },
     {
@@ -237,7 +246,7 @@
       "format": "square",
       "category": "draw",
       "caption": "The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 25,
+      "order": 26,
       "alt": "The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily."
     },
     {
@@ -246,7 +255,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Aryna Sabalenka's path, round by round. The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 26,
+      "order": 27,
       "alt": "Aryna Sabalenka's path, round by round."
     },
     {
@@ -282,7 +291,7 @@
       "format": "square",
       "category": "recap",
       "caption": "Nobody saw this one coming: we had Jodar at 77%. Yunchaokete won it 6-2 6-1 6-1. Our miss, and it goes up the same as every hit. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 27,
+      "order": 28,
       "alt": "Jodar lost after we rated them 77%."
     },
     {
@@ -291,7 +300,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Nobody saw this coming: No. 84 Putintseva takes down No. 11. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 28,
+      "order": 29,
       "alt": "A seed falls: rank 84 beat rank 11, with our call and the market's."
     },
     {
@@ -300,7 +309,7 @@
       "format": "square",
       "category": "moments",
       "caption": "The $10 test: $10 on each side of every one of the 33 matches where we and the betting market picked different winners. Our picks: +$118. Their own favorites: -$115. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 29,
+      "order": 30,
       "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 33 disagreements."
     },
     {
@@ -309,7 +318,7 @@
       "format": "square",
       "category": "moments",
       "caption": "We disagreed with the market on Birrell vs Marcinko at the U.S. Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 30,
+      "order": 31,
       "alt": "Edge split card: our call versus the market's on Kimberly Birrell vs Petra Marcinko, graded."
     },
     {
@@ -317,9 +326,18 @@
       "type": "edge-live-plan",
       "format": "square",
       "category": "moments",
-      "caption": "Cincinnati, following the recommended plan across 8 settled days: +$13.40 on $141.83 staked, +9.5%, 6 of 8 days in front. Put that identical $142 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back +$3.70 - +2.6%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
-      "order": 31,
-      "alt": "Cincinnati: the recommended plan returned +9.5% against +2.6% for the market's favourite on the same money."
+      "caption": "US Open, following the recommended plan across 4 settled days: +$9.34 on $65.28 staked, +14.3%, 3 of 4 days in front. Put that identical $65 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back +$3.51 - +5.4%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
+      "order": 32,
+      "alt": "US Open: the recommended plan returned +14.3% against +5.4% for the market's favourite on the same money."
+    },
+    {
+      "file": "edge-forward.png",
+      "type": "edge-forward",
+      "format": "square",
+      "category": "moments",
+      "caption": "Locked before play: we're backing Alexander Bublik at 52% while the market has them at 35%. Graded within days, no take-backs. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "order": 33,
+      "alt": "Forward edge card: our underdog call on Alexander Bublik, locked with the market price attached."
     },
     {
       "file": "pool-promo.png",
@@ -327,7 +345,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction",
-      "order": 32,
+      "order": 34,
       "alt": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool."
     },
     {
@@ -336,7 +354,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/sinne #tennis #atp #wta #tennisprediction",
-      "order": 33,
+      "order": 35,
       "alt": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches."
     },
     {
@@ -345,7 +363,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Hottest racket on the WTA right now: Cori Gauff, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/gauff #tennis #atp #wta #tennisprediction",
-      "order": 34,
+      "order": 36,
       "alt": "Hottest racket on the WTA right now: Cori Gauff, 10-0 in recent matches."
     },
     {

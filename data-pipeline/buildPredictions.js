@@ -437,6 +437,9 @@ async function run() {
   let stamped = 0;
   if (API_KEY) {
     const HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com';
+    // One page, sized to cover a full slam day on both tours with room
+    // to spare. Verified against the live endpoint: limit=200 returns 200.
+    const ODDS_LIMIT = 200;
     const pairKey = (a, b) => [normName(a), normName(b)].sort().join('|');
     for (const league of ['atp', 'wta']) {
       const wanted = new Map(); // name-pair key -> pending row still needing odds
@@ -448,13 +451,30 @@ async function run() {
       if (!wanted.size) continue;
       try {
         const budget = require('./lib/apiBudget');
-        for (let page = 1; page <= 3 && wanted.size; page++) {
+        // ONE request per tour, no pagination. The provider used to accept
+        // `page`, and now rejects it outright:
+        //   400 {"message":"property pageNumber should not exist"}
+        // Every call carried &page=N, so every call 400d, and the `break`
+        // below discarded the response without a word - the whole card went
+        // unpriced for two days with a green pipeline and an untouched quota.
+        // A single larger limit returns what three pages used to.
+        for (let attempt = 0; attempt < 1 && wanted.size; attempt++) {
           budget.guard();
-          const res = await fetch(`https://${HOST}/tennis/v2/ms-api/upcoming/matches/${league}?limit=50&page=${page}`, {
+          const url = `https://${HOST}/tennis/v2/ms-api/upcoming/matches/${league}?limit=${ODDS_LIMIT}`;
+          const res = await fetch(url, {
             headers: { 'x-rapidapi-host': HOST, 'x-rapidapi-key': API_KEY },
           });
           budget.note(res);
-          if (!res.ok) break;
+          if (!res.ok) {
+            // Loud. Odds are evidence rather than a blocker, so this must not
+            // throw - but a silent break is how a contract change hides.
+            console.warn(
+              `  ! odds capture (${league}) got HTTP ${res.status} from the provider,`
+              + ` so ${wanted.size} match(es) go unpriced.`
+              + ` ${(await res.text().catch(() => '')).slice(0, 200)}`
+            );
+            break;
+          }
           const list = (await res.json()).matches || [];
           for (const m of list) {
             const key = pairKey(m.player1?.name || '', m.player2?.name || '');
@@ -471,7 +491,6 @@ async function run() {
             wanted.delete(key);
             stamped++;
           }
-          if (list.length < 50) break;
         }
       } catch (err) {
         console.warn(`  odds capture (${league}) failed: ${err.message}`);
