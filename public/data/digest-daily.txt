@@ -1,44 +1,53 @@
-SMASH DAILY - Thursday, September 3
+SMASH DAILY - Friday, September 4
 
-18 from 21 yesterday. We will take that. 19 more are locked for today at US Open, every one of them public before a ball is struck, plus 1 coin flip we are sitting out.
+15 from 19 yesterday. We will take that. 10 more are locked for today at US Open, every one of them public before a ball is struck, plus 4 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 18 from 21 (86%)
-  The one that stings: Rafael Jodar (we said 78%) - Bu Yunchaokete had other ideas
+YESTERDAY, GRADED: 15 from 19 (79%)
+  The one that stings: Alex De Minaur (we said 77%) - Botic Van De Zandschulp had other ideas
   Meanwhile, at the bookmakers - same 11 priced matches: us 82%, them 82%
-  If you had actually followed along ($100 in): Comfortable day -100.0% (-$10.00 on $10) [recommended]; Follow the edge -100.0% (-$5.00 on $5); Back every call -41.5% (-$41.55 on $100); Spread plus a parlay -52.7% (-$52.68 on $100); Whole card, weighted -59.4% (-$59.35 on $100.00) | US OPEN SO FAR: +$9.34 (+14.3% on $65.28, 3/4 days up)
+  US OPEN SO FAR: +$9.34 (+14.3% on $65.28, 3/4 days up)
 
 ON COURT TODAY
   [ US Open - ATP ]
-  Aliassime over Khachanov - 73%
-    Call: https://smash-react.vercel.app/match/karen-khachanov-vs-felix-auger-aliassime-182698
-    Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-felix-auger-aliassime
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=auger
-  Cerundolo over Struff - 70%
-    Call: https://smash-react.vercel.app/match/francisco-cerundolo-vs-jan-lennard-struff-182725
-    Compare: https://smash-react.vercel.app/compare/atp/francisco-cerundolo-vs-jan-lennard-struff
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cerun&b=struf
+  Medvedev over Rinderknech - 77%
+    Call: https://smash-react.vercel.app/match/arthur-rinderknech-vs-daniil-medvedev-182687
+    Compare: https://smash-react.vercel.app/compare/atp/arthur-rinderknech-vs-daniil-medvedev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=rinde&b=medve
   [ US Open - WTA ]
-  Keys over Bondar - 81%
-    Call: https://smash-react.vercel.app/match/anna-bondar-vs-madison-keys-182534
-    Compare: https://smash-react.vercel.app/compare/wta/anna-bondar-vs-madison-keys
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bonda&b=keys
-  Mertens over Timofeeva - 69%
-    Call: https://smash-react.vercel.app/match/elise-mertens-vs-maria-timofeeva-182574
-    Compare: https://smash-react.vercel.app/compare/wta/elise-mertens-vs-maria-timofeeva
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=merte&b=timof
-  Osaka over Siniakova - 81%
-    Call: https://smash-react.vercel.app/match/katerina-siniakova-vs-naomi-osaka-182568
-    Compare: https://smash-react.vercel.app/compare/wta/katerina-siniakova-vs-naomi-osaka
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=sinia&b=osaka
+  Sabalenka over Rakhimova - 89%
+    Call: https://smash-react.vercel.app/match/kamilla-rakhimova-vs-aryna-sabalenka-182554
+    Compare: https://smash-react.vercel.app/compare/wta/kamilla-rakhimova-vs-aryna-sabalenka
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rakhi&b=sabal
+  Kostyuk over Alexandrova - 68%
+    Call: https://smash-react.vercel.app/match/ekaterina-alexandrova-vs-marta-kostyuk-182564
+    Compare: https://smash-react.vercel.app/compare/wta/ekaterina-alexandrova-vs-marta-kostyuk
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=alexa&b=kosty
+  Pegula over Fernandez - 87%
+    Call: https://smash-react.vercel.app/match/leylah-annie-fernandez-vs-jessica-pegula-182545
+    Compare: https://smash-react.vercel.app/compare/wta/leylah-annie-fernandez-vs-jessica-pegula
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=ferna&b=pegul
+  Shnaider over Townsend - 74%
+    Call: https://smash-react.vercel.app/match/diana-shnaider-vs-taylor-townsend-182565
+    Compare: https://smash-react.vercel.app/compare/wta/diana-shnaider-vs-taylor-townsend
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=shnai&b=towns
 
-THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
+THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
+  $8.73 on Muchova (84% @ 1.33)
+  $5.76 on Shnaider (74% @ 1.50)
+  $3.93 on Svitolina (75% @ 1.40)
+  $3.02 on Pegula (87% @ 1.14)
+  $2.24 on Medvedev (77% @ 1.31)
+  $5.00 on the parlay
+  Total $28.67; we expect 4.0 to land, returning $32.17; 60% chance of finishing ahead
+  Bad day $-14.53 | typical $9.32 | good day $14.82
+  Build your own slip and size it: https://smash-react.vercel.app/risk
 
-STILL STANDING: Round of 64 at the US Open (hard)
-  ATP: Carlos Alcaraz 38% (+10), Alexander Zverev 13% (+2), Daniil Medvedev 7% (+3)
-  WTA: Aryna Sabalenka 22% (+9), Elena Rybakina 16% (-4), Jessica Pegula 15% (+2)
+STILL STANDING: Round of 32 at the US Open (hard)
+  ATP: Carlos Alcaraz 36% (-2), Alexander Zverev 20% (+7), Ben Shelton 9% (+2)
+  WTA: Elena Rybakina 22% (+6), Aryna Sabalenka 20% (-3), Iga Swiatek 18% (+7)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,638 of 2,192)
+SEASON: 75% (1,653 of 2,211)
 
 See today's full card: https://smash-react.vercel.app/today
 
