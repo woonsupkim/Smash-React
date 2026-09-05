@@ -40,8 +40,8 @@ THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
   Build your own slip and size it: https://smash-react.vercel.app/risk
 
 STILL STANDING: Round of 32 at the US Open (hard)
-  ATP: Carlos Alcaraz 41% (+6), Alexander Zverev 19% (-2), Ben Shelton 10% (+1)
-  WTA: Aryna Sabalenka 25% (+8), Iga Swiatek 21% (+2), Elena Rybakina 18% (-4)
+  ATP: Carlos Alcaraz 42% (+7), Alexander Zverev 17% (-4), Taylor Fritz 9% (+2)
+  WTA: Aryna Sabalenka 24% (+8), Elena Rybakina 22% (-1), Iga Swiatek 20% (+1)
   https://smash-react.vercel.app/draw
 
 SEASON: 75% (1,661 of 2,223)
