@@ -1,10 +1,10 @@
 id,name,first,last,us_seed,us_rd,p1,p2,p3,p4,p5,p6,country,age,year_w,year_l,recent_w,recent_l
 sabal,Aryna Sabalenka,Aryna,Sabalenka,1,2,0.62,0.89,0.34,0.50,0.40,0.13,BLR,28,5,2,6,4
-rybak,Elena Rybakina,Elena,Rybakina,2,2,0.56,0.88,0.33,0.46,0.43,0.17,KAZ,27,3,3,7,3
+rybak,Elena Rybakina,Elena,Rybakina,2,2,0.56,0.88,0.33,0.46,0.43,0.17,KAZ,27,3,3,8,2
 swiat,Iga Swiatek,Iga,Swiatek,3,2,0.64,0.81,0.40,0.49,0.45,0.08,POL,25,2,2,9,1
 pegul,Jessica Pegula,Jessica,Pegula,4,2,0.62,0.94,0.37,0.49,0.41,0.09,USA,32,7,2,8,2
-andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.61,0.87,0.36,0.47,0.39,0.09,RUS,19,1,2,6,4
-anisi,Amanda Anisimova,Amanda,Anisimova,6,2,0.64,0.81,0.35,0.50,0.43,0.10,USA,25,3,2,7,3
+andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.61,0.87,0.36,0.47,0.39,0.09,RUS,19,1,2,7,3
+anisi,Amanda Anisimova,Amanda,Anisimova,6,2,0.64,0.81,0.35,0.50,0.43,0.10,USA,25,3,2,6,4
 gauff,Cori Gauff,Cori,Gauff,7,2,0.57,0.84,0.36,0.46,0.44,0.12,USA,22,5,2,10,0
 svito,Elina Svitolina,Elina,Svitolina,8,2,0.59,0.87,0.37,0.55,0.37,0.10,UKR,31,3,2,7,3
 mucho,Karolina Muchova,Karolina,Muchova,9,2,0.62,0.93,0.33,0.46,0.43,0.13,CZE,30,11,2,8,2
@@ -20,9 +20,9 @@ cirst,Sorana Cirstea,Sorana,Cirstea,18,2,0.60,0.89,0.33,0.44,0.37,0.11,ROU,36,3,
 alexa,Ekaterina Alexandrova,Ekaterina,Alexandrova,19,2,0.61,0.87,0.35,0.47,0.39,0.13,RUS,31,5,4,5,5
 kalin,Anna Kalinskaya,Anna,Kalinskaya,20,2,0.63,0.86,0.30,0.48,0.41,0.09,RUS,27,3,3,7,3
 chwal,Maja Chwalinska,Maja,Chwalinska,21,2,0.70,0.91,0.39,0.40,0.31,0.02,POL,24,0,1,4,6
-keys,Madison Keys,Madison,Keys,22,2,0.65,0.89,0.35,0.47,0.44,0.10,USA,31,10,2,7,3
-bouzk,Marie Bouzkova,Marie,Bouzkova,23,2,0.71,0.86,0.36,0.49,0.41,0.04,CZE,28,9,2,6,4
-ferna,Leylah Annie Fernandez,Leylah,Annie Fernandez,24,2,0.63,0.85,0.33,0.45,0.39,0.07,CAN,23,1,4,5,5
+keys,Madison Keys,Madison,Keys,22,2,0.65,0.89,0.35,0.47,0.44,0.10,USA,31,10,2,6,4
+bouzk,Marie Bouzkova,Marie,Bouzkova,23,2,0.71,0.86,0.36,0.49,0.41,0.04,CZE,28,9,2,5,5
+ferna,Leylah Annie Fernandez,Leylah,Annie Fernandez,24,2,0.63,0.85,0.33,0.45,0.39,0.07,CAN,24,1,4,5,5
 tauso,Clara Tauson,Clara,Tauson,25,2,0.60,0.87,0.28,0.43,0.38,0.16,DEN,23,2,4,4,6
 navar,Emma Navarro,Emma,Navarro,26,2,0.62,0.90,0.34,0.46,0.39,0.07,USA,25,8,4,6,4
 merte,Elise Mertens,Elise,Mertens,27,2,0.57,0.83,0.33,0.49,0.41,0.11,BEL,30,7,4,5,5
@@ -30,7 +30,7 @@ potap,Anastasia Potapova,Anastasia,Potapova,28,2,0.52,0.88,0.29,0.39,0.38,0.04,A
 li,Ann Li,Ann,Li,29,2,0.60,0.90,0.36,0.44,0.35,0.15,USA,26,2,3,6,4
 bapti,Hailey Baptiste,Hailey,Baptiste,30,2,0.55,0.89,0.36,0.40,0.38,0.08,USA,24,0,0,6,4
 ostap,Jelena Ostapenko,Jelena,Ostapenko,31,2,0.57,0.77,0.42,0.53,0.43,0.15,LAT,29,5,2,5,5
-eala,Alexandra Eala,Alexandra,Eala,32,2,0.63,0.92,0.38,0.50,0.40,0.04,PHI,21,12,4,6,4
+eala,Alexandra Eala,Alexandra,Eala,32,2,0.63,0.92,0.38,0.50,0.40,0.04,PHI,21,12,4,5,5
 raduc,Emma Raducanu,Emma,Raducanu,33,2,0.68,0.87,0.41,0.51,0.39,0.05,GBR,23,4,1,5,5
 vekic,Donna Vekic,Donna,Vekic,34,2,0.58,0.89,0.36,0.49,0.40,0.11,CRO,30,6,3,4,6
 bucsa,Cristina Bucsa,Cristina,Bucsa,35,2,0.66,0.88,0.37,0.45,0.39,0.04,ESP,28,0,0,4,6

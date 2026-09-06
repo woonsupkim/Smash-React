@@ -1,50 +1,49 @@
-SMASH DAILY - Saturday, September 5
+SMASH DAILY - Sunday, September 6
 
-9 from 12 yesterday. We will take that. 10 more are locked for today at US Open, every one of them public before a ball is struck, plus 3 coin flips we are sitting out.
+7 from 10 yesterday. We will take that. 5 more are locked for today at US Open, every one of them public before a ball is struck, plus 3 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 9 from 12 (75%)
-  The one that stings: Karolina Muchova (we said 83%) - Emma Navarro had other ideas
-  Meanwhile, at the bookmakers - same 8 priced matches: us 75%, them 75%
-  If you had actually followed along ($100 in, 10 of 10 calls priced): Comfortable day -77.8% (-$22.30 on $28.67) [recommended]; Follow the edge -78.6% (-$24.41 on $31.05); Back every call -26.1% (-$26.08 on $100); Spread plus a parlay -41.9% (-$41.93 on $100.00); Whole card, weighted -52.2% (-$52.24 on $100) | US OPEN SO FAR: -$12.96 (-13.8% on $93.95, 3/5 days up)
+YESTERDAY, GRADED: 7 from 10 (70%)
+  The one that stings: Amanda Anisimova (we said 87%) - Anastasia Potapova had other ideas
+  Meanwhile, at the bookmakers - same 6 priced matches: us 83%, them 83%
+  If you had actually followed along ($100 in, 10 of 10 calls priced): Comfortable day -71.8% (-$12.25 on $17.07) [recommended]; Follow the edge -80.2% (-$20.30 on $25.32); Back every call -6.6% (-$6.56 on $100); Spread plus a parlay -31.1% (-$31.11 on $100.00); Whole card, weighted -48.0% (-$48.03 on $100) | US OPEN SO FAR: -$25.20 (-22.7% on $111.02, 3/6 days up)
 
 ON COURT TODAY
   [ US Open - ATP ]
-  Fritz over Cerundolo - 72%
-    Call: https://smash-react.vercel.app/match/francisco-cerundolo-vs-taylor-fritz-182727
-    Compare: https://smash-react.vercel.app/compare/atp/francisco-cerundolo-vs-taylor-fritz
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cerun&b=fritz
-  Cobolli over Blockx - 61%
-    Call: https://smash-react.vercel.app/match/flavio-cobolli-vs-alexander-blockx-182731
-    Compare: https://smash-react.vercel.app/compare/atp/flavio-cobolli-vs-alexander-blockx
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=cobol&b=block
+  Alcaraz over Paul - 81%
+    Call: https://smash-react.vercel.app/match/carlos-alcaraz-vs-tommy-paul-182724
+    Compare: https://smash-react.vercel.app/compare/atp/carlos-alcaraz-vs-tommy-paul
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=alcar&b=paul
+  Medvedev over Tiafoe - 66%
+    Call: https://smash-react.vercel.app/match/frances-tiafoe-vs-daniil-medvedev-182744
+    Compare: https://smash-react.vercel.app/compare/atp/frances-tiafoe-vs-daniil-medvedev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tiafo&b=medve
+  Shelton over Tsitsipas - 71%
+    Call: https://smash-react.vercel.app/match/stefanos-tsitsipas-vs-ben-shelton-182722
+    Compare: https://smash-react.vercel.app/compare/atp/stefanos-tsitsipas-vs-ben-shelton
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=tsits&b=shelt
   [ US Open - WTA ]
-  Anisimova over Potapova - 88%
-    Call: https://smash-react.vercel.app/match/amanda-anisimova-vs-anastasia-potapova-182540
-    Compare: https://smash-react.vercel.app/compare/wta/amanda-anisimova-vs-anastasia-potapova
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=anisi&b=potap
-  Andreeva over Bartunkova - 80%
-    Call: https://smash-react.vercel.app/match/nikola-bartunkova-vs-mirra-andreeva-182536
-    Compare: https://smash-react.vercel.app/compare/wta/nikola-bartunkova-vs-mirra-andreeva
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bartu&b=andre
-  Swiatek over Bouzkova - 88%
-    Call: https://smash-react.vercel.app/match/marie-bouzkova-vs-iga-swiatek-182586
-    Compare: https://smash-react.vercel.app/compare/wta/marie-bouzkova-vs-iga-swiatek
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=bouzk&b=swiat
+  Sabalenka over Townsend - 78%
+    Call: https://smash-react.vercel.app/match/taylor-townsend-vs-aryna-sabalenka-182541
+    Compare: https://smash-react.vercel.app/compare/wta/taylor-townsend-vs-aryna-sabalenka
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=towns&b=sabal
+  Pegula over Cirstea - 78%
+    Call: https://smash-react.vercel.app/match/sorana-cirstea-vs-jessica-pegula-182582
+    Compare: https://smash-react.vercel.app/compare/wta/sorana-cirstea-vs-jessica-pegula
+    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=cirst&b=pegul
 
 THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
-  $10.00 on Anisimova (88% @ 1.24)
-  $3.75 on Andreeva (80% @ 1.28)
-  $3.32 on Cobolli (61% @ 1.81)
-  Total $17.07; we expect 2.3 to land, returning $18.69; 83% chance of finishing ahead
-  Bad day $-11.06 | typical $1.34 | good day $6.16
+  $8.45 on Medvedev (66% @ 1.71)
+  $5.00 on the parlay
+  Total $13.45; we expect 0.7 to land, returning $15.36; 65% chance of finishing ahead
+  Bad day $-13.45 | typical $12.37 | good day $12.37
   Build your own slip and size it: https://smash-react.vercel.app/risk
 
-STILL STANDING: Round of 32 at the US Open (hard)
-  ATP: Carlos Alcaraz 42% (+7), Alexander Zverev 17% (-4), Taylor Fritz 9% (+2)
-  WTA: Aryna Sabalenka 24% (+8), Elena Rybakina 22% (-1), Iga Swiatek 20% (+1)
+STILL STANDING: Round of 16 at the US Open (hard)
+  ATP: Carlos Alcaraz 41% (-1), Alexander Zverev 29% (+12), Ben Shelton 10% (+1)
+  WTA: Elena Rybakina 26% (+4), Aryna Sabalenka 23% (-1), Iga Swiatek 16% (-3)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,661 of 2,223)
+SEASON: 75% (1,668 of 2,232)
 
 See today's full card: https://smash-react.vercel.app/today
 
