@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-06T15:45:54.334Z",
+  "generatedAt": "2026-09-07T17:56:08.131Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -149,7 +149,7 @@
     }
   ],
   "forward": {
-    "n": 291,
+    "n": 296,
     "recentN": 40,
     "recentAcc": 73,
     "status": "ok"

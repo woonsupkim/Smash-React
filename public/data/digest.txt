@@ -1,27 +1,46 @@
-SMASH WEEKLY - Monday, August 31
+SMASH WEEKLY - Monday, September 7
 
-THE WEEK: 10 from 19 (53%)
+THE WEEK: 84 from 104 (81%)
 
 DAY BY DAY
-  Tue: 3/5 (60%)
-  Wed: 1/4 (25%)
-  Thu: 1/3 (33%)
-  Fri: 3/3 (100%)
-  Sat: 1/2 (50%)
+  Tue: 9/10 (90%)
+  Wed: 18/21 (86%)
+  Thu: 15/19 (79%)
+  Fri: 9/12 (75%)
+  Sat: 7/10 (70%)
+  Sun: 5/6 (83%)
+  Mon: 0/1 (0%)
 
 THE ONES WE GOT WRONG
-  - Chwalinska lost to Parks 3-6 6-2 6-2
-  - Medvedev lost to Damm 7-5 6-3
-  - Krueger lost to Grabher 6-4 6-4
+  - Anisimova lost to Potapova 6-2 7-5
+  - Bencic lost to Putintseva 4-6 7-5 6-3
+  - Muchova lost to Navarro 6-3 7-5
 
-US VS THE BOOKMAKERS: 57% vs 57% (7 priced matches)
+THE WEEK IN MOMENTS
+  - Putintseva takes out Bencic: No. 84 beats No. 11 - 4-6 7-5 6-3. Nobody had this one.
+  - Zandschulp at 4.80: The longest price to land all week. $10 on it came back $48.00 - 6-4 7-5 6-2.
+  - Tiafoe survives 5: 5 sets against Damm - 6-4 4-6 3-6 6-3 6-4.
 
-FORWARD TEST: 136-50 (55 pending)
-SEASON: 74%
+IF YOU HAD FOLLOWED ALONG ALL WEEK ($100 a day, recommended plan): -38.7% (-$44.26 on $114.47 staked) over 6 days
+  Comfortable day: -38.7% (-$44.26 on $114, 11/20 singles, 6 days)
+  Follow the edge: -36.7% (-$44.55 on $121, 13/23 singles, 6 days)
+  Back every call: -5.8% (-$34.97 on $600, 38/49 singles, 6 days)
+  Spread plus a parlay: -23.1% (-$138.43 on $600, 38/49 singles, 6 days)
+  Whole card, weighted: -24.6% (-$147.59 on $600, 48/62 singles, 6 days)
 
-NEXT UP: 140 days to the Australian Open
+US VS THE BOOKMAKERS: 81% vs 83% (58 priced matches)
+
+  HEAD TO HEAD on the 1 match we disagreed on: us 0 right, the book 1
+
+FORWARD TEST: 224-72 (9 pending)
+SEASON: 75%
+
+STILL STANDING: Round of 16 at the US Open
+  ATP: Carlos Alcaraz 49% (+8), Alexander Zverev 24% (-5), Ben Shelton 9% (-0)
+  WTA: Aryna Sabalenka 33% (+10), Elena Rybakina 24% (-2), Jessica Pegula 19% (+3)
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
 Not betting advice. The season number is a benchmark; only the forward test rows were locked before play.
+Instagram: https://www.instagram.com/smash.tennis.simulator/
 Unsubscribe by replying "stop". https://smash-react.vercel.app
