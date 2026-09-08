@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-08T01:10:18.730Z",
+  "generatedAt": "2026-09-08T14:11:34.666Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-08",
+      "file": "daily-2026-09-08.html",
+      "subject": "We are taking Tiafoe and we know how that looks",
+      "summary": "4 of 5 called on 2026-09-07",
+      "builtAt": "2026-09-08T14:11:34.666Z"
+    },
     {
       "mode": "daily",
       "date": "2026-09-07",
