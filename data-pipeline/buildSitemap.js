@@ -62,7 +62,8 @@ function main() {
 
   // ── Static routes (mirrors src/App.js; skips /admin, redirects, and the
   // legal fine-print pages /terms /privacy /disclaimer).
-  const FRESH = new Set(['/', '/today', '/risk', '/track-record', '/edge', '/season', '/form']); // regenerated every data refresh
+  const FRESH = new Set(['/', '/today', '/risk', '/track-record', '/digests',
+  '/edge', '/season', '/form']); // regenerated every data refresh
   const staticRoutes = [
     '/',
     '/today',
@@ -70,6 +71,8 @@ function main() {
     // but only one of the two belongs in a sitemap.
     '/risk',
     '/track-record',
+    // The digest archive: a new edition lands on every refresh.
+    '/digests',
     '/edge',
     '/compare',
     '/challenge',

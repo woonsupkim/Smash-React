@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-09-08T01:10:18.730Z",
+  "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-07",
+      "file": "daily-2026-09-07.html",
+      "subject": "We are taking Cerundolo and we know how that looks",
+      "summary": "5 of 6 called on 2026-09-06",
+      "builtAt": "2026-09-08T01:10:11.985Z"
+    },
+    {
+      "mode": "weekly",
+      "date": "2026-09-07",
+      "file": "weekly-2026-09-07.html",
+      "subject": "69 from 86. A good week, briefly",
+      "summary": "69 of 86 winners called",
+      "builtAt": "2026-09-08T01:10:18.730Z"
+    }
+  ]
+}

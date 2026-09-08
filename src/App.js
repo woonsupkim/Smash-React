@@ -25,6 +25,7 @@ import './App.css';
 const H2H = lazy(() => import('./pages/H2H'));
 const DreamBrackets = lazy(() => import('./pages/DreamBrackets'));
 const TrackRecord = lazy(() => import('./pages/TrackRecord'));
+const Digests = lazy(() => import('./pages/Digests'));
 const Methodology = lazy(() => import('./pages/Methodology'));
 const Changelog = lazy(() => import('./pages/Changelog'));
 const Admin = lazy(() => import('./pages/Admin'));
@@ -104,6 +105,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/edge', label: 'The Edge · Vs the Market', tourAgnostic: true },
       { to: '/track-record', label: 'The Ledger · Every Call Graded' },
+      { to: '/digests', label: 'The Digests · Every Edition Sent', tourAgnostic: true },
       { to: '/model', label: 'The Engine Room · Model', tourAgnostic: true },
       { to: '/season', label: 'The Rewind · Season', tourAgnostic: true, slamOnly: true },
     ],
@@ -299,6 +301,7 @@ function App() {
           {/* Track record covers both tours internally (ATP/WTA filter on
               the page itself); the /women mirror keeps nav links working */}
           <Route path="/track-record" element={<TrackRecord />} />
+          <Route path="/digests" element={<Digests />} />
           <Route path="/women/track-record" element={<TrackRecord />} />
 
           {/* Methodology is tour-agnostic; the /women mirror keeps nav links working */}

@@ -273,6 +273,41 @@ const stat = (value, label, color = INK) =>
 // and tour on every row; grouping states it once and lets the matches read as
 // an order of play. Events are ordered by their first match, ATP before WTA
 // inside an event, and matches by start time within that.
+
+// ── Splits, in money ──────────────────────────────────────────────────────
+//
+// Who was RIGHT more often is only half the answer, and on a split it is the
+// half that cannot separate us: exactly one side wins each one, so the hit
+// counts always sum to the number of splits. The money is where a split
+// actually differs, because backing the side the market prices as the
+// outsider pays differently from backing its favourite.
+//
+// $1 flat on each side of every disagreement, settled at the price stamped
+// before play. Returns null when there is nothing to compare.
+function splitMoney(rows) {
+  const splits = rows.filter((m) => pickFavorite(m) !== m.oddFav && m.od1 > 1 && m.od2 > 1);
+  if (!splits.length) return null;
+  let usBack = 0; let themBack = 0; let usWon = 0; let themWon = 0;
+  for (const m of splits) {
+    const ourOdds = pickFavorite(m) === m.p1 ? m.od1 : m.od2;
+    const mktOdds = m.oddFav === m.p1 ? m.od1 : m.od2;
+    if (pickCorrect(m)) { usBack += ourOdds; usWon++; }
+    if (m.oddCorrect) { themBack += mktOdds; themWon++; }
+  }
+  const n = splits.length;
+  return {
+    n,
+    usWon,
+    themWon,
+    usBack,
+    themBack,
+    usProfit: usBack - n,
+    themProfit: themBack - n,
+    // What following us instead of the book was worth on the same money.
+    edge: usBack - themBack,
+  };
+}
+
 // ── The hero match ──────────────────────────────────────────────────────────
 // One match gets the full treatment and the rest go in a list, because a page
 // of five equal cards has no focal point and reads as a fixture list.
@@ -801,6 +836,9 @@ async function main() {
   const MODE = (process.env.DIGEST_MODE || (now.getUTCDay() === 1 ? 'weekly' : 'daily')).toLowerCase();
   const isWeekly = MODE === 'weekly';
   const dateLabel = todayEvent(now);
+  // One line describing this edition, filled in by whichever branch runs,
+  // so the archive listing is scannable without opening anything.
+  let archiveSummary = '';
   const prettyDate = fmtEventDate(now.toISOString(), { weekday: 'long', month: 'long', day: 'numeric' });
 
   const season = scorecard && scorecard.season ? scorecard.season : null;
@@ -917,6 +955,7 @@ async function main() {
 
     // Yesterday, graded.
     if (yday && yday.n) {
+      archiveSummary = `${yday.correct} of ${yday.n} called on ${yday.date}`;
       const ypct = pct(yday.correct, yday.n);
       // yday.date is already a venue day (recapDay picks it), so the match
       // list has to be bucketed the same way or the two disagree.
@@ -930,6 +969,10 @@ async function main() {
       let vsMarket = '';
       let vsMarketTxt = '';
       if (pricedY.length >= 3) {
+        const money2 = (v) => (Math.abs(v % 1) < 0.005 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`);
+        // Money on the disagreements, which is the only place a price
+        // difference can show up. See splitMoney.
+        const sm = splitMoney(pricedY);
         const usY = pct(pricedY.filter((m) => pickCorrect(m)).length, pricedY.length);
         const themY = pct(pricedY.filter((m) => m.oddCorrect).length, pricedY.length);
         const verdict = usY > themY
@@ -952,11 +995,23 @@ async function main() {
                 </td>
               </tr>
             </table>
+            ${sm ? `
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${LINE};">
+                <div style="font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:${MUTED};font-weight:700;padding-bottom:6px;">And on the ${plural(sm.n, 'one', 'ones')} we disagreed about</div>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:${BODY};">
+                  We called ${sm.usWon} of ${sm.n} right, the book ${sm.themWon}. Backing our side of every split with $1 returned
+                  <strong style="color:${sm.usProfit >= 0 ? WIN : LOSS};">${money2(sm.usBack)}</strong> on ${money2(sm.n)}; backing theirs returned
+                  <strong style="color:${sm.themProfit >= 0 ? WIN : LOSS};">${money2(sm.themBack)}</strong>.
+                  ${Math.abs(sm.edge) < 0.005 ? 'Level on the money.' : `Following us instead of them was worth <strong style="color:${sm.edge >= 0 ? WIN : LOSS};">${sm.edge >= 0 ? '+' : '-'}${money2(Math.abs(sm.edge))}</strong> on the day.`}
+                </p>
+              </div>` : ''}
             <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${MUTED};">
               ${esc(verdict)} That is across the ${pricedY.length} of yesterday's matches that carried a price. One day is a tiny sample, and we print it whichever way it falls.
             </p>
           </div>`;
-        vsMarketTxt = `Meanwhile, at the bookmakers - same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`;
+        vsMarketTxt = `Meanwhile, at the bookmakers - same ${pricedY.length} priced matches: us ${usY}%, them ${themY}%`
+          + (sm ? `
+  On the ${sm.n} we disagreed about: us ${sm.usWon} right (${money2(sm.usBack)} back on ${money2(sm.n)}), the book ${sm.themWon} (${money2(sm.themBack)} back)${Math.abs(sm.edge) < 0.005 ? '' : `; following us was worth ${sm.edge >= 0 ? '+' : '-'}${money2(Math.abs(sm.edge))}`}` : '');
       }
 
       // What each recommended plan would have returned, settled individually
@@ -1421,6 +1476,7 @@ async function main() {
       return Number.isFinite(t) && t >= weekAgo && t <= now.getTime();
     });
     const weekCorrect = week.filter((m) => pickCorrect(m)).length;
+    archiveSummary = week.length ? `${weekCorrect} of ${week.length} winners called` : '';
     const weekPct = pct(weekCorrect, week.length);
 
     // Same rule as the daily: lead with the one interesting thing, let the
@@ -1782,6 +1838,10 @@ async function main() {
             </tr>`;
           const side = (x, y) => (x === y ? 0 : (x > y ? 1 : 2));
 
+          // The money row shows at ANY sample size. "Who was right more often"
+          // cannot separate the two sides of a split - the hits always sum to
+          // n - so what comes BACK is the thing that actually differs, and a
+          // dollar figure is honest at n=1 in a way a percentage is not.
           splitBlock = `
             <div style="border:1px solid ${LINE_HI};border-top:3px solid ${LIME};background:${PANEL};margin-top:18px;">
               <div style="padding:12px 20px;border-bottom:1px solid ${LINE};">
@@ -1799,14 +1859,23 @@ async function main() {
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:14px;">
                   ${duel('Called right', `${usWon}`, `${themWon}`, side(usWon, themWon))}
                   ${duel('Of', `${n}`, `${n}`, 0)}
-                  ${showMoney ? duel('$1 a side', roi(usBack), roi(themBack), side(usBack, themBack)) : ''}
+                  ${duel('$1 a side, back', `$${usBack.toFixed(2)}`, `$${themBack.toFixed(2)}`, side(usBack, themBack))}
+                  ${showMoney ? duel('Return', roi(usBack), roi(themBack), side(usBack, themBack)) : ''}
                 </table>
-                <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:${MUTED};">
-                  We and the market backed the same player on the other ${plural(priced.length - n, 'match', 'matches')} this week, which settles nothing either way. One side has to win each split, so these two always add to ${n}.${showMoney ? ' The money can still diverge, because a split puts one of us on the longer ticket.' : ` At ${plural(n, 'match', 'matches')} that is a tally, not a trend - too few to price, so we are not pretending otherwise.`}
+                <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:${BODY};">
+                  <strong style="color:${INK};">${Math.abs(usBack - themBack) < 0.005
+    ? 'Level on the money.'
+    : `Following us instead of the book was worth ${usBack - themBack >= 0 ? '+' : '-'}$${Math.abs(usBack - themBack).toFixed(2)} on $${n} staked.`}</strong>
+                </p>
+                <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:${MUTED};">
+                  We and the market backed the same player on the other ${plural(priced.length - n, 'match', 'matches')} this week, which settles nothing either way. One side has to win each split, so the hit counts always add to ${n} - the money is where the two actually differ, because a split puts one of us on the longer ticket.${showMoney ? '' : ` At ${plural(n, 'match', 'matches')} that is a result, not a trend.`}
                 </p>
               </div>
             </div>`;
-          splitTxt = `  HEAD TO HEAD on the ${n} ${n === 1 ? 'match' : 'matches'} we disagreed on: us ${usWon} right, the book ${themWon}${showMoney ? ` | $1 a side: us ${roi(usBack)}, the book ${roi(themBack)}` : ''}`;
+          splitTxt = `  HEAD TO HEAD on the ${n} ${n === 1 ? 'match' : 'matches'} we disagreed on: us ${usWon} right, the book ${themWon}`
+            + ` | $1 a side: us $${usBack.toFixed(2)} back, the book $${themBack.toFixed(2)} back on $${n}`
+            + (Math.abs(usBack - themBack) < 0.005 ? ' (level)' : ` (following us: ${usBack - themBack >= 0 ? '+' : '-'}$${Math.abs(usBack - themBack).toFixed(2)})`)
+            + (showMoney ? ` | return: us ${roi(usBack)}, the book ${roi(themBack)}` : '');
         }
         const us = pct(priced.filter((m) => pickCorrect(m)).length, priced.length);
         const them = pct(priced.filter((m) => m.oddCorrect).length, priced.length);
@@ -2006,6 +2075,38 @@ async function main() {
 
   fs.writeFileSync(path.join(DATA, `${stem}.txt`), `${fillUnsub(txt, null)}\n`);
   fs.writeFileSync(path.join(DATA, `${stem}.html`), fillUnsub(html, null));
+
+  // ── Archive ──────────────────────────────────────────────────────────────
+  // A dated copy of every edition, plus an index the site reads. Each build
+  // used to overwrite the last, so a reader who wanted Tuesday's digest had
+  // nowhere to go and there was no public record of what we actually said.
+  // The archived copy is the MAILED html with the unsubscribe placeholders
+  // neutralised: it is a public page, not somebody's personal copy.
+  try {
+    const archiveDir = path.join(DATA, 'digest-archive');
+    fs.mkdirSync(archiveDir, { recursive: true });
+    const file = `${MODE}-${dateLabel}.html`;
+    fs.writeFileSync(path.join(archiveDir, file), fillUnsub(html, null));
+
+    const indexPath = path.join(archiveDir, 'index.json');
+    let index = { editions: [] };
+    try { index = JSON.parse(fs.readFileSync(indexPath, 'utf8')); } catch { /* first run */ }
+    // Rebuilding the same day replaces that entry rather than duplicating it.
+    const editions = (index.editions || []).filter((e) => !(e.mode === MODE && e.date === dateLabel));
+    editions.push({ mode: MODE, date: dateLabel, file, subject, summary: archiveSummary, builtAt: now.toISOString() });
+    editions.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.mode.localeCompare(b.mode)));
+    // Capped: an unbounded archive is a growing payload on a page most people
+    // read the top of, and these files are committed.
+    const KEEP = 120;
+    const kept = editions.slice(0, KEEP);
+    for (const gone of editions.slice(KEEP)) {
+      try { fs.unlinkSync(path.join(archiveDir, gone.file)); } catch { /* already gone */ }
+    }
+    fs.writeFileSync(indexPath, JSON.stringify({ generatedAt: now.toISOString(), editions: kept }, null, 2));
+    console.log(`  archived ${file} (${kept.length} editions on file)`);
+  } catch (err) {
+    console.warn(`  ! could not archive this edition: ${err.message}`);  // never break a send
+  }
   console.log(`[${MODE}] Wrote public/data/${stem}.html and ${stem}.txt (${blocks.length} sections).`);
 
   // ── Freshness gate ────────────────────────────────────────────────────────

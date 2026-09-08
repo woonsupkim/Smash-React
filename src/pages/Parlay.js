@@ -30,6 +30,8 @@ import useTodayCard from '../utils/useTodayCard';
 import DigestSignup from '../components/DigestSignup';
 import { planFrontier, reliability } from '../utils/staking';
 import { surfaceBgClass } from '../utils/surfaceBg';
+import { eventDayOf } from '../utils/matchTime';
+import { ledgerNoCall } from '../utils/deployedPick';
 import './Parlay.css';
 
 // The budget the receipt below replays yesterday's plan on, matching the
@@ -205,13 +207,27 @@ export default function Parlay() {
   // result is a cumulative curve plus the total. Losing days print exactly
   // like winning ones; that is the point of showing it at all.
   const planHistory = useMemo(() => {
-    const rows = (graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1 && typeof m.favProb === 'number');
+    // Calls only, matching planSettle.ledgerGraded. The receipt was replaying
+    // the plan over NO-CALLS too - matches we explicitly decline - so it built
+    // a different slip from the one the digest settles and reported a
+    // different record for the same days.
+    const rows = (graded || []).filter((m) => m.lockOdd1 > 1 && m.lockOdd2 > 1
+      && typeof m.favProb === 'number' && !ledgerNoCall(m));
     if (rows.length < 2) return null;
-    const days = [...new Set(rows.map((m) => String(m.date).slice(0, 10)))].sort();
+    // VENUE days, matching planSettle. This bucketed by the UTC slice, so a
+    // night session stamped past midnight UTC landed on the next day here and
+    // on its own day in the pipeline - two different day sets, two different
+    // plans, and a receipt that disagreed with the digest about the very same
+    // record (-1.2% over 24 days here against +0.1% over 25 there).
+    const days = [...new Set(rows.map((m) => eventDayOf(m.date)))].sort();
     const out = [];
     for (const day of days) {
-      const card = rows.filter((m) => String(m.date).slice(0, 10) === day);
-      if (card.length < 2) continue;
+      const card = rows.filter((m) => eventDayOf(m.date) === day);
+      // A one-match day is still a settled day. Skipping it here while the
+      // pipeline counted it was the other half of the disagreement, and it
+      // dropped precisely the days the plan was most concentrated on - the
+      // ones most worth showing.
+      if (!card.length) continue;
       // Each bet also carries the MARKET's side of the same match: the
       // shorter of the two lock prices, and whether that player won. It is
       // what lets the same stakes be replayed on the bookmakers' favourites

@@ -19,3 +19,5 @@ build/
 
 # macOS folder metadata - was committed under src/assets
 .DS_Store
+.vercel
+.env*
