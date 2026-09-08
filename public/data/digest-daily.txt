@@ -36,8 +36,8 @@ THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
   Build your own slip and size it: https://smash-react.vercel.app/risk
 
 STILL STANDING: Quarter-finals at the US Open (hard)
-  ATP: Carlos Alcaraz 46% (-3), Alexander Zverev 32% (+8), Ben Shelton 8% (-1)
-  WTA: Elena Rybakina 34% (+11), Aryna Sabalenka 30% (-2), Jessica Pegula 17% (-2)
+  ATP: Carlos Alcaraz 45% (-4), Alexander Zverev 33% (+9), Ben Shelton 8% (-1)
+  WTA: Elena Rybakina 33% (+9), Aryna Sabalenka 31% (-2), Jessica Pegula 16% (-3)
   https://smash-react.vercel.app/draw
 
 SEASON: 75% (1,676 of 2,242)
