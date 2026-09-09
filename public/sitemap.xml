@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/risk</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/digests</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/risk</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/digests</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-09-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/compare</loc></url>
   <url><loc>https://smash-react.vercel.app/challenge</loc></url>
-  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-09-08</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-09-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-09-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/h2h</loc></url>
   <url><loc>https://smash-react.vercel.app/draw</loc></url>
   <url><loc>https://smash-react.vercel.app/dream-brackets</loc></url>
@@ -258,8 +258,10 @@
   <url><loc>https://smash-react.vercel.app/player/wta/prest</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/chara</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/kawa</loc></url>
-  <url><loc>https://smash-react.vercel.app/match/alexander-blockx-vs-karen-khachanov-182770</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jessica-pegula-vs-aryna-sabalenka-182553</loc></url>
   <url><loc>https://smash-react.vercel.app/match/botic-van-de-zandschulp-vs-alexander-zverev-182772</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/alexander-blockx-vs-karen-khachanov-182770</loc></url>
   <url><loc>https://smash-react.vercel.app/match/cori-gauff-vs-mirra-andreeva-182573</loc></url>
   <url><loc>https://smash-react.vercel.app/match/carlos-alcaraz-vs-ben-shelton-182780</loc></url>
   <url><loc>https://smash-react.vercel.app/match/emma-navarro-vs-jessica-pegula-182535</loc></url>
@@ -725,7 +727,7 @@
   <url><loc>https://smash-react.vercel.app/match/alexander-zverev-vs-jannik-sinner-177491</loc></url>
   <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-karolina-muchova-177707</loc></url>
   <url><loc>https://smash-react.vercel.app/match/novak-djokovic-vs-jannik-sinner-180453</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-09-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/daniil-medvedev-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/novak-djokovic-vs-jannik-sinner</loc></url>

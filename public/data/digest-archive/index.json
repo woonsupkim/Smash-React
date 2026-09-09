@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-08T16:49:54.678Z",
+  "generatedAt": "2026-09-09T16:54:12.438Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-09",
+      "file": "daily-2026-09-09.html",
+      "subject": "Gauff v Andreeva, take 6",
+      "summary": "3 of 3 called on 2026-09-08",
+      "builtAt": "2026-09-09T16:54:12.438Z"
+    },
     {
       "mode": "daily",
       "date": "2026-09-08",

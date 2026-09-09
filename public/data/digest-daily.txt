@@ -1,46 +1,27 @@
-SMASH DAILY - Tuesday, September 8
+SMASH DAILY - Wednesday, September 9
 
-4 from 5 yesterday. We will take that. 4 more are locked for today at US Open, every one of them public before a ball is struck.
+3 from 3 yesterday. A clean sweep, and no, that is not the usual. 1 more is locked for today at US Open, every one of them public before a ball is struck, plus 2 coin flips we are sitting out.
 
-YESTERDAY, GRADED: 4 from 5 (80%)
-  The one that stings: Anna Kalinskaya (we said 61%) - Emma Navarro had other ideas
-  If you had actually followed along ($100 in, 4 of 4 calls priced): Comfortable day +75.9% (+$18.97 on $25) [recommended]; Follow the edge +54.9% (+$12.26 on $22.34); Back every call +40.2% (+$40.17 on $100); Spread plus a parlay +51.3% (+$51.34 on $100); Whole card, weighted +47.5% (+$47.54 on $100) | US OPEN SO FAR: -$19.69 (-13.2% on $149.47, 4/8 days up)
+YESTERDAY, GRADED: 3 from 3 (100%)
+  Meanwhile, at the bookmakers - same 3 priced matches: us 100%, them 67%
+  On the 1 we disagreed about: us 1 right ($1.98 back on $1), the book 0 ($0 back); following us was worth +$1.98
+  If you had actually followed along ($100 in, 4 of 4 calls priced): Comfortable day +24.5% (+$4.34 on $17.72) [recommended]; Follow the edge +60.2% (+$9.98 on $16.59); Back every call +16.0% (+$16.00 on $100); Spread plus a parlay +32.2% (+$32.23 on $100); Whole card, weighted +35.8% (+$35.79 on $100) | US OPEN SO FAR: -$15.34 (-9.2% on $167.19, 5/9 days up)
 
 ON COURT TODAY
   [ US Open - ATP ]
-  Tiafoe over Michelsen - 62%
-    Call: https://smash-react.vercel.app/match/alex-michelsen-vs-frances-tiafoe-182777
-    Compare: https://smash-react.vercel.app/compare/atp/alex-michelsen-vs-frances-tiafoe
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=miche&b=tiafo
-  Alcaraz over Shelton - 76%
-    Call: https://smash-react.vercel.app/match/carlos-alcaraz-vs-ben-shelton-182780
-    Compare: https://smash-react.vercel.app/compare/atp/carlos-alcaraz-vs-ben-shelton
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=alcar&b=shelt
-  [ US Open - WTA ]
-  Sabalenka over Noskova - 80%
-    Call: https://smash-react.vercel.app/match/linda-noskova-vs-aryna-sabalenka-182533
-    Compare: https://smash-react.vercel.app/compare/wta/linda-noskova-vs-aryna-sabalenka
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=nosko&b=sabal
-  Pegula over Navarro - 83%
-    Call: https://smash-react.vercel.app/match/emma-navarro-vs-jessica-pegula-182535
-    Compare: https://smash-react.vercel.app/compare/wta/emma-navarro-vs-jessica-pegula
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=navar&b=pegul
+  Zverev over Zandschulp - 83%
+    Call: https://smash-react.vercel.app/match/botic-van-de-zandschulp-vs-alexander-zverev-182772
+    Compare: https://smash-react.vercel.app/compare/atp/botic-van-de-zandschulp-vs-alexander-zverev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=zands&b=zvere
 
-THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
-  $8.00 on Sabalenka (80% @ 1.45)
-  $3.67 on Tiafoe (62% @ 1.98)
-  $2.64 on Pegula (83% @ 1.21)
-  $3.41 on the parlay
-  Total $17.72; we expect 2.2 to land, returning $19.68; 65% chance of finishing ahead
-  Bad day $-14.53 | typical $4.35 | good day $12.18
-  Build your own slip and size it: https://smash-react.vercel.app/risk
+THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
 STILL STANDING: Quarter-finals at the US Open (hard)
-  ATP: Carlos Alcaraz 45% (-4), Alexander Zverev 33% (+9), Ben Shelton 8% (-1)
-  WTA: Elena Rybakina 33% (+9), Aryna Sabalenka 31% (-2), Jessica Pegula 16% (-3)
+  ATP: Alexander Zverev 44% (+11), Ben Shelton 34% (+26), Frances Tiafoe 11% (+7)
+  WTA: Aryna Sabalenka 38% (+7), Elena Rybakina 30% (-3), Jessica Pegula 17% (+1)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,676 of 2,242)
+SEASON: 75% (1,679 of 2,246)
 
 See today's full card: https://smash-react.vercel.app/today
 
