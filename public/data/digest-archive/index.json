@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-09T16:54:12.438Z",
+  "generatedAt": "2026-09-10T16:41:01.067Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-10",
+      "file": "daily-2026-09-10.html",
+      "subject": "Pegula v Sabalenka, take 11",
+      "summary": "1 of 2 called on 2026-09-09",
+      "builtAt": "2026-09-10T16:41:01.067Z"
+    },
     {
       "mode": "daily",
       "date": "2026-09-09",
