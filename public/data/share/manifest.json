@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-10T16:41:40.300Z",
-  "seasonN": 2279,
+  "generatedAt": "2026-09-11T16:46:16.643Z",
+  "seasonN": 2293,
   "lastStreak": {
     "key": "wta|hard",
-    "len": 6
+    "len": 8
   },
   "captions": {
-    "today": "US Open semi-finals: here are the 2 matches we are calling today, every one locked before a ball is struck.\n\nIf every call hits, $10 at fair odds returns $25. Not betting advice, just the math on our own confidence.\n\nEvery call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
+    "today": "US Open semi-finals: here are the 2 matches we are calling today, every one locked before a ball is struck.\n\nIf every call hits, $10 at fair odds returns $19. Not betting advice, just the math on our own confidence.\n\nEvery call graded in public, wins and misses alike. Today's board: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
     "weekly": "The week in calls: 84 of 104 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "story": "Stories for today: the slate, a poll on the biggest match coming up, and the tale of the tape.\n\nEvery call locked before play and graded after: https://smash-react.vercel.app/today\n\n#tennis #atp #wta #tennisprediction",
     "recap": "How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.\n\nWe publish the bad days on the same schedule as the good ones.\n\nThe whole record: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
@@ -20,7 +20,7 @@
       "type": "carousel-cover",
       "format": "square",
       "category": "today",
-      "caption": "Today's calls at the US Open: 2 matches, locked before play. Swipe for every pick. 76% of winners called before play (232 of 305 verified, no take-backs). All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "caption": "Today's calls at the US Open: 2 matches, locked before play. Swipe for every pick. 76% of winners called before play (234 of 307 verified, no take-backs). All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
       "order": 1,
       "alt": "Today's Calls cover card: 2 locked predictions at the US Open."
     },
@@ -38,90 +38,81 @@
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Aryna Sabalenka over Jessica Pegula at 64%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/jessica-pegula-vs-aryna-sabalenka-182553 #tennis #atp #wta #tennisprediction",
+      "caption": " High confidence: Alexander Zverev over Karen Khachanov at 78%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/karen-khachanov-vs-alexander-zverev-182768 #tennis #atp #wta #tennisprediction",
       "order": 3,
-      "alt": " Aryna Sabalenka over Jessica Pegula at 64%, US Open (hard)."
+      "alt": " High confidence: Alexander Zverev over Karen Khachanov at 78%, US Open (hard)."
     },
     {
       "file": "match-2.png",
       "type": "match",
       "format": "square",
       "category": "today",
-      "caption": " Elena Rybakina over Cori Gauff at 63%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/elena-rybakina-vs-cori-gauff-182551 #tennis #atp #wta #tennisprediction",
+      "caption": " Ben Shelton over Frances Tiafoe at 68%, US Open (hard). Full breakdown: https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766 #tennis #atp #wta #tennisprediction",
       "order": 4,
-      "alt": " Elena Rybakina over Cori Gauff at 63%, US Open (hard)."
+      "alt": " Ben Shelton over Frances Tiafoe at 68%, US Open (hard)."
+    },
+    {
+      "file": "rivalry.png",
+      "type": "rivalry",
+      "format": "square",
+      "category": "today",
+      "caption": "Khachanov vs Zverev, meeting number 6. Career: 1-4. https://smash-react.vercel.app/match/karen-khachanov-vs-alexander-zverev-182768 #tennis #atp #wta #tennisprediction",
+      "order": 5,
+      "alt": "Khachanov vs Zverev, meeting number 6."
     },
     {
       "file": "parlay.png",
       "type": "carousel-closer",
       "format": "square",
       "category": "today",
-      "caption": "If every call today hits, $10 at fair odds returns $25. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
-      "order": 5,
-      "alt": "If every call today hits, $10 at fair odds returns $25."
+      "caption": "If every call today hits, $10 at fair odds returns $19. Every pick public, every result graded. Not betting advice. #tennis #atp #wta #tennisprediction",
+      "order": 6,
+      "alt": "If every call today hits, $10 at fair odds returns $19."
     },
     {
       "file": "slate-story.png",
       "type": "slate",
       "format": "story",
       "category": "story",
-      "caption": "The full slate for Sep 10: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "order": 6,
-      "alt": "The full slate for Sep 10: every call with win probability and flags."
+      "caption": "The full slate for Sep 11: every call with win probability and flags. All of today: https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "order": 7,
+      "alt": "The full slate for Sep 11: every call with win probability and flags."
     },
     {
       "file": "poll.png",
       "type": "poll",
       "format": "square",
       "category": "story",
-      "caption": "Pegula or Sabalenka at the US Open? Our model has already picked a side. https://smash-react.vercel.app/match/jessica-pegula-vs-aryna-sabalenka-182553 #tennis #atp #wta #tennisprediction",
-      "order": 7,
-      "alt": "Pegula or Sabalenka at the US Open? Our model has already picked a side."
-    },
-    {
-      "file": "poll-tomorrow.png",
-      "type": "poll-tomorrow",
-      "format": "square",
-      "category": "story",
-      "caption": "Rybakina or Gauff at the US Open, tomorrow? Our model has already picked a side. https://smash-react.vercel.app/match/elena-rybakina-vs-cori-gauff-182551 #tennis #atp #wta #tennisprediction",
+      "caption": "Shelton or Tiafoe at the US Open? Our model has already picked a side. https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766 #tennis #atp #wta #tennisprediction",
       "order": 8,
-      "alt": "Rybakina or Gauff at the US Open, tomorrow? Our model has already picked a side."
+      "alt": "Shelton or Tiafoe at the US Open? Our model has already picked a side."
     },
     {
       "file": "tape.png",
       "type": "tale-of-the-tape",
       "format": "square",
       "category": "story",
-      "caption": "Tale of the tape: Pegula vs Sabalenka at the US Open. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. https://smash-react.vercel.app/match/jessica-pegula-vs-aryna-sabalenka-182553 #tennis #atp #wta #tennisprediction",
+      "caption": "Tale of the tape: Shelton vs Tiafoe at the US Open. Rank, Form rating, recent form, surface record, career head-to-head, and our call against the market's. https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766 #tennis #atp #wta #tennisprediction",
       "order": 9,
-      "alt": "Tale of the tape stat comparison for Jessica Pegula vs Aryna Sabalenka."
+      "alt": "Tale of the tape stat comparison for Ben Shelton vs Frances Tiafoe."
     },
     {
       "file": "title-odds-atp.png",
       "type": "title-odds",
       "format": "square",
       "category": "contender",
-      "caption": "US Open ATP title odds today: Zverev 53%, Shelton 30%, Tiafoe 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "caption": "US Open ATP title odds today: Zverev 54%, Shelton 30%, Tiafoe 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
       "order": 10,
-      "alt": "US Open ATP title odds today: Zverev 53%, Shelton 30%, Tiafoe 9%."
-    },
-    {
-      "file": "odds-movers-atp.png",
-      "type": "odds-movers",
-      "format": "square",
-      "category": "contender",
-      "caption": "US Open ATP odds movers: who rose and who slid overnight in our 2,000-run title simulation. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 11,
-      "alt": "Title odds movers card: overnight risers and fallers at the US Open."
+      "alt": "US Open ATP title odds today: Zverev 54%, Shelton 30%, Tiafoe 9%."
     },
     {
       "file": "title-odds-wta.png",
       "type": "title-odds",
       "format": "square",
       "category": "contender",
-      "caption": "US Open WTA title odds today: Sabalenka 37%, Rybakina 33%, Gauff 16%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
-      "order": 12,
-      "alt": "US Open WTA title odds today: Sabalenka 37%, Rybakina 33%, Gauff 16%."
+      "caption": "US Open WTA title odds today: Sabalenka 55%, Rybakina 45%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
+      "order": 11,
+      "alt": "US Open WTA title odds today: Sabalenka 55%, Rybakina 45%."
     },
     {
       "file": "odds-movers-wta.png",
@@ -129,7 +120,7 @@
       "format": "square",
       "category": "contender",
       "caption": "US Open WTA odds movers: who rose and who slid overnight in our 2,000-run title simulation. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 13,
+      "order": 12,
       "alt": "Title odds movers card: overnight risers and fallers at the US Open."
     },
     {
@@ -137,26 +128,26 @@
       "type": "results",
       "format": "square",
       "category": "recap",
-      "caption": "Receipts from 2026-09-09: called 1 of 2 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
-      "order": 14,
-      "alt": "Receipts from 2026-09-09: called 1 of 2 winners."
+      "caption": "Receipts from 2026-09-10: called 2 of 2 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "order": 13,
+      "alt": "Receipts from 2026-09-10: called 2 of 2 winners."
     },
     {
       "file": "day-money.png",
       "type": "day-money",
       "format": "square",
       "category": "recap",
-      "caption": "Every priced call we made on 2026-09-09, backed flat: +11.1% on the day, 1 of 1 priced calls landed. $10 staked comes back $11.11, stake included. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 15,
-      "alt": "Yesterday's calls returned +11.1% on the day."
+      "caption": "Every priced call we made on 2026-09-10, backed flat: +76.5% on the day, 2 of 2 priced calls landed. $10 staked comes back $17.65, stake included. No-calls excluded - we do not stake what we will not call. Hypothetical, settled at the price stamped before play, not betting advice. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 14,
+      "alt": "Yesterday's calls returned +76.5% on the day."
     },
     {
       "file": "todays-calls.png",
       "type": "todays-calls",
       "format": "square",
       "category": "today",
-      "caption": "2 calls locked before play today, top of the card Sabalenka at 64%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
-      "order": 16,
+      "caption": "2 calls locked before play today, top of the card Zverev at 78%. Every one timestamped now and graded automatically when the result lands. https://smash-react.vercel.app/today #tennis #atp #wta #tennisprediction",
+      "order": 15,
       "alt": "Today's 2 locked calls with their stated probabilities."
     },
     {
@@ -165,7 +156,7 @@
       "format": "square",
       "category": "draw",
       "caption": "The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 17,
+      "order": 16,
       "alt": "The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily."
     },
     {
@@ -174,17 +165,8 @@
       "format": "square",
       "category": "draw",
       "caption": "Alexander Zverev's path, round by round. The US Open ATP draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 18,
+      "order": 17,
       "alt": "Alexander Zverev's path, round by round."
-    },
-    {
-      "file": "draw-road-wta.png",
-      "type": "draw-road",
-      "format": "square",
-      "category": "draw",
-      "caption": "The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 19,
-      "alt": "The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily."
     },
     {
       "file": "draw-path-wta.png",
@@ -192,7 +174,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Aryna Sabalenka's path, round by round. The US Open WTA draw: round-by-round survival odds from 2,000 simulated tournaments, re-priced daily. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 20,
+      "order": 18,
       "alt": "Aryna Sabalenka's path, round by round."
     },
     {
@@ -259,22 +241,13 @@
       "alt": "Weekly recap carousel closer."
     },
     {
-      "file": "milestone.png",
-      "type": "milestone",
-      "format": "square",
-      "category": "moments",
-      "caption": "2,250 matches graded in public - season benchmark 75%, zero deletions. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 21,
-      "alt": "2,250 matches graded in public - season benchmark 75%, zero deletions."
-    },
-    {
       "file": "streak.png",
       "type": "streak",
       "format": "square",
       "category": "moments",
-      "caption": "6 straight WTA hard-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 22,
-      "alt": "Streak card: 6 consecutive correct calls on WTA hard."
+      "caption": "8 straight WTA hard-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 19,
+      "alt": "Streak card: 8 consecutive correct calls on WTA hard."
     },
     {
       "file": "edge-dollar.png",
@@ -282,7 +255,7 @@
       "format": "square",
       "category": "moments",
       "caption": "The $10 test: $10 on each side of every one of the 34 matches where we and the betting market picked different winners. Our picks: +$128. Their own favorites: -$125. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 23,
+      "order": 20,
       "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 34 disagreements."
     },
     {
@@ -291,7 +264,7 @@
       "format": "square",
       "category": "moments",
       "caption": "We disagreed with the market on Tiafoe vs Michelsen at the U.S. Open - and the model was right. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 24,
+      "order": 21,
       "alt": "Edge split card: our call versus the market's on Frances Tiafoe vs Alex Michelsen, graded."
     },
     {
@@ -299,9 +272,9 @@
       "type": "edge-live-plan",
       "format": "square",
       "category": "moments",
-      "caption": "US Open, following the recommended plan across 9 settled days: -$15.34 on $167.19 staked, -9.2%, 5 of 9 days in front. Put that identical $167 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back -$2.23 - -1.3%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
-      "order": 25,
-      "alt": "US Open: the recommended plan returned -9.2% against -1.3% for the market's favourite on the same money."
+      "caption": "US Open, following the recommended plan across 10 settled days: -$0.77 on $177.89 staked, -0.4%, 6 of 10 days in front. Put that identical $178 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back -$3.11 - -1.7%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
+      "order": 22,
+      "alt": "US Open: the recommended plan returned -0.4% against -1.7% for the market's favourite on the same money."
     },
     {
       "file": "pool-promo.png",
@@ -309,7 +282,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction",
-      "order": 26,
+      "order": 23,
       "alt": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool."
     },
     {
@@ -318,7 +291,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/sinne #tennis #atp #wta #tennisprediction",
-      "order": 27,
+      "order": 24,
       "alt": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches."
     },
     {
@@ -326,9 +299,9 @@
       "type": "spotlight",
       "format": "square",
       "category": "moments",
-      "caption": "Hottest racket on the WTA right now: Cori Gauff, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/gauff #tennis #atp #wta #tennisprediction",
-      "order": 28,
-      "alt": "Hottest racket on the WTA right now: Cori Gauff, 10-0 in recent matches."
+      "caption": "Hottest racket on the WTA right now: Cori Gauff, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/gauff #tennis #atp #wta #tennisprediction",
+      "order": 25,
+      "alt": "Hottest racket on the WTA right now: Cori Gauff, 9-1 in recent matches."
     },
     {
       "file": "cover-contender.png",

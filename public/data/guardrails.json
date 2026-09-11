@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T16:40:59.859Z",
+  "generatedAt": "2026-09-11T16:45:45.352Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -12,18 +12,18 @@
       "n": 291,
       "seasonAcc": 77,
       "recentN": 40,
-      "recentAcc": 78,
-      "rankRecentAcc": 78,
+      "recentAcc": 80,
+      "rankRecentAcc": 80,
       "recentEngines": {
-        "smash": 78,
-        "sim": 80,
-        "elo": 78,
-        "rank": 78,
-        "upset": 73
+        "smash": 80,
+        "sim": 83,
+        "elo": 80,
+        "rank": 80,
+        "upset": 75
       },
       "bestRecent": {
         "engine": "sim",
-        "acc": 80
+        "acc": 83
       },
       "reasons": []
     },
@@ -149,9 +149,9 @@
     }
   ],
   "forward": {
-    "n": 305,
+    "n": 307,
     "recentN": 40,
-    "recentAcc": 73,
+    "recentAcc": 75,
     "status": "ok"
   },
   "alerts": []

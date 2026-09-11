@@ -1,35 +1,29 @@
-SMASH DAILY - Thursday, September 10
+SMASH DAILY - Friday, September 11
 
-1 from 2 yesterday. Half right, which means half wrong, and both halves are below. 2 more are locked for today at US Open, every one of them public before a ball is struck.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. 2 more are locked for today at US Open, every one of them public before a ball is struck.
 
-YESTERDAY, GRADED: 1 from 2 (50%)
-  The one that stings: Carlos Alcaraz (we said 76%) - Ben Shelton had other ideas
-  US OPEN SO FAR: -$15.34 (-9.2% on $167.19, 5/9 days up)
+YESTERDAY, GRADED: 2 from 2 (100%)
+  If you had actually followed along ($100 in, 2 of 2 calls priced): Comfortable day +136.2% (+$14.57 on $10.69) [recommended]; Follow the edge +117.1% (+$8.43 on $7.20); Back every call +76.5% (+$76.45 on $100); Spread plus a parlay +114.2% (+$114.23 on $100); Whole card, weighted +96.8% (+$96.80 on $100) | US OPEN SO FAR: -$0.77 (-0.4% on $177.89, 6/10 days up)
 
 ON COURT TODAY
-  [ US Open - WTA ]
-  Sabalenka over Pegula - 64%
-    Call: https://smash-react.vercel.app/match/jessica-pegula-vs-aryna-sabalenka-182553
-    Compare: https://smash-react.vercel.app/compare/wta/jessica-pegula-vs-aryna-sabalenka
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=pegul&b=sabal
-  Rybakina over Gauff - 63%
-    Call: https://smash-react.vercel.app/match/elena-rybakina-vs-cori-gauff-182551
-    Compare: https://smash-react.vercel.app/compare/wta/elena-rybakina-vs-cori-gauff
-    Simulate: https://smash-react.vercel.app/women/h2h?surface=hard&a=rybak&b=gauff
+  [ US Open - ATP ]
+  Zverev over Khachanov - 78%
+    Call: https://smash-react.vercel.app/match/karen-khachanov-vs-alexander-zverev-182768
+    Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-alexander-zverev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=zvere
+  Shelton over Tiafoe - 68%
+    Call: https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766
+    Compare: https://smash-react.vercel.app/compare/atp/ben-shelton-vs-frances-tiafoe
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=shelt&b=tiafo
 
-THE MONEY QUESTION - the recommended plan (hypothetical $100, comfortable day):
-  $6.60 on Rybakina (63% @ 1.91)
-  $4.09 on the parlay
-  Total $10.69; we expect 0.6 to land, returning $12.19; 59% chance of finishing ahead
-  Bad day $-10.69 | typical $1.91 | good day $14.57
-  Build your own slip and size it: https://smash-react.vercel.app/risk
+THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
 STILL STANDING: Semi-finals at the US Open (hard)
-  ATP: Alexander Zverev 53% (+9), Ben Shelton 30% (-4), Frances Tiafoe 9% (-2)
-  WTA: Aryna Sabalenka 37% (-1), Elena Rybakina 33% (+3), Cori Gauff 16% (+5)
+  ATP: Alexander Zverev 54% (+1), Ben Shelton 30% (-0), Frances Tiafoe 9% (+0)
+  WTA: Aryna Sabalenka 55% (+19), Elena Rybakina 45% (+12)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,705 of 2,279)
+SEASON: 75% (1,713 of 2,293)
 
 See today's full card: https://smash-react.vercel.app/today
 

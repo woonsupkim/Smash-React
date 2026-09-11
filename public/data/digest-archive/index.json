@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-10T16:41:01.067Z",
+  "generatedAt": "2026-09-11T16:45:46.301Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-11",
+      "file": "daily-2026-09-11.html",
+      "subject": "Khachanov v Zverev, take 6",
+      "summary": "2 of 2 called on 2026-09-10",
+      "builtAt": "2026-09-11T16:45:46.301Z"
+    },
     {
       "mode": "daily",
       "date": "2026-09-10",
