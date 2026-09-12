@@ -1,29 +1,21 @@
-SMASH DAILY - Friday, September 11
+SMASH DAILY - Saturday, September 12
 
-2 from 2 yesterday. A clean sweep, and no, that is not the usual. 2 more are locked for today at US Open, every one of them public before a ball is struck.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. Today at US Open we are calling nothing: all 1 match on the card sit inside our coin-flip band. Sitting out is a position.
 
 YESTERDAY, GRADED: 2 from 2 (100%)
-  If you had actually followed along ($100 in, 2 of 2 calls priced): Comfortable day +136.2% (+$14.57 on $10.69) [recommended]; Follow the edge +117.1% (+$8.43 on $7.20); Back every call +76.5% (+$76.45 on $100); Spread plus a parlay +114.2% (+$114.23 on $100); Whole card, weighted +96.8% (+$96.80 on $100) | US OPEN SO FAR: -$0.77 (-0.4% on $177.89, 6/10 days up)
+  US OPEN SO FAR: -$0.77 (-0.4% on $177.89, 6/10 days up)
 
 ON COURT TODAY
-  [ US Open - ATP ]
-  Zverev over Khachanov - 78%
-    Call: https://smash-react.vercel.app/match/karen-khachanov-vs-alexander-zverev-182768
-    Compare: https://smash-react.vercel.app/compare/atp/karen-khachanov-vs-alexander-zverev
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=khach&b=zvere
-  Shelton over Tiafoe - 68%
-    Call: https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766
-    Compare: https://smash-react.vercel.app/compare/atp/ben-shelton-vs-frances-tiafoe
-    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=shelt&b=tiafo
+  No calls - the whole card is inside our coin-flip band.
 
 THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
-STILL STANDING: Semi-finals at the US Open (hard)
-  ATP: Alexander Zverev 54% (+1), Ben Shelton 30% (-0), Frances Tiafoe 9% (+0)
-  WTA: Aryna Sabalenka 55% (+19), Elena Rybakina 45% (+12)
+STILL STANDING: Final at the US Open (hard)
+  ATP: Alexander Zverev 61% (+8), Ben Shelton 39% (+9)
+  WTA: Aryna Sabalenka 56% (+1), Elena Rybakina 44% (-1)
   https://smash-react.vercel.app/draw
 
-SEASON: 75% (1,713 of 2,293)
+SEASON: 75% (1,715 of 2,295)
 
 See today's full card: https://smash-react.vercel.app/today
 

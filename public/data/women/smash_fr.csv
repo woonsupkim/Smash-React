@@ -6,7 +6,7 @@ pegul,Jessica Pegula,Jessica,Pegula,4,2,0.61,0.93,0.41,0.48,0.42,0.06,USA,32,9,3
 andre,Mirra Andreeva,Mirra,Andreeva,5,2,0.63,0.88,0.42,0.54,0.43,0.05,RUS,19,22,3,7,3
 anisi,Amanda Anisimova,Amanda,Anisimova,6,2,0.63,0.82,0.41,0.52,0.43,0.07,USA,25,2,1,6,4
 gauff,Cori Gauff,Cori,Gauff,7,2,0.63,0.81,0.46,0.54,0.42,0.05,USA,22,10,4,9,1
-svito,Elina Svitolina,Elina,Svitolina,8,2,0.63,0.95,0.40,0.54,0.40,0.06,UKR,31,13,3,7,3
+svito,Elina Svitolina,Elina,Svitolina,8,2,0.63,0.95,0.40,0.54,0.40,0.06,UKR,32,13,3,7,3
 mucho,Karolina Muchova,Karolina,Muchova,9,2,0.65,0.92,0.38,0.47,0.39,0.07,CZE,30,6,3,8,2
 mboko,Victoria Mboko,Victoria,Mboko,10,2,0.63,0.82,0.42,0.49,0.42,0.06,CAN,20,5,3,5,5
 benci,Belinda Bencic,Belinda,Bencic,11,2,0.65,0.86,0.36,0.51,0.42,0.05,SUI,29,8,4,6,4
@@ -88,7 +88,7 @@ wang1,Xiyu Wang,Xiyu,Wang,86,2,0.71,0.88,0.44,0.54,0.40,0.02,CHN,25,18,4,6,4
 joint,Maya Joint,Maya,Joint,87,2,0.65,0.88,0.42,0.49,0.39,0.02,AUS,20,1,5,6,4
 grach,Varvara Gracheva,Varvara,Gracheva,88,2,0.65,0.90,0.38,0.50,0.38,0.03,FRA,26,0,0,6,4
 erjav,Veronika Erjavec,Veronika,Erjavec,89,2,0.66,0.93,0.44,0.49,0.40,0.02,SLO,26,18,12,3,7
-walte,Simona Waltert,Simona,Waltert,90,2,0.65,0.85,0.44,0.49,0.40,0.03,SUI,25,16,11,4,6
+walte,Simona Waltert,Simona,Waltert,90,2,0.65,0.85,0.44,0.49,0.40,0.03,SUI,25,16,12,3,7
 selek,Oksana Selekhmeteva,Oksana,Selekhmeteva,91,2,0.65,0.76,0.41,0.53,0.41,0.03,ESP,23,4,9,5,5
 vidma,Darja Vidmanova,Darja,Vidmanova,92,2,0.62,0.89,0.43,0.52,0.38,0.05,CZE,23,6,7,6,4
 kraus,Sinja Kraus,Sinja,Kraus,93,2,0.61,0.89,0.45,0.52,0.38,0.03,AUT,24,20,8,5,5
@@ -110,7 +110,7 @@ queve,Kaitlin Quevedo,Kaitlin,Quevedo,107,2,0.63,0.89,0.43,0.50,0.38,0.04,ESP,20
 uchij,Moyuka Uchijima,Moyuka,Uchijima,108,2,0.60,0.87,0.42,0.48,0.39,0.04,JPN,25,15,12,4,6
 sheri,Mayar Sherif,Mayar,Sherif,109,2,0.76,0.89,0.43,0.52,0.40,0.02,EGY,30,32,12,6,4
 kasin,Victoria Jimenez Kasintseva,Victoria,Jimenez Kasintseva,110,2,0.67,0.84,0.41,0.46,0.39,0.02,AND,21,4,10,2,8
-galfi,Dalma Galfi,Dalma,Galfi,111,2,0.63,0.88,0.40,0.49,0.40,0.08,HUN,28,9,8,2,8
+galfi,Dalma Galfi,Dalma,Galfi,111,2,0.63,0.88,0.40,0.49,0.40,0.08,HUN,28,10,8,3,7
 sun,Lulu Sun,Lulu,Sun,112,2,0.57,0.89,0.37,0.43,0.40,0.06,NZL,25,2,5,4,6
 kuder,Polina Kudermetova,Polina,Kudermetova,113,2,0.59,0.85,0.42,0.49,0.39,0.05,UZB,23,19,9,5,5
 blink,Anna Blinkova,Anna,Blinkova,114,2,0.61,0.87,0.41,0.51,0.36,0.03,RUS,28,8,9,7,3
