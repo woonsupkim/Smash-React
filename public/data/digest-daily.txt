@@ -1,18 +1,22 @@
-SMASH DAILY - Saturday, September 12
+SMASH DAILY - Sunday, September 13
 
-2 from 2 yesterday. A clean sweep, and no, that is not the usual. Today at US Open we are calling nothing: all 1 match on the card sit inside our coin-flip band. Sitting out is a position.
+2 from 2 yesterday. A clean sweep, and no, that is not the usual. 1 more is locked for today at US Open, every one of them public before a ball is struck.
 
 YESTERDAY, GRADED: 2 from 2 (100%)
   US OPEN SO FAR: -$0.77 (-0.4% on $177.89, 6/10 days up)
 
 ON COURT TODAY
-  No calls - the whole card is inside our coin-flip band.
+  [ US Open - ATP ]
+  Zverev over Shelton - 62%
+    Call: https://smash-react.vercel.app/match/ben-shelton-vs-alexander-zverev-182677
+    Compare: https://smash-react.vercel.app/compare/atp/ben-shelton-vs-alexander-zverev
+    Simulate: https://smash-react.vercel.app/h2h?surface=hard&a=shelt&b=zvere
 
 THE MONEY QUESTION: nothing worth staking today. https://smash-react.vercel.app/risk
 
 STILL STANDING: Final at the US Open (hard)
-  ATP: Alexander Zverev 61% (+8), Ben Shelton 39% (+9)
-  WTA: Aryna Sabalenka 56% (+1), Elena Rybakina 44% (-1)
+  ATP: Alexander Zverev 62% (+1), Ben Shelton 38% (-1)
+  WTA: Elena Rybakina 100% (+56)
   https://smash-react.vercel.app/draw
 
 SEASON: 75% (1,715 of 2,295)

@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-12T15:51:02.694Z",
+  "generatedAt": "2026-09-13T16:39:26.117Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-13",
+      "file": "daily-2026-09-13.html",
+      "subject": "Shelton v Zverev, take 6",
+      "summary": "2 of 2 called on 2026-09-11",
+      "builtAt": "2026-09-13T16:39:26.117Z"
+    },
     {
       "mode": "daily",
       "date": "2026-09-12",
