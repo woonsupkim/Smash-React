@@ -1,41 +1,39 @@
-SMASH WEEKLY - Monday, September 7
+SMASH WEEKLY - Monday, September 14
 
-THE WEEK: 69 from 86 (80%)
+THE WEEK: 14 from 15 (93%)
 
 DAY BY DAY
-  Wed: 9/10 (90%)
-  Thu: 18/21 (86%)
-  Fri: 15/19 (79%)
-  Sat: 9/12 (75%)
-  Sun: 7/10 (70%)
-  Mon: 5/6 (83%)
-  Tue: 0/1 (0%)
+  Tue: 2/3 (67%)
+  Wed: 1/1 (100%)
+  Thu: 2/2 (100%)
+  Fri: 2/2 (100%)
+  Sun: 3/3 (100%)
+
+BOLD CALLS THAT LANDED
+  + Tiafoe (against the market) 5-7 3-6 7-5 6-3 7-6(6)
 
 THE ONES WE GOT WRONG
-  - Anisimova lost to Potapova 6-2 7-5
-  - Bencic lost to Putintseva 4-6 7-5 6-3
-  - Muchova lost to Navarro 6-3 7-5
+  - Alcaraz lost to Shelton 6-7(5) 6-1 6-3 1-6 7-6
 
 THE WEEK IN MOMENTS
-  - Putintseva takes out Bencic: No. 84 beats No. 11 - 4-6 7-5 6-3. Nobody had this one.
-  - Zandschulp at 4.80: The longest price to land all week. $10 on it came back $48.00 - 6-4 7-5 6-2.
-  - Tiafoe survives 5: 5 sets against Damm - 6-4 4-6 3-6 6-3 6-4.
+  - Shelton at 3.50: The longest price to land all week. $10 on it came back $35.00 - 6-7(5) 6-1 6-3 1-6 7-6.
+  - Tiafoe survives 5: 5 sets against Michelsen - 5-7 3-6 7-5 6-3 7-6(6).
 
-IF YOU HAD FOLLOWED ALONG ALL WEEK ($100 a day, recommended plan): -38.7% (-$44.26 on $114.47 staked) over 6 days
-  Comfortable day: -38.7% (-$44.26 on $114, 11/20 singles, 6 days)
-  Follow the edge: -36.7% (-$44.55 on $121, 13/23 singles, 6 days)
-  Back every call: -5.8% (-$34.97 on $600, 38/49 singles, 6 days)
-  Spread plus a parlay: -23.1% (-$138.43 on $600, 38/49 singles, 6 days)
-  Whole card, weighted: -24.6% (-$147.59 on $600, 48/62 singles, 6 days)
+IF YOU HAD FOLLOWED ALONG ALL WEEK ($100 a day, recommended plan): +70.9% (+$37.88 on $53.42 staked) over 3 days
+  Comfortable day: +70.9% (+$37.88 on $53, 6/6 singles, 3 days)
+  Follow the edge: +66.5% (+$30.67 on $46, 8/8 singles, 3 days)
+  Back every call: +44.2% (+$132.63 on $300, 9/10 singles, 3 days)
+  Spread plus a parlay: +65.9% (+$197.80 on $300, 9/10 singles, 3 days)
+  Whole card, weighted: +60.0% (+$180.13 on $300, 9/10 singles, 3 days)
 
-US VS THE BOOKMAKERS: 82% vs 82% (50 priced matches)
+US VS THE BOOKMAKERS: 89% vs 78% (9 priced matches)
 
-FORWARD TEST: 224-72 (9 pending)
+  HEAD TO HEAD on the 1 match we disagreed on: us 1 right, the book 0 | $1 a side: us $1.98 back, the book $0.00 back on $1 (following us: +$1.98)
+
+FORWARD TEST: 237-73
 SEASON: 75%
 
-STILL STANDING: Round of 16 at the US Open
-  ATP: Carlos Alcaraz 49% (+8), Alexander Zverev 24% (-5), Ben Shelton 9% (-0)
-  WTA: Aryna Sabalenka 33% (+10), Elena Rybakina 24% (-2), Jessica Pegula 19% (+3)
+NEXT UP: 126 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
