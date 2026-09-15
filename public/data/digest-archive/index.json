@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-14T18:14:00.717Z",
+  "generatedAt": "2026-09-15T17:18:39.759Z",
   "editions": [
+    {
+      "mode": "daily",
+      "date": "2026-09-15",
+      "file": "daily-2026-09-15.html",
+      "subject": "2 from 2. Let us enjoy this one",
+      "summary": "2 of 2 called on 2026-09-14",
+      "builtAt": "2026-09-15T17:18:39.759Z"
+    },
     {
       "mode": "weekly",
       "date": "2026-09-14",
