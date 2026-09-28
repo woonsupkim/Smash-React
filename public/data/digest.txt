@@ -1,30 +1,31 @@
-SMASH WEEKLY - Monday, September 21
+SMASH WEEKLY - Monday, September 28
 
-THE WEEK: 16 from 22 (73%)
+THE WEEK: 26 from 35 (74%)
 
 DAY BY DAY
-  Tue: 2/3 (67%)
-  Wed: 1/1 (100%)
-  Thu: 1/2 (50%)
-  Fri: 3/5 (60%)
-  Sat: 4/6 (67%)
-  Sun: 2/2 (100%)
-  Mon: 1/1 (100%)
+  Tue: 2/2 (100%)
+  Wed: 2/3 (67%)
+  Thu: 1/4 (25%)
+  Fri: 6/9 (67%)
+  Sat: 6/8 (75%)
+  Sun: 5/5 (100%)
+  Mon: 2/2 (100%)
 
 THE ONES WE GOT WRONG
-  - Kostyuk lost to Samsonova 4-6 6-2 7-5
-  - Shelton lost to Lehecka 6-4 6-4
-  - Shelton lost to Mensik 5-7 6-4 6-3
+  - Andreeva lost to Fernandez 6-2 7-5
+  - Bucsa lost to Putintseva 6-2 3-6 6-1
+  - Zverev lost to Minaur 2-6 7-6(5) 11-9
 
 THE WEEK IN MOMENTS
-  - Mensik takes out Shelton: No. 18 beats No. 5 - 5-7 6-4 6-3. Nobody had this one.
+  - Fernandez takes out Andreeva: No. 24 beats No. 5 - 6-2 7-5. Nobody had this one.
+  - Basilashvili at 2.66: The longest price to land all week. $10 on it came back $26.60 - 6-4 7-5.
 
-US VS THE BOOKMAKERS: 75% vs 75% (8 priced matches)
+US VS THE BOOKMAKERS: 77% vs 77% (13 priced matches)
 
 FORWARD TEST: 237-73
 SEASON: 75%
 
-NEXT UP: 119 days to the Australian Open
+NEXT UP: 112 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 

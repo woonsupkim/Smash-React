@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-21T18:28:54.184Z",
-  "seasonN": 2341,
+  "generatedAt": "2026-09-28T19:59:00.896Z",
+  "seasonN": 2375,
   "lastStreak": {
-    "key": "wta|hard",
-    "len": 12
+    "key": "atp|hard",
+    "len": 7
   },
   "captions": {
-    "weekly": "The week in calls: 16 of 22 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
+    "weekly": "The week in calls: 26 of 35 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "recap": "How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.\n\nWe publish the bad days on the same schedule as the good ones.\n\nThe whole record: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "moments": "The moments worth stopping on: where we split from the market, the calls nobody else made, and the streaks.\n\nAn upset is a disagreement, not a surprise. We say so before play, not after.\n\nWhere we split with the bookmakers: https://smash-react.vercel.app/edge\n\n#tennis #atp #wta #tennisprediction",
     "contender": "US Open: who actually wins this, according to 2,000 simulations of the whole draw.\n\nBoth tours, plus who rose and who slid overnight.\n\nRe-priced every day of the tournament, in public: https://smash-react.vercel.app/draw\n\n#tennis #atp #wta #tennisprediction",
@@ -36,9 +36,9 @@
       "type": "results",
       "format": "square",
       "category": "recap",
-      "caption": "Receipts from 2026-09-20: called 2 of 2 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "caption": "Receipts from 2026-09-27: called 5 of 5 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
       "order": 3,
-      "alt": "Receipts from 2026-09-20: called 2 of 2 winners."
+      "alt": "Receipts from 2026-09-27: called 5 of 5 winners."
     },
     {
       "file": "draw-path-atp.png",
@@ -63,16 +63,25 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 16 of 22 winners called. Season benchmark: 75%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "The week in calls: 26 of 35 winners called. Season benchmark: 75%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "order": 6,
-      "alt": "The week in calls: 16 of 22 winners called."
+      "alt": "The week in calls: 26 of 35 winners called."
+    },
+    {
+      "file": "weekly-market.png",
+      "type": "weekly-market",
+      "format": "square",
+      "category": "weekly",
+      "caption": "Us vs the bookmakers this week: 77% to 77% across 13 priced matches, same fixtures for both. Our week. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "order": 7,
+      "alt": "Us vs the bookmakers this week: 77% to 77% across 13 priced matches, same fixtures for both."
     },
     {
       "file": "cover-weekly.png",
       "type": "carousel-cover",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 16 of 22 winners. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "The week in calls: 26 of 35 winners. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "order": 0,
       "alt": "Weekly recap carousel cover."
     },
@@ -86,13 +95,22 @@
       "alt": "Weekly recap carousel closer."
     },
     {
-      "file": "autopsy.png",
-      "type": "seed-autopsy",
+      "file": "perfect-day.png",
+      "type": "perfect-day",
       "format": "square",
       "category": "moments",
-      "caption": "Nobody saw this coming: No. 18 Mensik takes down No. 5. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 7,
-      "alt": "A seed falls: rank 18 beat rank 5, with our call and the market's."
+      "caption": "Perfect day: 5/5 winners called on 2026-09-27. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 8,
+      "alt": "Perfect day: 5/5 winners called on 2026-09-27."
+    },
+    {
+      "file": "streak.png",
+      "type": "streak",
+      "format": "square",
+      "category": "moments",
+      "caption": "7 straight ATP hard-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 9,
+      "alt": "Streak card: 7 consecutive correct calls on ATP hard."
     },
     {
       "file": "edge-dollar.png",
@@ -100,7 +118,7 @@
       "format": "square",
       "category": "moments",
       "caption": "The $10 test: $10 on each side of every one of the 34 matches where we and the betting market picked different winners. Our picks: +$128. Their own favorites: -$125. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 8,
+      "order": 10,
       "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 34 disagreements."
     },
     {
@@ -109,7 +127,7 @@
       "format": "square",
       "category": "moments",
       "caption": "We disagreed with the market on Raducanu vs Chwalinska at the Transylvania Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 9,
+      "order": 11,
       "alt": "Edge split card: our call versus the market's on Emma Raducanu vs Maja Chwalinska, graded."
     },
     {
@@ -118,7 +136,7 @@
       "format": "square",
       "category": "moments",
       "caption": "US Open, following the recommended plan across 10 settled days: -$0.77 on $177.89 staked, -0.4%, 6 of 10 days in front. Put that identical $178 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back -$0.44 - -0.2%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
-      "order": 10,
+      "order": 12,
       "alt": "US Open: the recommended plan returned -0.4% against -0.2% for the market's favourite on the same money."
     },
     {
@@ -127,7 +145,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction",
-      "order": 11,
+      "order": 13,
       "alt": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool."
     },
     {
@@ -135,9 +153,9 @@
       "type": "spotlight",
       "format": "square",
       "category": "moments",
-      "caption": "Hottest racket on the ATP right now: Alexander Zverev, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/zvere #tennis #atp #wta #tennisprediction",
-      "order": 12,
-      "alt": "Hottest racket on the ATP right now: Alexander Zverev, 10-0 in recent matches."
+      "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/sinne #tennis #atp #wta #tennisprediction",
+      "order": 14,
+      "alt": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches."
     },
     {
       "file": "hot-streak-wta.png",
@@ -145,7 +163,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Hottest racket on the WTA right now: Elena Rybakina, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/rybak #tennis #atp #wta #tennisprediction",
-      "order": 13,
+      "order": 15,
       "alt": "Hottest racket on the WTA right now: Elena Rybakina, 10-0 in recent matches."
     },
     {
