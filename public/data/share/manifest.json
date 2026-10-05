@@ -1,61 +1,79 @@
 {
-  "generatedAt": "2026-09-28T19:59:00.896Z",
-  "seasonN": 2375,
+  "generatedAt": "2026-10-05T20:51:38.591Z",
+  "seasonN": 2443,
   "lastStreak": {
     "key": "atp|hard",
     "len": 7
   },
   "captions": {
-    "weekly": "The week in calls: 26 of 35 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
+    "weekly": "The week in calls: 47 of 69 winners called.\n\nThe boldest ones that hit, the confident ones that did not, and what backing every single call would have returned.\n\nA good week proves nothing on its own. The point is that we publish the bad ones too: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "recap": "How yesterday actually went - the calls, the misses, and what backing every one of them would have returned.\n\nWe publish the bad days on the same schedule as the good ones.\n\nThe whole record: https://smash-react.vercel.app/track-record\n\n#tennis #atp #wta #tennisprediction",
     "moments": "The moments worth stopping on: where we split from the market, the calls nobody else made, and the streaks.\n\nAn upset is a disagreement, not a surprise. We say so before play, not after.\n\nWhere we split with the bookmakers: https://smash-react.vercel.app/edge\n\n#tennis #atp #wta #tennisprediction",
-    "contender": "US Open: who actually wins this, according to 2,000 simulations of the whole draw.\n\nBoth tours, plus who rose and who slid overnight.\n\nRe-priced every day of the tournament, in public: https://smash-react.vercel.app/draw\n\n#tennis #atp #wta #tennisprediction",
-    "draw": "US Open: every line of the bracket, and the round-by-round odds of surviving it.\n\nBoth tours. The favourite's path, and the road anyone would have to walk.\n\nBuild your own and simulate it: https://smash-react.vercel.app/dream-brackets\n\n#tennis #atp #wta #tennisprediction"
+    "contender": "Australian Open: who actually wins this, according to 2,000 simulations of the whole draw.\n\nBoth tours, plus who rose and who slid overnight.\n\nRe-priced every day of the tournament, in public: https://smash-react.vercel.app/draw\n\n#tennis #atp #wta #tennisprediction",
+    "draw": "Australian Open: every line of the bracket, and the round-by-round odds of surviving it.\n\nBoth tours. The favourite's path, and the road anyone would have to walk.\n\nBuild your own and simulate it: https://smash-react.vercel.app/dream-brackets\n\n#tennis #atp #wta #tennisprediction"
   },
   "assets": [
     {
       "file": "title-odds-atp.png",
-      "type": "champion",
+      "type": "title-odds",
       "format": "square",
       "category": "contender",
-      "caption": "Alexander Zverev wins the US Open. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction",
+      "caption": "Australian Open ATP title odds today: Sinner 36%, Alcaraz 18%, Zverev 9%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
       "order": 1,
-      "alt": "Alexander Zverev wins the US Open."
+      "alt": "Australian Open ATP title odds today: Sinner 36%, Alcaraz 18%, Zverev 9%."
     },
     {
       "file": "title-odds-wta.png",
-      "type": "champion",
+      "type": "title-odds",
       "format": "square",
       "category": "contender",
-      "caption": "Elena Rybakina wins the US Open. We tracked the title odds every day of the tournament, in public. #tennis #atp #wta #tennisprediction",
+      "caption": "Australian Open WTA title odds today: Rybakina 22%, Sabalenka 18%, Swiatek 14%. The whole draw, simulated 2,000 times, updated daily. #tennis #atp #wta #tennisprediction",
       "order": 2,
-      "alt": "Elena Rybakina wins the US Open."
+      "alt": "Australian Open WTA title odds today: Rybakina 22%, Sabalenka 18%, Swiatek 14%."
     },
     {
       "file": "results.png",
       "type": "results",
       "format": "square",
       "category": "recap",
-      "caption": "Receipts from 2026-09-27: called 5 of 5 winners. Season benchmark: 75%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
+      "caption": "Receipts from 2026-10-04: called 8 of 9 winners. Season benchmark: 74%. Wins and misses, all public. #tennis #atp #wta #tennisprediction",
       "order": 3,
-      "alt": "Receipts from 2026-09-27: called 5 of 5 winners."
+      "alt": "Receipts from 2026-10-04: called 8 of 9 winners."
+    },
+    {
+      "file": "draw-road-atp.png",
+      "type": "draw-road",
+      "format": "square",
+      "category": "draw",
+      "caption": "The projected Australian Open ATP field from today's rankings, re-priced with every refresh until the real draw drops. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "order": 4,
+      "alt": "The projected Australian Open ATP field from today's rankings, re-priced with every refresh until the real draw drops."
     },
     {
       "file": "draw-path-atp.png",
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Alexander Zverev's path, round by round. Our last look at the US Open ATP bracket before it was decided. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 4,
-      "alt": "Alexander Zverev's path, round by round."
+      "caption": "Jannik Sinner's path, round by round. The projected Australian Open ATP field from today's rankings, re-priced with every refresh until the real draw drops. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "order": 5,
+      "alt": "Jannik Sinner's path, round by round."
+    },
+    {
+      "file": "draw-road-wta.png",
+      "type": "draw-road",
+      "format": "square",
+      "category": "draw",
+      "caption": "The projected Australian Open WTA field from today's rankings, re-priced with every refresh until the real draw drops. Every line of the bracket: https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "order": 6,
+      "alt": "The projected Australian Open WTA field from today's rankings, re-priced with every refresh until the real draw drops."
     },
     {
       "file": "draw-path-wta.png",
       "type": "draw-path",
       "format": "square",
       "category": "draw",
-      "caption": "Elena Rybakina's path, round by round. Our last look at the US Open WTA bracket before it was decided. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
-      "order": 5,
+      "caption": "Elena Rybakina's path, round by round. The projected Australian Open WTA field from today's rankings, re-priced with every refresh until the real draw drops. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "order": 7,
       "alt": "Elena Rybakina's path, round by round."
     },
     {
@@ -63,25 +81,25 @@
       "type": "weekly",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 26 of 35 winners called. Season benchmark: 75%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 6,
-      "alt": "The week in calls: 26 of 35 winners called."
+      "caption": "The week in calls: 47 of 69 winners called. Season benchmark: 74%. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 8,
+      "alt": "The week in calls: 47 of 69 winners called."
     },
     {
       "file": "weekly-market.png",
       "type": "weekly-market",
       "format": "square",
       "category": "weekly",
-      "caption": "Us vs the bookmakers this week: 77% to 77% across 13 priced matches, same fixtures for both. Our week. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 7,
-      "alt": "Us vs the bookmakers this week: 77% to 77% across 13 priced matches, same fixtures for both."
+      "caption": "Us vs the bookmakers this week: 71% to 71% across 38 priced matches, same fixtures for both. Our week. https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
+      "order": 9,
+      "alt": "Us vs the bookmakers this week: 71% to 71% across 38 priced matches, same fixtures for both."
     },
     {
       "file": "cover-weekly.png",
       "type": "carousel-cover",
       "format": "square",
       "category": "weekly",
-      "caption": "The week in calls: 26 of 35 winners. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "caption": "The week in calls: 47 of 69 winners. The bold ones that hit, the confident ones that did not, and what backing every call would have returned. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
       "order": 0,
       "alt": "Weekly recap carousel cover."
     },
@@ -95,22 +113,13 @@
       "alt": "Weekly recap carousel closer."
     },
     {
-      "file": "perfect-day.png",
-      "type": "perfect-day",
+      "file": "autopsy.png",
+      "type": "seed-autopsy",
       "format": "square",
       "category": "moments",
-      "caption": "Perfect day: 5/5 winners called on 2026-09-27. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 8,
-      "alt": "Perfect day: 5/5 winners called on 2026-09-27."
-    },
-    {
-      "file": "streak.png",
-      "type": "streak",
-      "format": "square",
-      "category": "moments",
-      "caption": "7 straight ATP hard-court winners called. Deployed calls, graded in public - streaks end, receipts don't. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
-      "order": 9,
-      "alt": "Streak card: 7 consecutive correct calls on ATP hard."
+      "caption": "Nobody saw this coming: No. 118 Charaeva takes down No. 2. What we said, what the market said, graded in public either way. https://smash-react.vercel.app/track-record #tennis #atp #wta #tennisprediction",
+      "order": 10,
+      "alt": "A seed falls: rank 118 beat rank 2, with our call and the market's."
     },
     {
       "file": "edge-dollar.png",
@@ -118,7 +127,7 @@
       "format": "square",
       "category": "moments",
       "caption": "The $10 test: $10 on each side of every one of the 34 matches where we and the betting market picked different winners. Our picks: +$128. Their own favorites: -$125. Same matches, different prices - a split puts us on the longer ticket. Hypothetical, settled at the price stamped before play, not betting advice. Every split graded: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 10,
+      "order": 11,
       "alt": "The $1 test card: flat-stake payout of our picks versus the market's on 34 disagreements."
     },
     {
@@ -127,7 +136,7 @@
       "format": "square",
       "category": "moments",
       "caption": "We disagreed with the market on Raducanu vs Chwalinska at the Transylvania Open - and the market took this one. Both calls graded in public, like every split this season: https://smash-react.vercel.app/edge #tennis #atp #wta #tennisprediction",
-      "order": 11,
+      "order": 12,
       "alt": "Edge split card: our call versus the market's on Emma Raducanu vs Maja Chwalinska, graded."
     },
     {
@@ -136,7 +145,7 @@
       "format": "square",
       "category": "moments",
       "caption": "US Open, following the recommended plan across 10 settled days: -$0.77 on $177.89 staked, -0.4%, 6 of 10 days in front. Put that identical $178 flat across every match on the same days, backing the bookmakers' own favourite, and it comes back -$0.44 - -0.2%. Same money in, both ways. Hypothetical, settled at the price stamped before play, not betting advice. Follow for the plan every morning. https://smash-react.vercel.app/risk #tennis #atp #wta #tennisprediction",
-      "order": 12,
+      "order": 13,
       "alt": "US Open: the recommended plan returned -0.4% against -0.2% for the market's favourite on the same money."
     },
     {
@@ -145,7 +154,7 @@
       "format": "square",
       "category": "draw",
       "caption": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool. Beat the house if you can. #tennis #atp #wta #tennisprediction",
-      "order": 13,
+      "order": 14,
       "alt": "Bracket pools are live: build your bracket, lock it, and race your friends - our model enters every pool."
     },
     {
@@ -154,7 +163,7 @@
       "format": "square",
       "category": "moments",
       "caption": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/atp/sinne #tennis #atp #wta #tennisprediction",
-      "order": 14,
+      "order": 15,
       "alt": "Hottest racket on the ATP right now: Jannik Sinner, 9-1 in recent matches."
     },
     {
@@ -162,18 +171,18 @@
       "type": "spotlight",
       "format": "square",
       "category": "moments",
-      "caption": "Hottest racket on the WTA right now: Elena Rybakina, 10-0 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/rybak #tennis #atp #wta #tennisprediction",
-      "order": 15,
-      "alt": "Hottest racket on the WTA right now: Elena Rybakina, 10-0 in recent matches."
+      "caption": "Hottest racket on the WTA right now: Elena Rybakina, 9-1 in recent matches. Their full page: https://smash-react.vercel.app/player/wta/rybak #tennis #atp #wta #tennisprediction",
+      "order": 16,
+      "alt": "Hottest racket on the WTA right now: Elena Rybakina, 9-1 in recent matches."
     },
     {
       "file": "cover-contender.png",
       "type": "carousel-cover",
       "format": "square",
       "category": "contender",
-      "caption": "US Open title race: who the simulation actually favours, and who moved overnight. Swipe for both tours. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "caption": "Australian Open title race: who the simulation actually favours, and who moved overnight. Swipe for both tours. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "order": 0,
-      "alt": "Contenders carousel cover for the US Open."
+      "alt": "Contenders carousel cover for the Australian Open."
     },
     {
       "file": "closer-contender.png",
@@ -189,9 +198,9 @@
       "type": "carousel-cover",
       "format": "square",
       "category": "draw",
-      "caption": "US Open: the bracket, and what it takes to get through it. Swipe for both tours. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
+      "caption": "Australian Open: the bracket, and what it takes to get through it. Swipe for both tours. https://smash-react.vercel.app/draw #tennis #atp #wta #tennisprediction",
       "order": 0,
-      "alt": "Draw carousel cover for the US Open."
+      "alt": "Draw carousel cover for the Australian Open."
     },
     {
       "file": "closer-draw.png",

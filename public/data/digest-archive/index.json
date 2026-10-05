@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-09-28T19:58:44.111Z",
+  "generatedAt": "2026-10-05T20:51:03.047Z",
   "editions": [
+    {
+      "mode": "weekly",
+      "date": "2026-10-05",
+      "file": "weekly-2026-10-05.html",
+      "subject": "47 from 69 this week",
+      "summary": "47 of 69 winners called",
+      "builtAt": "2026-10-05T20:51:03.047Z"
+    },
     {
       "mode": "weekly",
       "date": "2026-09-28",

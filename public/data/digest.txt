@@ -1,31 +1,31 @@
-SMASH WEEKLY - Monday, September 28
+SMASH WEEKLY - Monday, October 5
 
-THE WEEK: 26 from 35 (74%)
+THE WEEK: 47 from 69 (68%)
 
 DAY BY DAY
-  Tue: 2/2 (100%)
-  Wed: 2/3 (67%)
-  Thu: 1/4 (25%)
-  Fri: 6/9 (67%)
-  Sat: 6/8 (75%)
-  Sun: 5/5 (100%)
-  Mon: 2/2 (100%)
+  Tue: 0/2 (0%)
+  Wed: 5/10 (50%)
+  Thu: 9/12 (75%)
+  Fri: 12/16 (75%)
+  Sat: 5/10 (50%)
+  Sun: 8/9 (89%)
+  Mon: 4/6 (67%)
 
 THE ONES WE GOT WRONG
-  - Andreeva lost to Fernandez 6-2 7-5
-  - Bucsa lost to Putintseva 6-2 3-6 6-1
-  - Zverev lost to Minaur 2-6 7-6(5) 11-9
+  - Rybakina lost to Charaeva 3-6 6-4 6-3
+  - Sabalenka lost to Bartunkova 6-4 6-3
+  - Chwalinska lost to Yastremska 6-3 6-1
 
 THE WEEK IN MOMENTS
-  - Fernandez takes out Andreeva: No. 24 beats No. 5 - 6-2 7-5. Nobody had this one.
-  - Basilashvili at 2.66: The longest price to land all week. $10 on it came back $26.60 - 6-4 7-5.
+  - Charaeva takes out Rybakina: No. 118 beats No. 2 - 3-6 6-4 6-3. Nobody had this one.
+  - Bartunkova at 6.25: The longest price to land all week. $10 on it came back $62.50 - 6-4 6-3.
 
-US VS THE BOOKMAKERS: 77% vs 77% (13 priced matches)
+US VS THE BOOKMAKERS: 71% vs 71% (38 priced matches)
 
 FORWARD TEST: 237-73
-SEASON: 75%
+SEASON: 74%
 
-NEXT UP: 112 days to the Australian Open
+NEXT UP: 105 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
