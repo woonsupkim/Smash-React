@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-10-12T21:26:36.545Z",
+  "generatedAt": "2026-10-19T18:52:15.867Z",
   "editions": [
+    {
+      "mode": "weekly",
+      "date": "2026-10-19",
+      "file": "weekly-2026-10-19.html",
+      "subject": "27 from 48, warts and all",
+      "summary": "27 of 48 winners called",
+      "builtAt": "2026-10-19T18:52:15.867Z"
+    },
     {
       "mode": "weekly",
       "date": "2026-10-12",
