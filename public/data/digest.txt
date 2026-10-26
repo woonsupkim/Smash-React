@@ -1,37 +1,32 @@
-SMASH WEEKLY - Monday, October 19
+SMASH WEEKLY - Monday, October 26
 
-THE WEEK: 27 from 48 (56%)
+THE WEEK: 33 from 49 (67%)
 
 DAY BY DAY
-  Tue: 8/13 (62%)
+  Tue: 4/7 (57%)
   Wed: 4/7 (57%)
-  Thu: 4/8 (50%)
-  Fri: 4/6 (67%)
-  Sat: 1/4 (25%)
+  Thu: 7/9 (78%)
+  Fri: 7/9 (78%)
+  Sat: 3/7 (43%)
   Sun: 3/4 (75%)
-  Mon: 3/5 (60%)
-
-BOLD CALLS THAT LANDED
-  + Chwalinska (against the market) 6-0 3-6 7-5
-  + Chwalinska (against the market) 2-6 6-4 6-2
+  Mon: 4/5 (80%)
 
 THE ONES WE GOT WRONG
-  - Pegula lost to Ostapenko 2-6 7-6(7) 6-3
-  - Sabalenka lost to Li 3-6 6-4 7-6(5)
-  - Swiatek lost to Chwalinska 7-5 6-1
+  - Bencic lost to Kawa 7-5 6-2
+  - Snigur lost to Kawa 1-6 6-2 6-4
+  - Fils lost to Struff 6-4 6-7(7) 7-6(5)
 
 THE WEEK IN MOMENTS
-  - Kartal takes out Svitolina: No. 83 beats No. 8 - 6-2 2-6 6-4. Nobody had this one.
-  - Ostapenko at 5.05: The longest price to land all week. $10 on it came back $50.50 - 2-6 7-6(7) 6-3.
+  - Kawa takes out Bencic: No. 119 beats No. 11 - 7-5 6-2. Nobody had this one.
 
-US VS THE BOOKMAKERS: 65% vs 65% (23 priced matches)
+US VS THE BOOKMAKERS: 67% vs 69% (48 priced matches)
 
-  HEAD TO HEAD on the 4 matches we disagreed on: us 2 right, the book 2 | $1 a side: us $4.18 back, the book $3.29 back on $4 (following us: +$0.89)
+  HEAD TO HEAD on the 1 match we disagreed on: us 0 right, the book 1 | $1 a side: us $0.00 back, the book $1.89 back on $1 (following us: -$1.89)
 
 FORWARD TEST: 237-73
 SEASON: 74%
 
-NEXT UP: 91 days to the Australian Open
+NEXT UP: 84 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 
