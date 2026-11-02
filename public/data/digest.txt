@@ -1,32 +1,35 @@
-SMASH WEEKLY - Monday, October 26
+SMASH WEEKLY - Monday, November 2
 
-THE WEEK: 33 from 49 (67%)
+THE WEEK: 37 from 48 (77%)
 
 DAY BY DAY
-  Tue: 4/7 (57%)
-  Wed: 4/7 (57%)
+  Tue: 8/9 (89%)
+  Wed: 7/10 (70%)
   Thu: 7/9 (78%)
-  Fri: 7/9 (78%)
-  Sat: 3/7 (43%)
-  Sun: 3/4 (75%)
-  Mon: 4/5 (80%)
+  Fri: 6/6 (100%)
+  Sat: 4/7 (57%)
+  Sun: 1/1 (100%)
+  Mon: 3/3 (100%)
+
+BOLD CALLS THAT LANDED
+  + Quevedo (against the market) 6-4 6-7(5) 6-4
 
 THE ONES WE GOT WRONG
-  - Bencic lost to Kawa 7-5 6-2
-  - Snigur lost to Kawa 1-6 6-2 6-4
-  - Fils lost to Struff 6-4 6-7(7) 7-6(5)
+  - Djokovic lost to Struff 6-7(4) 7-5 7-6(5)
+  - Alexandrova lost to Rakhimova 6-4 4-6 7-6(5)
+  - Cirstea lost to Joint 6-3 7-6(4)
 
 THE WEEK IN MOMENTS
-  - Kawa takes out Bencic: No. 119 beats No. 11 - 7-5 6-2. Nobody had this one.
+  - Struff takes out Djokovic: No. 74 beats No. 8 - 6-7(4) 7-5 7-6(5). Nobody had this one.
 
-US VS THE BOOKMAKERS: 67% vs 69% (48 priced matches)
+US VS THE BOOKMAKERS: 76% vs 74% (46 priced matches)
 
-  HEAD TO HEAD on the 1 match we disagreed on: us 0 right, the book 1 | $1 a side: us $0.00 back, the book $1.89 back on $1 (following us: -$1.89)
+  HEAD TO HEAD on the 1 match we disagreed on: us 1 right, the book 0 | $1 a side: us $2.10 back, the book $0.00 back on $1 (following us: +$2.10)
 
 FORWARD TEST: 237-73
 SEASON: 74%
 
-NEXT UP: 84 days to the Australian Open
+NEXT UP: 77 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 

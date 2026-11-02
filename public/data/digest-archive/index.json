@@ -1,6 +1,14 @@
 {
-  "generatedAt": "2026-10-26T18:56:21.736Z",
+  "generatedAt": "2026-11-02T22:20:10.068Z",
   "editions": [
+    {
+      "mode": "weekly",
+      "date": "2026-11-02",
+      "file": "weekly-2026-11-02.html",
+      "subject": "37 from 48. A good week, briefly",
+      "summary": "37 of 48 winners called",
+      "builtAt": "2026-11-02T22:20:10.068Z"
+    },
     {
       "mode": "weekly",
       "date": "2026-10-26",

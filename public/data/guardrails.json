@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T18:56:18.518Z",
+  "generatedAt": "2026-11-02T22:20:06.655Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -9,21 +9,21 @@
       "label": "ATP hard",
       "engine": "smash",
       "status": "ok",
-      "n": 292,
+      "n": 291,
       "seasonAcc": 77,
       "recentN": 40,
-      "recentAcc": 78,
-      "rankRecentAcc": 78,
+      "recentAcc": 80,
+      "rankRecentAcc": 80,
       "recentEngines": {
-        "smash": 78,
-        "sim": 80,
-        "elo": 78,
-        "rank": 78,
-        "upset": 73
+        "smash": 80,
+        "sim": 83,
+        "elo": 80,
+        "rank": 80,
+        "upset": 75
       },
       "bestRecent": {
         "engine": "sim",
-        "acc": 80
+        "acc": 83
       },
       "reasons": []
     },
