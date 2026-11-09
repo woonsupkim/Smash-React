@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/risk</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/digests</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-11-02</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/today</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/risk</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/track-record</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/digests</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/edge</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/compare</loc></url>
   <url><loc>https://smash-react.vercel.app/challenge</loc></url>
-  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-11-02</lastmod></url>
-  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-11-02</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/season</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/form</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/h2h</loc></url>
   <url><loc>https://smash-react.vercel.app/draw</loc></url>
   <url><loc>https://smash-react.vercel.app/dream-brackets</loc></url>
@@ -258,6 +258,14 @@
   <url><loc>https://smash-react.vercel.app/player/wta/prest</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/chara</loc></url>
   <url><loc>https://smash-react.vercel.app/player/wta/kawa</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/elina-svitolina-vs-aryna-sabalenka-187379</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/cori-gauff-vs-marta-kostyuk-187371</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-jessica-pegula-187376</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karolina-muchova-vs-elina-svitolina-187385</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/karolina-muchova-vs-mirra-andreeva-187384</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/mirra-andreeva-vs-aryna-sabalenka-187378</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-cori-gauff-187375</loc></url>
+  <url><loc>https://smash-react.vercel.app/match/jessica-pegula-vs-marta-kostyuk-187372</loc></url>
   <url><loc>https://smash-react.vercel.app/match/ben-shelton-vs-alexander-zverev-182677</loc></url>
   <url><loc>https://smash-react.vercel.app/match/elena-rybakina-vs-aryna-sabalenka-182589</loc></url>
   <url><loc>https://smash-react.vercel.app/match/ben-shelton-vs-frances-tiafoe-182766</loc></url>
@@ -731,7 +739,7 @@
   <url><loc>https://smash-react.vercel.app/match/alexander-zverev-vs-jannik-sinner-177491</loc></url>
   <url><loc>https://smash-react.vercel.app/match/linda-noskova-vs-karolina-muchova-177707</loc></url>
   <url><loc>https://smash-react.vercel.app/match/novak-djokovic-vs-jannik-sinner-180453</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-11-02</lastmod></url>
+  <url><loc>https://smash-react.vercel.app/rivalries</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/daniil-medvedev-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/novak-djokovic-vs-jannik-sinner</loc></url>
@@ -752,19 +760,19 @@
   <url><loc>https://smash-react.vercel.app/rivalry/atp/andrey-rublev-vs-jannik-sinner</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/novak-djokovic-vs-taylor-fritz</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/taylor-fritz-vs-denis-shapovalov</loc></url>
+  <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-taylor-fritz</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-cameron-norrie</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/alex-de-minaur-vs-daniil-medvedev</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/carlos-alcaraz-vs-lorenzo-musetti</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/atp/taylor-fritz-vs-lorenzo-musetti</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalry/atp/francisco-cerundolo-vs-alexander-zverev</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/elena-rybakina-vs-aryna-sabalenka</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/cori-gauff-vs-iga-swiatek</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/elena-rybakina-vs-iga-swiatek</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/jessica-pegula-vs-iga-swiatek</loc></url>
+  <url><loc>https://smash-react.vercel.app/rivalry/wta/cori-gauff-vs-jessica-pegula</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/aryna-sabalenka-vs-iga-swiatek</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/jessica-pegula-vs-aryna-sabalenka</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/amanda-anisimova-vs-aryna-sabalenka</loc></url>
-  <url><loc>https://smash-react.vercel.app/rivalry/wta/cori-gauff-vs-jessica-pegula</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/cori-gauff-vs-aryna-sabalenka</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/elise-mertens-vs-naomi-osaka</loc></url>
   <url><loc>https://smash-react.vercel.app/rivalry/wta/jessica-pegula-vs-elena-rybakina</loc></url>
@@ -785,6 +793,7 @@
   <url><loc>https://smash-react.vercel.app/event/brisbane-international</loc></url>
   <url><loc>https://smash-react.vercel.app/event/asb-classic</loc></url>
   <url><loc>https://smash-react.vercel.app/event/u-s-open</loc></url>
+  <url><loc>https://smash-react.vercel.app/event/rolex-paris-masters</loc></url>
   <url><loc>https://smash-react.vercel.app/event/adelaide-international</loc></url>
   <url><loc>https://smash-react.vercel.app/event/australian-open</loc></url>
   <url><loc>https://smash-react.vercel.app/event/china-open</loc></url>

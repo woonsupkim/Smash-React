@@ -1,35 +1,36 @@
-SMASH WEEKLY - Monday, November 2
+SMASH WEEKLY - Monday, November 9
 
-THE WEEK: 37 from 48 (77%)
+THE WEEK: 29 from 41 (71%)
 
 DAY BY DAY
-  Tue: 8/9 (89%)
-  Wed: 7/10 (70%)
-  Thu: 7/9 (78%)
-  Fri: 6/6 (100%)
-  Sat: 4/7 (57%)
+  Tue: 8/10 (80%)
+  Wed: 5/12 (42%)
+  Thu: 6/8 (75%)
+  Fri: 5/5 (100%)
+  Sat: 2/2 (100%)
   Sun: 1/1 (100%)
-  Mon: 3/3 (100%)
+  Mon: 2/3 (67%)
 
 BOLD CALLS THAT LANDED
-  + Quevedo (against the market) 6-4 6-7(5) 6-4
+  + Sonmez (against the market) 6-4 6-2
 
 THE ONES WE GOT WRONG
-  - Djokovic lost to Struff 6-7(4) 7-5 7-6(5)
-  - Alexandrova lost to Rakhimova 6-4 4-6 7-6(5)
-  - Cirstea lost to Joint 6-3 7-6(4)
+  - Djokovic lost to Hijikata 2-6 6-3 6-3
+  - Medvedev lost to Buse 6-4 6-4
+  - Minaur lost to Etcheverry 7-6(2) 6-3
 
 THE WEEK IN MOMENTS
-  - Struff takes out Djokovic: No. 74 beats No. 8 - 6-7(4) 7-5 7-6(5). Nobody had this one.
+  - Hijikata takes out Djokovic: No. 82 beats No. 8 - 2-6 6-3 6-3. Nobody had this one.
+  - Buse at 5.95: The longest price to land all week. $10 on it came back $59.50 - 6-4 6-4.
 
-US VS THE BOOKMAKERS: 76% vs 74% (46 priced matches)
+US VS THE BOOKMAKERS: 72% vs 69% (39 priced matches)
 
-  HEAD TO HEAD on the 1 match we disagreed on: us 1 right, the book 0 | $1 a side: us $2.10 back, the book $0.00 back on $1 (following us: +$2.10)
+  HEAD TO HEAD on the 1 match we disagreed on: us 1 right, the book 0 | $1 a side: us $1.96 back, the book $0.00 back on $1 (following us: +$1.96)
 
-FORWARD TEST: 237-73
+FORWARD TEST: 237-73 (7 pending)
 SEASON: 74%
 
-NEXT UP: 77 days to the Australian Open
+NEXT UP: 70 days to the Australian Open
 
 Open the Ledger: https://smash-react.vercel.app/track-record
 

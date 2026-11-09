@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T22:20:06.655Z",
+  "generatedAt": "2026-11-09T22:43:02.114Z",
   "window": 40,
   "minN": 25,
   "cells": [
@@ -81,7 +81,7 @@
       "label": "WTA hard",
       "engine": "smash",
       "status": "ok",
-      "n": 335,
+      "n": 334,
       "seasonAcc": 80,
       "recentN": 40,
       "recentAcc": 83,
